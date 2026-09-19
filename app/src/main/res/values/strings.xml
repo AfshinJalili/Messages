@@ -159,7 +159,7 @@
     <string name="faq_4_text">You need to enable \"Send group messages as MMS\" in the app settings. This will ensure that group messages are sent as proper MMS, allowing all participants to see each other\'s replies.</string>
     <!--
         Haven't found some strings? There's more at
-        https://github.com/FossifyOrg/Commons/tree/master/commons/src/main/res
+        the shared commons string resources
     -->
     <string name="inbox_all">All</string>
     <string name="inbox_unread">Unread</string>

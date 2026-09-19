@@ -1,32 +1,22 @@
-Fossify Beskeder er din pålidelige beskedtjeneste designet til at forbedre din beskedoplevelse på forskellige måder.
+Messages is a private, lightweight SMS/MMS client for Android.
 
-📱 HOLD FORBINDELSEN UDEN BESVÆR:
-Med Fossify Beskeder kan du nemt sende SMS- og MMS-beskeder for at holde forbindelsen med dine kære. Nyd SMS-/MMS-baserede gruppebeskeder, og udtryk dig med fotos, emojis og hurtige hilsner.
+📱 STAY CONNECTED WITH EASE:
+Send SMS and MMS, use group messaging, and share photos, emojis, and attachments.
 
-🚫 BLOKER UØNSKEDE BESKEDER:
-Tag kontrol over din beskedoplevelse med en robust blokeringsfunktion, der nemt forhindrer uønskede beskeder, selv fra ukendte kontakter. Du kan også eksportere og importere blokerede numre til problemfri sikkerhedskopiering. Derudover kan du tilpasse din oplevelse ved at forhindre beskeder med specifikke ord eller sætninger i at nå din indbakke.
+🚫 BLOCK UNWANTED MESSAGES:
+Block numbers and keywords, export and import block lists, and filter obvious spam into a separate folder.
 
-🔒 NEM SMS-SIKKERHEDSKOPIERING:
-Sig farvel til bekymringer om at miste vigtige beskeder. Fossify Beskeder tilbyder praktisk SMS-sikkerhedskopiering ved at give dig mulighed for at eksportere og importere dine beskeder. Denne funktion sikrer, at du nemt kan skifte enhed uden at miste dine værdifulde samtaler.
+🔒 SMS BACKUP:
+Export and import messages so you can move between devices without losing conversations.
 
-🚀 LYNHURTIG OG LET:
-På trods af sine kraftfulde funktioner har Fossify Beskeder en bemærkelsesværdig lille app-størrelse, hvilket gør den hurtig og nem at hente og installere. Oplev hastighed og effektivitet, mens du nyder trygheden, der følger med SMS-sikkerhedskopiering.
+🚀 LIGHTWEIGHT:
+Small download size with fast startup and efficient inbox updates.
 
-🔐 FORBEDRET PRIVATLIV:
-Tilpas, hvad der vises på din låseskærm for ekstra privatliv. Vælg kun at vise afsenderen, beskedens indhold eller slet ingenting. Dine beskeder er i din kontrol.
+🔐 ENHANCED PRIVACY:
+Choose what appears on the lock screen. No ads and no unnecessary permissions.
 
-🔍 EFFEKTIV BESKEDSØGNING:
-Sig farvel til endeløs scrolling gennem samtaler. Fossify Beskeder forenkler beskedhentning med en hurtig og effektiv søgefunktion. Find det, du har brug for, når du har brug for det.
+🔍 EFFICIENT SEARCH:
+Find conversations and messages quickly without endless scrolling.
 
-🌈 MODERNE DESIGN OG BRUGERVENLIG GRÆNSEFLADE:
-Nyd et rent, moderne design med en brugervenlig grænseflade. Appen har et materialedesign og et mørkt tema, der giver en visuelt tiltalende og behagelig brugeroplevelse.
-
-🌐 OPEN SOURCE-TRANSPARENS:
-Dit privatliv er en topprioritet. Fossify Beskeder fungerer uden at kræve en internetforbindelse, hvilket garanterer meddelelsessikkerhed og stabilitet. Vores app er helt fri for reklamer og beder ikke om unødvendige tilladelser. Desuden er den helt open source, hvilket giver dig ro i sindet, da du har adgang til kildekoden til sikkerheds- og privatlivsrevisioner.
-
-Skift til Fossify Beskeder, og oplev beskeder, som de bør være – private, effektive og brugervenlige. Hent den nu, og bliv en del af vores fællesskab, der er engageret i at beskytte din beskedoplevelse.
-
-Udforsk flere Fossify-apps: https://www.fossify.org
-Open source-kode: https://www.github.com/FossifyOrg
-Deltag i fællesskabet på Reddit: https://www.reddit.com/r/Fossify
-Forbind på Telegram: https://t.me/Fossify
+🌈 MODERN DESIGN:
+Clean Material interface with light and dark themes and customizable colors.

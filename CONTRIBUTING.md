@@ -1,8 +1,9 @@
-### Reporting
-Before you report something, read the reporting rules [here](https://github.com/FossifyOrg/General-Discussion#how-do-i-suggest-an-improvement-ask-a-question-or-report-an-issue) please.
+# Contributing
 
-### Contributing as a developer
-Some instructions about code style and everything that has to be done to increase the chance of your code getting accepted can be found at the [General Discussion](https://github.com/FossifyOrg/General-Discussion#contribution-rules-for-developers) section. 
+Open an issue for bugs and feature requests. Pull requests are welcome.
 
-### Contributing as a non developer
-In case you just want to for example improve a translation, you can find the way of doing it [here](https://github.com/FossifyOrg/General-Discussion#how-can-i-suggest-an-edit-to-a-file).
+Before submitting code:
+
+- Match existing Kotlin style and project conventions.
+- Run `./gradlew :app:assembleCoreDebug` and relevant checks in [tests/README.md](tests/README.md).
+- Keep changes focused; avoid unrelated refactors.

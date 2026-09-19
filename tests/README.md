@@ -79,15 +79,13 @@ Deletion follow-up verification on 2026-09-11: all 17 combined device tests
 passed. App/test APK builds, database checks, design-token checks and lint passed.
 Lint reports 105 warnings with the existing baseline unchanged.
 
-## MSG-14–16 unread state and scroll navigation
+## Unread state and scroll navigation
 
-See [implementation and device matrix](../docs/tickets/MSG-14-16-verification.md).
-`RuntimeUxTicketChecks` now checks desired inbox increments, unread FAB behavior,
-two-stage navigation, and partial SMS/MMS reads. It inserts disposable local
-provider rows, sends nothing, and removes its fixtures afterward. Run it only
-with the debug app installed as the default SMS app.
+`RuntimeUxTicketChecks` checks inbox badge updates, thread scroll-to-unread
+behavior, FAB navigation, and partial SMS/MMS reads. It inserts disposable
+local provider rows, sends nothing, and removes its fixtures afterward. Run it
+only with the debug app installed as the default SMS app.
 
-The earlier whole-thread-read-on-open expectation is superseded: opening an
-empty thread does not clear its unread state. Visible received bubbles are read
-only at scroll idle. The SQL regression script also checks partial reads and
-exact unread-count updates.
+Opening a thread does not clear its unread state until messages are read at
+scroll idle or the user scrolls to the bottom. The SQL regression script also
+checks partial reads and exact unread-count updates.

@@ -141,7 +141,6 @@ import org.fossify.messages.extensions.indexOfFirstOrNull
 import org.fossify.messages.extensions.isGifMimeType
 import org.fossify.messages.extensions.isImageMimeType
 import org.fossify.messages.extensions.launchConversationDetails
-import org.fossify.messages.extensions.markVisibleMessagesRead
 import org.fossify.messages.extensions.markThreadMessagesRead
 import org.fossify.messages.extensions.markThreadMessagesUnread
 import org.fossify.messages.helpers.InboxRepository
@@ -213,18 +212,14 @@ class ThreadActivity : SimpleActivity() {
     private var threadId = 0L
     private var currentSIMCardIndex = 0
     private var isActivityVisible = false
-    private var scrollToLatestOnNextTap = false
-    private var visibleReadInProgress = false
+    private var markReadInProgress = false
     private var providerMessagesReady = false
-    private val readInSession = java.util.concurrent.ConcurrentHashMap.newKeySet<Long>()
-    private var dismissUnreadSeparator = false
-    private var holdUnreadSeparator = false
-    private var heldUnreadSeparatorPosition = -1
-    private var unreadArrivalVersion = 0
-    private val updateViewport = Runnable {
+    private var pendingInitialScroll = true
+    private var initialPositionSettled = false
+    private val updateScrollPosition = Runnable {
         if (isActivityVisible && !isDestroyed) {
             updateScrollFab()
-            markViewportRead()
+            markThreadReadIfAtBottom()
         }
     }
     private var refreshedSinceSent = false
@@ -298,7 +293,7 @@ class ThreadActivity : SimpleActivity() {
         refreshMenuItems()
 
         isActivityVisible = true
-        binding.threadMessagesList.post(updateViewport)
+        binding.threadMessagesList.post(updateScrollPosition)
 
         notificationManager.cancel(threadId.hashCode())
 
@@ -327,7 +322,7 @@ class ThreadActivity : SimpleActivity() {
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
-        if (hasFocus && isActivityVisible) binding.threadMessagesList.post(updateViewport)
+        if (hasFocus && isActivityVisible) binding.threadMessagesList.post(updateScrollPosition)
     }
 
     override fun onPause() {
@@ -336,10 +331,7 @@ class ThreadActivity : SimpleActivity() {
         flushThreadReadState()
         bus?.post(Events.RefreshConversations())
         isActivityVisible = false
-        scrollToLatestOnNextTap = false
-        holdUnreadSeparator = false
-        unreadArrivalVersion++
-        binding.threadMessagesList.removeCallbacks(updateViewport)
+        binding.threadMessagesList.removeCallbacks(updateScrollPosition)
     }
 
     override fun onStop() {
@@ -666,6 +658,10 @@ class ThreadActivity : SimpleActivity() {
                 // Inbound refresh preserves the viewport. Sending has its own explicit scroll.
                 updateMessages(threadItems)
             }
+            if (pendingInitialScroll) {
+                pendingInitialScroll = false
+                binding.threadMessagesList.post { scrollToInitialPosition() }
+            }
         }
 
         SimpleContactsHelper(this).getAvailableContacts(false) { contacts ->
@@ -748,21 +744,21 @@ class ThreadActivity : SimpleActivity() {
             onScrolled = { _, _ ->
                 tryLoadMoreMessages()
                 updateScrollFab()
-                binding.threadMessagesList.post(updateViewport)
+                binding.threadMessagesList.post(updateScrollPosition)
             },
             onScrollStateChanged = { newState ->
                 if (newState == RecyclerView.SCROLL_STATE_IDLE) {
                     tryLoadMoreMessages()
-                    binding.threadMessagesList.post(updateViewport)
+                    binding.threadMessagesList.post(updateScrollPosition)
                 }
             }
         )
         // Includes the first layout and layouts after asynchronous adapter submissions.
         binding.threadMessagesList.viewTreeObserver.addOnGlobalLayoutListener {
-            binding.threadMessagesList.removeCallbacks(updateViewport)
-            binding.threadMessagesList.post(updateViewport)
+            binding.threadMessagesList.removeCallbacks(updateScrollPosition)
+            binding.threadMessagesList.post(updateScrollPosition)
         }
-        binding.threadMessagesList.post(updateViewport)
+        binding.threadMessagesList.post(updateScrollPosition)
     }
 
     private fun updateScrollFab() {
@@ -771,7 +767,6 @@ class ThreadActivity : SimpleActivity() {
         val manager = list.layoutManager as LinearLayoutManager
         val lastVisible = manager.findLastVisibleItemPosition()
         val atBottom = !list.canScrollVertically(1)
-        if (atBottom) scrollToLatestOnNextTap = false
         val unread = adapter.currentList.filterIsInstance<Message>().count {
             !it.read && it.isReceivedMessage() && !it.isScheduled
         }
@@ -780,7 +775,7 @@ class ThreadActivity : SimpleActivity() {
                 (index > lastVisible || (index == lastVisible &&
                     (manager.findViewByPosition(index)?.bottom ?: 0) > list.height - list.paddingBottom))
         }
-        val show = !atBottom && (unreadBelow || scrollToLatestOnNextTap ||
+        val show = !atBottom && (unreadBelow ||
             manager.findLastCompletelyVisibleItemPosition() < adapter.itemCount - SCROLL_TO_BOTTOM_FAB_LIMIT)
         if (show) binding.scrollToBottomFab.show() else binding.scrollToBottomFab.hide()
         binding.scrollFabUnreadBadge.apply {
@@ -796,65 +791,72 @@ class ThreadActivity : SimpleActivity() {
         } else getString(R.string.scroll_to_latest_message)
     }
 
+    private fun hasUnreadMessages(): Boolean {
+        return messages.any { !it.read && it.isReceivedMessage() && !it.isScheduled }
+    }
+
     private fun flushThreadReadState() {
         if (isRecycleBin || !providerMessagesReady) return
-        val visibleThreadId = threadId
-        val atBottom = !binding.threadMessagesList.canScrollVertically(1)
-        ensureBackgroundThread {
-            if (atBottom) {
+        if (!binding.threadMessagesList.canScrollVertically(1) && hasUnreadMessages()) {
+            val visibleThreadId = threadId
+            ensureBackgroundThread {
                 markThreadMessagesRead(visibleThreadId)
-            } else {
-                val visible = collectFullyVisibleUnreadMessages()
-                if (visible.isNotEmpty()) {
-                    markVisibleMessagesRead(visibleThreadId, visible)
+                InboxRepository.refreshUnreadCounts(applicationContext, listOf(visibleThreadId))
+            }
+        }
+    }
+
+    private fun markThreadReadIfAtBottom() {
+        val list = binding.threadMessagesList
+        if (!initialPositionSettled || !providerMessagesReady || isRecycleBin || markReadInProgress ||
+            list.isComputingLayout || list.scrollState != RecyclerView.SCROLL_STATE_IDLE ||
+            list.canScrollVertically(1) || !hasUnreadMessages()) {
+            return
+        }
+        markReadInProgress = true
+        val visibleThreadId = threadId
+        ensureBackgroundThread {
+            try {
+                markThreadMessagesRead(visibleThreadId)
+                InboxRepository.refreshUnreadCounts(applicationContext, listOf(visibleThreadId))
+            } finally {
+                runOnUiThread {
+                    markReadInProgress = false
+                    if (!isDestroyed && threadId == visibleThreadId) {
+                        applyLocalThreadRead()
+                    }
                 }
             }
-            InboxRepository.refreshUnreadCounts(applicationContext, listOf(visibleThreadId))
         }
     }
 
-    private fun collectFullyVisibleUnreadMessages(): List<Message> {
+    private fun applyLocalThreadRead() {
+        messages = ArrayList(messages.map {
+            if (!it.read && it.isReceivedMessage() && !it.isScheduled) it.copy(read = true) else it
+        })
+        threadItems = getThreadItems()
+        getOrCreateThreadAdapter().updateMessages(threadItems)
+        updateScrollFab()
+    }
+
+    private fun scrollToInitialPosition() {
+        if (isRecycleBin || !providerMessagesReady) {
+            initialPositionSettled = true
+            return
+        }
         val list = binding.threadMessagesList
-        val manager = list.layoutManager as? LinearLayoutManager ?: return emptyList()
         val items = getOrCreateThreadAdapter().currentList
-        val viewportHeight = list.height - list.paddingTop - list.paddingBottom
-        if (viewportHeight <= 0) return emptyList()
-        return (manager.findFirstVisibleItemPosition()..manager.findLastVisibleItemPosition()).mapNotNull { index ->
-            val message = items.getOrNull(index) as? Message ?: return@mapNotNull null
-            val view = manager.findViewByPosition(index) ?: return@mapNotNull null
-            val visibleHeight = minOf(view.bottom, list.height - list.paddingBottom) - maxOf(view.top, list.paddingTop)
-            message.takeIf {
-                !it.read && it.getStableId() !in readInSession && it.isReceivedMessage() && !it.isScheduled &&
-                    visibleHeight >= minOf(view.height, viewportHeight)
-            }
+        val unreadPositions = items.indices.filter { index ->
+            (items[index] as? Message)?.let { !it.read && it.isReceivedMessage() && !it.isScheduled } == true
         }
-    }
-
-    private fun markViewportRead() {
-        val list = binding.threadMessagesList
-        if (!providerMessagesReady || isRecycleBin || visibleReadInProgress || list.isComputingLayout ||
-            list.scrollState != RecyclerView.SCROLL_STATE_IDLE || !list.hasWindowFocus()) return
-        val visible = collectFullyVisibleUnreadMessages()
-        if (visible.isEmpty()) return
-        visibleReadInProgress = true
-        val visibleThreadId = threadId
-        ensureBackgroundThread {
-            val completed = try {
-                markVisibleMessagesRead(visibleThreadId, visible)
-            } finally {
-                runOnUiThread { visibleReadInProgress = false }
-            }
-            runOnUiThread {
-                if (isDestroyed || threadId != visibleThreadId) return@runOnUiThread
-                readInSession.addAll(completed)
-                messages = ArrayList(messages.map {
-                    if (it.getStableId() in completed) it.copy(read = true) else it
-                })
-                threadItems = getThreadItems()
-                getOrCreateThreadAdapter().updateMessages(threadItems)
-                updateScrollFab()
-            }
+        val first = unreadPositions.firstOrNull()
+        val last = unreadPositions.lastOrNull()
+        if (first == null || last == null || unreadSpanFitsViewport(first, last)) {
+            initialPositionSettled = true
+            return
         }
+        (list.layoutManager as LinearLayoutManager).scrollToPositionWithOffset(first, list.paddingTop)
+        initialPositionSettled = true
     }
 
     private fun unreadSpanFitsViewport(first: Int, last: Int): Boolean {
@@ -886,48 +888,9 @@ class ThreadActivity : SimpleActivity() {
         return true
     }
 
-    private fun scrollToUnreadOrBottom() {
-        val list = binding.threadMessagesList
-        val manager = list.layoutManager as LinearLayoutManager
-        val items = getOrCreateThreadAdapter().currentList
-        val unreadPositions = items.indices.filter { index ->
-            (items[index] as? Message)?.let { !it.read && it.isReceivedMessage() && !it.isScheduled } == true
-        }
-        val first = unreadPositions.firstOrNull()
-        val last = unreadPositions.lastOrNull()
-        val fitsViewport = first != null && last != null && unreadSpanFitsViewport(first, last)
+    private fun scrollToBottomFromFab() {
         notificationManager.cancel(threadId.hashCode())
-        holdUnreadSeparator = true
-        heldUnreadSeparatorPosition = items.indexOf(ThreadUnreadSeparator)
-        val arrivalVersion = unreadArrivalVersion
-        if (!scrollToLatestOnNextTap && first != null && !fitsViewport) {
-            scrollToLatestOnNextTap = true
-            val scroller = object : androidx.recyclerview.widget.LinearSmoothScroller(this) {
-                override fun getVerticalSnapPreference() = SNAP_TO_START
-                override fun calculateDyToMakeVisible(view: View, snapPreference: Int): Int =
-                    super.calculateDyToMakeVisible(view, snapPreference) +
-                        (list.height - list.paddingTop - list.paddingBottom) / 3
-            }
-            scroller.targetPosition = first
-            manager.startSmoothScroll(scroller)
-        } else {
-            scrollToBottom()
-        }
-        // Wait for arrival, then let RecyclerView's item animator remove the divider.
-        fun dismissAfterScroll() {
-            list.postDelayed({
-                if (!isActivityVisible || isDestroyed || arrivalVersion != unreadArrivalVersion) return@postDelayed
-                if (list.scrollState != RecyclerView.SCROLL_STATE_IDLE) {
-                    dismissAfterScroll()
-                } else {
-                    holdUnreadSeparator = false
-                    dismissUnreadSeparator = true
-                    threadItems = getThreadItems()
-                    getOrCreateThreadAdapter().updateMessages(threadItems)
-                }
-            }, 400L)
-        }
-        dismissAfterScroll()
+        scrollToBottom()
     }
 
     private fun handleItemClick(any: Any) {
@@ -1004,6 +967,8 @@ class ThreadActivity : SimpleActivity() {
     }
 
     private fun jumpToMessage(messageId: Long) {
+        pendingInitialScroll = false
+        initialPositionSettled = true
         if (messages.any { it.id == messageId }) {
             val index = threadItems.indexOfFirst { (it as? Message)?.id == messageId }
             if (index != -1) binding.threadMessagesList.smoothScrollToPosition(index)
@@ -1084,6 +1049,7 @@ class ThreadActivity : SimpleActivity() {
                         val searchedMessageId = intent.getLongExtra(SEARCHED_MESSAGE_ID, -1L)
                         intent.removeExtra(SEARCHED_MESSAGE_ID)
                         if (searchedMessageId != -1L) {
+                            pendingInitialScroll = false
                             jumpToMessage(searchedMessageId)
                         }
 
@@ -1202,7 +1168,7 @@ class ThreadActivity : SimpleActivity() {
                 }
             }
             scrollToBottomFab.setOnClickListener {
-                scrollToUnreadOrBottom()
+                scrollToBottomFromFab()
             }
             scrollToBottomFab.backgroundTintList = ColorStateList.valueOf(getBottomBarColor())
             scrollToBottomFab.applyColorFilter(textColor)
@@ -1546,9 +1512,6 @@ class ThreadActivity : SimpleActivity() {
             return items
         }
 
-        messages = ArrayList(messages.map {
-            if (!it.read && it.getStableId() in readInSession) it.copy(read = true) else it
-        })
         messages.sortBy { it.date }
 
         val subscriptionIdToSimId = HashMap<Int, String>()
@@ -1585,7 +1548,7 @@ class ThreadActivity : SimpleActivity() {
             }
 
             if (!message.read && message.isReceivedMessage() && !message.isScheduled) {
-                if (!hadUnreadItems && !dismissUnreadSeparator && !holdUnreadSeparator) {
+                if (!hadUnreadItems) {
                     items.add(separatorIndex, ThreadUnreadSeparator)
                 }
                 hadUnreadItems = true
@@ -1600,10 +1563,6 @@ class ThreadActivity : SimpleActivity() {
                 )
             }
             prevSIMId = message.subscriptionId
-        }
-
-        if (holdUnreadSeparator && heldUnreadSeparatorPosition >= 0) {
-            items.add(heldUnreadSeparatorPosition.coerceAtMost(items.size), ThreadUnreadSeparator)
         }
 
         return items
@@ -2083,16 +2042,6 @@ class ThreadActivity : SimpleActivity() {
             )
         }
 
-        val latestReceived = messages.filter { it.isReceivedMessage() && !it.isScheduled }.maxOfOrNull { it.date } ?: 0
-        val previousIds = messages.mapTo(HashSet()) { it.getStableId() }
-        if (newMessages.any { it.isReceivedMessage() && !it.read && it.date >= latestReceived && it.getStableId() !in previousIds }) {
-            runOnUiThread {
-                unreadArrivalVersion++
-                scrollToLatestOnNextTap = false
-                dismissUnreadSeparator = false
-                holdUnreadSeparator = false
-            }
-        }
         messages = newMessages.apply {
             val scheduledMessages = messagesDB.getScheduledThreadMessages(threadId)
                 .filterNot { it.isScheduled && it.millis() < System.currentTimeMillis() }

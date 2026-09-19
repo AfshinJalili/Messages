@@ -1,32 +1,22 @@
-Fossify Messenger to Twój zaufany towarzysz do przesyłania wiadomości, który został zaprojektowany tak, aby na różne sposoby usprawnić korzystanie z nich.
+Messages is a private, lightweight SMS/MMS client for Android.
 
-📱 Z ŁATWOŚCIĄ POZOSTAŃ W KONTAKCIE:
-Z Fossify Messenger możesz bezproblemowo wysyłać wiadomości SMS i MMS, aby pozostać w kontakcie z bliskimi. Ciesz się komunikacją grupową opartą na wiadomościach SMS/MMS i wyrażaj siebie za pomocą zdjęć, emotikon i szybkich pozdrowień.
+📱 STAY CONNECTED WITH EASE:
+Send SMS and MMS, use group messaging, and share photos, emojis, and attachments.
 
-🚫 BLOKUJ NIECHCIANE WIADOMOŚCI:
-Przejmij kontrolę nad wiadomościami dzięki niezawodnej funkcji blokowania łatwo zapobiegającej niechcianym wiadomościom nawet od nieznanych kontaktów. Możesz także eksportować i importować zablokowane numery dla bezproblemowego tworzenia kopii zapasowej. Dodatkowo dostosuj swoje doświadczenie, zapobiegając dostawaniu wiadomości z określonymi słowami lub frazami.
+🚫 BLOCK UNWANTED MESSAGES:
+Block numbers and keywords, export and import block lists, and filter obvious spam into a separate folder.
 
-🔒 BEZPROBLEMOWA KOPIA ZAPASOWA SMS-ÓW:
-Pożegnaj obawy związane z utratą ważnych wiadomości. Fossify Messenger oferuje wygodną funkcję tworzenia kopii zapasowych SMS-ów, umożliwiając Ci eksport i import wiadomości. Dzięki tej funkcji możesz łatwo zmienić urządzenie bez utraty Twoich cennych rozmów.
+🔒 SMS BACKUP:
+Export and import messages so you can move between devices without losing conversations.
 
-🚀 NIESAMOWITA SZYBKOŚĆ I LEKKOŚĆ:
-Mimo swoich potężnych funkcji Fossify Messenger może pochwalić się zauważalnie małym rozmiarem aplikacji, czyniąc ją szybką i łatwą do pobrania i zainstalowania. Doświadcz szybkości i wydajności, ciesząc się spokojem ducha zapewnionym dzięki kopii zapasowej SMS-ów.
+🚀 LIGHTWEIGHT:
+Small download size with fast startup and efficient inbox updates.
 
-🔐 WIĘKSZA PRYWATNOŚĆ:
-Dostosuj, co ma być wyświetlane na Twoim ekranie blokady dla dodatkowej prywatności. Wybierz, czy chcesz wyświetlać tylko nadawcę, treść wiadomości, czy nie wyświetlać niczego. Twoje wiadomości są pod Twoją kontrolą.
+🔐 ENHANCED PRIVACY:
+Choose what appears on the lock screen. No ads and no unnecessary permissions.
 
-🔍 WYDAJNE WYSZUKIWANIE WIADOMOŚCI:
-Pożegnaj niekończące się przewijanie przez rozmowy. Fossify Messenger upraszcza znajdowanie wiadomości dzięki szybkiej i wydajnej funkcji wyszukiwania. Znajdź to, czego potrzebujesz, gdy tego potrzebujesz.
+🔍 EFFICIENT SEARCH:
+Find conversations and messages quickly without endless scrolling.
 
-🌈 NOWOCZESNY WYGLĄD I PRZYJAZNY INTERFEJS:
-Ciesz się czystym, nowoczesnym wyglądem i przyjaznym dla użytkownika interfejsem. Aplikacja zawiera Material Design i opcję ciemnego motywu, zapewniając atrakcyjne wizualnie i wygodne doświadczenie użytkownika.
-
-🌐 OTWARTOŹRÓDŁOWA TRANSPARENTNOŚĆ:
-Twoja prywatność jest najwyższym priorytetem. Fossify Messenger działa bez konieczności połączenia z Internetem, gwarantując bezpieczeństwo i stabilność wiadomości. Nasza aplikacja jest całkowicie wolna od reklam i nie wymaga niepotrzebnych uprawnień. Co więcej, jest w pełni otwartoźródłowa, zapewniając Ci spokój ducha, ponieważ masz dostęp do kodu źródłowego na potrzeby kontroli bezpieczeństwa i prywatności.
-
-Przejdź na Fossify Messenger i doświadcz przesyłania wiadomości w sposób, w jaki powinno ono być – prywatne, wydajne i przyjazne dla użytkownika. Pobierz teraz i dołącz do naszej społeczności dbającej o bezpieczeństwo korzystania z wiadomości.
-
-Odkryj więcej aplikacji od Fossify: https://www.fossify.org
-Kod źródłowy: https://www.github.com/FossifyOrg
-Dołącz do społeczności na Reddicie: https://www.reddit.com/r/Fossify
-Połącz się na Telegramie: https://t.me/Fossify
+🌈 MODERN DESIGN:
+Clean Material interface with light and dark themes and customizable colors.

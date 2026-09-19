@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Inbox refresh rewrite with Room as source of truth
+- Spam filtering, design system, and inbox UX overhaul
+
+### Changed
+- Removed upstream Fossify branding and stale planning docs
+- Simplified CI and issue templates for an independent fork
+
 ## [1.8.0] - 2026-01-30
 ### Added
 - Added support for custom fonts
@@ -195,68 +203,68 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Initial release
 
-[#13]: https://github.com/FossifyOrg/Messages/issues/13
-[#70]: https://github.com/FossifyOrg/Messages/issues/70
-[#75]: https://github.com/FossifyOrg/Messages/issues/75
-[#82]: https://github.com/FossifyOrg/Messages/issues/82
-[#99]: https://github.com/FossifyOrg/Messages/issues/99
-[#115]: https://github.com/FossifyOrg/Messages/issues/115
-[#135]: https://github.com/FossifyOrg/Messages/issues/135
-[#153]: https://github.com/FossifyOrg/Messages/issues/153
-[#159]: https://github.com/FossifyOrg/Messages/issues/159
-[#165]: https://github.com/FossifyOrg/Messages/issues/165
-[#177]: https://github.com/FossifyOrg/Messages/issues/177
-[#180]: https://github.com/FossifyOrg/Messages/issues/180
-[#209]: https://github.com/FossifyOrg/Messages/issues/209
-[#217]: https://github.com/FossifyOrg/Messages/issues/217
-[#225]: https://github.com/FossifyOrg/Messages/issues/225
-[#234]: https://github.com/FossifyOrg/Messages/issues/234
-[#243]: https://github.com/FossifyOrg/Messages/issues/243
-[#262]: https://github.com/FossifyOrg/Messages/issues/262
-[#264]: https://github.com/FossifyOrg/Messages/issues/264
-[#274]: https://github.com/FossifyOrg/Messages/issues/274
-[#279]: https://github.com/FossifyOrg/Messages/issues/279
-[#282]: https://github.com/FossifyOrg/Messages/issues/282
-[#287]: https://github.com/FossifyOrg/Messages/issues/287
-[#288]: https://github.com/FossifyOrg/Messages/issues/288
-[#290]: https://github.com/FossifyOrg/Messages/issues/290
-[#294]: https://github.com/FossifyOrg/Messages/issues/294
-[#309]: https://github.com/FossifyOrg/Messages/issues/309
-[#334]: https://github.com/FossifyOrg/Messages/issues/334
-[#349]: https://github.com/FossifyOrg/Messages/issues/349
-[#350]: https://github.com/FossifyOrg/Messages/issues/350
-[#359]: https://github.com/FossifyOrg/Messages/issues/359
-[#376]: https://github.com/FossifyOrg/Messages/issues/376
-[#416]: https://github.com/FossifyOrg/Messages/issues/416
-[#456]: https://github.com/FossifyOrg/Messages/issues/456
-[#461]: https://github.com/FossifyOrg/Messages/issues/461
-[#561]: https://github.com/FossifyOrg/Messages/issues/561
-[#562]: https://github.com/FossifyOrg/Messages/issues/562
-[#574]: https://github.com/FossifyOrg/Messages/issues/574
-[#600]: https://github.com/FossifyOrg/Messages/issues/600
-[#610]: https://github.com/FossifyOrg/Messages/issues/610
-[#641]: https://github.com/FossifyOrg/Messages/issues/641
-[#644]: https://github.com/FossifyOrg/Messages/issues/644
-[#651]: https://github.com/FossifyOrg/Messages/issues/651
+[#13]: #
+[#70]: #
+[#75]: #
+[#82]: #
+[#99]: #
+[#115]: #
+[#135]: #
+[#153]: #
+[#159]: #
+[#165]: #
+[#177]: #
+[#180]: #
+[#209]: #
+[#217]: #
+[#225]: #
+[#234]: #
+[#243]: #
+[#262]: #
+[#264]: #
+[#274]: #
+[#279]: #
+[#282]: #
+[#287]: #
+[#288]: #
+[#290]: #
+[#294]: #
+[#309]: #
+[#334]: #
+[#349]: #
+[#350]: #
+[#359]: #
+[#376]: #
+[#416]: #
+[#456]: #
+[#461]: #
+[#561]: #
+[#562]: #
+[#574]: #
+[#600]: #
+[#610]: #
+[#641]: #
+[#644]: #
+[#651]: #
 
-[Unreleased]: https://github.com/FossifyOrg/Messages/compare/1.8.0...HEAD
-[1.8.0]: https://github.com/FossifyOrg/Messages/compare/1.7.0...1.8.0
-[1.7.0]: https://github.com/FossifyOrg/Messages/compare/1.6.0...1.7.0
-[1.6.0]: https://github.com/FossifyOrg/Messages/compare/1.5.0...1.6.0
-[1.5.0]: https://github.com/FossifyOrg/Messages/compare/1.4.0...1.5.0
-[1.4.0]: https://github.com/FossifyOrg/Messages/compare/1.3.0...1.4.0
-[1.3.0]: https://github.com/FossifyOrg/Messages/compare/1.2.3...1.3.0
-[1.2.3]: https://github.com/FossifyOrg/Messages/compare/1.2.2...1.2.3
-[1.2.2]: https://github.com/FossifyOrg/Messages/compare/1.2.1...1.2.2
-[1.2.1]: https://github.com/FossifyOrg/Messages/compare/1.2.0...1.2.1
-[1.2.0]: https://github.com/FossifyOrg/Messages/compare/1.1.7...1.2.0
-[1.1.7]: https://github.com/FossifyOrg/Messages/compare/1.1.6...1.1.7
-[1.1.6]: https://github.com/FossifyOrg/Messages/compare/1.1.5...1.1.6
-[1.1.5]: https://github.com/FossifyOrg/Messages/compare/1.1.4...1.1.5
-[1.1.4]: https://github.com/FossifyOrg/Messages/compare/1.1.3...1.1.4
-[1.1.3]: https://github.com/FossifyOrg/Messages/compare/1.1.2...1.1.3
-[1.1.2]: https://github.com/FossifyOrg/Messages/compare/1.1.1...1.1.2
-[1.1.1]: https://github.com/FossifyOrg/Messages/compare/1.1.0...1.1.1
-[1.1.0]: https://github.com/FossifyOrg/Messages/compare/1.0.1...1.1.0
-[1.0.1]: https://github.com/FossifyOrg/Messages/compare/1.0.0...1.0.1
-[1.0.0]: https://github.com/FossifyOrg/Messages/releases/tag/1.0.0
+[Unreleased]: #
+[1.8.0]: #
+[1.7.0]: #
+[1.6.0]: #
+[1.5.0]: #
+[1.4.0]: #
+[1.3.0]: #
+[1.2.3]: #
+[1.2.2]: #
+[1.2.1]: #
+[1.2.0]: #
+[1.1.7]: #
+[1.1.6]: #
+[1.1.5]: #
+[1.1.4]: #
+[1.1.3]: #
+[1.1.2]: #
+[1.1.1]: #
+[1.1.0]: #
+[1.0.1]: #
+[1.0.0]: #

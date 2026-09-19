@@ -110,11 +110,12 @@ class RuntimeUxTicketChecks {
         } finally { cleanup(threadId) }
     }
 
-    @Test fun msg15And16_unreadFabPreservesViewportAndUsesTwoStages() {
+    @Test fun msg15And16_openAtFirstUnreadAndMarkReadAtBottom() {
         val phone = "555${System.currentTimeMillis() % 100000000}15"
         val threadId = context.getThreadId(phone)
         try {
             repeat(35) { sms(phone, threadId, true, it) }
+            repeat(12) { sms(phone, threadId, false, 35 + it) }
             context.getConversations(threadId).firstOrNull()?.let { context.insertOrUpdateConversation(it) }
             val intent = Intent(context, ThreadActivity::class.java)
                 .putExtra(THREAD_ID, threadId).putExtra(THREAD_NUMBER, phone).putExtra(THREAD_TITLE, "Scroll fixture")
@@ -124,52 +125,42 @@ class RuntimeUxTicketChecks {
                     scenario.onActivity { loaded = (it.findViewById<RecyclerView>(R.id.thread_messages_list).adapter?.itemCount ?: 0) > 30 }
                     loaded
                 }
-                var anchor = -1
+                awaitCondition("Many unreads open at first unread, not bottom") {
+                    var correct = false
+                    scenario.onActivity {
+                        val list = it.findViewById<RecyclerView>(R.id.thread_messages_list)
+                        correct = list.canScrollVertically(1) && list.scrollState == RecyclerView.SCROLL_STATE_IDLE
+                    }
+                    correct
+                }
+                assertEquals(12, context.getUnreadCountsByThread()[threadId])
                 scenario.onActivity {
                     val list = it.findViewById<RecyclerView>(R.id.thread_messages_list)
                     (list.layoutManager as LinearLayoutManager).scrollToPositionWithOffset(3, 0)
                 }
                 instrumentation.waitForIdleSync()
-                scenario.onActivity {
-                    anchor = (it.findViewById<RecyclerView>(R.id.thread_messages_list).layoutManager as LinearLayoutManager).findFirstVisibleItemPosition()
+            }
+            val remainingAfterMidScrollLeave = context.getUnreadCountsByThread()[threadId] ?: 0
+            assertEquals("Leaving mid-thread preserves all unreads", 12, remainingAfterMidScrollLeave)
+
+            ActivityScenario.launch<ThreadActivity>(intent).use { scenario ->
+                awaitCondition("Thread reloads") {
+                    var loaded = false
+                    scenario.onActivity { loaded = (it.findViewById<RecyclerView>(R.id.thread_messages_list).adapter?.itemCount ?: 0) > 30 }
+                    loaded
                 }
-                repeat(12) { sms(phone, threadId, false, 35 + it) }
-                refreshMessages()
-                awaitCondition("FAB shows twelve unread messages without moving history") {
-                    var correct = false
-                    scenario.onActivity {
-                        val list = it.findViewById<RecyclerView>(R.id.thread_messages_list)
-                        val badge = it.findViewById<TextView>(R.id.scroll_fab_unread_badge)
-                        correct = badge.isShown && badge.text.toString() == "12" &&
-                            (list.layoutManager as LinearLayoutManager).findFirstVisibleItemPosition() == anchor
-                    }
-                    correct
-                }
-                assertEquals(12, context.getUnreadCountsByThread()[threadId])
                 scenario.onActivity { it.findViewById<View>(R.id.scroll_to_bottom_fab).performClick() }
-                awaitCondition("First tap displays unread bubbles but leaves later bubbles unread") {
-                    val remaining = context.getUnreadCountsByThread()[threadId] ?: 0
-                    remaining in 1..11
-                }
-                scenario.onActivity {
-                    val list = it.findViewById<RecyclerView>(R.id.thread_messages_list)
-                    assertTrue("First stage must not go to bottom", list.canScrollVertically(1))
-                    it.findViewById<View>(R.id.scroll_to_bottom_fab).performClick()
-                }
-                awaitCondition("Second tap reaches bottom and removes divider after delay") {
+                awaitCondition("FAB scroll to bottom marks the whole thread read") {
                     var correct = false
                     scenario.onActivity {
                         val list = it.findViewById<RecyclerView>(R.id.thread_messages_list)
                         correct = !list.canScrollVertically(1) && list.scrollState == RecyclerView.SCROLL_STATE_IDLE &&
-                            (list.adapter as ThreadAdapter).currentList.none { item -> item == ThreadUnreadSeparator }
+                            (context.getUnreadCountsByThread()[threadId] ?: 0) == 0
                     }
                     correct
                 }
-                assertTrue("Bubbles skipped during smooth scroll stay unread", (context.getUnreadCountsByThread()[threadId] ?: 0) > 0)
             }
-            val remaining = context.getUnreadCountsByThread()[threadId] ?: 0
-            assertTrue("Leaving preserves unseen messages", remaining > 0)
-            assertEquals(remaining, context.conversationsDB.getConversationWithThreadId(threadId)?.unreadCount)
+            assertEquals(0, context.conversationsDB.getConversationWithThreadId(threadId)?.unreadCount)
         } finally { cleanup(threadId) }
     }
 
@@ -219,8 +210,6 @@ class RuntimeUxTicketChecks {
                 scenario.onActivity {
                     captureThread(it, "msg15-unread-fab.png")
                     it.findViewById<View>(R.id.scroll_to_bottom_fab).performClick()
-                    assertTrue("Divider is retained immediately after tap",
-                        (it.findViewById<RecyclerView>(R.id.thread_messages_list).adapter as ThreadAdapter).currentList.contains(ThreadUnreadSeparator))
                 }
                 awaitCondition("A single tap reaches bottom, reads the visible message and removes the divider") {
                     var reached = false

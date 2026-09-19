@@ -1,32 +1,22 @@
-El Fossify Messenger és el vostre company de missatgeria de confiança, dissenyat per a millorar l'experiència de missatgeria de diverses maneres.
+Messages is a private, lightweight SMS/MMS client for Android.
 
-📱 MANTENIU-VOS EN CONNECTE AMB FACILITAT:
-Amb el Fossify Messenger podeu enviar missatges SMS i MMS sense cap esforç per a mantenir-vos en connecte amb els éssers estimats. Gaudiu de la missatgeria en grup basada en SMS/MMS i expresseu-vos amb fotos, emojis i salutacions ràpides.
+📱 STAY CONNECTED WITH EASE:
+Send SMS and MMS, use group messaging, and share photos, emojis, and attachments.
 
-🚫 BLOQUEU ELS MISSATGES NO DESITJATS:
-Preneu el control de la vostra experiència de missatgeria amb una característica de bloqueig robusta, evitant fàcilment els missatges no desitjats, fins i tot de contactes desconeguts. També podeu exportar i importar números bloquejats fent una còpia de seguretat sense complicacions. A més, personalitzeu l'experiència evitant que els missatges amb paraules o frases específiques arribin a la safata d'entrada.
+🚫 BLOCK UNWANTED MESSAGES:
+Block numbers and keywords, export and import block lists, and filter obvious spam into a separate folder.
 
-🔒 CÒPIA DE SEGURETAT DE SMS SENSE ESFORÇ:
-Acomiadeu-vos de les preocupacions per perdre missatges importants. El Fossify Messenger ofereix una funcionalitat de còpia de seguretat d'SMS còmoda, permetent-vos exportar i importar els vostres missatges. Aquesta característica garanteix que podeu canviar fàcilment els dispositius sense perdre les vostres converses valuoses.
+🔒 SMS BACKUP:
+Export and import messages so you can move between devices without losing conversations.
 
-🚀 RÀPID COM UN LLAMP I LLEUGER:
-Tot i les seves característiques potents, el Fossify Messenger té una mida d'aplicació notablement petita, que la fa ràpida i fàcil de descarregar i instal·lar. Experimenteu la velocitat i l'eficiència mentre gaudiu de la tranquil·litat que comporta la còpia de seguretat dels SMS.
+🚀 LIGHTWEIGHT:
+Small download size with fast startup and efficient inbox updates.
 
-🔐 PRIVADESA MILLORADA:
-Personalitzeu el que apareix a la pantalla de bloqueig per a més privacitat. Trieu mostrar només el remitent, el contingut del missatge o res en absolut. Els missatges estan sota el vostre control.
+🔐 ENHANCED PRIVACY:
+Choose what appears on the lock screen. No ads and no unnecessary permissions.
 
-🔍 CERCA EFICIENT DE MISSATGES:
-Digueu adeu a la infinitat de desplaçaments a través de les converses. El Fossify Messenger simplifica la recuperació de missatges amb una característica de cerca ràpida i eficient. Trobeu el que necessiteu, quan ho necessiteu.
+🔍 EFFICIENT SEARCH:
+Find conversations and messages quickly without endless scrolling.
 
-🌈 «MODERN DESSIGN» I INTERFÍCIE FÀCIL D'UTILITZAR:
-Gaudiu d'un disseny net i modern amb una interfície fàcil d'utilitzar. L'aplicació compta amb el «material design» i una opció de tema fosc, proporcionant una experiència d'usuari visualment atractiva i còmoda.
-
-🌐 TRANSPARÈNCIA DEL CODI OBERT:
-La teva privacitat és una prioritat absoluta. El Fossify Messenger opera sense necessitat de connexió a Internet, garantint la seguretat i l'estabilitat dels missatges. La nostra aplicació està totalment lliure d'anuncis i no sol·licita permisos innecessaris. A més, és totalment de codi obert, proporcionant-vos tranquil·litat, ja que teniu accés al codi font per a auditories de seguretat i privacitat.
-
-Feu el canvi al Fossify Messenger i experimenteu la missatgeria de la manera com ha de ser: privada, eficient i fàcil d'utilitzar. Descarregueu-la ara i uniu-vod a la nostra comunitat compromesa amb la salvaguarda de la vostra experiència de la missatgeria.
-
-Exploreu més aplicacions de Fossify: https://www.fossify.org
-Codi obert: https://www.github.com/FossifyOrg
-Uniu-vos a la comunitat a Reddit: https://www.reddit.com/r/Fossify
-Connecteu a Telegram: https://t.me/Fossify
+🌈 MODERN DESIGN:
+Clean Material interface with light and dark themes and customizable colors.
