@@ -15,3 +15,6 @@ fastlane/report.xml
 /graphify-out/
 /.impeccable/
 /Messages_*.json
+
+.scratch/
+.vscode/
