@@ -46,7 +46,6 @@ import org.fossify.commons.extensions.beVisibleIf
 import org.fossify.commons.extensions.convertToBitmap
 import org.fossify.commons.extensions.fadeIn
 import org.fossify.commons.extensions.formatDateOrTime
-import org.fossify.commons.extensions.getMyContactsCursor
 import org.fossify.commons.extensions.getProperBackgroundColor
 import org.fossify.commons.extensions.getProperPrimaryColor
 import org.fossify.commons.extensions.getProperTextColor
@@ -57,7 +56,6 @@ import org.fossify.commons.extensions.toast
 import org.fossify.commons.extensions.underlineText
 import org.fossify.commons.extensions.updateTextColors
 import org.fossify.commons.extensions.viewBinding
-import org.fossify.commons.helpers.MyContactsContentProvider
 import org.fossify.commons.helpers.PERMISSION_READ_CONTACTS
 import org.fossify.commons.helpers.PERMISSION_READ_SMS
 import org.fossify.commons.helpers.PERMISSION_SEND_SMS
@@ -71,17 +69,13 @@ import org.fossify.messages.adapters.SearchResultsAdapter
 import org.fossify.messages.databinding.ActivityMainBinding
 import org.fossify.messages.extensions.checkAndDeleteOldRecycleBinMessages
 import org.fossify.messages.extensions.clearAllMessagesIfNeeded
-import org.fossify.messages.extensions.clearExpiredScheduledMessages
 import org.fossify.messages.extensions.config
 import org.fossify.messages.extensions.conversationsDB
 import org.fossify.messages.extensions.deleteConversation
-import org.fossify.messages.extensions.getConversations
-import org.fossify.messages.extensions.getUnreadCountsByThread
-import org.fossify.messages.extensions.getMessages
-import org.fossify.messages.extensions.insertOrUpdateConversation
 import org.fossify.messages.extensions.messagesDB
 import org.fossify.messages.extensions.updateConversationArchivedStatus
 import org.fossify.messages.helpers.ConversationSwipeCallback
+import org.fossify.messages.helpers.InboxRepository
 import org.fossify.messages.helpers.SWIPE_UNDO_DURATION_MS
 import org.fossify.messages.helpers.SEARCHED_MESSAGE_ID
 import org.fossify.messages.helpers.THREAD_ID
@@ -102,10 +96,8 @@ class MainActivity : SimpleActivity() {
     private var storedTextColor = 0
     private var storedFontSize = 0
     private var lastSearchedText = ""
-    private var refreshInProgress = false
-    private var refreshPending = false
-    private var readStateVersion = 0
     private var inboxConversations = arrayListOf<Conversation>()
+    private var providerReconcileActive = false
     private var inboxFilter = InboxFilter.ALL
     private var bus: EventBus? = null
     private var inboxDeletionVersion = UndoDeletion.version
@@ -161,6 +153,8 @@ class MainActivity : SimpleActivity() {
         binding.conversationsProgressBar.setIndicatorColor(properPrimaryColor)
         binding.conversationsProgressBar.trackColor = properPrimaryColor.adjustAlpha(resources.designFloat(R.dimen.opacity_outline))
         checkShortcut()
+        InboxRepository.refreshUnreadCounts(this)
+        InboxRepository.scheduleProviderReconcile(this)
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -180,9 +174,10 @@ class MainActivity : SimpleActivity() {
     }
 
     override fun onDestroy() {
-        super.onDestroy()
+        InboxRepository.setReconcileListener(null)
         searchHandler.removeCallbacksAndMessages(null)
         bus?.unregister(this)
+        super.onDestroy()
     }
 
     override fun onBackPressedCompat(): Boolean {
@@ -377,132 +372,19 @@ class MainActivity : SimpleActivity() {
 
     private fun initMessenger() {
         storeStateVariables()
-        getCachedConversations()
+        InboxRepository.setReconcileListener { active ->
+            providerReconcileActive = active
+            if (!isDestroyed && !isFinishing) {
+                showOrHideProgress(active && inboxConversations.isEmpty())
+            }
+        }
+        conversationsDB.observeNonArchivedWithLatestSnippet().observe(this) { rows ->
+            if (isDestroyed || isFinishing) return@observe
+            setupConversations(ArrayList(rows.map { it.toConversation() }))
+        }
+        InboxRepository.scheduleProviderReconcile(this, immediate = true)
         binding.conversationsFab.setOnClickListener {
             launchNewConversation()
-        }
-    }
-
-    private fun getCachedConversations(skipCache: Boolean = false) {
-        if (refreshInProgress) {
-            // Re-sort what is on screen now (a pin must move at once), then refresh from the provider after.
-            if (inboxConversations.isNotEmpty() && inboxDeletionVersion == UndoDeletion.version) {
-                setupConversations(inboxConversations)
-            }
-            refreshPending = true
-            return
-        }
-        refreshInProgress = true
-        val version = readStateVersion
-        val deletionVersion = UndoDeletion.version
-        ensureBackgroundThread {
-            val conversations = try {
-                conversationsDB.getNonArchived().toMutableList() as ArrayList<Conversation>
-            } catch (_: Exception) {
-                ArrayList()
-            }
-
-            runOnUiThread {
-                if (!skipCache && inboxDeletionVersion == deletionVersion && deletionVersion == UndoDeletion.version && version == readStateVersion && !isDestroyed && !isFinishing) {
-                    setupConversations(conversations, cached = true)
-                }
-            }
-            val archived = try {
-                conversationsDB.getAllArchived()
-            } catch (_: Exception) {
-                emptyList()
-            }
-            getNewConversations(ArrayList(conversations + archived), version, deletionVersion)
-            conversations.forEach {
-                clearExpiredScheduledMessages(it.threadId)
-            }
-        }
-    }
-
-    private fun getNewConversations(cachedConversations: ArrayList<Conversation>, version: Int, deletionVersion: Int) {
-        ensureBackgroundThread {
-            try {
-                val privateContacts = getMyContactsCursor(favoritesOnly = false, withPhoneNumbersOnly = true).use { cursor ->
-                    MyContactsContentProvider.getSimpleContacts(this, cursor)
-                }
-                val conversations = getConversations(privateContacts = privateContacts, failOnError = true)
-                val cachedIds = cachedConversations.mapTo(HashSet()) { it.threadId }
-                val conversationsById = conversations.associateBy { it.threadId }
-                val conversationsByNumber = conversations.asReversed().associateBy { it.phoneNumber }
-
-                conversations.forEach { clonedConversation ->
-                    if (cachedIds.add(clonedConversation.threadId)) {
-                        conversationsDB.insertOrUpdate(clonedConversation)
-                        cachedConversations.add(clonedConversation)
-                    }
-                }
-
-                cachedConversations.forEach { cachedConversation ->
-                    val threadId = cachedConversation.threadId
-
-                    val isTemporaryThread = cachedConversation.isScheduled
-                    val isConversationDeleted = !conversationsById.containsKey(threadId)
-                    if (isConversationDeleted && !isTemporaryThread) {
-                        conversationsDB.deleteThreadId(threadId)
-                    }
-
-                    val newConversation =
-                        conversationsByNumber[cachedConversation.phoneNumber]
-                    if (isTemporaryThread && newConversation != null) {
-                        // delete the original temporary thread and move any scheduled messages
-                        // to the new thread
-                        conversationsDB.deleteThreadId(threadId)
-                        messagesDB.getScheduledThreadMessages(threadId)
-                            .forEach { message ->
-                                messagesDB.insertOrUpdate(
-                                    message.copy(threadId = newConversation.threadId)
-                                )
-                            }
-                        insertOrUpdateConversation(newConversation, cachedConversation)
-                    }
-                }
-
-                cachedConversations.forEach { cachedConv ->
-                    val conv = conversationsById[cachedConv.threadId]?.takeIf {
-                        !Conversation.areContentsTheSame(old = cachedConv, new = it)
-                    }
-                    if (conv != null) {
-                        insertOrUpdateConversation(conv, cachedConv)
-                    }
-                }
-
-                val allConversations = conversationsDB.getNonArchived() as ArrayList<Conversation>
-                runOnUiThread {
-                    if (deletionVersion == UndoDeletion.version && version == readStateVersion && !isDestroyed && !isFinishing) {
-                        setupConversations(allConversations)
-                    }
-                }
-
-                if (config.appRunCount == 1) {
-                    conversations.map { it.threadId }.forEach { threadId ->
-                        val messages = getMessages(threadId, includeScheduledMessages = false)
-                        messages.chunked(30).forEach { currentMessages ->
-                            messagesDB.insertMessages(*currentMessages.toTypedArray())
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                runOnUiThread {
-                    if (!isDestroyed && !isFinishing) {
-                        showOrHideProgress(false)
-                        toast(R.string.inbox_refresh_failed)
-                    }
-                }
-            } finally {
-                runOnUiThread {
-                    refreshInProgress = false
-                    if (refreshPending && !isDestroyed && !isFinishing) {
-                        refreshPending = false
-                        // A read change may have overtaken this provider snapshot and its cache writes.
-                        getCachedConversations(skipCache = version != readStateVersion || deletionVersion != UndoDeletion.version)
-                    }
-                }
-            }
         }
     }
 
@@ -625,10 +507,7 @@ class MainActivity : SimpleActivity() {
     /** Identity-based on purpose, so each swipe is committed or undone exactly once. */
     private class PendingSwipe(val conversation: Conversation, val action: SwipeAction)
 
-    private fun setupConversations(
-        conversations: ArrayList<Conversation>,
-        cached: Boolean = false,
-    ) {
+    private fun setupConversations(conversations: ArrayList<Conversation>) {
         inboxDeletionVersion = UndoDeletion.version
         inboxConversations = conversations
         val swipedAway = pendingSwipes.map { it.conversation.threadId }.toSet()
@@ -636,8 +515,7 @@ class MainActivity : SimpleActivity() {
             .filter { it.threadId !in swipedAway && it.threadId !in UndoDeletion.threads && inboxFilter.matches(it) }
             .sortedForInbox(config.pinnedConversations)
 
-        if (cached && conversations.isEmpty()) {
-            // An empty cache is not an empty inbox until the provider refresh finishes.
+        if (providerReconcileActive && conversations.isEmpty()) {
             showOrHideProgress(true)
         } else {
             showOrHideProgress(false)
@@ -647,9 +525,7 @@ class MainActivity : SimpleActivity() {
         try {
             getOrCreateConversationsAdapter().apply {
                 updateConversations(visibleConversations) {
-                    if (!cached) {
-                        showOrHidePlaceholder(currentList.isEmpty())
-                    }
+                    showOrHidePlaceholder(currentList.isEmpty())
                 }
             }
         } catch (_: Exception) {
@@ -869,34 +745,9 @@ class MainActivity : SimpleActivity() {
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
-    fun conversationReadStateChanged(event: Events.ConversationReadStateChanged) {
-        readStateVersion++
-        if (refreshInProgress) refreshPending = true
-        setupConversations(ArrayList(inboxConversations.map {
-            if (it.threadId == event.threadId) {
-                it.copy(read = event.read, unreadCount = event.unreadCount ?: if (event.read) 0 else maxOf(1, it.unreadCount))
-            } else {
-                it
-            }
-        }))
-    }
-
-    @Subscribe(threadMode = ThreadMode.MAIN)
     fun refreshConversations(@Suppress("unused") event: Events.RefreshConversations) {
-        val version = ++readStateVersion
-        ensureBackgroundThread {
-            val counts = getUnreadCountsByThread()
-            runOnUiThread {
-                if (version == readStateVersion && !isDestroyed && !isFinishing) {
-                    setupConversations(ArrayList(inboxConversations.map { conversation ->
-                        val count = counts[conversation.threadId] ?: 0
-                        conversation.copy(read = count == 0, unreadCount = count)
-                    }))
-                }
-            }
-        }
-        // Contact/provider refresh can take seconds; never replay stale cached badges over the count update.
-        getCachedConversations(skipCache = true)
+        InboxRepository.refreshUnreadCounts(this)
+        InboxRepository.scheduleProviderReconcile(this)
     }
 
     companion object {

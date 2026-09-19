@@ -131,6 +131,10 @@ fun refreshConversations() {
     EventBus.getDefault().post(Events.RefreshConversations())
 }
 
+fun refreshInboxFromProvider(context: android.content.Context, immediate: Boolean = false) {
+    InboxRepository.scheduleProviderReconcile(context, immediate)
+}
+
 /** Not to be used with real messages persisted in the telephony db. This is for internal use only (e.g. scheduled messages, notification ids etc). */
 fun generateRandomId(length: Int = 9): Long {
     val millis = DateTime.now(DateTimeZone.UTC).millis

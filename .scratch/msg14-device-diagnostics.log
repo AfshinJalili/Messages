@@ -1,0 +1,23 @@
+
+org.fossify.messages.RuntimeUxTicketChecks:
+Error in msg14_inboundSmsUpdatesInboxBadgeWhileOnInbox(org.fossify.messages.RuntimeUxTicketChecks):
+java.lang.AssertionError: Inbound count 1 reaches visible inbox; row=true/0; badge=8/; refreshing=true; provider=1; cached=0
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at org.fossify.messages.RuntimeUxTicketChecks.awaitCondition(RuntimeUxTicketChecks.kt:61)
+	at org.fossify.messages.RuntimeUxTicketChecks.msg14_inboundSmsUpdatesInboxBadgeWhileOnInbox(RuntimeUxTicketChecks.kt:91)
+
+
+Time: 12.825
+There was 1 failure:
+1) msg14_inboundSmsUpdatesInboxBadgeWhileOnInbox(org.fossify.messages.RuntimeUxTicketChecks)
+java.lang.AssertionError: Inbound count 1 reaches visible inbox; row=true/0; badge=8/; refreshing=true; provider=1; cached=0
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at org.fossify.messages.RuntimeUxTicketChecks.awaitCondition(RuntimeUxTicketChecks.kt:61)
+	at org.fossify.messages.RuntimeUxTicketChecks.msg14_inboundSmsUpdatesInboxBadgeWhileOnInbox(RuntimeUxTicketChecks.kt:91)
+
+FAILURES!!!
+Tests run: 1,  Failures: 1
+
+
