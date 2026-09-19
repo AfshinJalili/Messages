@@ -9,11 +9,11 @@ import ezvcard.property.Telephone
 import org.fossify.commons.extensions.normalizePhoneNumber
 import org.fossify.commons.extensions.sendEmailIntent
 import org.fossify.commons.extensions.viewBinding
-import org.fossify.commons.helpers.NavigationIcon
 import org.fossify.messages.R
 import org.fossify.messages.adapters.VCardViewerAdapter
 import org.fossify.messages.databinding.ActivityVcardViewerBinding
 import org.fossify.messages.extensions.dialNumber
+import org.fossify.messages.extensions.setupSurfaceAppBar
 import org.fossify.messages.helpers.EXTRA_VCARD_URI
 import org.fossify.messages.helpers.parseVCardFromUri
 import org.fossify.messages.models.VCardPropertyWrapper
@@ -43,7 +43,7 @@ class VCardViewerActivity : SimpleActivity() {
 
     override fun onResume() {
         super.onResume()
-        setupTopAppBar(binding.vcardAppbar, NavigationIcon.Arrow)
+        setupSurfaceAppBar(binding.vcardAppbar)
     }
 
     private fun setupOptionsMenu(vCardUri: Uri) {

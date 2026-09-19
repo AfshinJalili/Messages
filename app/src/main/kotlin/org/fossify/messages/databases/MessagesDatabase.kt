@@ -10,11 +10,13 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import org.fossify.messages.helpers.Converters
 import org.fossify.messages.interfaces.AttachmentsDao
+import org.fossify.messages.interfaces.BlockedMessagesDao
 import org.fossify.messages.interfaces.ConversationsDao
 import org.fossify.messages.interfaces.DraftsDao
 import org.fossify.messages.interfaces.MessageAttachmentsDao
 import org.fossify.messages.interfaces.MessagesDao
 import org.fossify.messages.models.Attachment
+import org.fossify.messages.models.BlockedMessage
 import org.fossify.messages.models.Conversation
 import org.fossify.messages.models.Draft
 import org.fossify.messages.models.Message
@@ -28,9 +30,10 @@ import org.fossify.messages.models.RecycleBinMessage
         MessageAttachment::class,
         Message::class,
         RecycleBinMessage::class,
-        Draft::class
+        Draft::class,
+        BlockedMessage::class
     ],
-    version = 10
+    version = 12
 )
 @TypeConverters(Converters::class)
 abstract class MessagesDatabase : RoomDatabase() {
@@ -45,7 +48,10 @@ abstract class MessagesDatabase : RoomDatabase() {
 
     abstract fun DraftsDao(): DraftsDao
 
+    abstract fun BlockedMessagesDao(): BlockedMessagesDao
+
     companion object {
+        @Volatile
         private var db: MessagesDatabase? = null
 
         fun getInstance(context: Context): MessagesDatabase {
@@ -57,7 +63,6 @@ abstract class MessagesDatabase : RoomDatabase() {
                             klass = MessagesDatabase::class.java,
                             name = "conversations.db"
                         )
-                            .fallbackToDestructiveMigration()
                             .addMigrations(MIGRATION_1_2)
                             .addMigrations(MIGRATION_2_3)
                             .addMigrations(MIGRATION_3_4)
@@ -67,6 +72,8 @@ abstract class MessagesDatabase : RoomDatabase() {
                             .addMigrations(MIGRATION_7_8)
                             .addMigrations(MIGRATION_8_9)
                             .addMigrations(MIGRATION_9_10)
+                            .addMigrations(MIGRATION_10_11)
+                            .addMigrations(MIGRATION_11_12)
                             .build()
                     }
                 }
@@ -161,6 +168,20 @@ abstract class MessagesDatabase : RoomDatabase() {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.apply {
                     execSQL("ALTER TABLE conversations ADD COLUMN unread_count INTEGER NOT NULL DEFAULT 0")
+                }
+            }
+        }
+
+        private val MIGRATION_11_12 = object : Migration(11, 12) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_messages_thread_id_date` ON `messages` (`thread_id`, `date`)")
+            }
+        }
+
+        private val MIGRATION_10_11 = object : Migration(10, 11) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.apply {
+                    execSQL("CREATE TABLE IF NOT EXISTS `blocked_messages` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `address` TEXT NOT NULL, `body` TEXT NOT NULL, `date` INTEGER NOT NULL, `reason` INTEGER NOT NULL)")
                 }
             }
         }

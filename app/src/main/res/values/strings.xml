@@ -1,6 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_launcher_name">Messages</string>
+    <string name="spam_filters">Spam filters</string>
+    <string name="rule_filter_enable">Silence obvious spam and file it in Spam (messages stay in your inbox)</string>
+    <string name="spam_folder">Spam</string>
+    <string name="no_blocked_messages">No blocked messages</string>
+    <string name="clear_spam">Clear all</string>
+    <string name="clear_spam_confirmation">Permanently delete all blocked messages?</string>
+    <string name="delete_spam_confirmation">Permanently delete selected spam?</string>
+    <string name="not_spam">Not spam (restore to inbox)</string>
+    <string name="allow_sender">Always allow this sender</string>
+    <string name="sender_allowed">Sender allowed and message restored</string>
+    <string name="message_restored">Message restored to inbox</string>
+    <string name="block_reason_ai">Legacy filter</string>
+    <string name="block_reason_keyword">Keyword</string>
+    <string name="block_reason_number">Blocked number</string>
+    <string name="block_reason_rule">Rule</string>
     <string name="type_a_message">Type a message…</string>
     <string name="message_not_sent_short">Message not sent</string>
     <string name="message_not_sent_touch_retry">Not sent. Touch to retry.</string>
@@ -9,6 +24,9 @@
     <string name="attachment">Attachment</string>
     <string name="no_conversations_found">No stored conversations have been found</string>
     <string name="start_conversation">Start a conversation</string>
+    <string name="back_to_inbox">Back to inbox</string>
+    <string name="send_message">Send</string>
+    <string name="no_recycle_bin_conversations">No conversations in the recycle bin</string>
     <string name="reply">Reply</string>
     <string name="show_character_counter">Show a character counter at writing messages</string>
     <string name="loading_messages">Loading messages…</string>
@@ -143,4 +161,45 @@
         Haven't found some strings? There's more at
         https://github.com/FossifyOrg/Commons/tree/master/commons/src/main/res
     -->
+    <string name="inbox_all">All</string>
+    <string name="inbox_unread">Unread</string>
+    <string name="inbox_spam">Spam</string>
+    <string name="no_unread_conversations">You’re all caught up</string>
+    <string name="inbox_refresh_failed">Couldn’t refresh messages. Reopen the app to try again.</string>
+    <!-- Thread -->
+    <string name="new_messages">New messages</string>
+    <string name="copy_otp_code">Copy %s</string>
+    <string name="speak_message">Dictate message</string>
+    <!-- Inbox swipe actions -->
+    <string name="swipe_left_action">Swipe left action</string>
+    <string name="swipe_right_action">Swipe right action</string>
+    <string name="swipe_action_none">Off</string>
+    <string name="conversation_archived">Conversation archived</string>
+    <string name="conversation_deleted">Conversation deleted</string>
+    <!-- Inbox filters -->
+    <string name="inbox_personal">Personal</string>
+    <string name="inbox_business">Business &amp; OTP</string>
+    <string name="inbox_unknown">Unknown</string>
+    <string name="no_filtered_conversations">No conversations here</string>
+    <string name="recent_searches">Recent searches</string>
+    <!-- Mute -->
+    <string name="mute_conversation">Mute</string>
+    <string name="unmute_conversation">Unmute</string>
+    <string name="conversation_muted">Conversation muted</string>
+    <string name="conversation_unmuted">Conversation unmuted</string>
+    <string name="muted">Muted</string>
+    <!-- Message actions -->
+    <string name="react">React</string>
+    <string name="remove_reaction">Remove reaction</string>
+    <string name="star_message">Star</string>
+    <string name="unstar_message">Unstar</string>
+    <string name="starred_messages">Starred</string>
+    <string name="no_starred_messages">No starred messages</string>
+    <string name="search_in_conversation">Search in conversation</string>
+    <string name="no_matching_messages">No matching messages</string>
+    <string name="contact">Contact</string>
+    <string name="sim_chip">SIM %d</string>
+    <string name="items_deleted">Deleted</string>
+    <string name="scroll_to_latest_message">Scroll to latest message</string>
+    <string name="scroll_to_unread_messages">Scroll to unread messages, %1$d unread</string>
 </resources>

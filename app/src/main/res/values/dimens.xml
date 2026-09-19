@@ -14,4 +14,20 @@
     <dimen name="attachment_button_height">96dp</dimen>
     <dimen name="attachment_button_width">90dp</dimen>
     <dimen name="default_keyboard_height">250dp</dimen>
+    <dimen name="inbox_title_size">24sp</dimen>
+    <dimen name="conversation_row_horizontal_padding">20dp</dimen>
+    <dimen name="conversation_row_vertical_padding">12dp</dimen>
+    <dimen name="inbox_fab_clearance">108dp</dimen>
+    <!-- Shared component geometry. -->
+    <dimen name="message_bubble_radius">20dp</dimen>
+    <dimen name="message_bubble_tail_radius">4dp</dimen>
+    <dimen name="touch_target_size">48dp</dimen>
+    <dimen name="attachment_action_width">64dp</dimen>
+    <dimen name="attachment_action_height">40dp</dimen>
+    <dimen name="conversation_avatar_size">40dp</dimen>
+    <dimen name="conversation_row_min_height">88dp</dimen>
+    <dimen name="unread_badge_size">22dp</dimen>
+    <dimen name="conversation_action_min_height">72dp</dimen>
+    <dimen name="sim_chip_radius">16dp</dimen>
+    <dimen name="outline_width">1dp</dimen>
 </resources>

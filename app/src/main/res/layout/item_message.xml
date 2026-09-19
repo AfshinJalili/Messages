@@ -5,7 +5,7 @@
     android:id="@+id/thread_message_holder"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginTop="@dimen/small_margin"
+    android:layout_marginTop="8dp"
     android:foreground="@drawable/selector"
     android:paddingHorizontal="@dimen/activity_margin">
 
@@ -51,19 +51,50 @@
             android:visibility="gone"
             tools:ignore="ContentDescription" />
 
-        <org.fossify.commons.views.MyTextView
+        <org.fossify.messages.views.MessageBodyView
             android:id="@+id/thread_message_body"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_below="@+id/thread_message_attachments_holder"
             android:layout_marginVertical="@dimen/tiny_margin"
             android:layout_toEndOf="@id/thread_message_sender_photo"
-            android:autoLink="email|web"
             android:background="@drawable/item_received_background"
             android:drawablePadding="8dp"
-            android:padding="@dimen/normal_margin"
+            android:paddingHorizontal="16dp"
+            android:paddingVertical="12dp"
+            android:textDirection="firstStrong"
+            android:lineSpacingExtra="2dp"
             android:textSize="@dimen/normal_text_size"
             tools:drawableEndCompat="@drawable/scheduled_message_icon"
             tools:text="Message content" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/thread_message_otp"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="wrap_content"
+            android:layout_height="@dimen/touch_target_size"
+            android:layout_below="@+id/thread_message_body"
+            android:layout_alignStart="@+id/thread_message_body"
+            android:layout_marginTop="@dimen/tiny_margin"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:textAllCaps="false"
+            android:visibility="gone"
+            app:icon="@drawable/ic_copy_vector"
+            tools:text="Copy 123456"
+            tools:visibility="visible" />
+
+        <org.fossify.commons.views.MyTextView
+            android:id="@+id/thread_message_time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/thread_message_otp"
+            android:layout_alignStart="@+id/thread_message_body"
+            android:layout_marginTop="@dimen/tiny_margin"
+            android:alpha="@dimen/opacity_secondary"
+            android:textSize="@dimen/smaller_text_size"
+            android:visibility="gone"
+            tools:text="6:30 PM"
+            tools:visibility="visible" />
     </RelativeLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

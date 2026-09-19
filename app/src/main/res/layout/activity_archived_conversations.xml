@@ -15,7 +15,6 @@
             android:id="@+id/archive_toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            android:background="@color/color_primary"
             app:title="@string/archived_conversations"
             app:titleTextAppearance="@style/AppTheme.ActionBar.TitleTextStyle" />
 
@@ -57,13 +56,26 @@
                     android:layout_height="wrap_content"
                     android:layout_centerHorizontal="true"
                     android:layout_marginTop="@dimen/bigger_margin"
-                    android:alpha="0.8"
+                    android:alpha="@dimen/opacity_placeholder"
                     android:gravity="center"
-                    android:paddingLeft="@dimen/activity_margin"
-                    android:paddingRight="@dimen/activity_margin"
+                    android:paddingStart="@dimen/activity_margin"
+                    android:paddingEnd="@dimen/activity_margin"
                     android:text="@string/no_archived_conversations"
                     android:textSize="@dimen/bigger_text_size"
                     android:textStyle="italic"
+                    android:visibility="gone" />
+
+                <org.fossify.commons.views.MyTextView
+                    android:id="@+id/no_conversations_placeholder_2"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@+id/no_conversations_placeholder"
+                    android:layout_centerHorizontal="true"
+                    android:background="@drawable/ripple_all_corners"
+                    android:gravity="center"
+                    android:padding="@dimen/activity_margin"
+                    android:text="@string/back_to_inbox"
+                    android:textSize="@dimen/bigger_text_size"
                     android:visibility="gone" />
 
                 <com.qtalk.recyclerviewfastscroller.RecyclerViewFastScroller

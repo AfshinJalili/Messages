@@ -12,6 +12,7 @@ import org.fossify.commons.helpers.ContactLookupResult
 import org.fossify.commons.helpers.SimpleContactsHelper
 import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.messages.R
+import org.fossify.messages.extensions.blockedMessagesDB
 import org.fossify.messages.extensions.getConversations
 import org.fossify.messages.extensions.getLatestMMS
 import org.fossify.messages.extensions.getNameFromAddress
@@ -19,9 +20,11 @@ import org.fossify.messages.extensions.insertOrUpdateConversation
 import org.fossify.messages.extensions.shouldUnarchive
 import org.fossify.messages.extensions.showReceivedMessageNotification
 import org.fossify.messages.extensions.updateConversationArchivedStatus
+import org.fossify.messages.helpers.IncomingSpamClassifier
 import org.fossify.messages.helpers.ReceiverUtils.isMessageFilteredOut
 import org.fossify.messages.helpers.refreshConversations
 import org.fossify.messages.helpers.refreshMessages
+import org.fossify.messages.models.BlockedMessage
 import org.fossify.messages.models.Message
 
 class MmsReceiver : MmsReceivedReceiver() {
@@ -29,9 +32,9 @@ class MmsReceiver : MmsReceivedReceiver() {
     override fun isAddressBlocked(context: Context, address: String): Boolean {
         if (context.isNumberBlocked(address)) return true
         if (context.baseConfig.blockUnknownNumbers) {
-            val privateCursor = context.getMyContactsCursor(favoritesOnly = false, withPhoneNumbersOnly = true)
-            val result = SimpleContactsHelper(context).existsSync(address, privateCursor)
-            return result == ContactLookupResult.NotFound
+            return context.getMyContactsCursor(favoritesOnly = false, withPhoneNumbersOnly = true).use { cursor ->
+                SimpleContactsHelper(context).existsSync(address, cursor) == ContactLookupResult.NotFound
+            }
         }
 
         return false
@@ -60,30 +63,43 @@ class MmsReceiver : MmsReceivedReceiver() {
         size: Int,
         address: String
     ) {
-        val glideBitmap = try {
-            Glide.with(context)
-                .asBitmap()
-                .load(mms.attachment!!.attachments.first().getUri())
-                .centerCrop()
-                .into(size, size)
-                .get()
-        } catch (e: Exception) {
-            null
+        val spamReason = IncomingSpamClassifier.silenceReason(context, address, mms.body)
+        val date = mms.millis()
+
+        if (spamReason != null) {
+            context.blockedMessagesDB.insert(
+                BlockedMessage(
+                    address = address,
+                    body = mms.body,
+                    date = date,
+                    reason = spamReason,
+                )
+            )
+        } else {
+            val glideBitmap = try {
+                Glide.with(context)
+                    .asBitmap()
+                    .load(mms.attachment!!.attachments.first().getUri())
+                    .centerCrop()
+                    .into(size, size)
+                    .get()
+            } catch (e: Exception) {
+                null
+            }
+
+            val senderName = context.getMyContactsCursor(favoritesOnly = false, withPhoneNumbersOnly = true).use {
+                context.getNameFromAddress(address, it)
+            }
+
+            context.showReceivedMessageNotification(
+                messageId = mms.id,
+                address = address,
+                senderName = senderName,
+                body = mms.body,
+                threadId = mms.threadId,
+                bitmap = glideBitmap
+            )
         }
-
-
-        val senderName = context.getMyContactsCursor(favoritesOnly = false, withPhoneNumbersOnly = true).use {
-            context.getNameFromAddress(address, it)
-        }
-
-        context.showReceivedMessageNotification(
-            messageId = mms.id,
-            address = address,
-            senderName = senderName,
-            body = mms.body,
-            threadId = mms.threadId,
-            bitmap = glideBitmap
-        )
 
         val conversation = context.getConversations(mms.threadId).firstOrNull() ?: return
         runCatching { context.insertOrUpdateConversation(conversation) }

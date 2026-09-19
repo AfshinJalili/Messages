@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- tinted in code; M3 Expressive puts monochrome icons in pills rather than colored circles -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <corners android:radius="@dimen/message_bubble_radius" />
+    <solid android:color="@color/icon_mask" />
+</shape>

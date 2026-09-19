@@ -47,3 +47,20 @@ fun String.isZipMimeType(): Boolean {
 fun String.isPlainTextMimeType(): Boolean {
     return lowercase() == "text/plain"
 }
+
+private val OTP_KEYWORDS = Regex(
+    "otp|code|pin|passcode|password|verification|verify|auth|token|رمز|کد|تایید",
+    RegexOption.IGNORE_CASE
+)
+private val OTP_CODE = Regex("""(?<!\d)(\d{4,8})(?!\d)""")
+
+/**
+ * ponytail: keyword-gated so "see you at 2030" never grows a Copy chip. Widen [OTP_KEYWORDS] if
+ * users report misses; a missing chip is cheap, a wrong one trains people to ignore it.
+ */
+fun String.extractOtpCode(): String? {
+    if (!OTP_KEYWORDS.containsMatchIn(this)) {
+        return null
+    }
+    return OTP_CODE.find(this)?.groupValues?.get(1)
+}

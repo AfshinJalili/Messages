@@ -1,5 +1,6 @@
 package org.fossify.messages.activities
 
+import org.fossify.messages.helpers.UndoDeletion
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
@@ -9,14 +10,15 @@ import org.fossify.commons.extensions.beGoneIf
 import org.fossify.commons.extensions.beVisibleIf
 import org.fossify.commons.extensions.hideKeyboard
 import org.fossify.commons.extensions.viewBinding
-import org.fossify.commons.helpers.NavigationIcon
 import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.messages.R
 import org.fossify.messages.adapters.RecycleBinConversationsAdapter
 import org.fossify.messages.databinding.ActivityRecycleBinConversationsBinding
 import org.fossify.messages.extensions.config
+import org.fossify.messages.helpers.sortedForInbox
+import org.fossify.messages.extensions.setupSurfaceAppBar
 import org.fossify.messages.extensions.conversationsDB
-import org.fossify.messages.extensions.emptyMessagesRecycleBin
+import org.fossify.messages.extensions.emptyMessagesRecycleBinForConversation
 import org.fossify.messages.helpers.IS_RECYCLE_BIN
 import org.fossify.messages.helpers.THREAD_ID
 import org.fossify.messages.helpers.THREAD_TITLE
@@ -47,7 +49,7 @@ class RecycleBinConversationsActivity : SimpleActivity() {
 
     override fun onResume() {
         super.onResume()
-        setupTopAppBar(binding.recycleBinAppbar, NavigationIcon.Arrow)
+        setupSurfaceAppBar(binding.recycleBinAppbar)
         loadRecycleBinConversations()
     }
 
@@ -102,9 +104,9 @@ class RecycleBinConversationsActivity : SimpleActivity() {
             positive = org.fossify.commons.R.string.yes,
             negative = org.fossify.commons.R.string.no
         ) {
-            ensureBackgroundThread {
-                emptyMessagesRecycleBin()
-                loadRecycleBinConversations()
+            val adapter = getOrCreateConversationsAdapter()
+            adapter.deleteWithUndo(adapter.currentList.toList()) { id ->
+                emptyMessagesRecycleBinForConversation(id)
             }
         }
     }
@@ -129,13 +131,10 @@ class RecycleBinConversationsActivity : SimpleActivity() {
     }
 
     private fun setupConversations(conversations: ArrayList<Conversation>) {
-        val sortedConversations = conversations.sortedWith(
-            compareByDescending<Conversation> { config.pinnedConversations.contains(it.threadId.toString()) }
-                .thenByDescending { it.date }
-        ).toMutableList() as ArrayList<Conversation>
+        val sortedConversations = ArrayList(conversations.filter { it.threadId !in UndoDeletion.threads }).sortedForInbox(config.pinnedConversations)
 
-        showOrHidePlaceholder(conversations.isEmpty())
-        updateOptionsMenu(conversations)
+        showOrHidePlaceholder(sortedConversations.isEmpty())
+        updateOptionsMenu(sortedConversations)
 
         try {
             getOrCreateConversationsAdapter().apply {
@@ -148,7 +147,7 @@ class RecycleBinConversationsActivity : SimpleActivity() {
     private fun showOrHidePlaceholder(show: Boolean) {
         binding.conversationsFastscroller.beGoneIf(show)
         binding.noConversationsPlaceholder.beVisibleIf(show)
-        binding.noConversationsPlaceholder.text = getString(R.string.no_conversations_found)
+        binding.noConversationsPlaceholder.text = getString(R.string.no_recycle_bin_conversations)
     }
 
     @SuppressLint("NotifyDataSetChanged")

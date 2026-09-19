@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/thread_unread_separator_holder"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:layout_marginTop="20dp"
+    android:layout_marginBottom="8dp"
+    android:orientation="horizontal"
+    android:paddingHorizontal="@dimen/activity_margin">
+
+    <View
+        android:id="@+id/thread_unread_rule_start"
+        android:layout_width="0dp"
+        android:layout_height="@dimen/divider_height"
+        android:layout_weight="1"
+        android:importantForAccessibility="no" />
+
+    <org.fossify.commons.views.MyTextView
+        android:id="@+id/thread_unread_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="@dimen/medium_margin"
+        android:text="@string/new_messages"
+        android:textSize="@dimen/smaller_text_size"
+        android:textStyle="bold" />
+
+    <View
+        android:id="@+id/thread_unread_rule_end"
+        android:layout_width="0dp"
+        android:layout_height="@dimen/divider_height"
+        android:layout_weight="1"
+        android:importantForAccessibility="no" />
+
+</LinearLayout>

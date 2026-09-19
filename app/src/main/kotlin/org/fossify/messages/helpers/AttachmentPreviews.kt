@@ -67,7 +67,8 @@ fun ItemAttachmentDocumentBinding.setupDocumentPreview(
 
     icon.setImageResource(getIconResourceForMimeType(mimeType))
     icon.background.setTint(primaryColor)
-    root.background.applyColorFilter(primaryColor.darkenColor())
+    icon.applyColorFilter(primaryColor.getContrastColor())
+    root.background.applyColorFilter(context.tonalSurfaceColor())
 
     root.setOnClickListener {
         onClick?.invoke()
@@ -113,7 +114,7 @@ fun ItemAttachmentVcardBinding.setupVCardPreview(
     val textColor = activity.getProperTextColor()
     val primaryColor = activity.getProperPrimaryColor()
 
-    root.background.applyColorFilter(primaryColor.darkenColor())
+    root.background.applyColorFilter(context.tonalSurfaceColor())
     vcardTitle.setTextColor(textColor)
     vcardSubtitle.setTextColor(textColor)
 

@@ -15,7 +15,6 @@
             android:id="@+id/thread_toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            android:background="@color/color_primary"
             app:menu="@menu/menu_thread"
             app:titleTextAppearance="@style/AppTheme.ActionBar.TitleTextStyle" />
 
@@ -143,7 +142,24 @@
             app:fabSize="mini"
             app:layout_constraintBottom_toBottomOf="@id/thread_messages_fastscroller"
             app:layout_constraintEnd_toEndOf="@id/thread_messages_fastscroller"
-            tools:ignore="ContentDescription" />
+            android:contentDescription="@string/scroll_to_latest_message" />
+
+        <TextView
+            android:id="@+id/scroll_fab_unread_badge"
+            android:tag="scroll_fab_unread_badge"
+            android:layout_width="wrap_content"
+            android:layout_height="@dimen/unread_badge_size"
+            android:minWidth="@dimen/unread_badge_size"
+            android:paddingHorizontal="@dimen/small_margin"
+            android:gravity="center"
+            android:background="@drawable/attachment_icon_background"
+            android:textSize="@dimen/smaller_text_size"
+            android:textStyle="bold"
+            android:importantForAccessibility="no"
+            android:elevation="8dp"
+            android:visibility="gone"
+            app:layout_constraintTop_toTopOf="@id/scroll_to_bottom_fab"
+            app:layout_constraintEnd_toEndOf="@id/scroll_to_bottom_fab" />
 
         <include
             android:id="@+id/short_code_holder"

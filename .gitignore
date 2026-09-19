@@ -11,3 +11,7 @@ keystore.properties
 fastlane/fastlane.json
 fastlane/report.xml
 .kotlin/
+# local tool output and personal SMS exports
+/graphify-out/
+/.impeccable/
+/Messages_*.json

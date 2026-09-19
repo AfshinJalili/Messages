@@ -1,5 +1,6 @@
 package org.fossify.messages.adapters
 
+import org.fossify.messages.helpers.designFloat
 import android.util.TypedValue
 import android.view.ViewGroup
 import androidx.core.graphics.drawable.toDrawable
@@ -68,7 +69,7 @@ class VCardViewerAdapter(
                 itemContactName.apply {
                     text = name
                     setTextColor(textColor)
-                    setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize * 1.1f)
+                    setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize * resources.designFloat(R.dimen.type_scale_primary))
                 }
                 itemContactImage.apply {
                     val photo = item.vCard.photos.firstOrNull()
@@ -148,7 +149,7 @@ class VCardViewerAdapter(
                 itemVcardPropertyTitle.apply {
                     text = item.value
                     setTextColor(textColor)
-                    setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize * 1.1f)
+                    setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize * resources.designFloat(R.dimen.type_scale_primary))
                 }
                 itemVcardPropertySubtitle.apply {
                     text = item.type

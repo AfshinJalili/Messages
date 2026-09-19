@@ -41,6 +41,7 @@ const val SCHEDULED_MESSAGE_ID = "scheduled_message_id"
 const val SOFT_KEYBOARD_HEIGHT = "soft_keyboard_height"
 const val IS_MMS = "is_mms"
 const val MESSAGE_ID = "message_id"
+const val OTP_CODE = "otp_code"
 const val USE_RECYCLE_BIN = "use_recycle_bin"
 const val LAST_RECYCLE_BIN_CHECK = "last_recycle_bin_check"
 const val IS_RECYCLE_BIN = "is_recycle_bin"
@@ -48,6 +49,27 @@ const val IS_ARCHIVE_AVAILABLE = "is_archive_available"
 const val CUSTOM_NOTIFICATIONS = "custom_notifications"
 const val IS_LAUNCHED_FROM_SHORTCUT = "is_launched_from_shortcut"
 const val KEEP_CONVERSATIONS_ARCHIVED = "keep_conversations_archived"
+const val RULE_FILTER_ENABLED = "rule_filter_enabled"
+const val ALLOWED_NUMBERS = "allowed_numbers"
+const val SWIPE_LEFT_ACTION = "swipe_left_action"
+const val SWIPE_RIGHT_ACTION = "swipe_right_action"
+const val PINNED_CONVERSATIONS_ORDERED = "pinned_conversations_ordered"
+const val MUTED_CONVERSATIONS = "muted_conversations"
+const val STARRED_MESSAGES = "starred_messages"
+const val MESSAGE_REACTIONS = "message_reactions"
+const val RECENT_SEARCHES = "recent_searches"
+const val INBOX_FILTER = "inbox_filter"
+const val OPEN_THREAD_SEARCH = "open_thread_search"
+const val MAX_RECENT_SEARCHES = 5
+
+/** Longer than Snackbar.LENGTH_LONG (2.75s); the inbox swipe undo needs to survive a glance away. */
+const val SWIPE_UNDO_DURATION_MS = 5000
+
+// blocked message reasons
+const val BLOCK_REASON_KEYWORD = 1
+const val BLOCK_REASON_NUMBER = 2
+const val BLOCK_REASON_AI = 3
+const val BLOCK_REASON_RULE = 4
 
 private const val PATH = "org.fossify.org.fossify.messages.action."
 const val MARK_AS_READ = PATH + "mark_as_read"
@@ -60,6 +82,7 @@ const val THREAD_SENT_MESSAGE = 3
 const val THREAD_SENT_MESSAGE_ERROR = 4
 const val THREAD_SENT_MESSAGE_SENT = 5
 const val THREAD_SENT_MESSAGE_SENDING = 6
+const val THREAD_UNREAD_SEPARATOR = 7
 const val THREAD_TYPE_BITS = 3
 const val THREAD_KEY_BITS = Long.SIZE_BITS - THREAD_TYPE_BITS
 const val THREAD_TYPE_SHIFT = THREAD_KEY_BITS

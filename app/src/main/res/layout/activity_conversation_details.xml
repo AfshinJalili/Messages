@@ -15,7 +15,6 @@
             android:id="@+id/conversation_details_toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            android:background="@color/color_primary"
             app:title="@string/conversation_details"
             app:titleTextAppearance="@style/AppTheme.ActionBar.TitleTextStyle" />
 
@@ -34,6 +33,41 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="vertical">
+
+            <LinearLayout
+                android:id="@+id/conversation_actions_holder"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingHorizontal="@dimen/activity_margin"
+                android:paddingTop="@dimen/activity_margin"
+                android:paddingBottom="@dimen/medium_margin">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/conversation_call"
+                    style="@style/ConversationActionButton"
+                    android:text="@string/call"
+                    app:icon="@drawable/ic_phone_vector" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/conversation_contact"
+                    style="@style/ConversationActionButton"
+                    android:text="@string/contact"
+                    app:icon="@drawable/ic_person_vector" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/conversation_search"
+                    style="@style/ConversationActionButton"
+                    android:text="@string/search"
+                    app:icon="@drawable/ic_search_vector" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/conversation_mute"
+                    style="@style/ConversationActionButton"
+                    android:text="@string/mute_conversation"
+                    app:icon="@drawable/ic_bell_off_vector" />
+
+            </LinearLayout>
 
             <TextView
                 android:id="@+id/notifications_heading"

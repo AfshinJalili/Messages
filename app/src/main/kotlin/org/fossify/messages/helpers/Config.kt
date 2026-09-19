@@ -1,13 +1,42 @@
 package org.fossify.messages.helpers
 
 import android.content.Context
+import androidx.core.content.ContextCompat
+import org.fossify.commons.extensions.getProperBackgroundColor
+import org.fossify.commons.helpers.ACCENT_COLOR
+import org.fossify.commons.helpers.BACKGROUND_COLOR
 import org.fossify.commons.helpers.BaseConfig
+import org.fossify.commons.helpers.IS_SYSTEM_THEME_ENABLED
+import org.fossify.commons.helpers.PRIMARY_COLOR
+import org.fossify.commons.helpers.TEXT_COLOR
+import org.fossify.messages.R
 import org.fossify.messages.extensions.getDefaultKeyboardHeight
 import org.fossify.messages.models.Conversation
 
 class Config(context: Context) : BaseConfig(context) {
     companion object {
         fun newInstance(context: Context) = Config(context)
+    }
+
+    fun applyCobaltDefaults() {
+        if (prefs.getBoolean("cobalt_defaults_applied", false)) return
+        val background = context.getProperBackgroundColor()
+        val cobalt = context.cobaltColorFor(background)
+        val legacyGreen = ContextCompat.getColor(context, org.fossify.commons.R.color.md_green_900)
+        if (!prefs.contains(PRIMARY_COLOR) || primaryColor == legacyGreen) primaryColor = cobalt
+        if (!prefs.contains(ACCENT_COLOR) || accentColor == legacyGreen) accentColor = cobalt
+        // Adopt the brand by default; keep explicit theme and custom-color choices.
+        if (!prefs.contains(IS_SYSTEM_THEME_ENABLED)) {
+            val light = cobalt == ContextCompat.getColor(context, R.color.brand_cobalt)
+            if (!prefs.contains(BACKGROUND_COLOR)) {
+                backgroundColor = ContextCompat.getColor(context, if (light) R.color.surface_light else R.color.surface_dark)
+            }
+            if (!prefs.contains(TEXT_COLOR)) {
+                textColor = ContextCompat.getColor(context, if (light) R.color.on_surface_light else R.color.on_surface_dark)
+            }
+            isSystemThemeEnabled = false
+        }
+        prefs.edit().putBoolean("cobalt_defaults_applied", true).apply()
     }
 
     fun saveUseSIMIdAtNumber(number: String, SIMId: Int) {
@@ -54,9 +83,17 @@ class Config(context: Context) : BaseConfig(context) {
         get() = prefs.getLong(MMS_FILE_SIZE_LIMIT, FILE_SIZE_600_KB)
         set(mmsFileSizeLimit) = prefs.edit().putLong(MMS_FILE_SIZE_LIMIT, mmsFileSizeLimit).apply()
 
+    /**
+     * Kept in pin order so pinned rows never reshuffle by recency. A string set has no order, so the
+     * order lives in its own key; the set is still written so a downgrade keeps the pins.
+     */
     var pinnedConversations: Set<String>
-        get() = prefs.getStringSet(PINNED_CONVERSATIONS, HashSet<String>())!!
+        get() = prefs.getString(PINNED_CONVERSATIONS_ORDERED, null)
+            ?.split(',')
+            ?.filterTo(LinkedHashSet()) { it.isNotEmpty() }
+            ?: prefs.getStringSet(PINNED_CONVERSATIONS, HashSet<String>())!!.toCollection(LinkedHashSet())
         set(pinnedConversations) = prefs.edit()
+            .putString(PINNED_CONVERSATIONS_ORDERED, pinnedConversations.joinToString(","))
             .putStringSet(PINNED_CONVERSATIONS, pinnedConversations).apply()
 
     fun addPinnedConversationByThreadId(threadId: Long) {
@@ -148,4 +185,76 @@ class Config(context: Context) : BaseConfig(context) {
         get() = prefs.getBoolean(KEEP_CONVERSATIONS_ARCHIVED, false)
         set(keepConversationsArchived) = prefs.edit()
             .putBoolean(KEEP_CONVERSATIONS_ARCHIVED, keepConversationsArchived).apply()
+
+    // Off by default: a false positive silently hides a real message.
+    var ruleFilterEnabled: Boolean
+        get() = prefs.getBoolean(RULE_FILTER_ENABLED, false)
+        set(ruleFilterEnabled) = prefs.edit().putBoolean(RULE_FILTER_ENABLED, ruleFilterEnabled).apply()
+
+    var allowedNumbers: Set<String>
+        get() = prefs.getStringSet(ALLOWED_NUMBERS, HashSet<String>())!!
+        set(allowedNumbers) = prefs.edit().putStringSet(ALLOWED_NUMBERS, allowedNumbers).apply()
+
+    fun addAllowedNumber(number: String) {
+        allowedNumbers = allowedNumbers.plus(number)
+    }
+
+    var swipeLeftAction: SwipeAction
+        get() = SwipeAction.fromId(prefs.getInt(SWIPE_LEFT_ACTION, SwipeAction.ARCHIVE.id))
+        set(swipeLeftAction) = prefs.edit().putInt(SWIPE_LEFT_ACTION, swipeLeftAction.id).apply()
+
+    var swipeRightAction: SwipeAction
+        get() = SwipeAction.fromId(prefs.getInt(SWIPE_RIGHT_ACTION, SwipeAction.ARCHIVE.id))
+        set(swipeRightAction) = prefs.edit().putInt(SWIPE_RIGHT_ACTION, swipeRightAction.id).apply()
+
+    var mutedConversations: Set<String>
+        get() = prefs.getStringSet(MUTED_CONVERSATIONS, HashSet<String>())!!
+        set(mutedConversations) = prefs.edit().putStringSet(MUTED_CONVERSATIONS, mutedConversations).apply()
+
+    fun isConversationMuted(threadId: Long) = mutedConversations.contains(threadId.toString())
+
+    fun setConversationMuted(threadId: Long, muted: Boolean) {
+        val id = threadId.toString()
+        mutedConversations = if (muted) mutedConversations.plus(id) else mutedConversations.minus(id)
+    }
+
+    // ponytail: entries are not pruned when a message is deleted. Prune on delete if these ever grow large.
+    var starredMessages: Set<String>
+        get() = prefs.getStringSet(STARRED_MESSAGES, HashSet<String>())!!
+        set(starredMessages) = prefs.edit().putStringSet(STARRED_MESSAGES, starredMessages).apply()
+
+    // Legacy keys omitted the provider type. Keep them as SMS; MMS entries need to be starred again.
+    private fun messageKey(messageId: Long, isMMS: Boolean) = if (isMMS) "mms:$messageId" else messageId.toString()
+
+    fun isMessageStarred(messageId: Long, isMMS: Boolean) = starredMessages.contains(messageKey(messageId, isMMS))
+
+    fun setMessageStarred(messageId: Long, isMMS: Boolean, starred: Boolean) {
+        val id = messageKey(messageId, isMMS)
+        starredMessages = if (starred) starredMessages.plus(id) else starredMessages.minus(id)
+    }
+
+    /** SMS has no reaction channel, so reactions stay on this device. Keys include the provider type; legacy numeric keys remain SMS keys. */
+    private var messageReactions: Set<String>
+        get() = prefs.getStringSet(MESSAGE_REACTIONS, HashSet<String>())!!
+        set(messageReactions) = prefs.edit().putStringSet(MESSAGE_REACTIONS, messageReactions).apply()
+
+    fun getMessageReaction(messageId: Long, isMMS: Boolean): String? {
+        val prefix = "${messageKey(messageId, isMMS)}:"
+        return messageReactions.firstOrNull { it.startsWith(prefix) }?.removePrefix(prefix)
+    }
+
+    fun setMessageReaction(messageId: Long, isMMS: Boolean, emoji: String?) {
+        val prefix = "${messageKey(messageId, isMMS)}:"
+        val others = messageReactions.filterNotTo(HashSet()) { it.startsWith(prefix) }
+        messageReactions = if (emoji == null) others else others.plus("$prefix$emoji")
+    }
+
+    var recentSearches: List<String>
+        get() = prefs.getString(RECENT_SEARCHES, "")!!.split('\n').filter { it.isNotBlank() }
+        set(recentSearches) = prefs.edit().putString(RECENT_SEARCHES, recentSearches.joinToString("\n")).apply()
+
+    fun addRecentSearch(query: String) {
+        recentSearches = (listOf(query) + recentSearches.filterNot { it.equals(query, ignoreCase = true) })
+            .take(MAX_RECENT_SEARCHES)
+    }
 }

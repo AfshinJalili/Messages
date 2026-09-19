@@ -34,7 +34,10 @@ data class Conversation(
                 old.photoUri == new.photoUri &&
                 old.isGroupConversation == new.isGroupConversation &&
                 old.phoneNumber == new.phoneNumber &&
-                old.unreadCount == new.unreadCount
+                old.unreadCount == new.unreadCount &&
+                old.isArchived == new.isArchived &&
+                old.isScheduled == new.isScheduled &&
+                old.usesCustomTitle == new.usesCustomTitle
         }
     }
 }

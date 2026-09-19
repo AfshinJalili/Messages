@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:ignore="AppCompatResource,AlwaysShowAction">
+    <item
+        android:id="@+id/delete"
+        android:icon="@drawable/ic_delete_vector"
+        android:showAsAction="always"
+        android:title="@string/delete"
+        app:showAsAction="always" />
+    <item
+        android:id="@+id/restore"
+        android:showAsAction="never"
+        android:title="@string/not_spam"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/allow_sender"
+        android:showAsAction="never"
+        android:title="@string/allow_sender"
+        app:showAsAction="never" />
+</menu>

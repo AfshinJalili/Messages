@@ -3,13 +3,14 @@ package org.fossify.messages.models
 import android.provider.Telephony
 import androidx.room.ColumnInfo
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 import org.fossify.commons.models.SimpleContact
 import org.fossify.messages.helpers.THREAD_RECEIVED_MESSAGE
 import org.fossify.messages.helpers.THREAD_SENT_MESSAGE
 import org.fossify.messages.helpers.generateStableId
 
-@Entity(tableName = "messages")
+@Entity(tableName = "messages", indices = [Index(value = ["thread_id", "date"])])
 data class Message(
     @PrimaryKey val id: Long,
     @ColumnInfo(name = "body") val body: String,
@@ -50,11 +51,12 @@ data class Message(
 
     companion object {
         fun areItemsTheSame(old: Message, new: Message): Boolean {
-            return old.id == new.id
+            return old.id == new.id && old.isMMS == new.isMMS
         }
 
         fun areContentsTheSame(old: Message, new: Message): Boolean {
             return old.body == new.body &&
+                old.read == new.read &&
                 old.threadId == new.threadId &&
                 old.date == new.date &&
                 old.isMMS == new.isMMS &&

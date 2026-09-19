@@ -4,17 +4,15 @@ import android.content.Intent
 import android.text.TextUtils
 import android.view.Menu
 import org.fossify.commons.dialogs.ConfirmationDialog
-import org.fossify.commons.dialogs.FeatureLockedDialog
 import org.fossify.commons.extensions.addBlockedNumber
-import org.fossify.commons.extensions.addLockedLabelIfNeeded
 import org.fossify.commons.extensions.copyToClipboard
-import org.fossify.commons.extensions.isOrWasThankYouInstalled
 import org.fossify.commons.extensions.launchActivityIntent
 import org.fossify.commons.extensions.notificationManager
 import org.fossify.commons.helpers.KEY_PHONE
 import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.commons.views.MyRecyclerView
 import org.fossify.messages.R
+import org.fossify.messages.activities.MainActivity
 import org.fossify.messages.activities.SimpleActivity
 import org.fossify.messages.dialogs.RenameConversationDialog
 import org.fossify.messages.extensions.config
@@ -35,6 +33,14 @@ class ConversationsAdapter(
     onRefresh: () -> Unit,
     itemClick: (Any) -> Unit
 ) : BaseConversationsAdapter(activity, recyclerView, onRefresh, itemClick) {
+    override fun onActionModeCreated() {
+        (activity as? MainActivity)?.onInboxSelectionChanged(true)
+    }
+
+    override fun onActionModeDestroyed() {
+        (activity as? MainActivity)?.onInboxSelectionChanged(false)
+    }
+
     override fun getActionMenuId() = R.menu.cab_conversations
 
     override fun prepareActionMode(menu: Menu) {
@@ -46,7 +52,7 @@ class ConversationsAdapter(
 
         menu.apply {
             findItem(R.id.cab_block_number).title =
-                activity.addLockedLabelIfNeeded(org.fossify.commons.R.string.block_number)
+                activity.getString(org.fossify.commons.R.string.block_number)
             findItem(R.id.cab_add_number_to_contact).isVisible =
                 isSingleSelection && !isGroupConversation
             findItem(R.id.cab_dial_number).isVisible =
@@ -88,11 +94,7 @@ class ConversationsAdapter(
     }
 
     private fun tryBlocking() {
-        if (activity.isOrWasThankYouInstalled()) {
-            askConfirmBlock()
-        } else {
-            FeatureLockedDialog(activity) { }
-        }
+        askConfirmBlock()
     }
 
     private fun askConfirmBlock() {
@@ -201,33 +203,10 @@ class ConversationsAdapter(
     }
 
     private fun deleteConversations() {
-        if (selectedKeys.isEmpty()) {
-            return
-        }
-
-        val conversationsToRemove =
-            currentList.filter { selectedKeys.contains(it.hashCode()) } as ArrayList<Conversation>
-        conversationsToRemove.forEach {
-            activity.deleteConversation(it.threadId)
-            activity.notificationManager.cancel(it.threadId.hashCode())
-        }
-
-        val newList = try {
-            currentList.toMutableList().apply { removeAll(conversationsToRemove) }
-        } catch (ignored: Exception) {
-            currentList.toMutableList()
-        }
-
-        activity.runOnUiThread {
-            if (newList.none { selectedKeys.contains(it.hashCode()) }) {
-                refreshConversations()
-                finishActMode()
-            } else {
-                submitList(newList)
-                if (newList.isEmpty()) {
-                    refreshConversations()
-                }
-            }
+        val selected = currentList.filter { selectedKeys.contains(it.hashCode()) }
+        deleteWithUndo(selected) { id ->
+            activity.deleteConversation(id)
+            activity.notificationManager.cancel(id.hashCode())
         }
     }
 

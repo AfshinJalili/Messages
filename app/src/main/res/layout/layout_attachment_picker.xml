@@ -8,7 +8,7 @@
     <androidx.constraintlayout.helper.widget.Flow
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:constraint_referenced_ids="choose_photo,choose_video,take_photo,record_video,record_audio,pick_file,pick_contact,schedule_message"
+        app:constraint_referenced_ids="choose_photo,take_photo,pick_file,record_audio,pick_contact,schedule_message,choose_video,record_video"
         app:flow_verticalGap="@dimen/small_margin"
         app:flow_wrapMode="aligned"
         app:layout_constraintEnd_toEndOf="parent"
@@ -27,11 +27,10 @@
 
         <androidx.appcompat.widget.AppCompatImageView
             android:id="@+id/choose_photo_icon"
-            android:layout_width="@dimen/medium_icon_size"
-            android:layout_height="@dimen/medium_icon_size"
+            android:layout_width="@dimen/attachment_action_width"
+            android:layout_height="@dimen/attachment_action_height"
             android:layout_gravity="center"
-            android:background="@drawable/circle_background"
-            android:backgroundTint="@color/colorPrimary"
+            android:background="@drawable/attachment_icon_background"
             android:padding="@dimen/medium_margin"
             android:src="@drawable/ic_image_vector" />
 
@@ -59,13 +58,12 @@
 
         <androidx.appcompat.widget.AppCompatImageView
             android:id="@+id/choose_video_icon"
-            android:layout_width="@dimen/medium_icon_size"
-            android:layout_height="@dimen/medium_icon_size"
+            android:layout_width="@dimen/attachment_action_width"
+            android:layout_height="@dimen/attachment_action_height"
             android:layout_gravity="center"
-            android:background="@drawable/circle_background"
-            android:backgroundTint="@color/colorPrimary"
+            android:background="@drawable/attachment_icon_background"
             android:padding="@dimen/medium_margin"
-            android:src="@drawable/ic_video_camera_vector" />
+            android:src="@drawable/ic_videocam_vector" />
 
         <androidx.appcompat.widget.AppCompatTextView
             android:id="@+id/choose_video_text"
@@ -91,11 +89,10 @@
 
         <androidx.appcompat.widget.AppCompatImageView
             android:id="@+id/take_photo_icon"
-            android:layout_width="@dimen/medium_icon_size"
-            android:layout_height="@dimen/medium_icon_size"
+            android:layout_width="@dimen/attachment_action_width"
+            android:layout_height="@dimen/attachment_action_height"
             android:layout_gravity="center"
-            android:background="@drawable/circle_background"
-            android:backgroundTint="@color/colorPrimary"
+            android:background="@drawable/attachment_icon_background"
             android:padding="@dimen/medium_margin"
             android:src="@drawable/ic_camera_vector" />
 
@@ -123,11 +120,10 @@
 
         <androidx.appcompat.widget.AppCompatImageView
             android:id="@+id/record_video_icon"
-            android:layout_width="@dimen/medium_icon_size"
-            android:layout_height="@dimen/medium_icon_size"
+            android:layout_width="@dimen/attachment_action_width"
+            android:layout_height="@dimen/attachment_action_height"
             android:layout_gravity="center"
-            android:background="@drawable/circle_background"
-            android:backgroundTint="@color/colorPrimary"
+            android:background="@drawable/attachment_icon_background"
             android:padding="@dimen/medium_margin"
             android:src="@drawable/ic_videocam_vector" />
 
@@ -155,11 +151,10 @@
 
         <androidx.appcompat.widget.AppCompatImageView
             android:id="@+id/record_audio_icon"
-            android:layout_width="@dimen/medium_icon_size"
-            android:layout_height="@dimen/medium_icon_size"
+            android:layout_width="@dimen/attachment_action_width"
+            android:layout_height="@dimen/attachment_action_height"
             android:layout_gravity="center"
-            android:background="@drawable/circle_background"
-            android:backgroundTint="@color/colorPrimary"
+            android:background="@drawable/attachment_icon_background"
             android:padding="@dimen/medium_margin"
             android:src="@drawable/ic_microphone_vector" />
 
@@ -188,11 +183,10 @@
 
         <androidx.appcompat.widget.AppCompatImageView
             android:id="@+id/pick_file_icon"
-            android:layout_width="@dimen/medium_icon_size"
-            android:layout_height="@dimen/medium_icon_size"
+            android:layout_width="@dimen/attachment_action_width"
+            android:layout_height="@dimen/attachment_action_height"
             android:layout_gravity="center"
-            android:background="@drawable/circle_background"
-            android:backgroundTint="@color/colorPrimary"
+            android:background="@drawable/attachment_icon_background"
             android:padding="@dimen/medium_margin"
             android:src="@drawable/ic_document_vector" />
 
@@ -221,11 +215,10 @@
 
         <androidx.appcompat.widget.AppCompatImageView
             android:id="@+id/pick_contact_icon"
-            android:layout_width="@dimen/medium_icon_size"
-            android:layout_height="@dimen/medium_icon_size"
+            android:layout_width="@dimen/attachment_action_width"
+            android:layout_height="@dimen/attachment_action_height"
             android:layout_gravity="center"
-            android:background="@drawable/circle_background"
-            android:backgroundTint="@color/colorPrimary"
+            android:background="@drawable/attachment_icon_background"
             android:padding="@dimen/medium_margin"
             android:src="@drawable/ic_person_vector" />
 
@@ -253,11 +246,10 @@
 
         <androidx.appcompat.widget.AppCompatImageView
             android:id="@+id/schedule_message_icon"
-            android:layout_width="@dimen/medium_icon_size"
-            android:layout_height="@dimen/medium_icon_size"
+            android:layout_width="@dimen/attachment_action_width"
+            android:layout_height="@dimen/attachment_action_height"
             android:layout_gravity="center"
-            android:background="@drawable/circle_background"
-            android:backgroundTint="@color/colorPrimary"
+            android:background="@drawable/attachment_icon_background"
             android:padding="@dimen/medium_margin"
             android:src="@drawable/ic_clock_vector" />
 

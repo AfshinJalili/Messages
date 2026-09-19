@@ -1,6 +1,15 @@
 package org.fossify.messages.activities
 
+import org.fossify.messages.helpers.designFloat
 import android.app.NotificationChannel
+import android.content.res.ColorStateList
+import org.fossify.commons.extensions.adjustAlpha
+import org.fossify.commons.extensions.launchActivityIntent
+import org.fossify.commons.helpers.KEY_PHONE
+import org.fossify.messages.R
+import org.fossify.messages.extensions.dialNumber
+import org.fossify.messages.helpers.OPEN_THREAD_SEARCH
+import org.fossify.messages.messaging.isShortCodeWithLetters
 import android.app.NotificationManager
 import android.content.Intent
 import android.media.AudioAttributes
@@ -18,13 +27,13 @@ import org.fossify.commons.extensions.getProperTextColor
 import org.fossify.commons.extensions.notificationManager
 import org.fossify.commons.extensions.updateTextColors
 import org.fossify.commons.extensions.viewBinding
-import org.fossify.commons.helpers.NavigationIcon
 import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.commons.models.SimpleContact
 import org.fossify.messages.adapters.ContactsAdapter
 import org.fossify.messages.databinding.ActivityConversationDetailsBinding
 import org.fossify.messages.dialogs.RenameConversationDialog
 import org.fossify.messages.extensions.config
+import org.fossify.messages.extensions.setupSurfaceAppBar
 import org.fossify.messages.extensions.conversationsDB
 import org.fossify.messages.extensions.getContactFromAddress
 import org.fossify.messages.extensions.getThreadParticipants
@@ -62,6 +71,7 @@ class ConversationDetailsActivity : SimpleActivity() {
                 getThreadParticipants(threadId, null)
             }
             runOnUiThread {
+                setupActions()
                 setupTextViews()
                 setupParticipants()
                 setupCustomNotifications()
@@ -71,7 +81,7 @@ class ConversationDetailsActivity : SimpleActivity() {
 
     override fun onResume() {
         super.onResume()
-        setupTopAppBar(binding.conversationDetailsAppbar, NavigationIcon.Arrow)
+        setupSurfaceAppBar(binding.conversationDetailsAppbar)
         updateTextColors(binding.conversationDetailsHolder)
 
         val primaryColor = getProperPrimaryColor()
@@ -81,6 +91,57 @@ class ConversationDetailsActivity : SimpleActivity() {
             binding.membersHeading
         ).forEach {
             it.setTextColor(primaryColor)
+        }
+    }
+
+    private fun setupActions() = binding.apply {
+        val textColor = getProperTextColor()
+        arrayOf(conversationCall, conversationContact, conversationSearch, conversationMute).forEach {
+            it.setTextColor(textColor)
+            it.iconTint = ColorStateList.valueOf(textColor)
+            it.backgroundTintList = ColorStateList.valueOf(textColor.adjustAlpha(resources.designFloat(R.dimen.opacity_surface_tint)))
+        }
+
+        val number = participants.singleOrNull()?.phoneNumbers?.firstOrNull()?.normalizedNumber
+        val isOneToOne = number != null && conversation?.isGroupConversation != true
+        conversationCall.beVisibleIf(isOneToOne && !isShortCodeWithLetters(number!!))
+        conversationCall.setOnClickListener { dialNumber(number!!) }
+        conversationContact.beVisibleIf(isOneToOne)
+        conversationContact.setOnClickListener { openContact(number!!) }
+        conversationSearch.setOnClickListener { openThreadSearch() }
+        conversationMute.setOnClickListener {
+            config.setConversationMuted(threadId, !config.isConversationMuted(threadId))
+            updateMuteButton()
+        }
+        updateMuteButton()
+    }
+
+    private fun updateMuteButton() = binding.conversationMute.apply {
+        val isMuted = config.isConversationMuted(threadId)
+        setText(if (isMuted) R.string.unmute_conversation else R.string.mute_conversation)
+        setIconResource(if (isMuted) org.fossify.commons.R.drawable.ic_bell_vector else R.drawable.ic_bell_off_vector)
+    }
+
+    private fun openContact(number: String) {
+        getContactFromAddress(number) { contact ->
+            if (contact != null) {
+                startContactDetailsIntent(contact)
+            } else {
+                Intent(Intent.ACTION_INSERT_OR_EDIT).apply {
+                    type = "vnd.android.cursor.item/contact"
+                    putExtra(KEY_PHONE, number)
+                    launchActivityIntent(this)
+                }
+            }
+        }
+    }
+
+    private fun openThreadSearch() {
+        Intent(this, ThreadActivity::class.java).apply {
+            putExtra(THREAD_ID, threadId)
+            putExtra(OPEN_THREAD_SEARCH, true)
+            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            startActivity(this)
         }
     }
 
@@ -162,6 +223,9 @@ class ConversationDetailsActivity : SimpleActivity() {
                 }
             }
         }
+    }
+
+    companion object {
     }
 
     private fun setupParticipants() {

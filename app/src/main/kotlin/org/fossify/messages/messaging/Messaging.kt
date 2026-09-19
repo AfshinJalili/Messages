@@ -17,6 +17,7 @@ import org.fossify.messages.messaging.SmsException.Companion.EMPTY_DESTINATION_A
 import org.fossify.messages.messaging.SmsException.Companion.ERROR_PERSISTING_MESSAGE
 import org.fossify.messages.messaging.SmsException.Companion.ERROR_SENDING_MESSAGE
 import org.fossify.messages.models.Attachment
+import org.fossify.messages.models.Message
 
 @Deprecated("TODO: Move/rewrite messaging config code into the app.")
 fun Context.getSendMessageSettings(): Settings {
@@ -41,8 +42,12 @@ fun Context.sendMessageCompat(
     addresses: List<String>,
     subId: Int?,
     attachments: List<Attachment>,
-    messageId: Long? = null
+    messageToResend: Message? = null
 ) {
+    // SMS and MMS ids are separate sequences, so a resend may only reuse the failed row within its own
+    // table. Otherwise an SMS retried as MMS would delete whichever unrelated MMS shares its id.
+    val smsIdToResend = messageToResend?.takeIf { !it.isMMS }?.id
+    val mmsIdToResend = messageToResend?.takeIf { it.isMMS }?.id
     val settings = getSendMessageSettings()
     if (subId != null) {
         settings.subscriptionId = subId
@@ -58,14 +63,14 @@ fun Context.sendMessageCompat(
             if (attachments.size > 1) {
                 for (i in 0 until lastIndex) {
                     val attachment = attachments[i]
-                    messagingUtils.sendMmsMessage("", addresses, attachment, settings, messageId)
+                    messagingUtils.sendMmsMessage("", addresses, attachment, settings, mmsIdToResend)
                 }
             }
 
             val lastAttachment = attachments[lastIndex]
-            messagingUtils.sendMmsMessage(text, addresses, lastAttachment, settings, messageId)
+            messagingUtils.sendMmsMessage(text, addresses, lastAttachment, settings, mmsIdToResend)
         } else {
-            messagingUtils.sendMmsMessage(text, addresses, null, settings, messageId)
+            messagingUtils.sendMmsMessage(text, addresses, null, settings, mmsIdToResend)
         }
     } else {
         try {
@@ -74,7 +79,7 @@ fun Context.sendMessageCompat(
                 addresses = addresses.toSet(),
                 subId = settings.subscriptionId,
                 requireDeliveryReport = settings.deliveryReports,
-                messageId = messageId
+                messageId = smsIdToResend
             )
         } catch (e: SmsException) {
             when (e.errorCode) {

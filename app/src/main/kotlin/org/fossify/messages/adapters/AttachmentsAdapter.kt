@@ -20,6 +20,7 @@ import com.bumptech.glide.request.RequestOptions
 import com.bumptech.glide.request.target.Target
 import org.fossify.commons.activities.BaseSimpleActivity
 import org.fossify.commons.extensions.*
+import org.fossify.messages.helpers.tonalSurfaceColor
 import org.fossify.messages.R
 import org.fossify.messages.activities.VCardViewerActivity
 import org.fossify.messages.databinding.ItemAttachmentDocumentPreviewBinding
@@ -120,7 +121,7 @@ class AttachmentsAdapter(
 
     private fun setupMediaPreview(binding: ItemAttachmentMediaPreviewBinding, attachment: AttachmentSelection) {
         binding.apply {
-            mediaAttachmentHolder.background.applyColorFilter(primaryColor.darkenColor())
+            mediaAttachmentHolder.background.applyColorFilter(activity.tonalSurfaceColor())
             mediaAttachmentHolder.setOnClickListener {
                 activity.launchViewIntent(attachment.uri, attachment.mimetype, attachment.filename)
             }

@@ -31,8 +31,8 @@
             android:layout_width="@dimen/remove_attachment_size"
             android:layout_height="@dimen/remove_attachment_size"
             android:layout_gravity="center"
-            android:alpha="0.8"
-            android:src="@drawable/ic_vector_play_circle_outline"
+            android:alpha="@dimen/opacity_placeholder"
+            android:src="@drawable/ic_play_outline_vector"
             android:visibility="gone"
             tools:visibility="visible" />
 

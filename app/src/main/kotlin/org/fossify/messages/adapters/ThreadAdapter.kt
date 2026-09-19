@@ -1,10 +1,18 @@
 package org.fossify.messages.adapters
 
+import org.fossify.messages.helpers.designFloat
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.Drawable
+import android.graphics.drawable.GradientDrawable
+import android.animation.ValueAnimator
+import android.transition.Fade
+import android.widget.PopupWindow
+import android.widget.ScrollView
+import android.widget.TextView
+import org.fossify.commons.extensions.getProperBackgroundColor
 import android.util.TypedValue
 import android.view.Menu
 import android.view.View
@@ -14,6 +22,7 @@ import android.widget.RelativeLayout
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.constraintlayout.widget.ConstraintSet
 import androidx.core.graphics.drawable.toDrawable
+import androidx.core.view.isVisible
 import androidx.core.view.updateLayoutParams
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.SimpleItemAnimator
@@ -29,12 +38,15 @@ import com.bumptech.glide.request.RequestOptions
 import com.bumptech.glide.request.target.Target
 import org.fossify.commons.adapters.MyRecyclerViewListAdapter
 import org.fossify.commons.dialogs.ConfirmationDialog
+import org.fossify.commons.extensions.adjustAlpha
 import org.fossify.commons.extensions.applyColorFilter
 import org.fossify.commons.extensions.beGone
 import org.fossify.commons.extensions.beVisible
+import org.fossify.commons.extensions.beGoneIf
 import org.fossify.commons.extensions.beVisibleIf
 import org.fossify.commons.extensions.copyToClipboard
 import org.fossify.commons.extensions.formatDateOrTime
+import org.fossify.commons.extensions.formatTime
 import org.fossify.commons.extensions.getContrastColor
 import org.fossify.commons.extensions.getProperPrimaryColor
 import org.fossify.commons.extensions.getTextSize
@@ -59,10 +71,12 @@ import org.fossify.messages.databinding.ItemThreadDateTimeBinding
 import org.fossify.messages.databinding.ItemThreadErrorBinding
 import org.fossify.messages.databinding.ItemThreadSendingBinding
 import org.fossify.messages.databinding.ItemThreadSuccessBinding
+import org.fossify.messages.databinding.ItemThreadUnreadSeparatorBinding
 import org.fossify.messages.dialogs.DeleteConfirmationDialog
 import org.fossify.messages.dialogs.MessageDetailsDialog
 import org.fossify.messages.dialogs.SelectTextDialog
 import org.fossify.messages.extensions.config
+import org.fossify.messages.extensions.extractOtpCode
 import org.fossify.messages.extensions.getContactFromAddress
 import org.fossify.messages.extensions.isImageMimeType
 import org.fossify.messages.extensions.isVCardMimeType
@@ -77,6 +91,7 @@ import org.fossify.messages.helpers.THREAD_SENT_MESSAGE
 import org.fossify.messages.helpers.THREAD_SENT_MESSAGE_ERROR
 import org.fossify.messages.helpers.THREAD_SENT_MESSAGE_SENDING
 import org.fossify.messages.helpers.THREAD_SENT_MESSAGE_SENT
+import org.fossify.messages.helpers.THREAD_UNREAD_SEPARATOR
 import org.fossify.messages.helpers.generateStableId
 import org.fossify.messages.helpers.setupDocumentPreview
 import org.fossify.messages.helpers.setupVCardPreview
@@ -87,6 +102,7 @@ import org.fossify.messages.models.ThreadItem.ThreadDateTime
 import org.fossify.messages.models.ThreadItem.ThreadError
 import org.fossify.messages.models.ThreadItem.ThreadSending
 import org.fossify.messages.models.ThreadItem.ThreadSent
+import org.fossify.messages.models.ThreadItem.ThreadUnreadSeparator
 import org.joda.time.DateTime
 
 class ThreadAdapter(
@@ -97,13 +113,17 @@ class ThreadAdapter(
     val deleteMessages: (messages: List<Message>, toRecycleBin: Boolean, fromRecycleBin: Boolean) -> Unit
 ) : MyRecyclerViewListAdapter<ThreadItem>(activity, recyclerView, ThreadItemDiffCallback(), itemClick) {
     private var fontSize = activity.getTextSize()
+    private var messageMenu: PopupWindow? = null
 
     @SuppressLint("MissingPermission")
     private val hasMultipleSIMCards = (activity.subscriptionManagerCompat().activeSubscriptionInfoList?.size ?: 0) > 1
     private val maxChatBubbleWidth = (activity.usableScreenSize.x * 0.8f).toInt()
+    private val groupedTopMargin = (2 * activity.resources.displayMetrics.density).toInt()
+    private val ungroupedTopMargin = (8 * activity.resources.displayMetrics.density).toInt()
 
     companion object {
         private const val MAX_MEDIA_HEIGHT_RATIO = 3
+        private const val GROUPING_WINDOW_SECS = 60
         private const val SIM_BITS = 21
         private const val SIM_MASK = (1L shl SIM_BITS) - 1
     }
@@ -132,6 +152,10 @@ class ThreadAdapter(
             findItem(R.id.cab_select_text).isVisible = isOneItemSelected && hasText
             findItem(R.id.cab_properties).isVisible = isOneItemSelected
             findItem(R.id.cab_restore).isVisible = isRecycleBin
+
+            val allStarred = selectedMessages.all { activity.config.isMessageStarred(it.id, it.isMMS) }
+            findItem(R.id.cab_star).isVisible = !isRecycleBin && !allStarred
+            findItem(R.id.cab_unstar).isVisible = !isRecycleBin && allStarred
         }
     }
 
@@ -150,12 +174,14 @@ class ThreadAdapter(
             R.id.cab_restore -> askConfirmRestore()
             R.id.cab_select_all -> selectAll()
             R.id.cab_properties -> showMessageDetails()
+            R.id.cab_star -> setSelectedStarred(true)
+            R.id.cab_unstar -> setSelectedStarred(false)
         }
     }
 
     override fun getSelectableItemCount() = currentList.filterIsInstance<Message>().size
 
-    override fun getIsItemSelectable(position: Int) = !isThreadDateTime(position)
+    override fun getIsItemSelectable(position: Int) = currentList.getOrNull(position) is Message
 
     override fun getItemSelectionKey(position: Int): Int? {
         return (currentList.getOrNull(position) as? Message)?.getSelectionKey()
@@ -165,7 +191,7 @@ class ThreadAdapter(
         return currentList.indexOfFirst { (it as? Message)?.getSelectionKey() == key }
     }
 
-    override fun onActionModeCreated() {}
+    override fun onActionModeCreated() { messageMenu?.dismiss() }
 
     override fun onActionModeDestroyed() {}
 
@@ -175,6 +201,7 @@ class ThreadAdapter(
             THREAD_SENT_MESSAGE_ERROR -> ItemThreadErrorBinding.inflate(layoutInflater, parent, false)
             THREAD_SENT_MESSAGE_SENT -> ItemThreadSuccessBinding.inflate(layoutInflater, parent, false)
             THREAD_SENT_MESSAGE_SENDING -> ItemThreadSendingBinding.inflate(layoutInflater, parent, false)
+            THREAD_UNREAD_SEPARATOR -> ItemThreadUnreadSeparatorBinding.inflate(layoutInflater, parent, false)
             else -> ItemMessageBinding.inflate(layoutInflater, parent, false)
         }
 
@@ -191,10 +218,33 @@ class ThreadAdapter(
                 is ThreadError -> setupThreadError(itemView)
                 is ThreadSent -> setupThreadSuccess(itemView, item.delivered)
                 is ThreadSending -> setupThreadSending(itemView)
-                is Message -> setupView(holder, itemView, item)
+                is ThreadUnreadSeparator -> setupUnreadSeparator(itemView)
+                is Message -> setupView(holder, itemView, item, position)
             }
         }
         bindViewHolder(holder)
+        if (item is Message) holder.itemView.setOnClickListener {
+            if (selectedKeys.isNotEmpty()) holder.viewClicked(item)
+            else {
+                val binding = ItemMessageBinding.bind(holder.itemView)
+                showMessageMenu(binding.threadMessageBody.takeIf { it.isVisible } ?: binding.threadMessageWrapper, holder, item)
+            }
+        }
+    }
+
+    override fun onBindViewHolder(holder: ViewHolder, position: Int, payloads: MutableList<Any>) {
+        super.onBindViewHolder(holder, position, payloads)
+        if (payloads.firstOrNull() is org.fossify.commons.models.RecyclerSelectionPayload && getItem(position) is Message) {
+            val bubble = ItemMessageBinding.bind(holder.itemView).threadMessageWrapper
+            bubble.animate().cancel()
+            bubble.scaleX = 1f
+            bubble.scaleY = 1f
+            if (ValueAnimator.areAnimatorsEnabled()) {
+                bubble.scaleX = 0.98f
+                bubble.scaleY = 0.98f
+                bubble.animate().scaleX(1f).scaleY(1f).setDuration(160).start()
+            }
+        }
     }
 
     override fun getItemId(position: Int): Long {
@@ -208,6 +258,7 @@ class ThreadAdapter(
             is ThreadError -> generateStableId(THREAD_SENT_MESSAGE_ERROR, item.messageId)
             is ThreadSending -> generateStableId(THREAD_SENT_MESSAGE_SENDING, item.messageId)
             is ThreadSent -> generateStableId(THREAD_SENT_MESSAGE_SENT, item.messageId)
+            is ThreadUnreadSeparator -> generateStableId(THREAD_UNREAD_SEPARATOR, 0)
         }
     }
 
@@ -217,6 +268,7 @@ class ThreadAdapter(
             is ThreadError -> THREAD_SENT_MESSAGE_ERROR
             is ThreadSent -> THREAD_SENT_MESSAGE_SENT
             is ThreadSending -> THREAD_SENT_MESSAGE_SENDING
+            is ThreadUnreadSeparator -> THREAD_UNREAD_SEPARATOR
             is Message -> if (item.isReceivedMessage()) THREAD_RECEIVED_MESSAGE else THREAD_SENT_MESSAGE
         }
     }
@@ -249,7 +301,7 @@ class ThreadAdapter(
     private fun saveAs() {
         val attachments = getSelectedAttachments()
         if (attachments.isNotEmpty()) {
-            (activity as ThreadActivity).saveMMS(attachments)
+            (activity as? ThreadActivity)?.saveMMS(attachments)
         }
     }
 
@@ -270,8 +322,8 @@ class ThreadAdapter(
         MessageDetailsDialog(activity, message)
     }
 
-    private fun askConfirmDelete() {
-        val itemsCnt = selectedKeys.size
+    private fun askConfirmDelete(messages: List<Message> = getSelectedItems().filterIsInstance<Message>()) {
+        val itemsCnt = messages.size
 
         // not sure how we can get UnknownFormatConversionException here, so show the error and hope that someone reports it
         val items = try {
@@ -290,7 +342,7 @@ class ThreadAdapter(
 
         DeleteConfirmationDialog(activity, question, activity.config.useRecycleBin && !isRecycleBin) { skipRecycleBin ->
             ensureBackgroundThread {
-                val messagesToRemove = getSelectedItems()
+                val messagesToRemove = messages
                 if (messagesToRemove.isNotEmpty()) {
                     val toRecycleBin = !skipRecycleBin && activity.config.useRecycleBin && !isRecycleBin
                     deleteMessages(messagesToRemove.filterIsInstance<Message>(), toRecycleBin, false)
@@ -323,8 +375,8 @@ class ThreadAdapter(
         }
     }
 
-    private fun forwardMessage() {
-        val message = getSelectedItems().firstOrNull() as? Message ?: return
+    private fun forwardMessage(message: Message? = getSelectedItems().firstOrNull() as? Message) {
+        message ?: return
         val attachment = message.attachment?.attachments?.firstOrNull()
         Intent(activity, NewConversationActivity::class.java).apply {
             action = Intent.ACTION_SEND
@@ -336,6 +388,14 @@ class ThreadAdapter(
 
             activity.startActivity(this)
         }
+    }
+
+    private fun setSelectedStarred(starred: Boolean) {
+        val messages = getSelectedItems().filterIsInstance<Message>()
+        messages.forEach { activity.config.setMessageStarred(it.id, it.isMMS, starred) }
+        val positions = messages.map { currentList.indexOf(it) }
+        finishActMode()
+        positions.forEach { notifyItemChanged(it) }
     }
 
     private fun getSelectedItems(): ArrayList<ThreadItem> {
@@ -363,11 +423,15 @@ class ThreadAdapter(
         }
     }
 
-    private fun setupView(holder: ViewHolder, view: View, message: Message) {
+    private fun setupView(holder: ViewHolder, view: View, message: Message, position: Int) {
         ItemMessageBinding.bind(view).apply {
             threadMessageHolder.isSelected = selectedKeys.contains(message.getSelectionKey())
+            threadMessageWrapper.animate().cancel()
+            threadMessageWrapper.scaleX = 1f
+            threadMessageWrapper.scaleY = 1f
             threadMessageBody.apply {
-                text = message.body
+                setMessageBody(message.body)
+                specialClicksEnabled = { selectedKeys.isEmpty() }
                 setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize)
                 beVisibleIf(message.body.isNotEmpty())
                 setOnLongClickListener {
@@ -376,15 +440,32 @@ class ThreadAdapter(
                 }
 
                 setOnClickListener {
-                    holder.viewClicked(message)
+                    if (selectedKeys.isNotEmpty()) holder.viewClicked(message)
+                    else showMessageMenu(this, holder, message)
                 }
             }
+
+            val isStarred = activity.config.isMessageStarred(message.id, message.isMMS)
+            threadMessageTime.apply {
+                val time = (message.date * 1000L).formatTime(context)
+                @SuppressLint("SetTextI18n")
+                text = if (isStarred) "★ $time" else time
+                setTextColor(textColor)
+                setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize - 6)
+                // Starred messages retain their visible marker.
+                beVisibleIf(isStarred)
+            }
+
+            setupOtpChip(messageBinding = this, message = message)
 
             if (message.isReceivedMessage()) {
                 setupReceivedMessageView(messageBinding = this, message = message)
             } else {
                 setupSentMessageView(messageBinding = this, message = message)
             }
+
+            // After the sent/received pass, which unconditionally re-shows the avatar.
+            setupGrouping(this, message, position)
 
             if (message.attachment?.attachments?.isNotEmpty() == true) {
                 threadMessageAttachmentsHolder.beVisible()
@@ -404,6 +485,91 @@ class ThreadAdapter(
                 threadMessagePlayOutline.beGone()
             }
         }
+    }
+
+    private fun showMessageMenu(anchor: View, holder: ViewHolder, message: Message) {
+        messageMenu?.dismiss()
+        val density = resources.displayMetrics.density
+        val padding = (16 * density).toInt()
+        val content = LinearLayout(activity).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(0, padding / 2, 0, padding / 2)
+            background = GradientDrawable().apply {
+                setColor(activity.getProperBackgroundColor())
+                cornerRadius = 12 * density
+            }
+        }
+        val scroll = ScrollView(activity).apply {
+            addView(content)
+            isFillViewport = true
+        }
+        val visibleFrame = android.graphics.Rect().also { anchor.getWindowVisibleDisplayFrame(it) }
+        val popup = PopupWindow(scroll, minOf((240 * density).toInt(), visibleFrame.width() - padding * 2), ViewGroup.LayoutParams.WRAP_CONTENT, true).apply {
+            setBackgroundDrawable(content.background)
+            elevation = 8 * density
+            isOutsideTouchable = true
+            inputMethodMode = PopupWindow.INPUT_METHOD_NEEDED
+            if (ValueAnimator.areAnimatorsEnabled()) {
+                enterTransition = Fade().setDuration(150)
+                exitTransition = Fade().setDuration(100)
+            }
+        }
+        messageMenu = popup
+        val detachListener = object : View.OnAttachStateChangeListener {
+            override fun onViewAttachedToWindow(v: View) {}
+            override fun onViewDetachedFromWindow(v: View) { popup.dismiss() }
+        }
+        anchor.addOnAttachStateChangeListener(detachListener)
+        popup.setOnDismissListener {
+            anchor.removeOnAttachStateChangeListener(detachListener)
+            if (messageMenu === popup) messageMenu = null
+        }
+        fun action(label: Int, icon: Int, run: () -> Unit) {
+            content.addView(TextView(activity).apply {
+                setText(label)
+                setTextColor(textColor)
+                setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize)
+                minHeight = resources.getDimensionPixelSize(R.dimen.touch_target_size)
+                gravity = android.view.Gravity.CENTER_VERTICAL
+                setPadding(padding, padding / 2, padding, padding / 2)
+                compoundDrawablePadding = padding
+                val drawable = AppCompatResources.getDrawable(activity, icon)?.mutate()?.apply {
+                    applyColorFilter(textColor)
+                    setBounds(0, 0, (24 * density).toInt(), (24 * density).toInt())
+                }
+                setCompoundDrawablesRelative(drawable, null, null, null)
+                val selectable = TypedValue()
+                activity.theme.resolveAttribute(android.R.attr.selectableItemBackground, selectable, true)
+                setBackgroundResource(selectable.resourceId)
+                setOnClickListener {
+                    popup.dismiss()
+                    if (currentList.any { it is Message && it.getStableId() == message.getStableId() }) run()
+                }
+            }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+        }
+        if (message.body.isNotEmpty()) action(org.fossify.commons.R.string.copy, org.fossify.commons.R.drawable.ic_copy_vector) { activity.copyToClipboard(message.body) }
+        action(org.fossify.commons.R.string.delete, org.fossify.commons.R.drawable.ic_delete_vector) { askConfirmDelete(listOf(message)) }
+        if (message.body.isNotBlank()) action(org.fossify.commons.R.string.select_text, org.fossify.commons.R.drawable.ic_select_all_vector) { SelectTextDialog(activity, message.body) }
+        if (!isRecycleBin) {
+            val starred = activity.config.isMessageStarred(message.id, message.isMMS)
+            action(if (starred) R.string.unstar_message else R.string.star_message,
+                if (starred) org.fossify.commons.R.drawable.ic_star_vector else org.fossify.commons.R.drawable.ic_star_outline_vector) {
+                activity.config.setMessageStarred(message.id, message.isMMS, !starred)
+                val position = currentList.indexOfFirst { it is Message && it.getStableId() == message.getStableId() }
+                if (position >= 0) notifyItemChanged(position)
+            }
+        }
+        action(R.string.forward_message, R.drawable.ic_forward_vector) { forwardMessage(message) }
+        if (message.body.isNotEmpty()) action(org.fossify.commons.R.string.share, org.fossify.commons.R.drawable.ic_share_vector) { activity.shareTextIntent(message.body) }
+        if (message.isScheduled) action(org.fossify.commons.R.string.properties, org.fossify.commons.R.drawable.ic_info_vector) { holder.viewClicked(message) }
+        content.measure(
+            View.MeasureSpec.makeMeasureSpec(popup.width, View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+        )
+        // Give the dropdown a bounded height so Android can flip it above the anchor.
+        // ScrollView keeps every action reachable when the keyboard or large text reduces space.
+        popup.height = minOf(content.measuredHeight, popup.getMaxAvailableHeight(anchor).coerceAtLeast(1))
+        popup.showAsDropDown(anchor)
     }
 
     private fun setupReceivedMessageView(messageBinding: ItemMessageBinding, message: Message) {
@@ -617,6 +783,53 @@ class ThreadAdapter(
         binding.threadError.setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize - 4)
     }
 
+    private fun setupOtpChip(messageBinding: ItemMessageBinding, message: Message) {
+        val code = if (message.isReceivedMessage()) message.body.extractOtpCode() else null
+        messageBinding.threadMessageOtp.apply {
+            beVisibleIf(code != null)
+            if (code != null) {
+                text = activity.getString(R.string.copy_otp_code, code)
+                setOnClickListener { activity.copyToClipboard(code) }
+            }
+        }
+    }
+
+    /**
+     * Google Messages draws one avatar per run of messages, on the last one. Keeping the space
+     * reserved (INVISIBLE, not GONE) is what holds the rest of the run aligned with it.
+     */
+    private fun setupGrouping(messageBinding: ItemMessageBinding, message: Message, position: Int) {
+        val next = currentList.getOrNull(position + 1) as? Message
+        val groupedWithNext = next != null &&
+            next.isReceivedMessage() == message.isReceivedMessage() &&
+            next.senderPhoneNumber == message.senderPhoneNumber &&
+            next.date - message.date <= GROUPING_WINDOW_SECS
+
+        val previous = currentList.getOrNull(position - 1) as? Message
+        val groupedWithPrevious = previous != null &&
+            previous.isReceivedMessage() == message.isReceivedMessage() &&
+            previous.senderPhoneNumber == message.senderPhoneNumber &&
+            message.date - previous.date <= GROUPING_WINDOW_SECS
+
+        if (message.isReceivedMessage() && groupedWithNext) {
+            messageBinding.threadMessageSenderPhoto.visibility = View.INVISIBLE
+        }
+
+        messageBinding.threadMessageHolder.updateLayoutParams<ViewGroup.MarginLayoutParams> {
+            topMargin = if (groupedWithPrevious) groupedTopMargin else ungroupedTopMargin
+        }
+    }
+
+    private fun setupUnreadSeparator(view: View) {
+        ItemThreadUnreadSeparatorBinding.bind(view).apply {
+            val accent = activity.getProperPrimaryColor()
+            threadUnreadLabel.setTextColor(accent)
+            threadUnreadLabel.setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize - 4)
+            threadUnreadRuleStart.setBackgroundColor(accent.adjustAlpha(resources.designFloat(R.dimen.opacity_rule)))
+            threadUnreadRuleEnd.setBackgroundColor(accent.adjustAlpha(resources.designFloat(R.dimen.opacity_rule)))
+        }
+    }
+
     private fun setupThreadSending(view: View) {
         ItemThreadSendingBinding.bind(view).threadSending.apply {
             setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize)
@@ -650,6 +863,8 @@ private class ThreadItemDiffCallback : DiffUtil.ItemCallback<ThreadItem>() {
                 val new = newItem as ThreadDateTime
                 oldItem.date == new.date && oldItem.simID == new.simID
             }
+
+            is ThreadUnreadSeparator -> true
         }
     }
 
@@ -661,6 +876,7 @@ private class ThreadItemDiffCallback : DiffUtil.ItemCallback<ThreadItem>() {
             is ThreadError -> oldItem.messageText == (newItem as ThreadError).messageText
             is ThreadSent -> oldItem.delivered == (newItem as ThreadSent).delivered
             is Message -> Message.areContentsTheSame(oldItem, newItem as Message)
+            is ThreadUnreadSeparator -> true
         }
     }
 }

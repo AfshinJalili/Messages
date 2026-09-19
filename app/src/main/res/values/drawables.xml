@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="ic_launcher_monochrome" type="drawable">@drawable/ic_launcher_foreground</item>
+    <item name="ic_messenger" type="drawable">@drawable/ic_message_bubble</item>
+</resources>

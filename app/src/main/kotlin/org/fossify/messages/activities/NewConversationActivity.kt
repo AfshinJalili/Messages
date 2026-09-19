@@ -28,7 +28,6 @@ import org.fossify.commons.extensions.updateTextColors
 import org.fossify.commons.extensions.value
 import org.fossify.commons.extensions.viewBinding
 import org.fossify.commons.helpers.MyContactsContentProvider
-import org.fossify.commons.helpers.NavigationIcon
 import org.fossify.commons.helpers.PERMISSION_READ_CONTACTS
 import org.fossify.commons.helpers.SimpleContactsHelper
 import org.fossify.commons.helpers.ensureBackgroundThread
@@ -38,6 +37,7 @@ import org.fossify.messages.adapters.ContactsAdapter
 import org.fossify.messages.databinding.ActivityNewConversationBinding
 import org.fossify.messages.databinding.ItemSuggestedContactBinding
 import org.fossify.messages.extensions.getSuggestedContacts
+import org.fossify.messages.extensions.setupSurfaceAppBar
 import org.fossify.messages.extensions.getThreadId
 import org.fossify.messages.helpers.SmsIntentParser
 import org.fossify.messages.helpers.THREAD_ATTACHMENT_URI
@@ -79,7 +79,7 @@ class NewConversationActivity : SimpleActivity() {
 
     override fun onResume() {
         super.onResume()
-        setupTopAppBar(binding.newConversationAppbar, NavigationIcon.Arrow)
+        setupSurfaceAppBar(binding.newConversationAppbar)
         binding.noContactsPlaceholder2.setTextColor(getProperPrimaryColor())
         binding.noContactsPlaceholder2.underlineText()
         binding.suggestionsLabel.setTextColor(getProperPrimaryColor())

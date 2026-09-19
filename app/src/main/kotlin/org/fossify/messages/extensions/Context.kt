@@ -60,7 +60,10 @@ import org.fossify.messages.helpers.MessagingCache
 import org.fossify.messages.helpers.NotificationHelper
 import org.fossify.messages.helpers.ShortcutHelper
 import org.fossify.messages.helpers.generateRandomId
+import org.fossify.messages.helpers.refreshConversations
+import org.fossify.messages.helpers.refreshMessages
 import org.fossify.messages.interfaces.AttachmentsDao
+import org.fossify.messages.interfaces.BlockedMessagesDao
 import org.fossify.messages.interfaces.ConversationsDao
 import org.fossify.messages.interfaces.DraftsDao
 import org.fossify.messages.interfaces.MessageAttachmentsDao
@@ -70,9 +73,14 @@ import org.fossify.messages.messaging.MessagingUtils.Companion.ADDRESS_SEPARATOR
 import org.fossify.messages.messaging.SmsSender
 import org.fossify.messages.messaging.scheduleMessage
 import org.fossify.messages.models.Attachment
+import org.fossify.messages.models.BlockedMessage
 import org.fossify.messages.models.Conversation
+import org.fossify.messages.models.Events
+import org.greenrobot.eventbus.EventBus
 import org.fossify.messages.models.Draft
 import org.fossify.messages.models.Message
+import org.fossify.messages.models.SearchResult
+import org.fossify.commons.extensions.formatDateOrTime
 import org.fossify.messages.models.MessageAttachment
 import org.fossify.messages.models.NamePhoto
 import org.fossify.messages.models.RecycleBinMessage
@@ -100,6 +108,9 @@ val Context.messagesDB: MessagesDao
 val Context.draftsDB: DraftsDao
     get() = getMessagesDB().DraftsDao()
 
+val Context.blockedMessagesDB: BlockedMessagesDao
+    get() = getMessagesDB().BlockedMessagesDao()
+
 val Context.notificationHelper
     get() = NotificationHelper(this)
 
@@ -111,12 +122,32 @@ val Context.smsSender
 
 val Context.shortcutHelper get() = ShortcutHelper(this)
 
+// Load through the oldest unread message, including read messages between unread bubbles.
+private fun Context.getUnreadWindowSize(threadId: Long, oldestLoadedDate: Int?): Int {
+    fun aggregate(uri: Uri, expression: String, selection: String, args: Array<String>): Long =
+        contentResolver.query(uri, arrayOf(expression), selection, args, null)?.use {
+            if (it.moveToFirst() && !it.isNull(0)) it.getLong(0) else 0L
+        } ?: 0L
+    val sources = listOf(Sms.CONTENT_URI to 1L, Mms.CONTENT_URI to 1000L)
+    val oldest = sources.mapNotNull { (uri, scale) ->
+        val box = if (uri == Sms.CONTENT_URI) Sms.TYPE else Mms.MESSAGE_BOX
+        aggregate(uri, "MIN(date)", "thread_id=? AND read=0 AND $box=1", arrayOf(threadId.toString()))
+            .takeIf { it > 0 }?.times(scale)
+    }.plus(listOfNotNull(oldestLoadedDate?.toLong()?.times(1000))).minOrNull() ?: return 0
+    return sources.sumOf { (uri, scale) ->
+        aggregate(uri, "COUNT(*)", "thread_id=? AND date>=?", arrayOf(threadId.toString(), (oldest / scale).toString()))
+    }.coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+}
+
 fun Context.getMessages(
     threadId: Long,
     dateFrom: Int = -1,
     includeScheduledMessages: Boolean = true,
     limit: Int = MESSAGES_LIMIT,
+    includeAllUnread: Boolean = false,
+    oldestLoadedDate: Int? = null,
 ): ArrayList<Message> {
+    val displayLimit = if (includeAllUnread) maxOf(limit, getUnreadWindowSize(threadId, oldestLoadedDate)) else limit
     val uri = Sms.CONTENT_URI
     val projection = arrayOf(
         Sms._ID,
@@ -133,7 +164,7 @@ fun Context.getMessages(
     val rangeQuery = if (dateFrom == -1) "" else "AND ${Sms.DATE} < ${dateFrom.toLong() * 1000}"
     val selection = "${Sms.THREAD_ID} = ? $rangeQuery"
     val selectionArgs = arrayOf(threadId.toString())
-    val sortOrder = "${Sms.DATE} DESC LIMIT $limit"
+    val sortOrder = "${Sms.DATE} DESC LIMIT $displayLimit"
 
     val blockStatus = HashMap<String, Boolean>()
     val blockedNumbers = getBlockedNumbers()
@@ -209,7 +240,7 @@ fun Context.getMessages(
         .filter { it.participants.isNotEmpty() }
         .filterNot { it.isScheduled && it.millis() < System.currentTimeMillis() }
         .sortedWith(compareBy<Message> { it.date }.thenBy { it.id })
-        .takeLast(limit)
+        .takeLast(displayLimit)
         .toMutableList() as ArrayList<Message>
 
     return messages
@@ -351,6 +382,7 @@ fun Context.getUnreadCountsByThread(): Map<Long, Int> {
 fun Context.getConversations(
     threadId: Long? = null,
     privateContacts: ArrayList<SimpleContact> = ArrayList(),
+    failOnError: Boolean = false,
 ): ArrayList<Conversation> {
     val archiveAvailable = config.isArchiveAvailable
 
@@ -380,6 +412,7 @@ fun Context.getConversations(
     val simpleContactHelper = SimpleContactsHelper(this)
     val blockedNumbers = getBlockedNumbers()
     val unreadMap = getUnreadCountsByThread()
+    val draftsByThread = draftsDB.getAll().associateBy { it.threadId }
     try {
         queryCursorUnsafe(
             uri,
@@ -400,7 +433,7 @@ fun Context.getConversations(
             }
 
             // drafts are stored locally they take priority over the original date
-            val draft = draftsDB.getDraftById(id)
+            val draft = draftsByThread[id]
             if (draft != null) {
                 date = draft.date / 1000
             }
@@ -425,10 +458,10 @@ fun Context.getConversations(
                     phoneNumbers.first()
                 ) else ""
             val isGroupConversation = phoneNumbers.size > 1
-            val read = cursor.getIntValue(Threads.READ) == 1
+            val unreadCount = unreadMap[id] ?: 0
+            val read = unreadCount == 0
             val archived =
                 if (archiveAvailable) cursor.getIntValue(Threads.ARCHIVED) == 1 else false
-            val unreadCount = if (!read) unreadMap[id] ?: 0 else 0
             val conversation = Conversation(
                 threadId = id,
                 snippet = snippet,
@@ -449,11 +482,13 @@ fun Context.getConversations(
             && archiveAvailable
         ) {
             config.isArchiveAvailable = false
-            return getConversations(threadId, privateContacts)
+            return getConversations(threadId, privateContacts, failOnError)
         } else {
+            if (failOnError) throw sqliteException
             showErrorToast(sqliteException)
         }
     } catch (e: Exception) {
+        if (failOnError) throw e
         showErrorToast(e)
     }
 
@@ -470,7 +505,8 @@ private fun Context.queryCursorUnsafe(
     callback: (cursor: Cursor) -> Unit,
 ) {
     val cursor = contentResolver.query(uri, projection, selection, selectionArgs, sortOrder)
-    cursor?.use {
+        ?: throw IllegalStateException("Conversation provider returned no cursor")
+    cursor.use {
         if (cursor.moveToFirst()) {
             do {
                 callback(cursor)
@@ -836,6 +872,43 @@ fun Context.insertNewSMS(
     }
 }
 
+fun Context.restoreBlockedMessage(blockedMessage: BlockedMessage): Boolean {
+    val threadId = getThreadId(blockedMessage.address)
+    val alreadyInProvider = getMessages(threadId, includeScheduledMessages = true).any { message ->
+        !message.isMMS &&
+            message.body == blockedMessage.body &&
+            kotlin.math.abs(message.millis() - blockedMessage.date) < 60_000
+    }
+    if (!alreadyInProvider) {
+        val messageId = insertNewSMS(
+            address = blockedMessage.address,
+            subject = "",
+            body = blockedMessage.body,
+            date = blockedMessage.date,
+            read = 0,
+            threadId = threadId,
+            type = Sms.MESSAGE_TYPE_INBOX,
+            subscriptionId = -1,
+        )
+        if (messageId == 0L) {
+            return false
+        }
+    }
+
+    try {
+        blockedMessagesDB.delete(blockedMessage.id)
+    } catch (_: Exception) {
+        return false
+    }
+
+    getConversations(threadId).firstOrNull()?.let { conv ->
+        runCatching { insertOrUpdateConversation(conv) }
+    }
+    refreshMessages()
+    refreshConversations()
+    return true
+}
+
 fun Context.removeAllArchivedConversations(callback: (() -> Unit)? = null) {
     ensureBackgroundThread {
         try {
@@ -851,21 +924,10 @@ fun Context.removeAllArchivedConversations(callback: (() -> Unit)? = null) {
 }
 
 fun Context.deleteConversation(threadId: Long) {
-    var uri = Sms.CONTENT_URI
     val selection = "${Sms.THREAD_ID} = ?"
     val selectionArgs = arrayOf(threadId.toString())
-    try {
-        contentResolver.delete(uri, selection, selectionArgs)
-    } catch (e: Exception) {
-        showErrorToast(e)
-    }
-
-    uri = Mms.CONTENT_URI
-    try {
-        contentResolver.delete(uri, selection, selectionArgs)
-    } catch (e: Exception) {
-        e.printStackTrace()
-    }
+    contentResolver.delete(Sms.CONTENT_URI, selection, selectionArgs)
+    contentResolver.delete(Mms.CONTENT_URI, selection, selectionArgs)
 
     conversationsDB.deleteThreadId(threadId)
     messagesDB.deleteThreadMessages(threadId)
@@ -981,7 +1043,7 @@ fun Context.deleteScheduledMessage(messageId: Long) {
     }
 }
 
-fun Context.markMessageRead(id: Long, isMMS: Boolean) {
+fun Context.markMessageRead(id: Long, isMMS: Boolean): Boolean {
     val uri = if (isMMS) Mms.CONTENT_URI else Sms.CONTENT_URI
     val contentValues = ContentValues().apply {
         put(Sms.READ, 1)
@@ -989,8 +1051,24 @@ fun Context.markMessageRead(id: Long, isMMS: Boolean) {
     }
     val selection = "${Sms._ID} = ?"
     val selectionArgs = arrayOf(id.toString())
-    contentResolver.update(uri, contentValues, selection, selectionArgs)
-    messagesDB.markRead(id)
+    if (contentResolver.update(uri, contentValues, selection, selectionArgs) == 0) return false
+    messagesDB.markRead(id, isMMS)
+    return true
+}
+
+fun Context.markVisibleMessagesRead(threadId: Long, visibleMessages: List<Message>): Set<Long> {
+    val completed = HashSet<Long>()
+    visibleMessages.filter { it.threadId == threadId && it.isReceivedMessage() && !it.isScheduled && !it.read }.forEach { message ->
+        try {
+            if (markMessageRead(message.id, message.isMMS)) completed.add(message.getStableId())
+        } catch (e: Exception) {
+            showErrorToast(e)
+        }
+    }
+    val count = getUnreadCountsByThread()[threadId] ?: 0
+    conversationsDB.updateUnreadCount(threadId, count)
+    EventBus.getDefault().post(Events.ConversationReadStateChanged(threadId, count == 0, count))
+    return completed
 }
 
 fun Context.markThreadMessagesRead(threadId: Long) {
@@ -1014,6 +1092,7 @@ fun Context.markThreadMessagesRead(threadId: Long) {
 
     messagesDB.markThreadRead(threadId)
     conversationsDB.markRead(threadId)
+    EventBus.getDefault().post(Events.ConversationReadStateChanged(threadId, true))
 }
 
 fun Context.markThreadMessagesUnread(threadId: Long) {
@@ -1027,6 +1106,7 @@ fun Context.markThreadMessagesUnread(threadId: Long) {
         contentResolver.update(uri, contentValues, selection, selectionArgs)
     }
     conversationsDB.markUnread(threadId)
+    EventBus.getDefault().post(Events.ConversationReadStateChanged(threadId, false))
 } 
 
 @SuppressLint("NewApi")
@@ -1244,11 +1324,19 @@ fun Context.insertOrUpdateConversation(
     cachedConv: Conversation? = conversationsDB.getConversationWithThreadId(conversation.threadId),
 ) {
     var updatedConv = conversation
-    if (cachedConv != null && cachedConv.usesCustomTitle) {
-        updatedConv = updatedConv.copy(
-            title = cachedConv.title,
-            usesCustomTitle = true
-        )
+    if (cachedConv != null) {
+        if (cachedConv.usesCustomTitle) {
+            updatedConv = updatedConv.copy(
+                title = cachedConv.title,
+                usesCustomTitle = true,
+            )
+        }
+        if (cachedConv.isScheduled) {
+            updatedConv = updatedConv.copy(
+                date = cachedConv.date,
+                isScheduled = true,
+            )
+        }
     }
     conversationsDB.insertOrUpdate(updatedConv)
 }
@@ -1358,4 +1446,26 @@ fun Context.copyToUri(src: Uri, dst: Uri) {
             input.copyTo(out)
         }
     }
+}
+
+fun Context.messageSearchResult(message: Message): SearchResult {
+    var title = message.senderName
+    if (title.isEmpty() && message.participants.isNotEmpty()) {
+        title = TextUtils.join(", ", message.participants.map { it.name })
+    }
+
+    val date = (message.date * 1000L).formatDateOrTime(
+        context = this,
+        hideTimeOnOtherDays = true,
+        showCurrentYear = true
+    )
+
+    return SearchResult(
+        messageId = message.id,
+        title = title,
+        snippet = message.body,
+        date = date,
+        threadId = message.threadId,
+        photoUri = message.senderPhotoUri
+    )
 }

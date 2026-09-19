@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 32dp pill inside the 48dp touch target -->
+<ripple xmlns:android="http://schemas.android.com/apk/res/android"
+    android:color="?attr/colorControlHighlight">
+    <item
+        android:bottom="@dimen/normal_margin"
+        android:top="@dimen/normal_margin">
+        <shape android:shape="rectangle">
+            <corners android:radius="@dimen/sim_chip_radius" />
+            <stroke
+                android:width="@dimen/outline_width"
+                android:color="?attr/colorOutline" />
+        </shape>
+    </item>
+</ripple>

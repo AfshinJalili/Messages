@@ -14,15 +14,14 @@
         android:title="@string/show_archived_conversations"
         app:showAsAction="never" />
     <item
+        android:id="@+id/show_starred"
+        android:showAsAction="never"
+        android:title="@string/starred_messages"
+        app:showAsAction="never" />
+    <item
         android:id="@+id/settings"
         android:icon="@drawable/ic_settings_cog_vector"
         android:showAsAction="never"
         android:title="@string/settings"
-        app:showAsAction="never" />
-    <item
-        android:id="@+id/about"
-        android:icon="@drawable/ic_info_vector"
-        android:showAsAction="never"
-        android:title="@string/about"
         app:showAsAction="never" />
 </menu>

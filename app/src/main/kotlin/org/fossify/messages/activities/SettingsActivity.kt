@@ -6,10 +6,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import org.fossify.commons.activities.ManageBlockedNumbersActivity
 import org.fossify.commons.dialogs.ChangeDateTimeFormatDialog
 import org.fossify.commons.dialogs.ConfirmationDialog
-import org.fossify.commons.dialogs.FeatureLockedDialog
 import org.fossify.commons.dialogs.RadioGroupDialog
 import org.fossify.commons.dialogs.SecurityDialog
-import org.fossify.commons.extensions.addLockedLabelIfNeeded
 import org.fossify.commons.extensions.beGone
 import org.fossify.commons.extensions.beVisible
 import org.fossify.commons.extensions.beVisibleIf
@@ -17,7 +15,6 @@ import org.fossify.commons.extensions.formatWithDeprecatedBadge
 import org.fossify.commons.extensions.getBlockedNumbers
 import org.fossify.commons.extensions.getFontSizeText
 import org.fossify.commons.extensions.getProperPrimaryColor
-import org.fossify.commons.extensions.isOrWasThankYouInstalled
 import org.fossify.commons.extensions.toast
 import org.fossify.commons.extensions.updateTextColors
 import org.fossify.commons.extensions.viewBinding
@@ -25,7 +22,6 @@ import org.fossify.commons.helpers.FONT_SIZE_EXTRA_LARGE
 import org.fossify.commons.helpers.FONT_SIZE_LARGE
 import org.fossify.commons.helpers.FONT_SIZE_MEDIUM
 import org.fossify.commons.helpers.FONT_SIZE_SMALL
-import org.fossify.commons.helpers.NavigationIcon
 import org.fossify.commons.helpers.PROTECTION_FINGERPRINT
 import org.fossify.commons.helpers.SHOW_ALL_TABS
 import org.fossify.commons.helpers.ensureBackgroundThread
@@ -36,6 +32,7 @@ import org.fossify.messages.R
 import org.fossify.messages.databinding.ActivitySettingsBinding
 import org.fossify.messages.dialogs.ExportMessagesDialog
 import org.fossify.messages.extensions.config
+import org.fossify.messages.extensions.setupSurfaceAppBar
 import org.fossify.messages.extensions.emptyMessagesRecycleBin
 import org.fossify.messages.extensions.messagesDB
 import org.fossify.messages.helpers.FILE_SIZE_100_KB
@@ -49,6 +46,7 @@ import org.fossify.messages.helpers.LOCK_SCREEN_NOTHING
 import org.fossify.messages.helpers.LOCK_SCREEN_SENDER
 import org.fossify.messages.helpers.LOCK_SCREEN_SENDER_MESSAGE
 import org.fossify.messages.helpers.MessagesImporter
+import org.fossify.messages.helpers.SwipeAction
 import org.fossify.messages.helpers.refreshConversations
 import java.util.Locale
 import kotlin.system.exitProcess
@@ -98,7 +96,7 @@ class SettingsActivity : SimpleActivity() {
 
     override fun onResume() {
         super.onResume()
-        setupTopAppBar(binding.settingsAppbar, NavigationIcon.Arrow)
+        setupSurfaceAppBar(binding.settingsAppbar)
 
         setupCustomizeColors()
         setupCustomizeNotifications()
@@ -108,6 +106,7 @@ class SettingsActivity : SimpleActivity() {
         setupManageBlockedKeywords()
         setupChangeDateTimeFormat()
         setupFontSize()
+        setupSwipeActions()
         setupShowCharacterCounter()
         setupUseSimpleCharacters()
         setupSendOnEnter()
@@ -116,6 +115,7 @@ class SettingsActivity : SimpleActivity() {
         setupGroupMessageAsMMS()
         setupKeepConversationsArchived()
         setupLockScreenVisibility()
+        setupRuleFilterEnabled()
         setupMMSFileSizeLimit()
         setupUseRecycleBin()
         setupEmptyRecycleBin()
@@ -135,6 +135,7 @@ class SettingsActivity : SimpleActivity() {
             binding.settingsGeneralSettingsLabel,
             binding.settingsOutgoingMessagesLabel,
             binding.settingsNotificationsLabel,
+            binding.settingsSpamFilterLabel,
             binding.settingsArchivedMessagesLabel,
             binding.settingsRecycleBinLabel,
             binding.settingsSecurityLabel,
@@ -202,31 +203,19 @@ class SettingsActivity : SimpleActivity() {
 
     private fun setupManageBlockedNumbers() = binding.apply {
         settingsManageBlockedNumbers.text =
-            addLockedLabelIfNeeded(org.fossify.commons.R.string.manage_blocked_numbers)
+            getString(org.fossify.commons.R.string.manage_blocked_numbers)
         settingsManageBlockedNumbersHolder.beVisible()
         settingsManageBlockedNumbersHolder.setOnClickListener {
-            if (isOrWasThankYouInstalled()) {
-                Intent(this@SettingsActivity, ManageBlockedNumbersActivity::class.java).apply {
-                    startActivity(this)
-                }
-            } else {
-                FeatureLockedDialog(this@SettingsActivity) { }
-            }
+            startActivity(Intent(this@SettingsActivity, ManageBlockedNumbersActivity::class.java))
         }
     }
 
     private fun setupManageBlockedKeywords() = binding.apply {
         settingsManageBlockedKeywords.text =
-            addLockedLabelIfNeeded(R.string.manage_blocked_keywords)
+            getString(R.string.manage_blocked_keywords)
 
         settingsManageBlockedKeywordsHolder.setOnClickListener {
-            if (isOrWasThankYouInstalled()) {
-                Intent(this@SettingsActivity, ManageBlockedKeywordsActivity::class.java).apply {
-                    startActivity(this)
-                }
-            } else {
-                FeatureLockedDialog(this@SettingsActivity) { }
-            }
+            startActivity(Intent(this@SettingsActivity, ManageBlockedKeywordsActivity::class.java))
         }
     }
 
@@ -255,6 +244,34 @@ class SettingsActivity : SimpleActivity() {
                 config.fontSize = it as Int
                 settingsFontSize.text = getFontSizeText()
             }
+        }
+    }
+
+    private fun setupSwipeActions() = binding.apply {
+        settingsSwipeLeftAction.setText(config.swipeLeftAction.label)
+        settingsSwipeLeftActionHolder.setOnClickListener {
+            showSwipeActionDialog(config.swipeLeftAction) {
+                config.swipeLeftAction = it
+                settingsSwipeLeftAction.setText(it.label)
+            }
+        }
+
+        settingsSwipeRightAction.setText(config.swipeRightAction.label)
+        settingsSwipeRightActionHolder.setOnClickListener {
+            showSwipeActionDialog(config.swipeRightAction) {
+                config.swipeRightAction = it
+                settingsSwipeRightAction.setText(it.label)
+            }
+        }
+    }
+
+    private fun showSwipeActionDialog(current: SwipeAction, callback: (SwipeAction) -> Unit) {
+        // "Off" reads best last
+        val items = (SwipeAction.entries - SwipeAction.NONE + SwipeAction.NONE)
+            .mapTo(ArrayList()) { RadioItem(it.id, getString(it.label)) }
+
+        RadioGroupDialog(this@SettingsActivity, items, current.id) {
+            callback(SwipeAction.fromId(it as Int))
         }
     }
 
@@ -327,6 +344,14 @@ class SettingsActivity : SimpleActivity() {
                 config.lockScreenVisibilitySetting = it as Int
                 settingsLockScreenVisibility.text = getLockScreenVisibilityText()
             }
+        }
+    }
+
+    private fun setupRuleFilterEnabled() = binding.apply {
+        settingsRuleFilterEnabled.isChecked = config.ruleFilterEnabled
+        settingsRuleFilterEnabledHolder.setOnClickListener {
+            settingsRuleFilterEnabled.toggle()
+            config.ruleFilterEnabled = settingsRuleFilterEnabled.isChecked
         }
     }
 

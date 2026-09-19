@@ -14,7 +14,6 @@
             android:id="@+id/new_conversation_toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            android:background="@color/color_primary"
             app:title="@string/new_conversation"
             app:titleTextAppearance="@style/AppTheme.ActionBar.TitleTextStyle" />
 
@@ -65,7 +64,7 @@
             android:layout_below="@+id/suggestions_scrollview"
             android:layout_centerHorizontal="true"
             android:layout_marginTop="@dimen/bigger_margin"
-            android:alpha="0.8"
+            android:alpha="@dimen/opacity_placeholder"
             android:gravity="center"
             android:paddingLeft="@dimen/activity_margin"
             android:paddingRight="@dimen/activity_margin"

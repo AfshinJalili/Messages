@@ -1,5 +1,9 @@
 package org.fossify.messages.adapters
 
+import org.fossify.messages.helpers.UndoDeletion
+import org.fossify.messages.helpers.refreshConversations
+import org.fossify.messages.R
+import org.fossify.messages.helpers.designFloat
 import android.annotation.SuppressLint
 import android.graphics.Typeface
 import android.os.Parcelable
@@ -73,7 +77,28 @@ abstract class BaseConversationsAdapter(
         commitCallback: (() -> Unit)? = null,
     ) {
         saveRecyclerViewState()
-        submitList(newConversations.toList(), commitCallback)
+        submitList(newConversations.filter { it.threadId !in UndoDeletion.threads }, commitCallback)
+    }
+
+    fun deleteWithUndo(conversations: List<Conversation>, delete: (Long) -> Unit) {
+        activity.runOnUiThread {
+            val ids = conversations.map { it.threadId }.toSet()
+            if (ids.isEmpty()) return@runOnUiThread
+            UndoDeletion.threads.addAll(ids)
+            submitList(currentList.filter { it.threadId !in ids })
+            finishActMode()
+            refreshConversations()
+            UndoDeletion.offer(activity,
+                undo = {
+                    UndoDeletion.threads.removeAll(ids)
+                    updateConversations(ArrayList((currentList + conversations).distinctBy { it.threadId }.sortedByDescending { it.date }))
+                },
+                commit = { ids.forEach(delete) },
+                completed = {
+                    UndoDeletion.threads.removeAll(ids)
+                    refreshConversations()
+                })
+        }
     }
 
     @SuppressLint("NotifyDataSetChanged")
@@ -89,6 +114,8 @@ abstract class BaseConversationsAdapter(
             }
         }
     }
+
+    val isSelecting get() = selectedKeys.isNotEmpty()
 
     override fun getSelectableItemCount() = itemCount
 
@@ -151,17 +178,19 @@ abstract class BaseConversationsAdapter(
                 activity.config.pinnedConversations.contains(conversation.threadId.toString())
             )
             pinIndicator.applyColorFilter(textColor)
+            mutedIndicator.beVisibleIf(activity.config.isConversationMuted(conversation.threadId))
+            mutedIndicator.applyColorFilter(textColor)
 
             conversationFrame.isSelected = selectedKeys.contains(conversation.hashCode())
 
             conversationAddress.apply {
                 text = conversation.title
-                setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize * 1.2f)
+                setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize * resources.designFloat(R.dimen.type_scale_primary))
             }
 
             conversationBodyShort.apply {
                 text = smsDraft ?: conversation.snippet
-                setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize * 0.9f)
+                setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize * resources.designFloat(R.dimen.type_scale_secondary))
             }
 
             conversationDate.apply {
@@ -171,7 +200,7 @@ abstract class BaseConversationsAdapter(
                     showCurrentYear = false
                 )
 
-                setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize * 0.8f)
+                setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize * resources.designFloat(R.dimen.type_scale_metadata))
             }
 
             val isUnread = !conversation.read
@@ -179,20 +208,19 @@ abstract class BaseConversationsAdapter(
                 conversationBodyShort.alpha = 1f
                 if (conversation.isScheduled) Typeface.BOLD_ITALIC else Typeface.BOLD
             } else {
-                conversationBodyShort.alpha = 0.7f
+                conversationBodyShort.alpha = resources.designFloat(R.dimen.opacity_secondary)
                 if (conversation.isScheduled) Typeface.ITALIC else Typeface.NORMAL
             }
             val customTypeface = FontHelper.getTypeface(activity)
             conversationAddress.setTypeface(customTypeface, style)
-            conversationBodyShort.setTypeface(customTypeface, style)
-            conversationDate.setTypeface(customTypeface, style)
+            conversationBodyShort.setTypeface(customTypeface, if (conversation.isScheduled) Typeface.ITALIC else Typeface.NORMAL)
+            conversationDate.setTypeface(customTypeface, Typeface.NORMAL)
 
             arrayListOf(conversationAddress, conversationBodyShort, conversationDate).forEach {
                 it.setTextColor(textColor)
             }
 
             setupBadgeCount(unreadCountBadge, isUnread, conversation.unreadCount)
-            // at group conversations we use an icon as the placeholder, not any letter
             val placeholder = if (conversation.isGroupConversation) {
                 SimpleContactsHelper(activity).getColoredGroupIcon(conversation.title)
             } else {
@@ -210,7 +238,7 @@ abstract class BaseConversationsAdapter(
 
     private fun setupBadgeCount(view: TextView, isUnread: Boolean, count: Int) {
         view.apply {
-            beVisibleIf(isUnread)
+            beVisibleIf(isUnread && count > 0)
             if (isUnread) {
                 text = when {
                     count > MAX_UNREAD_BADGE_COUNT -> "$MAX_UNREAD_BADGE_COUNT+"

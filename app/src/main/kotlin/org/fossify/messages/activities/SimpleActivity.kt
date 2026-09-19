@@ -2,8 +2,20 @@ package org.fossify.messages.activities
 
 import org.fossify.commons.activities.BaseSimpleActivity
 import org.fossify.messages.R
+import org.fossify.messages.helpers.cobaltTheme
 
 open class SimpleActivity : BaseSimpleActivity() {
+    open fun refreshAfterDeletion() {}
+
+    override fun onPostResume() {
+        super.onPostResume()
+        org.fossify.messages.helpers.UndoDeletion.attach(this)
+    }
+
+    override fun setTheme(resId: Int) {
+        super.setTheme(cobaltTheme() ?: resId)
+    }
+
     override fun getAppIconIDs() = arrayListOf(
         R.mipmap.ic_launcher_red,
         R.mipmap.ic_launcher_pink,

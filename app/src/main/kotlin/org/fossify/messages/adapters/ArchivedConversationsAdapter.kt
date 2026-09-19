@@ -46,17 +46,11 @@ class ArchivedConversationsAdapter(
     }
 
     private fun deleteConversations() {
-        if (selectedKeys.isEmpty()) {
-            return
+        val selected = currentList.filter { selectedKeys.contains(it.hashCode()) }
+        deleteWithUndo(selected) { id ->
+            activity.deleteConversation(id)
+            activity.notificationManager.cancel(id.hashCode())
         }
-
-        val conversationsToRemove = currentList.filter { selectedKeys.contains(it.hashCode()) } as ArrayList<Conversation>
-        conversationsToRemove.forEach {
-            activity.deleteConversation(it.threadId)
-            activity.notificationManager.cancel(it.threadId.hashCode())
-        }
-
-        removeConversationsFromList(conversationsToRemove)
     }
 
     private fun unarchiveConversation() {

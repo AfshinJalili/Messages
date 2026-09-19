@@ -15,7 +15,6 @@
             android:id="@+id/block_keywords_toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            android:background="@color/color_primary"
             app:menu="@menu/menu_add_blocked_keyword"
             app:title="@string/manage_blocked_keywords"
             app:titleTextAppearance="@style/AppTheme.ActionBar.TitleTextStyle" />
@@ -45,7 +44,7 @@
             android:id="@+id/manage_blocked_keywords_placeholder"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:alpha="0.8"
+            android:alpha="@dimen/opacity_placeholder"
             android:gravity="center_horizontal"
             android:paddingStart="@dimen/activity_margin"
             android:paddingTop="@dimen/activity_margin"

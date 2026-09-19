@@ -1,5 +1,7 @@
 package org.fossify.messages.adapters
 
+import org.fossify.messages.R
+import org.fossify.messages.helpers.designFloat
 import android.text.TextUtils
 import android.util.TypedValue
 import android.view.Menu
@@ -66,7 +68,7 @@ class ContactsAdapter(
             itemContactName.apply {
                 text = contact.name
                 setTextColor(textColor)
-                setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize * 1.2f)
+                setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize * resources.designFloat(R.dimen.type_scale_title))
             }
 
             itemContactNumber.apply {

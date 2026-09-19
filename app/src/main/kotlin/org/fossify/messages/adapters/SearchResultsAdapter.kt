@@ -1,5 +1,7 @@
 package org.fossify.messages.adapters
 
+import org.fossify.messages.R
+import org.fossify.messages.helpers.designFloat
 import android.util.TypedValue
 import android.view.Menu
 import android.view.View
@@ -70,19 +72,19 @@ class SearchResultsAdapter(
             searchResultTitle.apply {
                 text = searchResult.title.highlightTextPart(textToHighlight, properPrimaryColor)
                 setTextColor(textColor)
-                setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize * 1.2f)
+                setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize * resources.designFloat(R.dimen.type_scale_title))
             }
 
             searchResultSnippet.apply {
                 text = searchResult.snippet.highlightTextPart(textToHighlight, properPrimaryColor)
                 setTextColor(textColor)
-                setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize * 0.9f)
+                setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize * resources.designFloat(R.dimen.type_scale_secondary))
             }
 
             searchResultDate.apply {
                 text = searchResult.date
                 setTextColor(textColor)
-                setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize * 0.8f)
+                setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize * resources.designFloat(R.dimen.type_scale_metadata))
             }
 
             SimpleContactsHelper(activity).loadContactImage(searchResult.photoUri, searchResultImage, searchResult.title)

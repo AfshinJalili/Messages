@@ -15,7 +15,6 @@
             android:id="@+id/recycle_bin_toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            android:background="@color/color_primary"
             app:title="@string/recycle_bin"
             app:titleTextAppearance="@style/AppTheme.ActionBar.TitleTextStyle" />
 
@@ -57,11 +56,11 @@
                     android:layout_height="wrap_content"
                     android:layout_centerHorizontal="true"
                     android:layout_marginTop="@dimen/bigger_margin"
-                    android:alpha="0.8"
+                    android:alpha="@dimen/opacity_placeholder"
                     android:gravity="center"
-                    android:paddingLeft="@dimen/activity_margin"
-                    android:paddingRight="@dimen/activity_margin"
-                    android:text="@string/no_conversations_found"
+                    android:paddingStart="@dimen/activity_margin"
+                    android:paddingEnd="@dimen/activity_margin"
+                    android:text="@string/no_recycle_bin_conversations"
                     android:textSize="@dimen/bigger_text_size"
                     android:textStyle="italic"
                     android:visibility="gone" />

@@ -1,5 +1,6 @@
 package org.fossify.messages.activities
 
+import org.fossify.messages.helpers.UndoDeletion
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
@@ -7,18 +8,21 @@ import org.fossify.commons.dialogs.ConfirmationDialog
 import org.fossify.commons.extensions.areSystemAnimationsEnabled
 import org.fossify.commons.extensions.beGoneIf
 import org.fossify.commons.extensions.beVisibleIf
-import org.fossify.commons.extensions.getProperBackgroundColor
+import org.fossify.commons.extensions.getProperPrimaryColor
 import org.fossify.commons.extensions.getProperTextColor
+import org.fossify.commons.extensions.underlineText
 import org.fossify.commons.extensions.hideKeyboard
 import org.fossify.commons.extensions.viewBinding
-import org.fossify.commons.helpers.NavigationIcon
 import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.messages.R
 import org.fossify.messages.adapters.ArchivedConversationsAdapter
 import org.fossify.messages.databinding.ActivityArchivedConversationsBinding
 import org.fossify.messages.extensions.config
+import org.fossify.messages.helpers.sortedForInbox
+import org.fossify.messages.extensions.setupEmptyStateAction
+import org.fossify.messages.extensions.setupSurfaceAppBar
 import org.fossify.messages.extensions.conversationsDB
-import org.fossify.messages.extensions.removeAllArchivedConversations
+import org.fossify.messages.extensions.deleteConversation
 import org.fossify.messages.helpers.THREAD_ID
 import org.fossify.messages.helpers.THREAD_TITLE
 import org.fossify.messages.models.Conversation
@@ -48,7 +52,7 @@ class ArchivedConversationsActivity : SimpleActivity() {
 
     override fun onResume() {
         super.onResume()
-        setupTopAppBar(binding.archiveAppbar, NavigationIcon.Arrow)
+        setupSurfaceAppBar(binding.archiveAppbar)
         loadArchivedConversations()
     }
 
@@ -102,9 +106,8 @@ class ArchivedConversationsActivity : SimpleActivity() {
             positive = org.fossify.commons.R.string.yes,
             negative = org.fossify.commons.R.string.no
         ) {
-            removeAllArchivedConversations {
-                loadArchivedConversations()
-            }
+            val adapter = getOrCreateConversationsAdapter()
+            adapter.deleteWithUndo(adapter.currentList.toList()) { id -> deleteConversation(id) }
         }
     }
 
@@ -128,12 +131,9 @@ class ArchivedConversationsActivity : SimpleActivity() {
     }
 
     private fun setupConversations(conversations: ArrayList<Conversation>) {
-        val sortedConversations = conversations.sortedWith(
-            compareByDescending<Conversation> { config.pinnedConversations.contains(it.threadId.toString()) }
-                .thenByDescending { it.date }
-        ).toMutableList() as ArrayList<Conversation>
+        val sortedConversations = ArrayList(conversations.filter { it.threadId !in UndoDeletion.threads }).sortedForInbox(config.pinnedConversations)
 
-        showOrHidePlaceholder(conversations.isEmpty())
+        showOrHidePlaceholder(sortedConversations.isEmpty())
         updateOptionsMenu(conversations)
 
         try {
@@ -149,6 +149,8 @@ class ArchivedConversationsActivity : SimpleActivity() {
         binding.noConversationsPlaceholder.beVisibleIf(show)
         binding.noConversationsPlaceholder.setTextColor(getProperTextColor())
         binding.noConversationsPlaceholder.text = getString(R.string.no_archived_conversations)
+        binding.noConversationsPlaceholder2.beVisibleIf(show)
+        setupEmptyStateAction(binding.noConversationsPlaceholder2) { finish() }
     }
 
     @SuppressLint("NotifyDataSetChanged")
@@ -163,6 +165,11 @@ class ArchivedConversationsActivity : SimpleActivity() {
             putExtra(THREAD_TITLE, conversation.title)
             startActivity(this)
         }
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    fun conversationReadStateChanged(@Suppress("unused") event: Events.ConversationReadStateChanged) {
+        loadArchivedConversations()
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)

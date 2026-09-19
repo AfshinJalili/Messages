@@ -1,11 +1,11 @@
 package org.fossify.messages.dialogs
 
+import org.fossify.messages.helpers.designFloat
 import androidx.appcompat.app.AlertDialog
 import org.fossify.commons.extensions.getAlertDialogBuilder
 import org.fossify.commons.extensions.getProperPrimaryColor
 import org.fossify.commons.extensions.setupDialogStuff
 import org.fossify.commons.extensions.toast
-import org.fossify.commons.helpers.MEDIUM_ALPHA
 import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.messages.R
 import org.fossify.messages.activities.SimpleActivity
@@ -66,7 +66,7 @@ class ImportMessagesDialog(
                             negativeButton
                         ).forEach {
                             it.isEnabled = false
-                            it.alpha = MEDIUM_ALPHA
+                            it.alpha = activity.resources.designFloat(R.dimen.opacity_muted)
                         }
 
                         ensureBackgroundThread {

@@ -33,6 +33,7 @@ android {
 
     defaultConfig {
         applicationId = project.property("APP_ID").toString()
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         minSdk = project.libs.versions.app.build.minimumSDK.get().toInt()
         targetSdk = project.libs.versions.app.build.targetSDK.get().toInt()
         versionName = project.property("VERSION_NAME").toString()
@@ -93,6 +94,7 @@ android {
 
     sourceSets {
         getByName("main").java.directories.add("src/main/kotlin")
+        getByName("androidTest").assets.srcDir("schemas")
     }
 
     compileOptions {
@@ -153,5 +155,7 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.bundles.room)
     ksp(libs.androidx.room.compiler)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.ext.junit)
     detektPlugins(libs.compose.detekt)
 }

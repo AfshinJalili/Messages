@@ -1,5 +1,6 @@
 package org.fossify.messages.dialogs
 
+import org.fossify.messages.helpers.designFloat
 import android.annotation.SuppressLint
 import android.net.Uri
 import android.provider.DocumentsContract
@@ -14,7 +15,6 @@ import org.fossify.commons.extensions.setupDialogStuff
 import org.fossify.commons.extensions.showErrorToast
 import org.fossify.commons.extensions.toast
 import org.fossify.commons.extensions.value
-import org.fossify.commons.helpers.MEDIUM_ALPHA
 import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.messages.R
 import org.fossify.messages.activities.SimpleActivity
@@ -73,7 +73,7 @@ class ExportMessagesDialog(
                 getButton(AlertDialog.BUTTON_NEGATIVE)
             ).forEach {
                 it.isEnabled = false
-                it.alpha = MEDIUM_ALPHA
+                it.alpha = activity.resources.designFloat(R.dimen.opacity_muted)
             }
 
             binding.exportProgress.setIndicatorColor(activity.getProperPrimaryColor())

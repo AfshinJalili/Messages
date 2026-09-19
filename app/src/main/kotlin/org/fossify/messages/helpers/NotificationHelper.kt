@@ -12,8 +12,8 @@ import android.media.AudioAttributes
 import android.media.AudioManager
 import android.media.RingtoneManager
 import androidx.core.app.NotificationCompat
-import androidx.core.app.Person
 import androidx.core.app.RemoteInput
+import androidx.core.app.Person
 import org.fossify.commons.extensions.getProperPrimaryColor
 import org.fossify.commons.extensions.notificationManager
 import org.fossify.commons.helpers.SimpleContactsHelper
@@ -23,8 +23,10 @@ import org.fossify.messages.activities.ThreadActivity
 import org.fossify.messages.extensions.config
 import org.fossify.messages.extensions.shortcutHelper
 import org.fossify.messages.messaging.isShortCodeWithLetters
-import org.fossify.messages.receivers.DeleteSmsReceiver
+import org.fossify.messages.extensions.extractOtpCode
+import org.fossify.messages.receivers.CopyOtpReceiver
 import org.fossify.messages.receivers.DirectReplyReceiver
+import org.fossify.messages.receivers.DeleteSmsReceiver
 import org.fossify.messages.receivers.MarkAsReadReceiver
 
 class NotificationHelper(private val context: Context) {
@@ -45,6 +47,10 @@ class NotificationHelper(private val context: Context) {
         sender: String?,
         alertOnlyOnce: Boolean = false
     ) {
+        if (context.config.isConversationMuted(threadId)) {
+            return
+        }
+
         val hasCustomNotifications =
             context.config.customNotifications.contains(threadId.toString())
         val notificationChannelId =
@@ -141,7 +147,7 @@ class NotificationHelper(private val context: Context) {
             }
 
             color = context.getProperPrimaryColor()
-            setSmallIcon(R.drawable.ic_messenger)
+            setSmallIcon(R.drawable.ic_message_bubble)
             setContentIntent(contentPendingIntent)
             priority = NotificationCompat.PRIORITY_MAX
             setDefaults(Notification.DEFAULT_LIGHTS)
@@ -151,8 +157,25 @@ class NotificationHelper(private val context: Context) {
             setSound(soundUri, AudioManager.STREAM_NOTIFICATION)
         }
 
-        if (replyAction != null && context.config.lockScreenVisibilitySetting == LOCK_SCREEN_SENDER_MESSAGE) {
+        if (replyAction != null) {
             builder.addAction(replyAction)
+        }
+
+        body.extractOtpCode()?.let { code ->
+            val copyOtpIntent = Intent(context, CopyOtpReceiver::class.java).apply {
+                putExtra(OTP_CODE, code)
+                putExtra(THREAD_ID, threadId)
+            }
+            builder.addAction(
+                org.fossify.commons.R.drawable.ic_copy_vector,
+                context.getString(R.string.copy_otp_code, code),
+                PendingIntent.getBroadcast(
+                    context,
+                    notificationId,
+                    copyOtpIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+            ).setChannelId(notificationChannelId)
         }
 
         builder.addAction(
@@ -214,7 +237,7 @@ class NotificationHelper(private val context: Context) {
             .setContentTitle(context.getString(R.string.message_not_sent_short))
             .setContentText(summaryText)
             .setColor(context.getProperPrimaryColor())
-            .setSmallIcon(R.drawable.ic_messenger)
+            .setSmallIcon(R.drawable.ic_message_bubble)
             .setLargeIcon(largeIcon)
             .setStyle(NotificationCompat.BigTextStyle().bigText(summaryText))
             .setContentIntent(contentPendingIntent)

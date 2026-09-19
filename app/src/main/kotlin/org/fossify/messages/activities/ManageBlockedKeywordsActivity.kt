@@ -14,7 +14,6 @@ import org.fossify.commons.extensions.underlineText
 import org.fossify.commons.extensions.updateTextColors
 import org.fossify.commons.extensions.viewBinding
 import org.fossify.commons.helpers.ExportResult
-import org.fossify.commons.helpers.NavigationIcon
 import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.commons.interfaces.RefreshRecyclerViewListener
 import org.fossify.messages.R
@@ -23,6 +22,7 @@ import org.fossify.messages.dialogs.AddBlockedKeywordDialog
 import org.fossify.messages.dialogs.ExportBlockedKeywordsDialog
 import org.fossify.messages.dialogs.ManageBlockedKeywordsAdapter
 import org.fossify.messages.extensions.config
+import org.fossify.messages.extensions.setupSurfaceAppBar
 import org.fossify.messages.extensions.toArrayList
 import org.fossify.messages.helpers.BlockedKeywordsExporter
 import org.fossify.messages.helpers.BlockedKeywordsImporter
@@ -57,7 +57,7 @@ class ManageBlockedKeywordsActivity : SimpleActivity(), RefreshRecyclerViewListe
 
     override fun onResume() {
         super.onResume()
-        setupTopAppBar(binding.blockKeywordsAppbar, NavigationIcon.Arrow)
+        setupSurfaceAppBar(binding.blockKeywordsAppbar)
     }
 
     private fun setupOptionsMenu() {

@@ -5,7 +5,8 @@
     tools:ignore="AppCompatResource,AlwaysShowAction">
     <item
         android:id="@+id/empty_archive"
-        android:showAsAction="never"
+        android:icon="@drawable/ic_delete_vector"
+        android:showAsAction="ifRoom"
         android:title="@string/empty_archive"
-        app:showAsAction="never" />
+        app:showAsAction="ifRoom" />
 </menu>

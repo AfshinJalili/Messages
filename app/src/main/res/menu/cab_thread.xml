@@ -10,27 +10,21 @@
         android:title="@string/copy_to_clipboard"
         app:showAsAction="always" />
     <item
-        android:id="@+id/cab_share"
-        android:icon="@drawable/ic_share_vector"
-        android:showAsAction="always"
-        android:title="@string/share"
-        app:showAsAction="always" />
-    <item
-        android:id="@+id/cab_save_as"
-        android:icon="@drawable/ic_save_vector"
-        android:showAsAction="ifRoom"
-        android:title="@string/save_as"
-        app:showAsAction="ifRoom" />
-    <item
-        android:id="@+id/cab_delete"
-        android:icon="@drawable/ic_delete_vector"
-        android:showAsAction="always"
-        android:title="@string/delete"
-        app:showAsAction="always" />
-    <item
         android:id="@+id/cab_forward_message"
         android:showAsAction="never"
         android:title="@string/forward_message"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/cab_star"
+        android:icon="@drawable/ic_star_outline_vector"
+        android:showAsAction="never"
+        android:title="@string/star_message"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/cab_unstar"
+        android:icon="@drawable/ic_star_vector"
+        android:showAsAction="never"
+        android:title="@string/unstar_message"
         app:showAsAction="never" />
     <item
         android:id="@+id/cab_select_text"
@@ -38,16 +32,34 @@
         android:title="@string/select_text"
         app:showAsAction="never" />
     <item
-        android:id="@+id/cab_select_all"
-        android:icon="@drawable/ic_select_all_vector"
-        android:showAsAction="never"
-        android:title="@string/select_all"
-        app:showAsAction="never" />
-    <item
         android:id="@+id/cab_properties"
         android:icon="@drawable/ic_info_vector"
         android:showAsAction="never"
         android:title="@string/properties"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/cab_delete"
+        android:icon="@drawable/ic_delete_vector"
+        android:showAsAction="always"
+        android:title="@string/delete"
+        app:showAsAction="always" />
+    <item
+        android:id="@+id/cab_share"
+        android:icon="@drawable/ic_share_vector"
+        android:showAsAction="never"
+        android:title="@string/share"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/cab_save_as"
+        android:icon="@drawable/ic_save_vector"
+        android:showAsAction="never"
+        android:title="@string/save_as"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/cab_select_all"
+        android:icon="@drawable/ic_select_all_vector"
+        android:showAsAction="never"
+        android:title="@string/select_all"
         app:showAsAction="never" />
     <item
         android:id="@+id/cab_restore"

@@ -92,6 +92,9 @@ class MessagingUtils(val context: Context) {
         requireDeliveryReport: Boolean,
         messageId: Long? = null
     ) {
+        // Reusing the failed row only works for one recipient. With several, every insert below
+        // overwrote that same row, so the message ended up readdressed to the last recipient.
+        val resentMessageId = messageId.takeIf { addresses.size == 1 }
         if (addresses.size > 1) {
             // insert a dummy message for this thread if it is a group message
             val broadCastThreadId = context.getThreadId(addresses.toSet())
@@ -99,8 +102,7 @@ class MessagingUtils(val context: Context) {
             insertSmsMessage(
                 subId = subId, dest = mergedAddresses, text = text,
                 timestamp = System.currentTimeMillis(), threadId = broadCastThreadId,
-                status = Sms.Sent.STATUS_COMPLETE, type = Sms.Sent.MESSAGE_TYPE_SENT,
-                messageId = messageId
+                status = Sms.Sent.STATUS_COMPLETE, type = Sms.Sent.MESSAGE_TYPE_SENT
             )
         }
 
@@ -109,7 +111,7 @@ class MessagingUtils(val context: Context) {
             val messageUri = insertSmsMessage(
                 subId = subId, dest = address, text = text,
                 timestamp = System.currentTimeMillis(), threadId = threadId,
-                messageId = messageId
+                messageId = resentMessageId
             )
             try {
                 context.smsSender.sendMessage(
