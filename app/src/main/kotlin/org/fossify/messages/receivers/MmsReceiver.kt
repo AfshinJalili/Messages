@@ -21,6 +21,7 @@ import org.fossify.messages.extensions.shouldUnarchive
 import org.fossify.messages.extensions.showReceivedMessageNotification
 import org.fossify.messages.extensions.updateConversationArchivedStatus
 import org.fossify.messages.helpers.IncomingSpamClassifier
+import org.fossify.messages.helpers.InboxRepository
 import org.fossify.messages.helpers.ReceiverUtils.isMessageFilteredOut
 import org.fossify.messages.helpers.refreshConversations
 import org.fossify.messages.helpers.refreshMessages
@@ -106,6 +107,7 @@ class MmsReceiver : MmsReceivedReceiver() {
         if (context.shouldUnarchive()) {
             context.updateConversationArchivedStatus(mms.threadId, false)
         }
+        InboxRepository.refreshUnreadCounts(context, listOf(mms.threadId))
         refreshMessages()
         refreshConversations()
     }

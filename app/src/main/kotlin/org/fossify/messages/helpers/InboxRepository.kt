@@ -5,6 +5,7 @@ import android.os.Handler
 import android.os.Looper
 import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.messages.extensions.conversationsDB
+import org.fossify.messages.extensions.getConversations
 import org.fossify.messages.extensions.getUnreadCountsByThread
 
 /**
@@ -14,28 +15,46 @@ import org.fossify.messages.extensions.getUnreadCountsByThread
 object InboxRepository {
 
     private val handler = Handler(Looper.getMainLooper())
+    private var appContext: Context? = null
     private var reconciling = false
     private var reconcilePending = false
     private var reconcileListener: ((Boolean) -> Unit)? = null
+
+    private val reconcileRunnable = Runnable {
+        val context = appContext ?: return@Runnable
+        runProviderReconcile(context)
+    }
+
+    fun init(context: Context) {
+        appContext = context.applicationContext
+    }
 
     fun setReconcileListener(listener: ((Boolean) -> Unit)?) {
         reconcileListener = listener
     }
 
-    fun scheduleProviderReconcile(context: Context, immediate: Boolean = false) {
-        val app = context.applicationContext
-        handler.removeCallbacksAndMessages(null)
-        val run = Runnable { runProviderReconcile(app) }
-        if (immediate) {
-            handler.post(run)
-        } else {
-            handler.postDelayed(run, RECONCILE_DEBOUNCE_MS)
+    /** Lightweight inbox refresh: sync unread badges from Telephony, then debounce a full reconcile. */
+    fun refreshInbox(context: Context? = null, reconcile: Boolean = true) {
+        val app = resolveContext(context) ?: return
+        refreshUnreadCounts(app)
+        if (reconcile) {
+            scheduleProviderReconcile(app)
         }
     }
 
-    fun refreshUnreadCounts(context: Context, threadIds: Collection<Long> = emptyList()) {
+    fun scheduleProviderReconcile(context: Context? = null, immediate: Boolean = false) {
+        val app = resolveContext(context) ?: return
+        handler.removeCallbacks(reconcileRunnable)
+        if (immediate) {
+            handler.post(reconcileRunnable)
+        } else {
+            handler.postDelayed(reconcileRunnable, RECONCILE_DEBOUNCE_MS)
+        }
+    }
+
+    fun refreshUnreadCounts(context: Context? = null, threadIds: Collection<Long> = emptyList()) {
+        val app = resolveContext(context) ?: return
         ensureBackgroundThread {
-            val app = context.applicationContext
             val counts = app.getUnreadCountsByThread()
             val targets = if (threadIds.isEmpty()) {
                 app.conversationsDB.getNonArchived().map { it.threadId }
@@ -50,13 +69,14 @@ object InboxRepository {
     }
 
     fun bumpAfterOutgoing(context: Context, threadId: Long, snippet: String) {
+        val app = resolveContext(context) ?: return
         ensureBackgroundThread {
-            val app = context.applicationContext
             val now = (System.currentTimeMillis() / 1000).toInt()
             val existing = app.conversationsDB.getConversationWithThreadId(threadId)
-            if (existing != null) {
+            val row = existing ?: app.getConversations(threadId).firstOrNull()
+            if (row != null) {
                 app.conversationsDB.insertOrUpdate(
-                    existing.copy(
+                    row.copy(
                         snippet = snippet,
                         date = now,
                         read = true,
@@ -77,6 +97,7 @@ object InboxRepository {
         InboxReconciler.reconcile(
             context = context,
             onFinished = {
+                refreshUnreadCounts(context)
                 reconciling = false
                 reconcileListener?.invoke(false)
                 if (reconcilePending) {
@@ -87,9 +108,16 @@ object InboxRepository {
             onFailed = {
                 reconciling = false
                 reconcileListener?.invoke(false)
-                reconcilePending = false
+                if (reconcilePending) {
+                    reconcilePending = false
+                    scheduleProviderReconcile(context, immediate = true)
+                }
             },
         )
+    }
+
+    private fun resolveContext(context: Context?): Context? {
+        return (context ?: appContext)?.applicationContext?.also { appContext = it }
     }
 
     private const val RECONCILE_DEBOUNCE_MS = 400L

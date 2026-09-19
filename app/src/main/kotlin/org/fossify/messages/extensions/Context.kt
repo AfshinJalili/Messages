@@ -1337,6 +1337,16 @@ fun Context.insertOrUpdateConversation(
                 isScheduled = true,
             )
         }
+        // Keep a newer local preview (e.g. optimistic send bump) until Telephony catches up.
+        if (cachedConv.date > updatedConv.date) {
+            updatedConv = updatedConv.copy(
+                date = cachedConv.date,
+                snippet = cachedConv.snippet,
+            )
+        }
+        if (cachedConv.read && cachedConv.unreadCount == 0 && !updatedConv.read) {
+            updatedConv = updatedConv.copy(read = true, unreadCount = 0)
+        }
     }
     conversationsDB.insertOrUpdate(updatedConv)
 }

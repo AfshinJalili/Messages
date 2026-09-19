@@ -798,17 +798,34 @@ class ThreadActivity : SimpleActivity() {
 
     private fun flushThreadReadState() {
         if (isRecycleBin || !providerMessagesReady) return
-        val atBottom = !binding.threadMessagesList.canScrollVertically(1)
-        val pending = messages.filter {
-            !it.read && it.isReceivedMessage() && !it.isScheduled && it.getStableId() !in readInSession
-        }
-        if (pending.isEmpty()) return
         val visibleThreadId = threadId
+        val atBottom = !binding.threadMessagesList.canScrollVertically(1)
         ensureBackgroundThread {
             if (atBottom) {
                 markThreadMessagesRead(visibleThreadId)
             } else {
-                markVisibleMessagesRead(visibleThreadId, pending)
+                val visible = collectFullyVisibleUnreadMessages()
+                if (visible.isNotEmpty()) {
+                    markVisibleMessagesRead(visibleThreadId, visible)
+                }
+            }
+            InboxRepository.refreshUnreadCounts(applicationContext, listOf(visibleThreadId))
+        }
+    }
+
+    private fun collectFullyVisibleUnreadMessages(): List<Message> {
+        val list = binding.threadMessagesList
+        val manager = list.layoutManager as? LinearLayoutManager ?: return emptyList()
+        val items = getOrCreateThreadAdapter().currentList
+        val viewportHeight = list.height - list.paddingTop - list.paddingBottom
+        if (viewportHeight <= 0) return emptyList()
+        return (manager.findFirstVisibleItemPosition()..manager.findLastVisibleItemPosition()).mapNotNull { index ->
+            val message = items.getOrNull(index) as? Message ?: return@mapNotNull null
+            val view = manager.findViewByPosition(index) ?: return@mapNotNull null
+            val visibleHeight = minOf(view.bottom, list.height - list.paddingBottom) - maxOf(view.top, list.paddingTop)
+            message.takeIf {
+                !it.read && it.getStableId() !in readInSession && it.isReceivedMessage() && !it.isScheduled &&
+                    visibleHeight >= minOf(view.height, viewportHeight)
             }
         }
     }
@@ -817,18 +834,7 @@ class ThreadActivity : SimpleActivity() {
         val list = binding.threadMessagesList
         if (!providerMessagesReady || isRecycleBin || visibleReadInProgress || list.isComputingLayout ||
             list.scrollState != RecyclerView.SCROLL_STATE_IDLE || !list.hasWindowFocus()) return
-        val manager = list.layoutManager as LinearLayoutManager
-        val items = getOrCreateThreadAdapter().currentList
-        val viewportHeight = list.height - list.paddingTop - list.paddingBottom
-        if (viewportHeight <= 0) return
-        val visible = (manager.findFirstVisibleItemPosition()..manager.findLastVisibleItemPosition()).mapNotNull { index ->
-            val message = items.getOrNull(index) as? Message ?: return@mapNotNull null
-            val view = manager.findViewByPosition(index) ?: return@mapNotNull null
-            val visibleHeight = minOf(view.bottom, list.height - list.paddingBottom) - maxOf(view.top, list.paddingTop)
-            // A bubble must be fully visible; an oversized bubble must fill the viewport.
-            message.takeIf { !it.read && it.getStableId() !in readInSession && it.isReceivedMessage() && !it.isScheduled &&
-                visibleHeight >= minOf(view.height, viewportHeight) }
-        }
+        val visible = collectFullyVisibleUnreadMessages()
         if (visible.isEmpty()) return
         visibleReadInProgress = true
         val visibleThreadId = threadId
@@ -1874,8 +1880,6 @@ class ThreadActivity : SimpleActivity() {
         try {
             refreshedSinceSent = false
             sendMessageCompat(text, addresses, subscriptionId, attachments, messageToResend)
-            InboxRepository.bumpAfterOutgoing(this, threadId, text)
-            refreshConversations()
             ensureBackgroundThread {
                 val messages = getMessages(threadId, limit = maxOf(1, attachments.size))
                     .filterNotInByKey(messages) { it.getStableId() }
@@ -1916,13 +1920,16 @@ class ThreadActivity : SimpleActivity() {
             }
         }
         messagesDB.insertOrUpdate(message)
-        if (!message.isReceivedMessage() && !message.isScheduled) {
+        val isOutgoing = !message.isReceivedMessage() && !message.isScheduled
+        if (isOutgoing) {
             InboxRepository.bumpAfterOutgoing(this, message.threadId, message.body)
         }
         if (shouldUnarchive()) {
             updateConversationArchivedStatus(message.threadId, false)
         }
-        refreshConversations()
+        if (isOutgoing || shouldUnarchive()) {
+            refreshConversations()
+        }
     }
 
     // show selected contacts, properly split to new lines when appropriate

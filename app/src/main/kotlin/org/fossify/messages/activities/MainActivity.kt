@@ -81,12 +81,8 @@ import org.fossify.messages.helpers.SEARCHED_MESSAGE_ID
 import org.fossify.messages.helpers.THREAD_ID
 import org.fossify.messages.helpers.THREAD_TITLE
 import org.fossify.messages.models.Conversation
-import org.fossify.messages.models.Events
 import org.fossify.messages.models.Message
 import org.fossify.messages.models.SearchResult
-import org.greenrobot.eventbus.EventBus
-import org.greenrobot.eventbus.Subscribe
-import org.greenrobot.eventbus.ThreadMode
 
 class MainActivity : SimpleActivity() {
     override var isSearchBarEnabled = true
@@ -99,7 +95,6 @@ class MainActivity : SimpleActivity() {
     private var inboxConversations = arrayListOf<Conversation>()
     private var providerReconcileActive = false
     private var inboxFilter = InboxFilter.ALL
-    private var bus: EventBus? = null
     private var inboxDeletionVersion = UndoDeletion.version
     private val pendingSwipes = mutableListOf<PendingSwipe>()
     private val searchHandler = Handler(Looper.getMainLooper())
@@ -153,8 +148,8 @@ class MainActivity : SimpleActivity() {
         binding.conversationsProgressBar.setIndicatorColor(properPrimaryColor)
         binding.conversationsProgressBar.trackColor = properPrimaryColor.adjustAlpha(resources.designFloat(R.dimen.opacity_outline))
         checkShortcut()
-        InboxRepository.refreshUnreadCounts(this)
-        InboxRepository.scheduleProviderReconcile(this)
+        // Debounced: give ThreadActivity read flushes time to reach Room before reconciling.
+        InboxRepository.refreshInbox(this)
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -176,7 +171,6 @@ class MainActivity : SimpleActivity() {
     override fun onDestroy() {
         InboxRepository.setReconcileListener(null)
         searchHandler.removeCallbacksAndMessages(null)
-        bus?.unregister(this)
         super.onDestroy()
     }
 
@@ -354,11 +348,6 @@ class MainActivity : SimpleActivity() {
                             }
 
                             initMessenger()
-                            bus = EventBus.getDefault()
-                            try {
-                                bus!!.register(this)
-                            } catch (_: Exception) {
-                            }
                         }
                     } else {
                         finish()
@@ -742,12 +731,6 @@ class MainActivity : SimpleActivity() {
     private fun launchSettings() {
         hideKeyboard()
         startActivity(Intent(applicationContext, SettingsActivity::class.java))
-    }
-
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    fun refreshConversations(@Suppress("unused") event: Events.RefreshConversations) {
-        InboxRepository.refreshUnreadCounts(this)
-        InboxRepository.scheduleProviderReconcile(this)
     }
 
     companion object {

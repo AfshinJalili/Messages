@@ -20,7 +20,6 @@ import org.fossify.messages.extensions.messagesDB
 import org.fossify.messages.extensions.shouldUnarchive
 import org.fossify.messages.extensions.showReceivedMessageNotification
 import org.fossify.messages.extensions.updateConversationArchivedStatus
-import org.fossify.messages.helpers.InboxRepository
 import org.fossify.messages.helpers.IncomingSpamClassifier
 import org.fossify.messages.helpers.refreshConversations
 import org.fossify.messages.helpers.refreshMessages
@@ -70,7 +69,6 @@ class SmsReceiver : BroadcastReceiver() {
                             reason = spamReason,
                         )
                     )
-                    InboxRepository.refreshUnreadCounts(appContext, listOf(threadId))
                     refreshConversations()
                 }
             } finally {
@@ -147,7 +145,6 @@ class SmsReceiver : BroadcastReceiver() {
             context.updateConversationArchivedStatus(threadId, false)
         }
 
-        InboxRepository.refreshUnreadCounts(context, listOf(threadId))
         refreshMessages()
         refreshConversations()
 
