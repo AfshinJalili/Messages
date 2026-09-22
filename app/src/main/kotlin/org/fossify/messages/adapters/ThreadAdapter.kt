@@ -1,6 +1,7 @@
 package org.fossify.messages.adapters
 
 import org.fossify.messages.helpers.designFloat
+import android.provider.Telephony
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.graphics.Color
@@ -45,7 +46,6 @@ import org.fossify.commons.extensions.beVisible
 import org.fossify.commons.extensions.beGoneIf
 import org.fossify.commons.extensions.beVisibleIf
 import org.fossify.commons.extensions.copyToClipboard
-import org.fossify.commons.extensions.formatDateOrTime
 import org.fossify.commons.extensions.formatTime
 import org.fossify.commons.extensions.getContrastColor
 import org.fossify.commons.extensions.getProperPrimaryColor
@@ -116,7 +116,8 @@ class ThreadAdapter(
     private var messageMenu: PopupWindow? = null
 
     @SuppressLint("MissingPermission")
-    private val hasMultipleSIMCards = (activity.subscriptionManagerCompat().activeSubscriptionInfoList?.size ?: 0) > 1
+    private val simLabels = activity.subscriptionManagerCompat().activeSubscriptionInfoList.orEmpty()
+        .associate { it.subscriptionId to (it.simSlotIndex + 1).toString() }
     private val maxChatBubbleWidth = (activity.usableScreenSize.x * 0.8f).toInt()
     private val groupedTopMargin = (2 * activity.resources.displayMetrics.density).toInt()
     private val ungroupedTopMargin = (8 * activity.resources.displayMetrics.density).toInt()
@@ -124,8 +125,6 @@ class ThreadAdapter(
     companion object {
         private const val MAX_MEDIA_HEIGHT_RATIO = 3
         private const val GROUPING_WINDOW_SECS = 60
-        private const val SIM_BITS = 21
-        private const val SIM_MASK = (1L shl SIM_BITS) - 1
     }
 
     init {
@@ -251,9 +250,7 @@ class ThreadAdapter(
         return when (val item = getItem(position)) {
             is Message -> item.getStableId()
             is ThreadDateTime -> {
-                val sim = (item.simID.hashCode().toLong() and SIM_MASK)
-                val key = (item.date.toLong() shl SIM_BITS) or sim
-                generateStableId(THREAD_DATE_TIME, key)
+                generateStableId(THREAD_DATE_TIME, item.date.toLong())
             }
             is ThreadError -> generateStableId(THREAD_SENT_MESSAGE_ERROR, item.messageId)
             is ThreadSending -> generateStableId(THREAD_SENT_MESSAGE_SENDING, item.messageId)
@@ -404,8 +401,6 @@ class ThreadAdapter(
         } as ArrayList<ThreadItem>
     }
 
-    private fun isThreadDateTime(position: Int) = currentList.getOrNull(position) is ThreadDateTime
-
     fun updateMessages(
         newMessages: ArrayList<ThreadItem>,
         scrollPosition: Int = -1,
@@ -426,6 +421,9 @@ class ThreadAdapter(
     private fun setupView(holder: ViewHolder, view: View, message: Message, position: Int) {
         ItemMessageBinding.bind(view).apply {
             threadMessageHolder.isSelected = selectedKeys.contains(message.getSelectionKey())
+            threadMessageBubble.updateLayoutParams<RelativeLayout.LayoutParams> {
+                width = if (message.attachment?.attachments?.isNotEmpty() == true) ViewGroup.LayoutParams.MATCH_PARENT else ViewGroup.LayoutParams.WRAP_CONTENT
+            }
             threadMessageWrapper.animate().cancel()
             threadMessageWrapper.scaleX = 1f
             threadMessageWrapper.scaleY = 1f
@@ -446,14 +444,38 @@ class ThreadAdapter(
             }
 
             val isStarred = activity.config.isMessageStarred(message.id, message.isMMS)
+            val simLabel = simLabels[message.subscriptionId] ?: "?"
+            threadMessageSim.apply {
+                text = simLabel
+                val simColor = when (simLabel) {
+                    "1" -> activity.getColor(R.color.message_sim_one)
+                    "2" -> activity.getColor(R.color.message_sim_two)
+                    else -> textColor
+                }
+                backgroundTintList = android.content.res.ColorStateList.valueOf(simColor)
+                setTextColor(simColor.getContrastColor())
+                setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize * resources.designFloat(R.dimen.type_scale_sim_number))
+                updateLayoutParams<LinearLayout.LayoutParams> {
+                    width = (fontSize * resources.designFloat(R.dimen.type_scale_metadata)).toInt()
+                    height = width
+                }
+            }
             threadMessageTime.apply {
                 val time = (message.date * 1000L).formatTime(context)
                 @SuppressLint("SetTextI18n")
                 text = if (isStarred) "★ $time" else time
-                setTextColor(textColor)
-                setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize - 6)
-                // Starred messages retain their visible marker.
-                beVisibleIf(isStarred)
+                setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize * resources.designFloat(R.dimen.type_scale_message_footer))
+                beVisible()
+                val delivered = message.status == Telephony.Sms.STATUS_COMPLETE
+                val statusIcon = if (message.type == Telephony.Sms.MESSAGE_TYPE_SENT && !message.isScheduled) {
+                    if (delivered) R.drawable.ic_check_double_vector else org.fossify.commons.R.drawable.ic_check_vector
+                } else 0
+                val icon = if (statusIcon == 0) null else AppCompatResources.getDrawable(activity, statusIcon)?.mutate()?.apply {
+                    setBounds(0, 0, textSize.toInt(), textSize.toInt())
+                }
+                setCompoundDrawablesRelative(null, null, icon, null)
+                val description = "${activity.getString(R.string.message_sim_label, simLabel)}, $text"
+                contentDescription = if (statusIcon != 0) "$description, ${activity.getString(if (delivered) R.string.message_delivered else R.string.message_sent)}" else description
             }
 
             setupOtpChip(messageBinding = this, message = message)
@@ -591,8 +613,9 @@ class ThreadAdapter(
                 }
             }
 
+            threadMessageBubble.background = AppCompatResources.getDrawable(activity, R.drawable.item_received_background)
+            threadMessageTime.setTextColor(textColor)
             threadMessageBody.apply {
-                background = AppCompatResources.getDrawable(activity, R.drawable.item_received_background)
                 setTextColor(textColor)
                 setLinkTextColor(activity.getProperPrimaryColor())
             }
@@ -628,14 +651,16 @@ class ThreadAdapter(
             val primaryColor = activity.getProperPrimaryColor()
             val contrastColor = primaryColor.getContrastColor()
 
+            threadMessageBubble.updateLayoutParams<RelativeLayout.LayoutParams> {
+                removeRule(RelativeLayout.END_OF)
+                addRule(RelativeLayout.ALIGN_PARENT_END)
+            }
+            threadMessageBubble.background = AppCompatResources.getDrawable(activity, R.drawable.item_sent_background)?.apply {
+                applyColorFilter(primaryColor)
+            }
+            threadMessageTime.setTextColor(contrastColor)
+            threadMessageTime.compoundDrawablesRelative.filterNotNull().forEach { it.applyColorFilter(contrastColor) }
             threadMessageBody.apply {
-                updateLayoutParams<RelativeLayout.LayoutParams> {
-                    removeRule(RelativeLayout.END_OF)
-                    addRule(RelativeLayout.ALIGN_PARENT_END)
-                }
-
-                background = AppCompatResources.getDrawable(activity, R.drawable.item_sent_background)
-                background.applyColorFilter(primaryColor)
                 setTextColor(contrastColor)
                 setLinkTextColor(contrastColor)
 
@@ -687,7 +712,7 @@ class ThreadAdapter(
             .into(imageView.attachmentImage)
 
         imageView.attachmentImage.updateLayoutParams<ViewGroup.LayoutParams> {
-            width = maxChatBubbleWidth
+            width = ViewGroup.LayoutParams.MATCH_PARENT
             height = ViewGroup.LayoutParams.WRAP_CONTENT
         }
 
@@ -710,6 +735,7 @@ class ThreadAdapter(
             setupVCardPreview(
                 activity = activity,
                 uri = uri,
+                foregroundColor = if (message.isReceivedMessage()) textColor else activity.getProperPrimaryColor().getContrastColor(),
                 onClick = {
                     if (actModeCallback.isSelectable) {
                         holder.viewClicked(message)
@@ -735,6 +761,7 @@ class ThreadAdapter(
                 uri = uri,
                 title = attachment.filename,
                 mimeType = attachment.mimetype,
+                foregroundColor = if (message.isReceivedMessage()) textColor else activity.getProperPrimaryColor().getContrastColor(),
                 onClick = {
                     if (actModeCallback.isSelectable) {
                         holder.viewClicked(message)
@@ -750,24 +777,9 @@ class ThreadAdapter(
     }
 
     private fun setupDateTime(view: View, dateTime: ThreadDateTime) {
-        ItemThreadDateTimeBinding.bind(view).apply {
-            threadDateTime.apply {
-                text = (dateTime.date * 1000L).formatDateOrTime(
-                    context = context,
-                    hideTimeOnOtherDays = false,
-                    showCurrentYear = false
-                )
-                setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize)
-            }
-            threadDateTime.setTextColor(textColor)
-
-            threadSimIcon.beVisibleIf(hasMultipleSIMCards)
-            threadSimNumber.beVisibleIf(hasMultipleSIMCards)
-            if (hasMultipleSIMCards) {
-                threadSimNumber.text = dateTime.simID
-                threadSimNumber.setTextColor(textColor.getContrastColor())
-                threadSimIcon.applyColorFilter(textColor)
-            }
+        ItemThreadDateTimeBinding.bind(view).threadDateTime.apply {
+            text = org.fossify.messages.helpers.ThreadDates.label(dateTime.date)
+            org.fossify.messages.helpers.ThreadDates.style(this, activity)
         }
     }
 
@@ -816,7 +828,7 @@ class ThreadAdapter(
         }
 
         messageBinding.threadMessageHolder.updateLayoutParams<ViewGroup.MarginLayoutParams> {
-            topMargin = if (groupedWithPrevious) groupedTopMargin else ungroupedTopMargin
+            topMargin = if (currentList.getOrNull(position - 1) is ThreadDateTime) 0 else if (groupedWithPrevious) groupedTopMargin else ungroupedTopMargin
         }
     }
 
@@ -861,7 +873,7 @@ private class ThreadItemDiffCallback : DiffUtil.ItemCallback<ThreadItem>() {
             is Message -> Message.areItemsTheSame(oldItem, newItem as Message)
             is ThreadDateTime -> {
                 val new = newItem as ThreadDateTime
-                oldItem.date == new.date && oldItem.simID == new.simID
+                oldItem.date == new.date
             }
 
             is ThreadUnreadSeparator -> true
@@ -872,7 +884,7 @@ private class ThreadItemDiffCallback : DiffUtil.ItemCallback<ThreadItem>() {
         if (oldItem::class.java != newItem::class.java) return false
         return when (oldItem) {
             is ThreadSending -> true
-            is ThreadDateTime -> oldItem.simID == (newItem as ThreadDateTime).simID
+            is ThreadDateTime -> true
             is ThreadError -> oldItem.messageText == (newItem as ThreadError).messageText
             is ThreadSent -> oldItem.delivered == (newItem as ThreadSent).delivered
             is Message -> Message.areContentsTheSame(oldItem, newItem as Message)

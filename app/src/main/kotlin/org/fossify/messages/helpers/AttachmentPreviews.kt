@@ -21,7 +21,7 @@ fun ItemAttachmentDocumentPreviewBinding.setupDocumentPreview(
     onLongClick: (() -> Unit)? = null,
     onRemoveButtonClicked: (() -> Unit)? = null
 ) {
-    documentAttachmentHolder.setupDocumentPreview(uri, title, mimeType, onClick, onLongClick)
+    documentAttachmentHolder.setupDocumentPreview(uri, title, mimeType, onClick = onClick, onLongClick = onLongClick)
     removeAttachmentButtonHolder.removeAttachmentButton.apply {
         beVisible()
         background.applyColorFilter(context.getProperPrimaryColor())
@@ -37,6 +37,7 @@ fun ItemAttachmentDocumentBinding.setupDocumentPreview(
     uri: Uri,
     title: String,
     mimeType: String,
+    foregroundColor: Int? = null,
     onClick: (() -> Unit)? = null,
     onLongClick: (() -> Unit)? = null
 ) {
@@ -59,7 +60,7 @@ fun ItemAttachmentDocumentBinding.setupDocumentPreview(
         }
     }
 
-    val textColor = context.getProperTextColor()
+    val textColor = foregroundColor ?: context.getProperTextColor()
     val primaryColor = context.getProperPrimaryColor()
 
     filename.setTextColor(textColor)
@@ -106,12 +107,13 @@ fun ItemAttachmentVcardBinding.setupVCardPreview(
     activity: Activity,
     uri: Uri,
     attachment: Boolean = false,
+    foregroundColor: Int? = null,
     onClick: (() -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
     onVCardLoaded: (() -> Unit)? = null,
 ) {
     val context = root.context
-    val textColor = activity.getProperTextColor()
+    val textColor = foregroundColor ?: activity.getProperTextColor()
     val primaryColor = activity.getProperPrimaryColor()
 
     root.background.applyColorFilter(context.tonalSurfaceColor())
@@ -155,7 +157,7 @@ fun ItemAttachmentVcardBinding.setupVCardPreview(
             if (attachment) {
                 onVCardLoaded?.invoke()
             } else {
-                viewContactDetails.setTextColor(primaryColor)
+                viewContactDetails.setTextColor(foregroundColor ?: primaryColor)
                 viewContactDetails.beVisible()
             }
 

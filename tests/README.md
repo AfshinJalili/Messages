@@ -89,3 +89,12 @@ only with the debug app installed as the default SMS app.
 Opening a thread does not clear its unread state until messages are read at
 scroll idle or the user scrolls to the bottom. The SQL regression script also
 checks partial reads and exact unread-count updates.
+
+## Conversation dates
+
+`ThreadDateChecks` exercises day-only dividers, same-day SIM changes, midnight,
+old-year labels, footer/status refreshes, received and attachment-only cards,
+150% text in RTL, inline Persian metadata, footer edge clearance, numbered SIM colors, and sticky-date display/fade/duplicate suppression. It uses
+in-memory messages and does not write provider rows. See
+[`docs/thread-dates.md`](../docs/thread-dates.md) for the behavior and known
+baseline test failures.

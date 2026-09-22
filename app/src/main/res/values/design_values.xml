@@ -15,4 +15,6 @@
     <item name="type_scale_metadata" type="dimen" format="float">0.8</item>
     <item name="opacity_outline" type="dimen" format="float">0.25</item>
     <item name="opacity_muted" type="dimen" format="float">0.5</item>
+    <item name="type_scale_message_footer" type="dimen" format="float">0.65</item>
+    <item name="type_scale_sim_number" type="dimen" format="float">0.55</item>
 </resources>

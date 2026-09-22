@@ -202,4 +202,7 @@
     <string name="items_deleted">Deleted</string>
     <string name="scroll_to_latest_message">Scroll to latest message</string>
     <string name="scroll_to_unread_messages">Scroll to unread messages, %1$d unread</string>
+    <string name="message_sim_label">SIM %1$s</string>
+    <string name="message_delivered">Delivered</string>
+    <string name="message_sent">Sent</string>
 </resources>

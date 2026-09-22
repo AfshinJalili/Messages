@@ -132,6 +132,20 @@
 
         </com.qtalk.recyclerviewfastscroller.RecyclerViewFastScroller>
 
+        <TextView
+            android:id="@+id/sticky_thread_date"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/small_margin"
+            android:paddingHorizontal="@dimen/medium_margin"
+            android:paddingVertical="@dimen/tiny_margin"
+            android:textSize="@dimen/smaller_text_size"
+            android:importantForAccessibility="no"
+            android:visibility="invisible"
+            app:layout_constraintTop_toTopOf="@id/thread_messages_fastscroller"
+            app:layout_constraintStart_toStartOf="@id/thread_messages_fastscroller"
+            app:layout_constraintEnd_toEndOf="@id/thread_messages_fastscroller" />
+
         <org.fossify.commons.views.MyFloatingActionButton
             android:id="@+id/scroll_to_bottom_fab"
             android:layout_width="wrap_content"

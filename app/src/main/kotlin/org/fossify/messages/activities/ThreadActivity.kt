@@ -201,7 +201,6 @@ import org.fossify.messages.models.ThreadItem.ThreadUnreadSeparator
 import org.fossify.messages.helpers.OPEN_THREAD_SEARCH
 import org.fossify.messages.models.ThreadItem.ThreadError
 import org.fossify.messages.models.ThreadItem.ThreadSending
-import org.fossify.messages.models.ThreadItem.ThreadSent
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
@@ -344,6 +343,8 @@ class ThreadActivity : SimpleActivity() {
     }
 
     override fun onDestroy() {
+        binding.stickyThreadDate.removeCallbacks(hideStickyDate)
+        binding.stickyThreadDate.animate().cancel()
         super.onDestroy()
         bus?.unregister(this)
     }
@@ -739,14 +740,60 @@ class ThreadActivity : SimpleActivity() {
         }
     }
 
+    private val hideStickyDate = Runnable {
+        binding.stickyThreadDate.animate().alpha(0f)
+            .setDuration(if (android.animation.ValueAnimator.areAnimatorsEnabled()) 180 else 0)
+            .withEndAction { binding.stickyThreadDate.visibility = View.INVISIBLE }.start()
+    }
+
+    private fun updateStickyDate() {
+        val list = binding.threadMessagesList
+        val bubble = binding.stickyThreadDate
+        val adapter = getOrCreateThreadAdapter()
+        val manager = list.layoutManager as LinearLayoutManager
+        // Use the actual clipped edge, including content scrolling through the list padding.
+        val first = (0 until list.childCount).map { list.getChildAt(it) }
+            .firstOrNull { it.bottom > 0 } ?: return
+        val position = list.getChildAdapterPosition(first)
+        if (position == RecyclerView.NO_POSITION) return
+        val date = (position downTo 0).firstNotNullOfOrNull {
+            adapter.currentList.getOrNull(it) as? ThreadDateTime
+        } ?: return
+        bubble.text = org.fossify.messages.helpers.ThreadDates.label(date.date)
+        val inlineDate = (0 until list.childCount).map { list.getChildAt(it) }
+            .firstOrNull {
+                adapter.currentList.getOrNull(list.getChildAdapterPosition(it)) == date
+            }
+        val duplicateVisible = inlineDate?.findViewById<View>(R.id.thread_date_time)?.let {
+            inlineDate.top + it.bottom > 0
+        } == true
+        bubble.animate().cancel()
+        bubble.visibility = if (duplicateVisible) View.INVISIBLE else View.VISIBLE
+        bubble.alpha = 1f
+        val nextDivider = (position + 1..manager.findLastVisibleItemPosition()).firstNotNullOfOrNull {
+            if (adapter.currentList.getOrNull(it) is ThreadDateTime) manager.findViewByPosition(it) else null
+        }
+        bubble.translationY = nextDivider?.let { minOf(0f, (it.top - bubble.bottom).toFloat()) } ?: 0f
+        bubble.removeCallbacks(hideStickyDate)
+        if (list.scrollState == RecyclerView.SCROLL_STATE_IDLE) bubble.postDelayed(hideStickyDate, 700)
+    }
+
     private fun setupScrollListener() {
+        org.fossify.messages.helpers.ThreadDates.style(binding.stickyThreadDate, this)
         binding.threadMessagesList.onScroll(
             onScrolled = { _, _ ->
+                updateStickyDate()
                 tryLoadMoreMessages()
                 updateScrollFab()
                 binding.threadMessagesList.post(updateScrollPosition)
             },
             onScrollStateChanged = { newState ->
+                binding.stickyThreadDate.removeCallbacks(hideStickyDate)
+                if (newState == RecyclerView.SCROLL_STATE_IDLE) {
+                    binding.stickyThreadDate.postDelayed(hideStickyDate, 700)
+                } else {
+                    updateStickyDate()
+                }
                 if (newState == RecyclerView.SCROLL_STATE_IDLE) {
                     tryLoadMoreMessages()
                     binding.threadMessagesList.post(updateScrollPosition)
@@ -1514,28 +1561,17 @@ class ThreadActivity : SimpleActivity() {
 
         messages.sortBy { it.date }
 
-        val subscriptionIdToSimId = HashMap<Int, String>()
-        subscriptionIdToSimId[-1] = "?"
-        subscriptionManagerCompat().activeSubscriptionInfoList?.forEachIndexed { index, subscriptionInfo ->
-            subscriptionIdToSimId[subscriptionInfo.subscriptionId] = "${index + 1}"
-        }
-
-        var prevDateTime = 0
-        var prevSIMId = -2
+        var previousDay: org.joda.time.LocalDate? = null
         var hadUnreadItems = false
         val cnt = messages.size
         for (i in 0 until cnt) {
             val message = messages.getOrNull(i) ?: continue
             if (message.getStableId() in UndoDeletion.messages || threadId in UndoDeletion.threads) continue
             val separatorIndex = items.size
-            // do not show the date/time above every message, only if the difference between the 2 messages is at least MIN_DATE_TIME_DIFF_SECS,
-            // or if the message is sent from a different SIM
-            val isSentFromDifferentKnownSIM =
-                prevSIMId != -1 && message.subscriptionId != -1 && prevSIMId != message.subscriptionId
-            if (message.date - prevDateTime > MIN_DATE_TIME_DIFF_SECS || isSentFromDifferentKnownSIM) {
-                val simCardID = subscriptionIdToSimId[message.subscriptionId] ?: "?"
-                items.add(ThreadDateTime(message.date, simCardID))
-                prevDateTime = message.date
+            val day = DateTime(message.millis()).toLocalDate()
+            if (day != previousDay) {
+                items.add(ThreadDateTime((day.toDateTimeAtStartOfDay().millis / 1000).toInt()))
+                previousDay = day
             }
             items.add(message)
 
@@ -1553,16 +1589,6 @@ class ThreadActivity : SimpleActivity() {
                 }
                 hadUnreadItems = true
             }
-
-            if (i == cnt - 1 && (message.type == Telephony.Sms.MESSAGE_TYPE_SENT)) {
-                items.add(
-                    ThreadSent(
-                        messageId = message.id,
-                        delivered = message.status == Telephony.Sms.STATUS_COMPLETE
-                    )
-                )
-            }
-            prevSIMId = message.subscriptionId
         }
 
         return items
@@ -2286,7 +2312,6 @@ class ThreadActivity : SimpleActivity() {
         private const val TYPE_EDIT = 14
         private const val TYPE_SEND = 15
         private const val TYPE_DELETE = 16
-        private const val MIN_DATE_TIME_DIFF_SECS = 300
         private const val SCROLL_TO_BOTTOM_FAB_LIMIT = 20
         private const val PREFETCH_THRESHOLD = 45
     }

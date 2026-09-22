@@ -1,40 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/thread_date_time_holder"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginTop="20dp"
-    android:layout_marginBottom="12dp">
-
+    android:paddingVertical="@dimen/thread_date_spacing">
     <TextView
         android:id="@+id/thread_date_time"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_centerHorizontal="true"
-        android:textSize="@dimen/normal_text_size"
-        tools:text="13 March, 13:30" />
-
-    <ImageView
-        android:id="@+id/thread_sim_icon"
-        android:layout_width="@dimen/activity_margin"
-        android:layout_height="wrap_content"
-        android:layout_alignTop="@+id/thread_date_time"
-        android:layout_alignBottom="@id/thread_date_time"
-        android:layout_marginEnd="@dimen/small_margin"
-        android:layout_toStartOf="@id/thread_date_time"
-        android:src="@drawable/ic_sim_vector" />
-
-    <TextView
-        android:id="@+id/thread_sim_number"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_alignStart="@+id/thread_sim_icon"
-        android:layout_alignTop="@+id/thread_sim_icon"
-        android:layout_alignEnd="@+id/thread_sim_icon"
-        android:layout_alignBottom="@+id/thread_sim_icon"
-        android:gravity="center"
-        android:textSize="@dimen/smaller_text_size"
-        tools:text="1" />
-
-</RelativeLayout>
+        android:layout_gravity="center"
+        android:paddingHorizontal="@dimen/medium_margin"
+        android:paddingVertical="@dimen/tiny_margin"
+        android:textSize="@dimen/smaller_text_size" />
+</FrameLayout>

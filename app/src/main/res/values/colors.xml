@@ -29,4 +29,6 @@
     <color name="swipe_delete_background">@color/design_error</color>
     <color name="swipe_mute_background">@color/md_blue_grey_700</color>
 
+    <color name="message_sim_one">#2463EB</color>
+    <color name="message_sim_two">#128147</color>
 </resources>

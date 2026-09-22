@@ -125,12 +125,13 @@ class BlockedMessagesThreadActivity : SimpleActivity() {
 
     private fun getThreadItems(): ArrayList<ThreadItem> {
         val items = ArrayList<ThreadItem>()
-        var previousDate = 0
+        var previousDate: org.joda.time.LocalDate? = null
         messages.sortBy { it.date }
         messages.filter { it.id !in UndoDeletion.spam }.forEach { message ->
-            if (message.date - previousDate > MIN_DATE_TIME_DIFF_SECS) {
-                items.add(ThreadDateTime(message.date, "?"))
-                previousDate = message.date
+            val day = org.joda.time.DateTime(message.millis()).toLocalDate()
+            if (day != previousDate) {
+                items.add(ThreadDateTime((day.toDateTimeAtStartOfDay().millis / 1000).toInt()))
+                previousDate = day
             }
             items.add(message)
         }
@@ -220,6 +221,5 @@ class BlockedMessagesThreadActivity : SimpleActivity() {
     }
 
     companion object {
-        private const val MIN_DATE_TIME_DIFF_SECS = 300
     }
 }
