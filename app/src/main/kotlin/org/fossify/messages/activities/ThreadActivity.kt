@@ -58,7 +58,6 @@ import com.google.gson.reflect.TypeToken
 import org.fossify.commons.dialogs.ConfirmationDialog
 import org.fossify.commons.dialogs.PermissionRequiredDialog
 import org.fossify.commons.dialogs.RadioGroupDialog
-import org.fossify.commons.extensions.addBlockedNumber
 import org.fossify.commons.extensions.applyColorFilter
 import org.fossify.commons.extensions.beGone
 import org.fossify.commons.extensions.beVisible
@@ -141,6 +140,7 @@ import org.fossify.messages.extensions.indexOfFirstOrNull
 import org.fossify.messages.extensions.isGifMimeType
 import org.fossify.messages.extensions.isImageMimeType
 import org.fossify.messages.extensions.launchConversationDetails
+import org.fossify.messages.extensions.markMessageRead
 import org.fossify.messages.extensions.markThreadMessagesRead
 import org.fossify.messages.extensions.markThreadMessagesUnread
 import org.fossify.messages.helpers.InboxRepository
@@ -176,6 +176,8 @@ import org.fossify.messages.helpers.PICK_VIDEO_INTENT
 import org.fossify.messages.helpers.SEARCHED_MESSAGE_ID
 import org.fossify.messages.helpers.THREAD_ATTACHMENT_URI
 import org.fossify.messages.helpers.THREAD_ATTACHMENT_URIS
+import org.fossify.messages.helpers.OPEN_SPAM
+import org.fossify.messages.helpers.containsNumber
 import org.fossify.messages.helpers.THREAD_ID
 import org.fossify.messages.helpers.THREAD_NUMBER
 import org.fossify.messages.helpers.THREAD_TEXT
@@ -197,10 +199,10 @@ import org.fossify.messages.models.MessageAttachment
 import org.fossify.messages.models.SIMCard
 import org.fossify.messages.models.ThreadItem
 import org.fossify.messages.models.ThreadItem.ThreadDateTime
-import org.fossify.messages.models.ThreadItem.ThreadUnreadSeparator
 import org.fossify.messages.helpers.OPEN_THREAD_SEARCH
 import org.fossify.messages.models.ThreadItem.ThreadError
-import org.fossify.messages.models.ThreadItem.ThreadSending
+import org.fossify.messages.models.ThreadItem.ThreadSpamGroup
+import org.fossify.messages.models.buildThreadItems
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
@@ -236,6 +238,9 @@ class ThreadActivity : SimpleActivity() {
     private var isJumpingToMessage = false
     private var isRecycleBin = false
     private var isLaunchedFromShortcut = false
+    private var spamReasons: Map<Long, Int> = emptyMap()
+    private val expandedSpamGroups = HashSet<Long>()
+    private var openSpam = false
 
     private var isScheduledMessage: Boolean = false
     private var messageToResend: Message? = null
@@ -277,6 +282,7 @@ class ThreadActivity : SimpleActivity() {
         }
         isRecycleBin = intent.getBooleanExtra(IS_RECYCLE_BIN, false)
         isLaunchedFromShortcut = intent.getBooleanExtra(IS_LAUNCHED_FROM_SHORTCUT, false)
+        openSpam = intent.getBooleanExtra(OPEN_SPAM, false)
 
         bus = EventBus.getDefault()
         bus!!.register(this)
@@ -375,7 +381,10 @@ class ThreadActivity : SimpleActivity() {
             findItem(R.id.conversation_details).isVisible = conversation != null && !isRecycleBin
             findItem(R.id.block_number).title =
                 getString(org.fossify.commons.R.string.block_number)
-            findItem(R.id.block_number).isVisible = !isRecycleBin
+            val senderBlocked = participants.size == 1 && config.spamNumbers.containsNumber(participants.getAddresses().first())
+            findItem(R.id.block_number).isVisible = !isRecycleBin && !senderBlocked
+            // Also the way to unblock, since allowing a number removes it from the blocked set.
+            findItem(R.id.allow_sender).isVisible = !isRecycleBin && participants.size == 1 && (senderBlocked || messages.any { isSpam(it) })
             findItem(R.id.dial_number).isVisible =
                 participants.size == 1 && !isSpecialNumber() && !isRecycleBin
             findItem(R.id.manage_people).isVisible = !isSpecialNumber() && !isRecycleBin
@@ -448,6 +457,7 @@ class ThreadActivity : SimpleActivity() {
     private fun handleMenuItemAction(menuItem: MenuItem): Boolean {
         when (menuItem.itemId) {
             R.id.block_number -> tryBlocking()
+            R.id.allow_sender -> unmarkSpam(messages.filter { isSpam(it) }, allowSender = true)
             R.id.delete -> askConfirmDelete()
             R.id.restore -> askConfirmRestoreAll()
             R.id.archive -> archiveConversation()
@@ -642,7 +652,8 @@ class ThreadActivity : SimpleActivity() {
                         toRecycleBin,
                         fromRecycleBin
                     )
-                }
+                },
+                unmarkSpam = { unmarkSpam(it) }
             )
 
             binding.threadMessagesList.adapter = currAdapter
@@ -651,11 +662,13 @@ class ThreadActivity : SimpleActivity() {
     }
 
     private fun setupAdapter() {
+        loadSpamReasons()
         threadItems = getThreadItems()
 
         runOnUiThread {
             refreshMenuItems()
             getOrCreateThreadAdapter().apply {
+                spamReasons = this@ThreadActivity.spamReasons
                 // Inbound refresh preserves the viewport. Sending has its own explicit scroll.
                 updateMessages(threadItems)
             }
@@ -838,8 +851,9 @@ class ThreadActivity : SimpleActivity() {
         } else getString(R.string.scroll_to_latest_message)
     }
 
+    // Spam is read by opening its group, so thread-wide read state leaves it out.
     private fun hasUnreadMessages(): Boolean {
-        return messages.any { !it.read && it.isReceivedMessage() && !it.isScheduled }
+        return messages.any { !it.read && it.isReceivedMessage() && !it.isScheduled && !isSpam(it) }
     }
 
     private fun flushThreadReadState() {
@@ -879,7 +893,7 @@ class ThreadActivity : SimpleActivity() {
 
     private fun applyLocalThreadRead() {
         messages = ArrayList(messages.map {
-            if (!it.read && it.isReceivedMessage() && !it.isScheduled) it.copy(read = true) else it
+            if (!it.read && it.isReceivedMessage() && !it.isScheduled && !isSpam(it)) it.copy(read = true) else it
         })
         threadItems = getThreadItems()
         getOrCreateThreadAdapter().updateMessages(threadItems)
@@ -893,8 +907,18 @@ class ThreadActivity : SimpleActivity() {
         }
         val list = binding.threadMessagesList
         val items = getOrCreateThreadAdapter().currentList
+        if (openSpam) {
+            val spamPositions = items.indices.filter { index -> (items[index] as? Message)?.let { isSpam(it) } == true }
+            val target = spamPositions.firstOrNull { !(items[it] as Message).read } ?: spamPositions.lastOrNull()
+            if (target != null) {
+                (list.layoutManager as LinearLayoutManager).scrollToPositionWithOffset(target, list.paddingTop)
+            }
+            markSpamRead(spamPositions.map { (items[it] as Message).id })
+            initialPositionSettled = true
+            return
+        }
         val unreadPositions = items.indices.filter { index ->
-            (items[index] as? Message)?.let { !it.read && it.isReceivedMessage() && !it.isScheduled } == true
+            (items[index] as? Message)?.let { !it.read && it.isReceivedMessage() && !it.isScheduled && !isSpam(it) } == true
         }
         val first = unreadPositions.firstOrNull()
         val last = unreadPositions.lastOrNull()
@@ -943,6 +967,10 @@ class ThreadActivity : SimpleActivity() {
     private fun handleItemClick(any: Any) {
         when {
             any is Message && any.isScheduled -> showScheduledMessageInfo(any)
+            any is ThreadSpamGroup -> {
+                toggleSpamGroup(any)
+                getOrCreateThreadAdapter().updateMessages(threadItems)
+            }
             any is ThreadError -> {
                 binding.messageHolder.threadTypeMessage.setText(any.messageText)
                 messageToResend = messages.firstOrNull { it.id == any.messageId }
@@ -1017,8 +1045,13 @@ class ThreadActivity : SimpleActivity() {
         pendingInitialScroll = false
         initialPositionSettled = true
         if (messages.any { it.id == messageId }) {
+            val revealed = revealSpamMessage(messageId)
             val index = threadItems.indexOfFirst { (it as? Message)?.id == messageId }
-            if (index != -1) binding.threadMessagesList.smoothScrollToPosition(index)
+            if (revealed) {
+                getOrCreateThreadAdapter().updateMessages(threadItems, scrollPosition = index, smoothScroll = true)
+            } else if (index != -1) {
+                binding.threadMessagesList.smoothScrollToPosition(index)
+            }
             return
         }
 
@@ -1040,6 +1073,7 @@ class ThreadActivity : SimpleActivity() {
             }
 
             threadItems = getThreadItems()
+            revealSpamMessage(messageId)
             runOnUiThread {
                 loadingOlderMessages = false
                 val index = threadItems.indexOfFirst { (it as? Message)?.id == messageId }
@@ -1385,11 +1419,11 @@ class ThreadActivity : SimpleActivity() {
 
         ConfirmationDialog(this, question) {
             ensureBackgroundThread {
+                // App-level block: new SMS from these numbers are stored and go to Spam.
                 numbers.forEach {
-                    addBlockedNumber(it)
+                    config.addSpamNumber(it)
                 }
-                refreshConversations()
-                finish()
+                runOnUiThread { refreshMenuItems() }
             }
         }
     }
@@ -1552,46 +1586,67 @@ class ThreadActivity : SimpleActivity() {
         }
     }
 
-    @SuppressLint("MissingPermission")
     private fun getThreadItems(): ArrayList<ThreadItem> {
-        val items = ArrayList<ThreadItem>()
-        if (isFinishing) {
-            return items
-        }
-
+        if (isFinishing) return ArrayList()
         messages.sortBy { it.date }
+        return buildThreadItems(
+            messages = messages,
+            isSpam = ::isSpam,
+            isHidden = { it.getStableId() in UndoDeletion.messages || threadId in UndoDeletion.threads },
+            // In OPEN_SPAM mode the set holds the collapsed groups instead of the expanded ones.
+            isExpanded = { (it in expandedSpamGroups) != openSpam },
+        )
+    }
 
-        var previousDay: org.joda.time.LocalDate? = null
-        var hadUnreadItems = false
-        val cnt = messages.size
-        for (i in 0 until cnt) {
-            val message = messages.getOrNull(i) ?: continue
-            if (message.getStableId() in UndoDeletion.messages || threadId in UndoDeletion.threads) continue
-            val separatorIndex = items.size
-            val day = DateTime(message.millis()).toLocalDate()
-            if (day != previousDay) {
-                items.add(ThreadDateTime((day.toDateTimeAtStartOfDay().millis / 1000).toInt()))
-                previousDay = day
+    private fun isSpam(message: Message) = !message.isMMS && message.id in spamReasons
+
+    private fun loadSpamReasons() {
+        spamReasons = messagesDB.getThreadSpamMarkers(threadId).associate { it.id to it.reason }
+    }
+
+    private fun toggleSpamGroup(group: ThreadSpamGroup) {
+        if (!expandedSpamGroups.remove(group.key)) expandedSpamGroups.add(group.key)
+        if (!group.expanded) markSpamRead(group.messageIds)
+        threadItems = getThreadItems()
+    }
+
+    // A jump to a message inside a collapsed spam group opens the group first.
+    private fun revealSpamMessage(messageId: Long): Boolean {
+        val group = threadItems.firstOrNull { it is ThreadSpamGroup && !it.expanded && messageId in it.messageIds } as? ThreadSpamGroup
+            ?: return false
+        toggleSpamGroup(group)
+        return true
+    }
+
+    // Opening a spam group is what marks its spam read.
+    private fun markSpamRead(ids: Collection<Long>) {
+        val unreadIds = messages.filter { it.id in ids && isSpam(it) && !it.read }.map { it.id }.toSet()
+        if (unreadIds.isEmpty()) return
+        messages = ArrayList(messages.map { if (!it.isMMS && it.id in unreadIds) it.copy(read = true) else it })
+        ensureBackgroundThread {
+            unreadIds.forEach { markMessageRead(it, isMMS = false) }
+        }
+    }
+
+    private fun unmarkSpam(selected: List<Message>, allowSender: Boolean = false) {
+        ensureBackgroundThread {
+            if (allowSender) {
+                (selected.map { it.senderPhoneNumber } + participants.getAddresses())
+                    .filter { it.isNotEmpty() }.distinct().forEach { config.addAllowedNumber(it) }
             }
-            items.add(message)
-
-            if (message.type == Telephony.Sms.MESSAGE_TYPE_FAILED) {
-                items.add(ThreadError(message.id, message.body))
-            }
-
-            if (message.type == Telephony.Sms.MESSAGE_TYPE_OUTBOX) {
-                items.add(ThreadSending(message.id))
-            }
-
-            if (!message.read && message.isReceivedMessage() && !message.isScheduled) {
-                if (!hadUnreadItems) {
-                    items.add(separatorIndex, ThreadUnreadSeparator)
+            selected.forEach { messagesDB.deleteSpamMarker(it.id) }
+            InboxRepository.refreshUnreadCounts(applicationContext, listOf(threadId))
+            loadSpamReasons()
+            threadItems = getThreadItems()
+            runOnUiThread {
+                refreshMenuItems()
+                getOrCreateThreadAdapter().apply {
+                    spamReasons = this@ThreadActivity.spamReasons
+                    updateMessages(threadItems)
                 }
-                hadUnreadItems = true
+                toast(if (allowSender) R.string.sender_allowed else R.string.message_restored)
             }
         }
-
-        return items
     }
 
     private fun launchActivityForResult(

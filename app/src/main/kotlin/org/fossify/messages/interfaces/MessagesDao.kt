@@ -8,6 +8,7 @@ import androidx.room.Query
 import androidx.room.Transaction
 import org.fossify.messages.models.Message
 import org.fossify.messages.models.RecycleBinMessage
+import org.fossify.messages.models.SpamMessage
 
 @Dao
 interface MessagesDao {
@@ -16,6 +17,27 @@ interface MessagesDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertRecycleBinEntry(recycleBinMessage: RecycleBinMessage)
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    fun insertSpamMarker(spamMessage: SpamMessage)
+
+    @Query("DELETE FROM spam_messages WHERE id = :id")
+    fun deleteSpamMarker(id: Long)
+
+    @Query("DELETE FROM spam_messages WHERE thread_id = :threadId")
+    fun deleteThreadSpamMarkers(threadId: Long)
+
+    @Query("SELECT id FROM spam_messages")
+    fun getSpamIds(): List<Long>
+
+    @Query("SELECT * FROM spam_messages")
+    fun getSpamMarkers(): List<SpamMessage>
+
+    @Query("SELECT id FROM spam_messages WHERE thread_id = :threadId")
+    fun getThreadSpamIds(threadId: Long): List<Long>
+
+    @Query("SELECT * FROM spam_messages WHERE thread_id = :threadId")
+    fun getThreadSpamMarkers(threadId: Long): List<SpamMessage>
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     fun insertOrIgnore(message: Message): Long
@@ -62,7 +84,7 @@ interface MessagesDao {
     @Query("UPDATE messages SET read = 1 WHERE id = :id AND is_mms = :isMMS")
     fun markRead(id: Long, isMMS: Boolean)
 
-    @Query("UPDATE messages SET read = 1 WHERE thread_id = :threadId")
+    @Query("UPDATE messages SET read = 1 WHERE thread_id = :threadId AND NOT (is_mms = 0 AND id IN (SELECT id FROM spam_messages))")
     fun markThreadRead(threadId: Long)
 
     @Query("UPDATE messages SET type = :type WHERE id = :id")
@@ -86,6 +108,7 @@ interface MessagesDao {
     @Transaction
     fun deleteThreadMessages(threadId: Long) {
         deleteThreadMessagesFromRecycleBin(threadId)
+        deleteThreadSpamMarkers(threadId)
         deleteAllThreadMessages(threadId)
     }
 

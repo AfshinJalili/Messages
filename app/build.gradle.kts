@@ -6,6 +6,7 @@ import java.io.FileInputStream
 plugins {
     alias(libs.plugins.android)
     alias(libs.plugins.kotlinSerialization)
+    alias(libs.plugins.compose.compiler)
     alias(libs.plugins.ksp)
     alias(libs.plugins.detekt)
 }
@@ -65,6 +66,7 @@ android {
 
     buildFeatures {
         viewBinding = true
+        compose = true
         buildConfig = true
     }
 
@@ -154,6 +156,13 @@ dependencies {
     implementation(libs.ez.vcard)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.bundles.room)
+    implementation(platform(libs.compose.bom))
+    implementation(libs.compose.material3)
+    implementation(libs.compose.ui.tooling.preview)
+    debugImplementation(libs.compose.ui.tooling)
+    debugImplementation(libs.compose.ui.test.manifest)
+    androidTestImplementation(platform(libs.compose.bom))
+    androidTestImplementation(libs.compose.ui.test.junit4)
     ksp(libs.androidx.room.compiler)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.ext.junit)

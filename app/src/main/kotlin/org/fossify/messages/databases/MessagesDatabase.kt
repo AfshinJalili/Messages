@@ -10,18 +10,17 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import org.fossify.messages.helpers.Converters
 import org.fossify.messages.interfaces.AttachmentsDao
-import org.fossify.messages.interfaces.BlockedMessagesDao
 import org.fossify.messages.interfaces.ConversationsDao
 import org.fossify.messages.interfaces.DraftsDao
 import org.fossify.messages.interfaces.MessageAttachmentsDao
 import org.fossify.messages.interfaces.MessagesDao
 import org.fossify.messages.models.Attachment
-import org.fossify.messages.models.BlockedMessage
 import org.fossify.messages.models.Conversation
 import org.fossify.messages.models.Draft
 import org.fossify.messages.models.Message
 import org.fossify.messages.models.MessageAttachment
 import org.fossify.messages.models.RecycleBinMessage
+import org.fossify.messages.models.SpamMessage
 
 @Database(
     entities = [
@@ -31,9 +30,9 @@ import org.fossify.messages.models.RecycleBinMessage
         Message::class,
         RecycleBinMessage::class,
         Draft::class,
-        BlockedMessage::class
+        SpamMessage::class
     ],
-    version = 12
+    version = 14
 )
 @TypeConverters(Converters::class)
 abstract class MessagesDatabase : RoomDatabase() {
@@ -47,8 +46,6 @@ abstract class MessagesDatabase : RoomDatabase() {
     abstract fun MessagesDao(): MessagesDao
 
     abstract fun DraftsDao(): DraftsDao
-
-    abstract fun BlockedMessagesDao(): BlockedMessagesDao
 
     companion object {
         @Volatile
@@ -74,6 +71,8 @@ abstract class MessagesDatabase : RoomDatabase() {
                             .addMigrations(MIGRATION_9_10)
                             .addMigrations(MIGRATION_10_11)
                             .addMigrations(MIGRATION_11_12)
+                            .addMigrations(MIGRATION_12_13)
+                            .addMigrations(MIGRATION_13_14)
                             .build()
                     }
                 }
@@ -176,6 +175,22 @@ abstract class MessagesDatabase : RoomDatabase() {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_messages_thread_id_date` ON `messages` (`thread_id`, `date`)")
             }
+        }
+
+        private val MIGRATION_12_13 = object : Migration(12, 13) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.apply {
+                    execSQL("CREATE TABLE IF NOT EXISTS `spam_messages` (`id` INTEGER NOT NULL, `thread_id` INTEGER NOT NULL, `reason` INTEGER NOT NULL, `marked_ts` INTEGER NOT NULL, PRIMARY KEY(`id`))")
+                    execSQL("CREATE INDEX IF NOT EXISTS `index_spam_messages_thread_id` ON `spam_messages` (`thread_id`)")
+                    execSQL("ALTER TABLE conversations ADD COLUMN message_count INTEGER NOT NULL DEFAULT 0")
+                }
+            }
+        }
+
+        // BlockedMessage is no longer an entity. Its table stays until SpamBackfill has moved every row onto a
+        // Telephony SMS and dropped it; Room ignores tables that belong to no entity.
+        private val MIGRATION_13_14 = object : Migration(13, 14) {
+            override fun migrate(db: SupportSQLiteDatabase) = Unit
         }
 
         private val MIGRATION_10_11 = object : Migration(10, 11) {

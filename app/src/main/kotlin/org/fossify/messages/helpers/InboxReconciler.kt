@@ -12,6 +12,7 @@ import org.fossify.messages.extensions.getConversations
 import org.fossify.messages.extensions.getMessages
 import org.fossify.messages.extensions.insertOrUpdateConversation
 import org.fossify.messages.extensions.messagesDB
+import org.fossify.messages.extensions.removeOrphanSpamMarkers
 import org.fossify.messages.models.Conversation
 
 /**
@@ -28,17 +29,14 @@ object InboxReconciler {
         ensureBackgroundThread {
             try {
                 val app = context.applicationContext
-                val cachedConversations = try {
-                    app.conversationsDB.getNonArchived().toMutableList() as ArrayList<Conversation>
+                // Raw rows, including threads the inbox hides as spam. Otherwise hidden threads would be
+                // re-inserted on every run and never removed when Telephony drops them.
+                val allCached = try {
+                    ArrayList(app.conversationsDB.getAll())
                 } catch (_: Exception) {
                     ArrayList()
                 }
-                val archived = try {
-                    app.conversationsDB.getAllArchived()
-                } catch (_: Exception) {
-                    emptyList()
-                }
-                val allCached = ArrayList(cachedConversations + archived)
+                val cachedConversations = allCached.filterTo(ArrayList()) { !it.isArchived }
 
                 val privateContacts = app.getMyContactsCursor(favoritesOnly = false, withPhoneNumbersOnly = true).use { cursor ->
                     MyContactsContentProvider.getSimpleContacts(app, cursor)
@@ -86,6 +84,12 @@ object InboxReconciler {
 
                 cachedConversations.forEach { conversation ->
                     app.clearExpiredScheduledMessages(conversation.threadId)
+                }
+
+                try {
+                    app.removeOrphanSpamMarkers()
+                } catch (_: Exception) {
+                    // Retried on the next reconcile, so it must not fail the rest of it.
                 }
 
                 if (app.config.appRunCount == 1) {

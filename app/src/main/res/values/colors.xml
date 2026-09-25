@@ -29,6 +29,25 @@
     <color name="swipe_delete_background">@color/design_error</color>
     <color name="swipe_mute_background">@color/md_blue_grey_700</color>
 
+    <!-- Open Line palette (Messages-Signal.pen). Compose screens map these to roles in OpenLineTheme. -->
+    <color name="open_line_paper">#F1F5F1</color>
+    <color name="open_line_ink">#152621</color>
+    <color name="open_line_pine">#194C43</color>
+    <color name="open_line_pine_2">#2C6258</color>
+    <color name="open_line_lime">#D9F46A</color>
+    <color name="open_line_lilac">#D5D9F5</color>
+    <color name="open_line_muted">#53665E</color>
+    <color name="open_line_line">#D7E1DA</color>
+    <color name="open_line_night">#101E1B</color>
+    <color name="open_line_night_surface">#1A302A</color>
+    <color name="open_line_primary_dark">#8FC9B8</color>
+    <color name="open_line_muted_dark">#9CB8AE</color>
+    <color name="open_line_line_dark">#2E4740</color>
+    <color name="open_line_band_variant">#CFE1D9</color>
+    <color name="open_line_lilac_dark">#2F3456</color>
+    <color name="open_line_error">#B23A2B</color>
+    <color name="open_line_coral">#ED7667</color>
+
     <color name="message_sim_one">#2463EB</color>
     <color name="message_sim_two">#128147</color>
 </resources>

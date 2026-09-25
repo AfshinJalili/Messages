@@ -3,6 +3,7 @@ package org.fossify.messages.helpers
 import android.content.Context
 import androidx.core.content.ContextCompat
 import org.fossify.commons.extensions.getProperBackgroundColor
+import org.fossify.commons.extensions.trimToComparableNumber
 import org.fossify.commons.helpers.ACCENT_COLOR
 import org.fossify.commons.helpers.BACKGROUND_COLOR
 import org.fossify.commons.helpers.BaseConfig
@@ -195,8 +196,20 @@ class Config(context: Context) : BaseConfig(context) {
         get() = prefs.getStringSet(ALLOWED_NUMBERS, HashSet<String>())!!
         set(allowedNumbers) = prefs.edit().putStringSet(ALLOWED_NUMBERS, allowedNumbers).apply()
 
+    // Allowing and blocking replace each other, so the latest decision about a sender wins.
     fun addAllowedNumber(number: String) {
+        spamNumbers = spamNumbers.filterNot { setOf(it).containsNumber(number) }.toSet()
         allowedNumbers = allowedNumbers.plus(number)
+    }
+
+    /** Senders the user blocked in the app. Their SMS are still stored, but go to Spam. */
+    var spamNumbers: Set<String>
+        get() = prefs.getStringSet(SPAM_NUMBERS, HashSet<String>())!!
+        set(spamNumbers) = prefs.edit().putStringSet(SPAM_NUMBERS, spamNumbers).apply()
+
+    fun addSpamNumber(number: String) {
+        allowedNumbers = allowedNumbers.filterNot { setOf(it).containsNumber(number) }.toSet()
+        spamNumbers = spamNumbers.plus(number)
     }
 
     var swipeLeftAction: SwipeAction
@@ -257,4 +270,10 @@ class Config(context: Context) : BaseConfig(context) {
         recentSearches = (listOf(query) + recentSearches.filterNot { it.equals(query, ignoreCase = true) })
             .take(MAX_RECENT_SEARCHES)
     }
+}
+
+/** Matches "+98912…" against "0912…"; sender names like "HAMRAH_AVAL" must match exactly. */
+fun Collection<String>.containsNumber(number: String): Boolean {
+    val key = number.trimToComparableNumber()
+    return any { it.trimToComparableNumber() == key }
 }

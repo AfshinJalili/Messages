@@ -14,7 +14,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.fossify.messages.activities.MainActivity
 import org.fossify.messages.activities.ThreadActivity
-import org.fossify.messages.adapters.ConversationsAdapter
 import org.fossify.messages.adapters.ThreadAdapter
 import org.fossify.messages.extensions.*
 import org.fossify.messages.helpers.THREAD_ID
@@ -73,17 +72,10 @@ class RuntimeUxTicketChecks {
                 awaitCondition("Read fixture appears") {
                     var found = false
                     scenario.onActivity { activity ->
-                        val adapter = activity.findViewById<RecyclerView>(R.id.conversations_list).adapter as? ConversationsAdapter
-                        found = adapter?.currentList?.any { it.threadId == threadId && it.read } == true
+                        found = activity.inboxRows.any { it.threadId == threadId && it.conversation.read }
                     }
                     found
                 }
-                scenario.onActivity { activity ->
-                    val list = activity.findViewById<RecyclerView>(R.id.conversations_list)
-                    val adapter = list.adapter as ConversationsAdapter
-                    list.scrollToPosition(adapter.currentList.indexOfFirst { it.threadId == threadId })
-                }
-                instrumentation.waitForIdleSync()
                 repeat(2) { index ->
                     sms(phone, threadId, false, index + 1)
                     refreshConversations()
@@ -93,15 +85,9 @@ class RuntimeUxTicketChecks {
                     }) {
                         var correct = false
                         scenario.onActivity { activity ->
-                            val list = activity.findViewById<RecyclerView>(R.id.conversations_list)
-                            val adapter = list.adapter as ConversationsAdapter
-                            val row = adapter.currentList.singleOrNull { it.threadId == threadId }
-                            val holder = row?.let { list.findViewHolderForAdapterPosition(adapter.currentList.indexOf(it)) }
-                            val badge = holder?.itemView?.findViewById<TextView>(R.id.unread_count_badge)
-                            val refreshing = MainActivity::class.java.getDeclaredField("refreshInProgress").apply { isAccessible = true }.getBoolean(activity)
-                            detail = "row=${row?.read}/${row?.unreadCount}; badge=${badge?.visibility}/${badge?.text}; refreshing=$refreshing"
-                            correct = row?.read == false && row.unreadCount == index + 1 &&
-                                badge?.visibility == View.VISIBLE && badge.text.toString() == (index + 1).toString()
+                            val row = activity.inboxRows.singleOrNull { it.threadId == threadId }?.conversation
+                            detail = "row=${row?.read}/${row?.unreadCount}"
+                            correct = row?.read == false && row.unreadCount == index + 1
                         }
                         correct
                     }

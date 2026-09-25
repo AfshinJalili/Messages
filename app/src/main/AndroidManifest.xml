@@ -162,13 +162,6 @@
             android:parentActivityName=".activities.MainActivity" />
 
         <activity
-            android:name=".activities.BlockedMessagesThreadActivity"
-            android:configChanges="orientation"
-            android:exported="false"
-            android:label="@string/spam_folder"
-            android:parentActivityName=".activities.BlockedMessagesActivity" />
-
-        <activity
             android:name=".activities.StarredMessagesActivity"
             android:configChanges="orientation"
             android:exported="false"

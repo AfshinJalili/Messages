@@ -12,7 +12,6 @@ import org.fossify.commons.helpers.ContactLookupResult
 import org.fossify.commons.helpers.SimpleContactsHelper
 import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.messages.R
-import org.fossify.messages.extensions.blockedMessagesDB
 import org.fossify.messages.extensions.getConversations
 import org.fossify.messages.extensions.getLatestMMS
 import org.fossify.messages.extensions.getNameFromAddress
@@ -25,7 +24,6 @@ import org.fossify.messages.helpers.InboxRepository
 import org.fossify.messages.helpers.ReceiverUtils.isMessageFilteredOut
 import org.fossify.messages.helpers.refreshConversations
 import org.fossify.messages.helpers.refreshMessages
-import org.fossify.messages.models.BlockedMessage
 import org.fossify.messages.models.Message
 
 class MmsReceiver : MmsReceivedReceiver() {
@@ -64,19 +62,9 @@ class MmsReceiver : MmsReceivedReceiver() {
         size: Int,
         address: String
     ) {
+        // MMS spam is only silenced: it stays in Telephony and in the inbox, since spam markers are SMS-only.
         val spamReason = IncomingSpamClassifier.silenceReason(context, address, mms.body)
-        val date = mms.millis()
-
-        if (spamReason != null) {
-            context.blockedMessagesDB.insert(
-                BlockedMessage(
-                    address = address,
-                    body = mms.body,
-                    date = date,
-                    reason = spamReason,
-                )
-            )
-        } else {
+        if (spamReason == null) {
             val glideBitmap = try {
                 Glide.with(context)
                     .asBitmap()

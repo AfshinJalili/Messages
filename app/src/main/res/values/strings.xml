@@ -2,7 +2,7 @@
 <resources>
     <string name="app_launcher_name">Messages</string>
     <string name="spam_filters">Spam filters</string>
-    <string name="rule_filter_enable">Silence obvious spam and file it in Spam (messages stay in your inbox)</string>
+    <string name="rule_filter_enable">Silence obvious spam and file it in Spam (messages are kept, not deleted)</string>
     <string name="spam_folder">Spam</string>
     <string name="no_blocked_messages">No blocked messages</string>
     <string name="clear_spam">Clear all</string>
@@ -12,6 +12,12 @@
     <string name="allow_sender">Always allow this sender</string>
     <string name="sender_allowed">Sender allowed and message restored</string>
     <string name="message_restored">Message restored to inbox</string>
+    <string name="label_with_count" translatable="false">%1$s · %2$d</string>
+    <string name="spam_footer" translatable="false">%1$s · %2$s · %3$s</string>
+    <plurals name="spam_group_count">
+        <item quantity="one">%d message marked as spam</item>
+        <item quantity="other">%d messages marked as spam</item>
+    </plurals>
     <string name="block_reason_ai">Legacy filter</string>
     <string name="block_reason_keyword">Keyword</string>
     <string name="block_reason_number">Blocked number</string>
@@ -205,4 +211,26 @@
     <string name="message_sim_label">SIM %1$s</string>
     <string name="message_delivered">Delivered</string>
     <string name="message_sent">Sent</string>
+    <!-- Open Line inbox (Compose) -->
+    <string name="inbox_search_hint">Search messages</string>
+    <string name="inbox_nav_inbox">Inbox</string>
+    <string name="inbox_nav_library">Library</string>
+    <string name="inbox_section_pinned">Pinned</string>
+    <string name="inbox_section_upcoming">Scheduled</string>
+    <string name="inbox_section_today">Today</string>
+    <string name="inbox_section_yesterday">Yesterday</string>
+    <string name="inbox_section_earlier">Earlier</string>
+    <string name="inbox_draft_label">Draft:</string>
+    <string name="inbox_select">Select</string>
+    <string name="inbox_selection_hint">Act on conversations together</string>
+    <string name="inbox_empty_title">No conversations yet</string>
+    <string name="inbox_empty_text">Start a message with someone you know.</string>
+    <plurals name="inbox_new_messages">
+        <item quantity="one">%d new message</item>
+        <item quantity="other">%d new messages</item>
+    </plurals>
+    <plurals name="inbox_selected">
+        <item quantity="one">%d selected</item>
+        <item quantity="other">%d selected</item>
+    </plurals>
 </resources>

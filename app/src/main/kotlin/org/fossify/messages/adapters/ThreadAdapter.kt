@@ -70,6 +70,7 @@ import org.fossify.messages.databinding.ItemMessageBinding
 import org.fossify.messages.databinding.ItemThreadDateTimeBinding
 import org.fossify.messages.databinding.ItemThreadErrorBinding
 import org.fossify.messages.databinding.ItemThreadSendingBinding
+import org.fossify.messages.databinding.ItemThreadSpamGroupBinding
 import org.fossify.messages.databinding.ItemThreadSuccessBinding
 import org.fossify.messages.databinding.ItemThreadUnreadSeparatorBinding
 import org.fossify.messages.dialogs.DeleteConfirmationDialog
@@ -91,6 +92,7 @@ import org.fossify.messages.helpers.THREAD_SENT_MESSAGE
 import org.fossify.messages.helpers.THREAD_SENT_MESSAGE_ERROR
 import org.fossify.messages.helpers.THREAD_SENT_MESSAGE_SENDING
 import org.fossify.messages.helpers.THREAD_SENT_MESSAGE_SENT
+import org.fossify.messages.helpers.THREAD_SPAM_GROUP
 import org.fossify.messages.helpers.THREAD_UNREAD_SEPARATOR
 import org.fossify.messages.helpers.generateStableId
 import org.fossify.messages.helpers.setupDocumentPreview
@@ -102,6 +104,8 @@ import org.fossify.messages.models.ThreadItem.ThreadDateTime
 import org.fossify.messages.models.ThreadItem.ThreadError
 import org.fossify.messages.models.ThreadItem.ThreadSending
 import org.fossify.messages.models.ThreadItem.ThreadSent
+import org.fossify.messages.models.ThreadItem.ThreadSpamGroup
+import org.fossify.messages.models.spamReasonLabel
 import org.fossify.messages.models.ThreadItem.ThreadUnreadSeparator
 import org.joda.time.DateTime
 
@@ -110,10 +114,21 @@ class ThreadAdapter(
     recyclerView: MyRecyclerView,
     itemClick: (Any) -> Unit,
     val isRecycleBin: Boolean,
+    val unmarkSpam: (messages: List<Message>) -> Unit = {},
     val deleteMessages: (messages: List<Message>, toRecycleBin: Boolean, fromRecycleBin: Boolean) -> Unit
 ) : MyRecyclerViewListAdapter<ThreadItem>(activity, recyclerView, ThreadItemDiffCallback(), itemClick) {
     private var fontSize = activity.getTextSize()
     private var messageMenu: PopupWindow? = null
+
+    /** Spam reason by SMS id. Set before [updateMessages]; a change rebinds every row. */
+    var spamReasons: Map<Long, Int> = emptyMap()
+        set(value) {
+            if (field == value) return
+            field = value
+            notifyItemRangeChanged(0, itemCount)
+        }
+
+    private fun spamReason(message: Message) = if (message.isMMS) null else spamReasons[message.id]
 
     @SuppressLint("MissingPermission")
     private val simLabels = activity.subscriptionManagerCompat().activeSubscriptionInfoList.orEmpty()
@@ -151,6 +166,7 @@ class ThreadAdapter(
             findItem(R.id.cab_select_text).isVisible = isOneItemSelected && hasText
             findItem(R.id.cab_properties).isVisible = isOneItemSelected
             findItem(R.id.cab_restore).isVisible = isRecycleBin
+            findItem(R.id.cab_not_spam).isVisible = selectedMessages.isNotEmpty() && selectedMessages.all { spamReason(it) != null }
 
             val allStarred = selectedMessages.all { activity.config.isMessageStarred(it.id, it.isMMS) }
             findItem(R.id.cab_star).isVisible = !isRecycleBin && !allStarred
@@ -175,6 +191,11 @@ class ThreadAdapter(
             R.id.cab_properties -> showMessageDetails()
             R.id.cab_star -> setSelectedStarred(true)
             R.id.cab_unstar -> setSelectedStarred(false)
+            R.id.cab_not_spam -> {
+                val selected = getSelectedItems().filterIsInstance<Message>()
+                finishActMode()
+                unmarkSpam(selected)
+            }
         }
     }
 
@@ -201,6 +222,7 @@ class ThreadAdapter(
             THREAD_SENT_MESSAGE_SENT -> ItemThreadSuccessBinding.inflate(layoutInflater, parent, false)
             THREAD_SENT_MESSAGE_SENDING -> ItemThreadSendingBinding.inflate(layoutInflater, parent, false)
             THREAD_UNREAD_SEPARATOR -> ItemThreadUnreadSeparatorBinding.inflate(layoutInflater, parent, false)
+            THREAD_SPAM_GROUP -> ItemThreadSpamGroupBinding.inflate(layoutInflater, parent, false)
             else -> ItemMessageBinding.inflate(layoutInflater, parent, false)
         }
 
@@ -209,7 +231,7 @@ class ThreadAdapter(
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = getItem(position)
-        val isClickable = item is ThreadError || item is Message
+        val isClickable = item is ThreadError || item is Message || item is ThreadSpamGroup
         val isLongClickable = item is Message
         holder.bindView(item, isClickable, isLongClickable) { itemView, _ ->
             when (item) {
@@ -218,6 +240,7 @@ class ThreadAdapter(
                 is ThreadSent -> setupThreadSuccess(itemView, item.delivered)
                 is ThreadSending -> setupThreadSending(itemView)
                 is ThreadUnreadSeparator -> setupUnreadSeparator(itemView)
+                is ThreadSpamGroup -> setupSpamGroup(itemView, item)
                 is Message -> setupView(holder, itemView, item, position)
             }
         }
@@ -256,6 +279,7 @@ class ThreadAdapter(
             is ThreadSending -> generateStableId(THREAD_SENT_MESSAGE_SENDING, item.messageId)
             is ThreadSent -> generateStableId(THREAD_SENT_MESSAGE_SENT, item.messageId)
             is ThreadUnreadSeparator -> generateStableId(THREAD_UNREAD_SEPARATOR, 0)
+            is ThreadSpamGroup -> generateStableId(THREAD_SPAM_GROUP, item.key)
         }
     }
 
@@ -266,6 +290,7 @@ class ThreadAdapter(
             is ThreadSent -> THREAD_SENT_MESSAGE_SENT
             is ThreadSending -> THREAD_SENT_MESSAGE_SENDING
             is ThreadUnreadSeparator -> THREAD_UNREAD_SEPARATOR
+            is ThreadSpamGroup -> THREAD_SPAM_GROUP
             is Message -> if (item.isReceivedMessage()) THREAD_RECEIVED_MESSAGE else THREAD_SENT_MESSAGE
         }
     }
@@ -464,6 +489,9 @@ class ThreadAdapter(
                 val time = (message.date * 1000L).formatTime(context)
                 @SuppressLint("SetTextI18n")
                 text = if (isStarred) "★ $time" else time
+                spamReason(message)?.let {
+                    text = activity.getString(R.string.spam_footer, activity.getString(R.string.inbox_spam), activity.getString(spamReasonLabel(it)), text)
+                }
                 setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize * resources.designFloat(R.dimen.type_scale_message_footer))
                 beVisible()
                 val delivered = message.status == Telephony.Sms.STATUS_COMPLETE
@@ -842,6 +870,16 @@ class ThreadAdapter(
         }
     }
 
+    private fun setupSpamGroup(view: View, group: ThreadSpamGroup) {
+        ItemThreadSpamGroupBinding.bind(view).apply {
+            val color = textColor.adjustAlpha(resources.designFloat(R.dimen.opacity_secondary))
+            threadSpamGroupLabel.text = resources.getQuantityString(R.plurals.spam_group_count, group.messageIds.size, group.messageIds.size)
+            threadSpamGroupLabel.setTextColor(color)
+            threadSpamGroupChevron.applyColorFilter(color)
+            threadSpamGroupChevron.rotation = if (group.expanded) 180f else 0f
+        }
+    }
+
     private fun setupThreadSending(view: View) {
         ItemThreadSendingBinding.bind(view).threadSending.apply {
             setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize)
@@ -877,6 +915,7 @@ private class ThreadItemDiffCallback : DiffUtil.ItemCallback<ThreadItem>() {
             }
 
             is ThreadUnreadSeparator -> true
+            is ThreadSpamGroup -> oldItem.key == (newItem as ThreadSpamGroup).key
         }
     }
 
@@ -889,6 +928,7 @@ private class ThreadItemDiffCallback : DiffUtil.ItemCallback<ThreadItem>() {
             is ThreadSent -> oldItem.delivered == (newItem as ThreadSent).delivered
             is Message -> Message.areContentsTheSame(oldItem, newItem as Message)
             is ThreadUnreadSeparator -> true
+            is ThreadSpamGroup -> oldItem == newItem
         }
     }
 }

@@ -66,6 +66,11 @@
         android:title="@string/mark_as_unread"
         app:showAsAction="never" />
     <item
+        android:id="@+id/allow_sender"
+        android:showAsAction="never"
+        android:title="@string/allow_sender"
+        app:showAsAction="never" />
+    <item
         android:id="@+id/block_number"
         android:showAsAction="never"
         android:title="@string/block_number"

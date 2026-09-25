@@ -63,7 +63,6 @@ import org.fossify.messages.helpers.generateRandomId
 import org.fossify.messages.helpers.refreshConversations
 import org.fossify.messages.helpers.refreshMessages
 import org.fossify.messages.interfaces.AttachmentsDao
-import org.fossify.messages.interfaces.BlockedMessagesDao
 import org.fossify.messages.interfaces.ConversationsDao
 import org.fossify.messages.interfaces.DraftsDao
 import org.fossify.messages.interfaces.MessageAttachmentsDao
@@ -73,7 +72,7 @@ import org.fossify.messages.messaging.MessagingUtils.Companion.ADDRESS_SEPARATOR
 import org.fossify.messages.messaging.SmsSender
 import org.fossify.messages.messaging.scheduleMessage
 import org.fossify.messages.models.Attachment
-import org.fossify.messages.models.BlockedMessage
+import org.fossify.messages.models.BlockedMessagesThread
 import org.fossify.messages.models.Conversation
 import org.fossify.messages.models.Events
 import org.greenrobot.eventbus.EventBus
@@ -107,9 +106,6 @@ val Context.messagesDB: MessagesDao
 
 val Context.draftsDB: DraftsDao
     get() = getMessagesDB().DraftsDao()
-
-val Context.blockedMessagesDB: BlockedMessagesDao
-    get() = getMessagesDB().BlockedMessagesDao()
 
 val Context.notificationHelper
     get() = NotificationHelper(this)
@@ -351,6 +347,82 @@ fun Context.getMMSSender(msgId: Long): String {
     return ""
 }
 
+private fun Context.forEachUnreadSms(action: (id: Long, threadId: Long) -> Unit) {
+    queryCursor(
+        uri = Sms.CONTENT_URI,
+        projection = arrayOf(Sms._ID, Sms.THREAD_ID),
+        selection = "${Sms.READ}=0 AND ${Sms.TYPE}=${Sms.MESSAGE_TYPE_INBOX}",
+        selectionArgs = null,
+        showErrors = false
+    ) { action(it.getLongValue(Sms._ID), it.getLongValue(Sms.THREAD_ID)) }
+}
+
+// Spam is left out of getUnreadCountsByThread, so this is the only place it is counted.
+fun Context.getUnreadSpamCounts(): Map<Long, Int> {
+    val result = HashMap<Long, Int>()
+    val spamIds = messagesDB.getSpamIds().toHashSet()
+    if (spamIds.isEmpty()) return result
+    forEachUnreadSms { id, threadId ->
+        if (id in spamIds) result[threadId] = (result[threadId] ?: 0) + 1
+    }
+    return result
+}
+
+// Reads the spam SMS from Telephony, so a marker whose SMS was deleted elsewhere shows nothing.
+fun Context.getSpamThreads(): List<BlockedMessagesThread> {
+    class Row(val id: Long, val threadId: Long, val address: String, val body: String, val date: Long, val read: Boolean)
+
+    val markers = messagesDB.getSpamMarkers().associateBy { it.id }
+    if (markers.isEmpty()) return emptyList()
+    val rows = ArrayList<Row>()
+    // Ids are inlined rather than bound, so there is no 999-argument limit.
+    queryCursor(
+        uri = Sms.CONTENT_URI,
+        projection = arrayOf(Sms._ID, Sms.THREAD_ID, Sms.ADDRESS, Sms.BODY, Sms.DATE, Sms.READ),
+        selection = "${Sms._ID} IN (${markers.keys.joinToString()})",
+        selectionArgs = null,
+        showErrors = false
+    ) {
+        rows += Row(
+            id = it.getLongValue(Sms._ID),
+            threadId = it.getLongValue(Sms.THREAD_ID),
+            address = it.getStringValue(Sms.ADDRESS).orEmpty(),
+            body = it.getStringValue(Sms.BODY).orEmpty(),
+            date = it.getLongValue(Sms.DATE),
+            read = it.getIntValue(Sms.READ) == 1
+        )
+    }
+
+    return rows.groupBy { it.threadId }.map { (threadId, messages) ->
+        val newest = messages.maxBy { it.date }
+        val conversation = conversationsDB.getConversationWithThreadId(threadId)
+        val namePhoto = if (conversation == null) getNameAndPhotoFromPhoneNumber(newest.address) else null
+        BlockedMessagesThread(
+            threadId = threadId,
+            address = newest.address,
+            title = conversation?.title ?: namePhoto!!.name,
+            photoUri = conversation?.photoUri ?: namePhoto!!.photoUri.orEmpty(),
+            snippet = newest.body,
+            date = newest.date,
+            count = messages.size,
+            unreadCount = messages.count { !it.read },
+            reason = markers.getValue(newest.id).reason,
+            messageIds = messages.map { it.id }
+        )
+    }.sortedByDescending { it.date }
+}
+
+// Spam deleted by another app leaves its marker behind, and extra markers can hide a thread that has real messages.
+fun Context.removeOrphanSpamMarkers() {
+    val markerIds = messagesDB.getSpamIds()
+    if (markerIds.isEmpty()) return
+    // A failed query must not look like "every SMS is gone", so no cursor means no cleanup.
+    val existing = contentResolver.query(Sms.CONTENT_URI, arrayOf(Sms._ID), "${Sms._ID} IN (${markerIds.joinToString()})", null, null)
+        ?.use { cursor -> HashSet<Long>().apply { while (cursor.moveToNext()) add(cursor.getLong(0)) } }
+        ?: return
+    markerIds.filterNot { it in existing }.forEach { messagesDB.deleteSpamMarker(it) }
+}
+
 fun Context.getUnreadCountsByThread(): Map<Long, Int> {
     val result = HashMap<Long, Int>(128)
 
@@ -358,14 +430,10 @@ fun Context.getUnreadCountsByThread(): Map<Long, Int> {
         result[id] = (result[id] ?: 0) + 1
     }
 
-    // Unread SMS
-    queryCursor(
-        uri = Sms.CONTENT_URI,
-        projection = arrayOf(Sms.THREAD_ID),
-        selection = "${Sms.READ}=0 AND ${Sms.TYPE}=${Sms.MESSAGE_TYPE_INBOX}",
-        selectionArgs = null,
-        showErrors = false
-    ) { bump(it.getLongValue(Sms.THREAD_ID)) }
+    val spamIds = messagesDB.getSpamIds().toHashSet()
+    forEachUnreadSms { id, threadId ->
+        if (id !in spamIds) bump(threadId)
+    }
 
     // Unread MMS
     queryCursor(
@@ -393,6 +461,7 @@ fun Context.getConversations(
         Threads.DATE,
         Threads.READ,
         Threads.RECIPIENT_IDS,
+        Threads.MESSAGE_COUNT,
     )
 
     if (archiveAvailable) {
@@ -473,6 +542,7 @@ fun Context.getConversations(
                 phoneNumber = phoneNumbers.first(),
                 isArchived = archived,
                 unreadCount = unreadCount,
+                messageCount = cursor.getIntValue(Threads.MESSAGE_COUNT),
             )
             conversations.add(conversation)
         }
@@ -872,43 +942,6 @@ fun Context.insertNewSMS(
     }
 }
 
-fun Context.restoreBlockedMessage(blockedMessage: BlockedMessage): Boolean {
-    val threadId = getThreadId(blockedMessage.address)
-    val alreadyInProvider = getMessages(threadId, includeScheduledMessages = true).any { message ->
-        !message.isMMS &&
-            message.body == blockedMessage.body &&
-            kotlin.math.abs(message.millis() - blockedMessage.date) < 60_000
-    }
-    if (!alreadyInProvider) {
-        val messageId = insertNewSMS(
-            address = blockedMessage.address,
-            subject = "",
-            body = blockedMessage.body,
-            date = blockedMessage.date,
-            read = 0,
-            threadId = threadId,
-            type = Sms.MESSAGE_TYPE_INBOX,
-            subscriptionId = -1,
-        )
-        if (messageId == 0L) {
-            return false
-        }
-    }
-
-    try {
-        blockedMessagesDB.delete(blockedMessage.id)
-    } catch (_: Exception) {
-        return false
-    }
-
-    getConversations(threadId).firstOrNull()?.let { conv ->
-        runCatching { insertOrUpdateConversation(conv) }
-    }
-    refreshMessages()
-    refreshConversations()
-    return true
-}
-
 fun Context.removeAllArchivedConversations(callback: (() -> Unit)? = null) {
     ensureBackgroundThread {
         try {
@@ -1030,6 +1063,7 @@ fun Context.deleteMessage(id: Long, isMMS: Boolean) {
     try {
         contentResolver.delete(uri, selection, selectionArgs)
         messagesDB.delete(id)
+        if (!isMMS) messagesDB.deleteSpamMarker(id)
     } catch (e: Exception) {
         showErrorToast(e)
     }
@@ -1078,7 +1112,7 @@ fun Context.markThreadMessagesRead(threadId: Long) {
         put(Sms.READ, 1)
         put(Sms.SEEN, 1)
     }
-    val smsSelection = "${Sms.THREAD_ID}=? AND ${Sms.TYPE}=? AND (${Sms.READ}=? OR ${Sms.SEEN}=?)"
+    val smsSelection = "${Sms.THREAD_ID}=? AND ${Sms.TYPE}=? AND (${Sms.READ}=? OR ${Sms.SEEN}=?)${notSpamSelection(threadId)}"
     val smsArgs = arrayOf(id, Sms.MESSAGE_TYPE_INBOX.toString(), "0", "0")
     contentResolver.update(Sms.CONTENT_URI, smsValues, smsSelection, smsArgs)
 
@@ -1095,13 +1129,20 @@ fun Context.markThreadMessagesRead(threadId: Long) {
     EventBus.getDefault().post(Events.ConversationReadStateChanged(threadId, true))
 }
 
+// Read state of spam belongs to the Spam screen, so thread-wide read and unread leave it alone.
+private fun Context.notSpamSelection(threadId: Long): String {
+    val spamIds = messagesDB.getThreadSpamIds(threadId)
+    return if (spamIds.isEmpty()) "" else " AND ${Sms._ID} NOT IN (${spamIds.joinToString()})"
+}
+
 fun Context.markThreadMessagesUnread(threadId: Long) {
+    val notSpam = notSpamSelection(threadId)
     arrayOf(Sms.CONTENT_URI, Mms.CONTENT_URI).forEach { uri ->
         val contentValues = ContentValues().apply {
             put(Sms.READ, 0)
             put(Sms.SEEN, 0)
         }
-        val selection = "${Sms.THREAD_ID} = ?"
+        val selection = "${Sms.THREAD_ID} = ?" + if (uri == Sms.CONTENT_URI) notSpam else ""
         val selectionArgs = arrayOf(threadId.toString())
         contentResolver.update(uri, contentValues, selection, selectionArgs)
     }

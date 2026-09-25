@@ -19,6 +19,7 @@ data class Conversation(
     @ColumnInfo(name = "uses_custom_title") var usesCustomTitle: Boolean = false,
     @ColumnInfo(name = "archived") var isArchived: Boolean = false,
     @ColumnInfo(name = "unread_count") var unreadCount: Int = 0,
+    @ColumnInfo(name = "message_count") var messageCount: Int = 0,
 ) {
 
     companion object {
@@ -37,7 +38,8 @@ data class Conversation(
                 old.unreadCount == new.unreadCount &&
                 old.isArchived == new.isArchived &&
                 old.isScheduled == new.isScheduled &&
-                old.usesCustomTitle == new.usesCustomTitle
+                old.usesCustomTitle == new.usesCustomTitle &&
+                old.messageCount == new.messageCount
         }
     }
 }

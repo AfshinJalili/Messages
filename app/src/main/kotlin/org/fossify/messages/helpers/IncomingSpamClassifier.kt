@@ -16,6 +16,13 @@ import org.fossify.messages.helpers.ReceiverUtils.isMessageFilteredOut
 object IncomingSpamClassifier {
 
     fun silenceReason(context: Context, address: String, body: String): Int? {
+        // The user's own decision about a sender beats every rule below.
+        if (context.config.allowedNumbers.containsNumber(address)) {
+            return null
+        }
+        if (context.config.spamNumbers.containsNumber(address)) {
+            return BLOCK_REASON_NUMBER
+        }
         if (isMessageFilteredOut(context, body)) {
             return BLOCK_REASON_KEYWORD
         }
@@ -26,7 +33,7 @@ object IncomingSpamClassifier {
         val isKnownContact = context.getMyContactsCursor(favoritesOnly = false, withPhoneNumbersOnly = true).use { cursor ->
             SimpleContactsHelper(context).existsSync(address, cursor) != ContactLookupResult.NotFound
         }
-        if (isKnownContact || context.config.allowedNumbers.contains(address)) {
+        if (isKnownContact) {
             return null
         }
 
