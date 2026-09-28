@@ -1,0 +1,23 @@
+name: Enhancement
+description: Improve something that already exists
+labels: [enhancement]
+body:
+  - type: textarea
+    id: current
+    attributes:
+      label: Current behavior
+    validations:
+      required: true
+  - type: textarea
+    id: wanted
+    attributes:
+      label: Wanted behavior
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance
+      value: |
+        - [ ] 
+        - [ ] Build and tests pass
