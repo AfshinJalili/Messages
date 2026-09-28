@@ -24,7 +24,7 @@ Current repo capabilities include SMS/MMS, group messaging, media and contact at
 
 ## Brand Commitments
 
-The current name is Messages. No palette or visual system is binding for this redesign; the user explicitly authorized a new visual direction.
+The product is named Open Line (the repo and app label are still Messages). No palette or visual system is binding for this redesign; the user explicitly authorized a new visual direction.
 
 ## Evidence on Hand
 
