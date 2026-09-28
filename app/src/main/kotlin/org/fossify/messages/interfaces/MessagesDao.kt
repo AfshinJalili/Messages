@@ -81,6 +81,23 @@ interface MessagesDao {
     @Query("SELECT messages.* FROM messages LEFT OUTER JOIN recycle_bin_messages ON messages.id = recycle_bin_messages.id WHERE recycle_bin_messages.id IS NULL AND messages.id IN (:ids)")
     fun getMessagesWithIds(ids: List<Long>): List<Message>
 
+    @Query(
+        """SELECT messages.* FROM messages
+        LEFT OUTER JOIN recycle_bin_messages ON messages.id = recycle_bin_messages.id
+        WHERE recycle_bin_messages.id IS NULL
+        AND NOT (is_mms = 0 AND messages.id IN (SELECT id FROM spam_messages))
+        AND (
+            (:mediaOnly = 0 AND (body LIKE :pattern ESCAPE '\' OR attachment LIKE :attachmentPattern ESCAPE '\'))
+            OR (:mediaOnly = 1 AND attachment LIKE '%"mimetype":"image/%')
+        )
+        ORDER BY date DESC, messages.id DESC"""
+    )
+    fun searchCandidates(
+        pattern: String,
+        attachmentPattern: String = pattern,
+        mediaOnly: Boolean = false,
+    ): List<Message>
+
     @Query("UPDATE messages SET read = 1 WHERE id = :id AND is_mms = :isMMS")
     fun markRead(id: Long, isMMS: Boolean)
 

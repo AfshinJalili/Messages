@@ -62,6 +62,14 @@ interface ConversationsDao {
     @Query("SELECT * FROM conversations WHERE title LIKE :text")
     fun getConversationsWithText(text: String): List<Conversation>
 
+    @Query(
+        """SELECT * FROM conversations WHERE $NOT_ALL_SPAM
+        AND (title LIKE :pattern ESCAPE '\' OR phone_number LIKE :pattern ESCAPE '\')
+        AND EXISTS (SELECT 1 $LATEST_VISIBLE_MESSAGE)
+        ORDER BY date DESC"""
+    )
+    fun searchPeople(pattern: String): List<Conversation>
+
     @Query("UPDATE conversations SET read = 1, unread_count = 0 WHERE thread_id = :threadId")
     fun markRead(threadId: Long)
 

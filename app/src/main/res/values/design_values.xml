@@ -6,7 +6,6 @@
     <item name="opacity_action" type="dimen" format="float">0.9</item>
     <item name="opacity_disabled" type="dimen" format="float">0.4</item>
     <item name="opacity_surface_tint" type="dimen" format="float">0.08</item>
-    <item name="opacity_attachment_tint" type="dimen" format="float">0.12</item>
     <item name="opacity_selected_tint" type="dimen" format="float">0.16</item>
     <item name="opacity_rule" type="dimen" format="float">0.4</item>
     <item name="type_scale_title" type="dimen" format="float">1.2</item>

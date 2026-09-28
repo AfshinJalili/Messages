@@ -158,8 +158,8 @@
     <string name="swipe_action_none">خاموش</string>
     <string name="conversation_archived">گفت‌وگو بایگانی شد</string>
     <string name="conversation_deleted">گفت‌وگو حذف شد</string>
-    <string name="inbox_personal">شخصی</string>
-    <string name="inbox_business">کسب‌وکار و رمز یک‌بارمصرف</string>
+    <string name="inbox_personal">افراد</string>
+    <string name="inbox_business">خدمات</string>
     <string name="inbox_unknown">ناشناس</string>
     <string name="no_filtered_conversations">گفت‌وگویی اینجا نیست</string>
     <string name="recent_searches">جست‌وجوهای اخیر</string>
@@ -209,4 +209,76 @@
     <string name="more_options">گزینه‌های بیشتر</string>
     <string name="block_confirmation">مطمئنید که می‌خواهید «%s» را مسدود کنید؟</string>
     <string name="deletion_confirmation">مطمئنید که می‌خواهید %s را حذف کنید؟</string>
+    <!-- Commons has no Persian for this one; the app string overrides it. -->
+    <string name="take_photo">گرفتن عکس</string>
+    <string name="thread_retry">تلاش دوباره</string>
+    <string name="thread_search_next">مورد بعدی</string>
+    <plurals name="thread_new_count">
+        <item quantity="one">%d تازه</item>
+        <item quantity="other">%d تازه</item>
+    </plurals>
+    <plurals name="thread_people">
+        <item quantity="one">%d نفر</item>
+        <item quantity="other">%d نفر</item>
+    </plurals>
+    <string name="inbox_scheduled_at">زمان‌بندی‌شده · %1$s</string>
+    <plurals name="inbox_row_unread">
+        <item quantity="one">%d خوانده‌نشده</item>
+        <item quantity="other">%d خوانده‌نشده</item>
+    </plurals>
+    <plurals name="spam_group_hidden">
+        <item quantity="one">%d پیام هرزنامه پنهان شده</item>
+        <item quantity="other">%d پیام هرزنامه پنهان شده</item>
+    </plurals>
+    <string name="library_subtitle">چیزهایی که می‌خواهید نگه دارید، بی‌صدا کنید یا بازگردانید</string>
+    <string name="library_starred_description">پیام‌هایی که برای بازگشت علامت زده‌اید</string>
+    <string name="library_archive_description">گفت‌وگوهای خارج از صندوق اصلی</string>
+    <string name="library_spam_description">پیام‌های فیلترشده و قوانین</string>
+    <string name="library_recycle_description">پیام‌های تازه حذف‌شده، با امکان بازگشت</string>
+    <string name="library_principle_title">صندوق شما شخصی می‌ماند.</string>
+    <string name="library_principle_body">هیچ‌چیز بدون اقدام یا قانون مشخص به اینجا نمی‌آید.</string>
+    <string name="composer_hint">پیام</string>
+    <string name="composer_hint_name">پیام به %s</string>
+    <string name="composer_cant_reply">این فرستنده نمی‌تواند پاسخ دریافت کند</string>
+    <string name="composer_send_mms">ارسال به‌صورت ام‌ام‌اس</string>
+    <string name="composer_send_later">ارسال در زمانی دیگر</string>
+    <string name="composer_change_sim">تغییر سیم‌کارت</string>
+    <string name="composer_remove_attachment">حذف پیوست</string>
+    <string name="composer_sms_counter">%1$d نویسه مانده · %2$d پیامک</string>
+    <string name="thread_automated_sender">فرستندهٔ خودکار</string>
+    <string name="thread_empty_title">هنوز پیامی نیست</string>
+    <string name="thread_empty_text">به %s سلام کنید.</string>
+    <string name="attach_title">افزودن به پیام</string>
+    <string name="attach_photos">عکس</string>
+    <string name="attach_photos_text">یک عکس انتخاب کنید</string>
+    <string name="attach_camera">دوربین</string>
+    <string name="attach_camera_text">همین حالا عکس بگیرید</string>
+    <string name="attach_video">ویدیو</string>
+    <string name="attach_video_text">یک ویدیو انتخاب کنید</string>
+    <string name="attach_record_video">ضبط ویدیو</string>
+    <string name="attach_record_video_text">با دوربین ضبط کنید</string>
+    <string name="attach_audio">صدا</string>
+    <string name="attach_audio_text">یک پیام صوتی ضبط کنید</string>
+    <string name="attach_file">فایل</string>
+    <string name="attach_file_text">سندها و فایل‌های دیگر</string>
+    <string name="attach_contact">مخاطب</string>
+    <string name="attach_contact_text">کارت مخاطب بفرستید</string>
+    <string name="attach_send_later_text">پیش از ارسال، زمانی انتخاب کنید</string>
+
+    <!-- Open Line global search, designs 03 / 04 / 53. -->
+    <string name="search_people">افراد</string>
+    <string name="search_media">رسانه</string>
+    <string name="search_photos">عکس‌ها</string>
+    <string name="search_recent">اخیر</string>
+    <string name="search_back">بازگشت به صندوق پیام‌ها</string>
+    <string name="search_clear">پاک کردن جستجو</string>
+    <string name="search_query_hint">«آدرس» یا نامی را جستجو کنید</string>
+    <string name="search_help">متن پیام‌ها، افراد و نام پیوست‌ها را جستجو کنید. نتایج روی گوشی شما می‌مانند.</string>
+    <string name="search_error">نتایج بارگیری نشد. دوباره تلاش کنید.</string>
+    <string name="search_retry">تلاش دوباره</string>
+    <string name="search_result_count">%1$d نتیجه در %2$d گفتگو</string>
+    <string name="search_no_matches">نتیجه‌ای پیدا نشد</string>
+    <string name="search_nothing_yet">هنوز چیزی اینجا نیست</string>
+    <string name="search_nothing_for">نتیجه‌ای برای «%1$s» نیست</string>
+    <string name="search_empty_hint">نام یک فرد یا کلمهٔ دیگری از پیام را امتحان کنید.</string>
 </resources>

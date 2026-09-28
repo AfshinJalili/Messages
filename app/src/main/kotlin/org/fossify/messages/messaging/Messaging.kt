@@ -42,7 +42,8 @@ fun Context.sendMessageCompat(
     addresses: List<String>,
     subId: Int?,
     attachments: List<Attachment>,
-    messageToResend: Message? = null
+    messageToResend: Message? = null,
+    forceMms: Boolean = false,
 ) {
     // SMS and MMS ids are separate sequences, so a resend may only reuse the failed row within its own
     // table. Otherwise an SMS retried as MMS would delete whichever unrelated MMS shares its id.
@@ -54,7 +55,7 @@ fun Context.sendMessageCompat(
     }
 
     val messagingUtils = messagingUtils
-    val isMms = attachments.isNotEmpty() || isLongMmsMessage(text, settings)
+    val isMms = forceMms || attachments.isNotEmpty() || isLongMmsMessage(text, settings)
             || addresses.size > 1 && settings.group
     if (isMms) {
         // we send all MMS attachments separately to reduces the chances of hitting provider MMS limit.

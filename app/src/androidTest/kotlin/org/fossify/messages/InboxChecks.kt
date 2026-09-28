@@ -36,6 +36,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.unit.dp
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -85,10 +86,11 @@ class InboxChecks {
                 )
             }
         }
-        val before = compose.onNodeWithText("Dad").getUnclippedBoundsInRoot().top
+        val dadRow = hasContentDescription("Dad", substring = true)
+        val before = compose.onNode(dadRow).getUnclippedBoundsInRoot().top
         state = state.copy(selected = setOf(1L))
         compose.onNodeWithText(compose.activity.resources.getQuantityString(R.plurals.inbox_selected, 1, 1)).assertExists()
-        check(compose.onNodeWithText("Dad").getUnclippedBoundsInRoot().top == before)
+        check(compose.onNode(dadRow).getUnclippedBoundsInRoot().top == before)
     }
 
     /** uiautomator clips bounds at the system bar; measure the real Compose touch targets instead. */
@@ -126,6 +128,9 @@ class InboxChecks {
 
         val both = availableActions(listOf(person, group), archiveAvailable = false)
         check(InboxAction.ARCHIVE !in both && InboxAction.DETAILS !in both)
+        check(InboxAction.MARK_READ in both && InboxAction.MARK_UNREAD in both) {
+            "Mixed read state should allow normalizing the selection in either direction"
+        }
         // mixed selection: pin/mute whichever is missing, never offer the inverse
         check(InboxAction.PIN in both && InboxAction.UNPIN !in both && InboxAction.MUTE in both && InboxAction.UNMUTE !in both)
 
@@ -145,7 +150,12 @@ class InboxChecks {
         check(at(1).section(now) == InboxSection.YESTERDAY)
         check(at(9).section(now) == InboxSection.EARLIER)
         check(at(9, pinned = true).section(now) == InboxSection.PINNED)
-        check(at(-2).section(now) == InboxSection.UPCOMING) { "Scheduled sends must not fall into Earlier" }
+        val futureScheduled = at(-2).let { row ->
+            row.copy(conversation = row.conversation.copy(isScheduled = true))
+        }
+        check(futureScheduled.section(now) == InboxSection.TODAY) {
+            "Future scheduled sends stay in date order without a separate section"
+        }
     }
 
     @Test

@@ -183,8 +183,8 @@
     <string name="conversation_archived">Conversation archived</string>
     <string name="conversation_deleted">Conversation deleted</string>
     <!-- Inbox filters -->
-    <string name="inbox_personal">Personal</string>
-    <string name="inbox_business">Business &amp; OTP</string>
+    <string name="inbox_personal">People</string>
+    <string name="inbox_business">Services</string>
     <string name="inbox_unknown">Unknown</string>
     <string name="no_filtered_conversations">No conversations here</string>
     <string name="recent_searches">Recent searches</string>
@@ -233,4 +233,76 @@
         <item quantity="one">%d selected</item>
         <item quantity="other">%d selected</item>
     </plurals>
+    <!-- Open Line conversation (Compose) -->
+    <string name="thread_retry">Retry</string>
+    <string name="thread_search_next">Next match</string>
+    <plurals name="thread_new_count">
+        <item quantity="one">%d new</item>
+        <item quantity="other">%d new</item>
+    </plurals>
+    <plurals name="thread_people">
+        <item quantity="one">%d person</item>
+        <item quantity="other">%d people</item>
+    </plurals>
+    <string name="inbox_scheduled_at">Scheduled · %1$s</string>
+    <plurals name="inbox_row_unread">
+        <item quantity="one">%d unread</item>
+        <item quantity="other">%d unread</item>
+    </plurals>
+    <plurals name="spam_group_hidden">
+        <item quantity="one">%d spam message hidden</item>
+        <item quantity="other">%d spam messages hidden</item>
+    </plurals>
+    <string name="library_subtitle">The things you want to keep, quiet, or recover</string>
+    <string name="library_starred_description">Messages you marked to return to</string>
+    <string name="library_archive_description">Conversations out of your main inbox</string>
+    <string name="library_spam_description">Filtered messages and rules</string>
+    <string name="library_recycle_description">Recently deleted, with a way back</string>
+    <string name="library_principle_title">Your inbox stays personal.</string>
+    <string name="library_principle_body">Nothing moves here without a clear action or rule.</string>
+    <!-- Open Line composer (Compose, design 11, 78, 79, 81) -->
+    <string name="composer_hint">Message</string>
+    <string name="composer_hint_name">Message %s</string>
+    <string name="composer_cant_reply">This sender can’t receive replies</string>
+    <string name="composer_send_mms">Send as MMS</string>
+    <string name="composer_send_later">Send later</string>
+    <string name="composer_change_sim">Change SIM</string>
+    <string name="composer_remove_attachment">Remove attachment</string>
+    <string name="composer_sms_counter">%1$d left · %2$d SMS</string>
+    <string name="thread_automated_sender">Automated sender</string>
+    <string name="thread_empty_title">No messages yet</string>
+    <string name="thread_empty_text">Say hello to %s.</string>
+    <string name="attach_title">Add to message</string>
+    <string name="attach_photos">Photos</string>
+    <string name="attach_photos_text">Choose an image</string>
+    <string name="attach_camera">Camera</string>
+    <string name="attach_camera_text">Take a photo now</string>
+    <string name="attach_video">Video</string>
+    <string name="attach_video_text">Choose a video</string>
+    <string name="attach_record_video">Record video</string>
+    <string name="attach_record_video_text">Record with the camera</string>
+    <string name="attach_audio">Audio</string>
+    <string name="attach_audio_text">Record a voice clip</string>
+    <string name="attach_file">File</string>
+    <string name="attach_file_text">Documents and other files</string>
+    <string name="attach_contact">Contact</string>
+    <string name="attach_contact_text">Send a contact card</string>
+    <string name="attach_send_later_text">Pick a time before sending</string>
+
+    <!-- Open Line global search, designs 03 / 04 / 53. -->
+    <string name="search_people">People</string>
+    <string name="search_media">Media</string>
+    <string name="search_photos">Photos</string>
+    <string name="search_recent">Recent</string>
+    <string name="search_back">Back to inbox</string>
+    <string name="search_clear">Clear search</string>
+    <string name="search_query_hint">Try “address” or a name</string>
+    <string name="search_help">Search message text, people, and attachment names. Results stay on your phone.</string>
+    <string name="search_error">Could not load results. Try again.</string>
+    <string name="search_retry">Try again</string>
+    <string name="search_result_count">%1$d results across %2$d conversations</string>
+    <string name="search_no_matches">No matches</string>
+    <string name="search_nothing_yet">Nothing here yet</string>
+    <string name="search_nothing_for">Nothing for “%1$s”</string>
+    <string name="search_empty_hint">Try a person’s name or a different word from the message.</string>
 </resources>

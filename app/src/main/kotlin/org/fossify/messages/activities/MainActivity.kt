@@ -8,12 +8,9 @@ import android.content.pm.ShortcutManager
 import android.graphics.drawable.Icon
 import android.graphics.drawable.LayerDrawable
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.provider.Telephony
 import android.text.TextUtils
 import android.view.HapticFeedbackConstants
-import android.view.View
 import android.view.accessibility.AccessibilityManager
 import androidx.annotation.VisibleForTesting
 import androidx.appcompat.content.res.AppCompatResources
@@ -24,33 +21,28 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.core.graphics.ColorUtils
 import androidx.core.view.WindowCompat
-import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.lifecycleScope
-import com.google.android.material.search.SearchView
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
+import org.fossify.messages.helpers.SearchRepository
+import org.fossify.messages.ui.search.SearchUiState
+import org.fossify.messages.ui.search.SearchFilter
+import org.fossify.messages.ui.search.SEARCH_DEBOUNCE_MS
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import org.fossify.commons.dialogs.ConfirmationDialog
 import org.fossify.commons.dialogs.PermissionRequiredDialog
-import org.fossify.commons.extensions.adjustAlpha
+import org.fossify.commons.extensions.applyColorFilter
 import org.fossify.commons.extensions.appLaunched
 import org.fossify.commons.extensions.appLockManager
-import org.fossify.commons.extensions.applyColorFilter
-import org.fossify.commons.extensions.beGone
-import org.fossify.commons.extensions.beVisibleIf
 import org.fossify.commons.extensions.convertToBitmap
 import org.fossify.commons.extensions.copyToClipboard
-import org.fossify.commons.extensions.formatDateOrTime
-import org.fossify.commons.extensions.getProperBackgroundColor
-import org.fossify.commons.extensions.getProperTextColor
-import org.fossify.commons.extensions.getTextSize
 import org.fossify.commons.extensions.hideKeyboard
 import org.fossify.commons.extensions.launchActivityIntent
 import org.fossify.commons.extensions.notificationManager
 import org.fossify.commons.extensions.openNotificationSettings
-import org.fossify.commons.extensions.setSystemBarsAppearance
 import org.fossify.commons.extensions.toast
 import org.fossify.commons.extensions.viewBinding
 import org.fossify.commons.helpers.KEY_PHONE
@@ -61,9 +53,7 @@ import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.commons.helpers.isQPlus
 import org.fossify.messages.BuildConfig
 import org.fossify.messages.R
-import org.fossify.messages.adapters.SearchResultsAdapter
 import org.fossify.messages.databinding.ActivityMainBinding
-import org.fossify.messages.databinding.ItemRecentSearchChipBinding
 import org.fossify.messages.dialogs.RenameConversationDialog
 import org.fossify.messages.extensions.checkAndDeleteOldRecycleBinMessages
 import org.fossify.messages.extensions.clearAllMessagesIfNeeded
@@ -76,28 +66,27 @@ import org.fossify.messages.extensions.getUnreadSpamCounts
 import org.fossify.messages.extensions.launchConversationDetails
 import org.fossify.messages.extensions.markThreadMessagesRead
 import org.fossify.messages.extensions.markThreadMessagesUnread
-import org.fossify.messages.extensions.messageSearchResult
-import org.fossify.messages.extensions.messagesDB
 import org.fossify.messages.extensions.renameConversation
 import org.fossify.messages.extensions.updateConversationArchivedStatus
 import org.fossify.messages.helpers.INBOX_FILTER
 import org.fossify.messages.helpers.InboxFilter
 import org.fossify.messages.helpers.InboxRepository
 import org.fossify.messages.helpers.SEARCHED_MESSAGE_ID
+import org.fossify.messages.helpers.SEARCHED_MESSAGE_IS_MMS
 import org.fossify.messages.helpers.SWIPE_UNDO_DURATION_MS
 import org.fossify.messages.helpers.SpamBackfill
 import org.fossify.messages.helpers.SwipeAction
 import org.fossify.messages.helpers.THREAD_ID
 import org.fossify.messages.helpers.THREAD_TITLE
 import org.fossify.messages.helpers.UndoDeletion
-import org.fossify.messages.helpers.designFloat
 import org.fossify.messages.helpers.refreshConversations
 import org.fossify.messages.helpers.sortedForInbox
 import org.fossify.messages.helpers.swipeAction
 import org.fossify.messages.models.Conversation
-import org.fossify.messages.models.Message
 import org.fossify.messages.models.SearchResult
 import org.fossify.messages.ui.OpenLineTheme
+import org.fossify.messages.ui.openLineDark
+import org.fossify.messages.ui.openLineTextScale
 import org.fossify.messages.ui.inbox.InboxAction
 import org.fossify.messages.ui.inbox.InboxRow
 import org.fossify.messages.ui.inbox.InboxScreen
@@ -107,7 +96,9 @@ import org.fossify.messages.ui.inbox.LibraryDestination
 class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
     private val MAKE_DEFAULT_APP_REQUEST = 1
 
-    private var lastSearchedText = ""
+    private var search by mutableStateOf(SearchUiState())
+    private var searchJob: Job? = null
+    private val searchRepository by lazy { SearchRepository(this) }
     private var inboxConversations = listOf<Conversation>()
     private var providerReconcileActive = false
     private var inboxFilter = InboxFilter.ALL
@@ -117,11 +108,11 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
     private val archiving = mutableSetOf<Long>()
     private var undoJob: Job? = null
     private var undoSettle: (() -> Unit)? = null
-    private val searchHandler = Handler(Looper.getMainLooper())
 
     private var inbox by mutableStateOf(InboxUiState())
     private var darkTheme by mutableStateOf(false)
     private var textScale by mutableFloatStateOf(1f)
+    private var libraryOpen by mutableStateOf(false)
     @VisibleForTesting
     internal val snackbarHost = SnackbarHostState()
 
@@ -137,7 +128,14 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
         inboxFilter = InboxFilter.entries.getOrNull(savedInstanceState?.getInt(INBOX_FILTER) ?: 0) ?: InboxFilter.ALL
         savedInstanceState?.getLongArray(INBOX_SELECTION)?.let { inbox = inbox.copy(selected = it.toSet()) }
         appLaunched(BuildConfig.APPLICATION_ID)
-        setupSearch()
+        libraryOpen = savedInstanceState?.getBoolean("library_open") ?: false
+        search = SearchUiState(
+            open = savedInstanceState?.getBoolean(SEARCH_OPEN) ?: false,
+            query = savedInstanceState?.getString(SEARCH_QUERY).orEmpty(),
+            filter = SearchFilter.entries.getOrNull(savedInstanceState?.getInt(SEARCH_FILTER) ?: 0) ?: SearchFilter.ALL,
+            recent = config.recentSearches,
+        )
+        if (search.open) loadSearchResults()
         refreshInboxTheme()
         binding.inboxCompose.setContent {
             OpenLineTheme(dark = darkTheme, textScale = textScale) {
@@ -151,15 +149,27 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
                     onAction = ::handleAction,
                     onSwipe = ::handleSwipe,
                     onFilter = ::setFilter,
-                    onSearch = { binding.mainSearchView.show() },
+                    onSearch = ::openSearch,
                     onNewMessage = ::launchNewConversation,
                     onLibrary = ::openLibrary,
                     onSettings = ::launchSettings,
+                    search = search,
+                    onSearchQuery = ::searchTextChanged,
+                    onSearchFilter = ::setSearchFilter,
+                    onSearchResult = ::openSearchResult,
+                    onSearchBack = ::closeSearch,
+                    onSearchRetry = ::loadSearchResults,
+                    libraryOpen = libraryOpen,
+                    onLibraryTab = {
+                        closeSearch()
+                        libraryOpen = it
+                        applySystemBars()
+                    },
                 )
             }
         }
 
-        setupEdgeToEdge(padBottomImeAndSystem = listOf(binding.searchResultsList))
+        setupEdgeToEdge()
 
         checkAndDeleteOldRecycleBinMessages()
         clearAllMessagesIfNeeded {
@@ -170,7 +180,7 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
     override fun onResume() {
         super.onResume()
         refreshInboxTheme()
-        updateSearchColors()
+        if (search.open) loadSearchResults()
         applySystemBars()
         refreshSpamBadge()
         refreshDrafts()
@@ -181,6 +191,10 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
+        outState.putBoolean(SEARCH_OPEN, search.open)
+        outState.putString(SEARCH_QUERY, search.query)
+        outState.putInt(SEARCH_FILTER, search.filter.ordinal)
+        outState.putBoolean("library_open", libraryOpen)
         outState.putInt(INBOX_FILTER, inboxFilter.ordinal)
         outState.putLongArray(INBOX_SELECTION, inbox.selected.toLongArray())
         super.onSaveInstanceState(outState)
@@ -197,14 +211,19 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
 
     override fun onDestroy() {
         InboxRepository.setReconcileListener(null)
-        searchHandler.removeCallbacksAndMessages(null)
+        searchJob?.cancel()
         super.onDestroy()
     }
 
     override fun onBackPressedCompat(): Boolean {
+        if (libraryOpen && !search.open) {
+            libraryOpen = false
+            applySystemBars()
+            return true
+        }
         return when {
-            binding.mainSearchView.isShowing -> {
-                binding.mainSearchView.hide()
+            search.open -> {
+                closeSearch()
                 true
             }
 
@@ -222,60 +241,17 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
 
     /** The Open Line palette follows the app's light/dark choice, not the Commons accent. */
     private fun refreshInboxTheme() {
-        darkTheme = ColorUtils.calculateLuminance(getProperBackgroundColor()) < DARK_LUMINANCE
-        textScale = getTextSize() / resources.getDimension(org.fossify.commons.R.dimen.normal_text_size)
+        darkTheme = openLineDark()
+        textScale = openLineTextScale()
     }
 
     private fun applySystemBars() {
-        if (binding.mainSearchView.isShowing) {
-            window.setSystemBarsAppearance(getProperBackgroundColor())
-            return
-        }
-
         // The bottom bar paints its own surface; a system scrim on top would double it.
         if (isQPlus()) window.isNavigationBarContrastEnforced = false
-        // Status icons sit on the pine identity band in both themes.
+        // Inbox uses the pine band; Library uses the theme surface.
         WindowCompat.getInsetsController(window, window.decorView).apply {
-            isAppearanceLightStatusBars = false
+            isAppearanceLightStatusBars = libraryOpen && !darkTheme
             isAppearanceLightNavigationBars = !darkTheme
-        }
-    }
-
-    private fun setupSearch() {
-        binding.mainSearchView.editText.doAfterTextChanged { text ->
-            // Each query is a LIKE over every cached message, so wait for a pause in typing.
-            searchHandler.removeCallbacksAndMessages(null)
-            searchHandler.postDelayed({ searchTextChanged(text?.toString().orEmpty()) }, SEARCH_DEBOUNCE_MS)
-        }
-
-        binding.mainSearchView.addTransitionListener { _, _, newState ->
-            when (newState) {
-                SearchView.TransitionState.SHOWING -> {
-                    applySystemBars()
-                    searchTextChanged(binding.mainSearchView.text.toString())
-                }
-
-                SearchView.TransitionState.HIDDEN -> {
-                    searchHandler.removeCallbacksAndMessages(null)
-                    binding.mainSearchView.clearText()
-                    applySystemBars()
-                }
-
-                else -> Unit
-            }
-        }
-    }
-
-    private fun updateSearchColors() {
-        val backgroundColor = getProperBackgroundColor()
-        val textColor = getProperTextColor()
-        val hintColor = textColor.adjustAlpha(resources.designFloat(R.dimen.opacity_hint))
-        // SearchView has no background setter; its surface comes from theme attrs that ignore Fossify's colors
-        binding.mainSearchView.apply {
-            findViewById<View>(com.google.android.material.R.id.open_search_view_background)?.setBackgroundColor(backgroundColor)
-            editText.setTextColor(textColor)
-            editText.setHintTextColor(hintColor)
-            toolbar.navigationIcon?.applyColorFilter(textColor)
         }
     }
 
@@ -685,106 +661,71 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
             .build()
     }
 
-    private fun searchTextChanged(text: String) {
-        lastSearchedText = text
-        val recentSearches = config.recentSearches
-        val showRecent = text.isEmpty() && recentSearches.isNotEmpty()
-        binding.recentSearchesHolder.beVisibleIf(showRecent)
-        if (showRecent) {
-            showRecentSearches(recentSearches)
-        }
+    private fun openSearch() {
+        search = SearchUiState(open = true, recent = config.recentSearches)
+        applySystemBars()
+    }
 
-        val isQuery = text.length >= 2
-        binding.searchPlaceholder2.beVisibleIf(!isQuery && !showRecent)
-        if (!isQuery) {
-            binding.searchPlaceholder.beGone()
-            binding.searchResultsList.beGone()
+    private fun closeSearch() {
+        if (!search.open) return
+        searchJob?.cancel()
+        search = SearchUiState()
+        hideKeyboard()
+        applySystemBars()
+    }
+
+    private fun setSearchFilter(filter: SearchFilter) {
+        search = search.copy(filter = filter)
+        if (search.entry) loadSearchResults()
+    }
+
+    private fun searchTextChanged(query: String) {
+        searchJob?.cancel()
+        val filter = if (query.isBlank()) SearchFilter.ALL else search.filter
+        search = search.copy(
+            query = query,
+            filter = filter,
+            matches = emptyList(),
+            failed = false,
+            loading = query.isNotBlank(),
+        )
+        loadSearchResults()
+    }
+
+    private fun loadSearchResults() {
+        searchJob?.cancel()
+        if (search.showingHistory) {
+            search = search.copy(matches = emptyList(), loading = false, failed = false)
             return
         }
-
-        ensureBackgroundThread {
-            val searchQuery = "%$text%"
-            val messages = messagesDB.getMessagesWithText(searchQuery)
-            val conversations = conversationsDB.getConversationsWithText(searchQuery)
-            if (text == lastSearchedText) {
-                showSearchResults(messages, conversations, text)
-            }
-        }
-    }
-
-    private fun showRecentSearches(recentSearches: List<String>) {
-        val textColor = getProperTextColor()
-        binding.recentSearches.removeAllViews()
-        recentSearches.forEach { query ->
-            ItemRecentSearchChipBinding.inflate(layoutInflater, binding.recentSearches, false).root.apply {
-                text = query
-                setTextColor(textColor)
-                setOnClickListener {
-                    binding.mainSearchView.setText(query)
-                    binding.mainSearchView.editText.setSelection(query.length)
-                }
-                binding.recentSearches.addView(this)
-            }
-        }
-    }
-
-    private fun showSearchResults(
-        messages: List<Message>,
-        conversations: List<Conversation>,
-        searchedText: String,
-    ) {
-        val searchResults = ArrayList<SearchResult>()
-        conversations.forEach { conversation ->
-            val date = (conversation.date * 1000L).formatDateOrTime(
-                context = this,
-                hideTimeOnOtherDays = true,
-                showCurrentYear = true
-            )
-
-            val searchResult = SearchResult(
-                messageId = -1,
-                title = conversation.title,
-                snippet = conversation.phoneNumber,
-                date = date,
-                threadId = conversation.threadId,
-                photoUri = conversation.photoUri
-            )
-            searchResults.add(searchResult)
-        }
-
-        messages.sortedByDescending { it.id }.forEach { message ->
-            searchResults.add(messageSearchResult(message))
-        }
-
-        runOnUiThread {
-            if (isDestroyed || isFinishing || searchedText != lastSearchedText || !binding.mainSearchView.isShowing) {
-                return@runOnUiThread
-            }
-
-            binding.searchResultsList.beVisibleIf(searchResults.isNotEmpty())
-            binding.searchPlaceholder.beVisibleIf(searchResults.isEmpty())
-
-            val currAdapter = binding.searchResultsList.adapter
-            if (currAdapter == null) {
-                SearchResultsAdapter(this, searchResults, binding.searchResultsList, searchedText) {
-                    openSearchResult(it as SearchResult)
-                }.apply {
-                    binding.searchResultsList.adapter = this
-                }
-            } else {
-                (currAdapter as SearchResultsAdapter).updateItems(searchResults, searchedText)
+        val query = search.query
+        val includeMessages = query.isNotBlank() || search.filter != SearchFilter.PEOPLE
+        search = search.copy(loading = true, failed = false)
+        searchJob = lifecycleScope.launch {
+            delay(SEARCH_DEBOUNCE_MS)
+            try {
+                val matches = searchRepository.search(query, includeMessageResults = includeMessages)
+                search = search.copy(matches = matches, loading = false)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                search = search.copy(loading = false, failed = true)
             }
         }
     }
 
     private fun openSearchResult(result: SearchResult) {
         // only queries that led somewhere are worth offering again
-        config.addRecentSearch(lastSearchedText)
+        if (search.query.isNotBlank()) {
+            config.addRecentSearch(search.query.trim())
+            search = search.copy(recent = config.recentSearches)
+        }
         hideKeyboard()
         Intent(this, ThreadActivity::class.java).apply {
             putExtra(THREAD_ID, result.threadId)
             putExtra(THREAD_TITLE, result.title)
             putExtra(SEARCHED_MESSAGE_ID, result.messageId)
+            putExtra(SEARCHED_MESSAGE_IS_MMS, result.isMms)
             startActivity(this)
         }
     }
@@ -810,13 +751,15 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
     }
 
     private fun launchSettings() {
+        closeSearch()
         hideKeyboard()
         startActivity(Intent(applicationContext, SettingsActivity::class.java))
     }
 
     companion object {
-        private const val SEARCH_DEBOUNCE_MS = 200L
-        private const val DARK_LUMINANCE = 0.5
+        private const val SEARCH_OPEN = "search_open"
+        private const val SEARCH_QUERY = "search_query"
+        private const val SEARCH_FILTER = "search_filter"
         private const val INBOX_SELECTION = "inbox_selection"
     }
 }

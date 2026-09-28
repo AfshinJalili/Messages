@@ -39,7 +39,6 @@ data class InboxUiState(
 
 enum class InboxSection(@StringRes val label: Int) {
     PINNED(R.string.inbox_section_pinned),
-    UPCOMING(R.string.inbox_section_upcoming),
     TODAY(R.string.inbox_section_today),
     YESTERDAY(R.string.inbox_section_yesterday),
     EARLIER(R.string.inbox_section_earlier),
@@ -47,14 +46,14 @@ enum class InboxSection(@StringRes val label: Int) {
 
 /**
  * Rows arrive pinned-first, then newest-first, so sections come out contiguous. Scheduled sends are
- * dated in the future and sort above today.
+ * dated in the future and remain in date order in Today, without a separate scheduled section.
  */
 fun InboxRow.section(now: Calendar): InboxSection {
     if (pinned) return InboxSection.PINNED
     val day = Calendar.getInstance().apply { timeInMillis = conversation.date * 1000L }
     val today = now.clone() as Calendar
     return when {
-        day.after(today) && !day.sameDayAs(today) -> InboxSection.UPCOMING
+        day.after(today) -> InboxSection.TODAY
         day.sameDayAs(today) -> InboxSection.TODAY
         day.sameDayAs(today.apply { add(Calendar.DAY_OF_YEAR, -1) }) -> InboxSection.YESTERDAY
         else -> InboxSection.EARLIER
@@ -108,7 +107,11 @@ const val PRIMARY_ACTION_COUNT = 3
 
 /** Delete always sits in the bar; everything past the first few safe actions goes to the overflow menu. */
 fun List<InboxAction>.splitForBar(): Pair<List<InboxAction>, List<InboxAction>> {
-    val candidates = filter { it != InboxAction.DELETE && it.ordinal < InboxAction.DELETE.ordinal }
+    val candidates = listOfNotNull(
+        InboxAction.ARCHIVE.takeIf { it in this },
+        firstOrNull { it == InboxAction.MARK_READ || it == InboxAction.MARK_UNREAD },
+        firstOrNull { it == InboxAction.MUTE || it == InboxAction.UNMUTE },
+    )
     val bar = candidates.take(PRIMARY_ACTION_COUNT) + listOfNotNull(InboxAction.DELETE.takeIf { it in this })
     return bar to (this - bar.toSet())
 }
@@ -119,8 +122,7 @@ fun InboxFilter.emptyTitle() = when (this) {
     else -> R.string.no_filtered_conversations
 }
 
-// TODO(library): stop-gap until design screen 17 (Library) exists as a real destination. The bottom
-//  nav opens these old screens from a sheet. Tracked in docs/redesign/COMPOSE-MIGRATION.md.
+// Child activities return to the Library tab retained by the inbox composition.
 enum class LibraryDestination(@StringRes val label: Int, @DrawableRes val icon: Int) {
     STARRED(R.string.starred_messages, org.fossify.commons.R.drawable.ic_star_vector),
     ARCHIVE(R.string.archived_conversations, R.drawable.ic_archive_vector),

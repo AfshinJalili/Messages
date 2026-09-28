@@ -608,7 +608,10 @@ fun Context.getMmsAttachment(id: Long): MessageAttachment {
     val projection = arrayOf(
         Mms._ID,
         Mms.Part.CONTENT_TYPE,
-        Mms.Part.TEXT
+        Mms.Part.TEXT,
+        Mms.Part.FILENAME,
+        Mms.Part.NAME,
+        Mms.Part.CONTENT_LOCATION,
     )
     val selection = "${Mms.Part.MSG_ID} = ?"
     val selectionArgs = arrayOf(id.toString())
@@ -619,6 +622,9 @@ fun Context.getMmsAttachment(id: Long): MessageAttachment {
     queryCursor(uri, projection, selection, selectionArgs, showErrors = true) { cursor ->
         val partId = cursor.getLongValue(Mms._ID)
         val mimetype = cursor.getStringValue(Mms.Part.CONTENT_TYPE)
+        val filename = cursor.getStringValue(Mms.Part.FILENAME).orEmpty()
+            .ifBlank { cursor.getStringValue(Mms.Part.NAME).orEmpty() }
+            .ifBlank { cursor.getStringValue(Mms.Part.CONTENT_LOCATION).orEmpty() }
         if (mimetype == "text/plain") {
             messageAttachment.text = cursor
                 .getStringValue(Mms.Part.TEXT)
@@ -634,11 +640,11 @@ fun Context.getMmsAttachment(id: Long): MessageAttachment {
                     mimetype = mimetype,
                     width = 0,
                     height = 0,
-                    filename = ""
+                    filename = filename
                 )
             )
         } else if (mimetype != "application/smil") {
-            val attachmentName = attachmentNames?.getOrNull(attachmentCount) ?: ""
+            val attachmentName = filename.ifBlank { attachmentNames?.getOrNull(attachmentCount).orEmpty() }
             val attachment = Attachment(
                 id = partId,
                 messageId = id,
@@ -1517,6 +1523,7 @@ fun Context.messageSearchResult(message: Message): SearchResult {
         snippet = message.body,
         date = date,
         threadId = message.threadId,
-        photoUri = message.senderPhotoUri
+        photoUri = message.senderPhotoUri,
+        isMms = message.isMMS,
     )
 }

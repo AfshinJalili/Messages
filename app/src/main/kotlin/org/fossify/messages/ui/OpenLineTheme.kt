@@ -1,6 +1,8 @@
 package org.fossify.messages.ui
 
+import android.content.Context
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.core.graphics.ColorUtils
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
@@ -25,7 +27,17 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import org.fossify.commons.extensions.getProperBackgroundColor
+import org.fossify.commons.extensions.getTextSize
 import org.fossify.messages.R
+
+private const val DARK_LUMINANCE = 0.5
+
+/** Light or dark follows the app's background setting, not the system night mode. */
+fun Context.openLineDark() = ColorUtils.calculateLuminance(getProperBackgroundColor()) < DARK_LUMINANCE
+
+/** The app's own font-size setting, relative to its default. */
+fun Context.openLineTextScale() = getTextSize() / resources.getDimension(org.fossify.commons.R.dimen.normal_text_size)
 
 /** Roles the Open Line design uses that Material 3 has no slot for. */
 @Immutable
@@ -95,12 +107,14 @@ private fun colorScheme(dark: Boolean): ColorScheme {
             background = colorResource(R.color.open_line_night),
             surface = colorResource(R.color.open_line_night),
             surfaceContainer = colorResource(R.color.open_line_night_surface),
-            surfaceContainerHigh = colorResource(R.color.open_line_night_surface),
+            surfaceContainerHigh = colorResource(R.color.open_line_surface_high_dark),
             onSurface = paper,
             onSurfaceVariant = colorResource(R.color.open_line_muted_dark),
             outlineVariant = colorResource(R.color.open_line_line_dark),
             error = colorResource(R.color.open_line_coral),
             onError = ink,
+            errorContainer = colorResource(R.color.open_line_error_container_dark),
+            onErrorContainer = colorResource(R.color.open_line_error_container),
             inverseSurface = paper,
             inverseOnSurface = ink,
             inversePrimary = pine,
@@ -116,12 +130,14 @@ private fun colorScheme(dark: Boolean): ColorScheme {
             background = paper,
             surface = paper,
             surfaceContainer = white,
-            surfaceContainerHigh = white,
+            surfaceContainerHigh = colorResource(R.color.open_line_surface_high),
             onSurface = ink,
             onSurfaceVariant = colorResource(R.color.open_line_muted),
             outlineVariant = colorResource(R.color.open_line_line),
             error = colorResource(R.color.open_line_error),
             onError = white,
+            errorContainer = colorResource(R.color.open_line_error_container),
+            onErrorContainer = ink,
             inverseSurface = ink,
             inverseOnSurface = white,
             inversePrimary = lime,

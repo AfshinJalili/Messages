@@ -1,10 +1,34 @@
 package org.fossify.messages.ui.inbox
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.layout.imePadding
+import org.fossify.messages.ui.search.SearchContent
+import org.fossify.messages.ui.search.SearchInput
+import org.fossify.messages.ui.search.SearchUiState
+import org.fossify.messages.ui.search.SearchFilter
+import org.fossify.messages.ui.search.SEARCH_TRANSITION_MS
+import org.fossify.messages.models.SearchResult
 import android.content.res.Configuration
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.material3.SwipeToDismissBoxState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableFloatStateOf
@@ -56,8 +80,6 @@ import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -65,10 +87,7 @@ import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -83,6 +102,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -124,6 +144,7 @@ import org.fossify.messages.R
 import org.fossify.messages.helpers.InboxFilter
 import org.fossify.messages.helpers.SwipeAction
 import org.fossify.messages.models.Conversation
+import org.fossify.messages.ui.Avatar
 import org.fossify.messages.ui.OpenLine
 import org.fossify.messages.ui.OpenLineTheme
 import java.util.Calendar
@@ -136,8 +157,9 @@ private val TargetSize = 48.dp
 private const val COMPACT_HEIGHT_DP = 480
 private const val EXPANDED_WIDTH_DP = 600
 
-// Fixed, not a minimum: search and selection controls swap in place, and Persian leading is taller.
+// Both controls share a minimum that grows with the text scale.
 private val BandControlHeight = 56.dp
+private enum class BandLayout { EXPANDED, COMPACT, COLLAPSED }
 
 @Composable
 fun InboxScreen(
@@ -155,31 +177,48 @@ fun InboxScreen(
     onLibrary: (LibraryDestination) -> Unit,
     onSettings: () -> Unit,
     modifier: Modifier = Modifier,
+    search: SearchUiState = SearchUiState(),
+    onSearchQuery: (String) -> Unit = {},
+    onSearchFilter: (SearchFilter) -> Unit = {},
+    onSearchResult: (SearchResult) -> Unit = {},
+    onSearchBack: () -> Unit = {},
+    onSearchRetry: () -> Unit = {},
+    libraryOpen: Boolean = false,
+    onLibraryTab: (Boolean) -> Unit = {},
 ) {
-    var libraryOpen by rememberSaveable { mutableStateOf(false) }
     val listState = rememberLazyListState()
-    val atTop by remember { derivedStateOf { listState.firstVisibleItemIndex == 0 } }
-    // Landscape phones: a bottom bar plus the band leave no room for rows, so navigation moves to a rail.
+    var scrolledDown by rememberSaveable { mutableStateOf(false) }
+    val searchOpen by rememberUpdatedState(search.open)
+    val scrollConnection = remember {
+        object : NestedScrollConnection {
+            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                if (!searchOpen && source == NestedScrollSource.UserInput && available.y != 0f) {
+                    scrolledDown = available.y < 0f
+                }
+                return Offset.Zero
+            }
+        }
+    }
     val configuration = LocalConfiguration.current
     val compactHeight = configuration.screenHeightDp < COMPACT_HEIGHT_DP
-    // Material guidance: a rail on expanded widths too, not only on short windows.
+    val collapsed = scrolledDown || configuration.screenHeightDp < 320 || LocalDensity.current.fontScale >= 1.5f
     val showRail = (compactHeight || configuration.screenWidthDp >= EXPANDED_WIDTH_DP) && !state.selecting
     Scaffold(
-        modifier = modifier,
+        modifier = modifier.imePadding(),
         containerColor = MaterialTheme.colorScheme.surface,
         // With no bottom bar, the FAB, snackbar and list tail must clear the navigation bar themselves.
         contentWindowInsets = if (showRail) WindowInsets.navigationBars else WindowInsets(0),
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
-            if (!state.selecting) {
-                NewMessageButton(expanded = atTop && !compactHeight, onClick = onNewMessage)
+            if (!state.selecting && !libraryOpen && !search.open) {
+                NewMessageButton(expanded = !collapsed, onClick = onNewMessage)
             }
         },
         bottomBar = {
             if (state.selecting) {
                 SelectionBar(state, onAction)
             } else if (!showRail) {
-                InboxNavigation(state.unreadSpam, onLibrary = { libraryOpen = true }, onSettings = onSettings)
+                InboxNavigation(state.unreadSpam, onLibrary = { onLibraryTab(true) }, onSettings = onSettings, librarySelected = libraryOpen, onInbox = { onLibraryTab(false) })
             }
         },
     ) { padding ->
@@ -191,32 +230,29 @@ fun InboxScreen(
             if (showRail) {
                 InboxNavigation(
                     state.unreadSpam,
-                    onLibrary = { libraryOpen = true },
+                    onLibrary = { onLibraryTab(true) },
                     onSettings = onSettings,
                     vertical = true,
+                    librarySelected = libraryOpen,
+                    onInbox = { onLibraryTab(false) },
                 )
             }
-            Box(Modifier.weight(1f)) {
-                InboxList(state, listState, compactHeight, onOpen, onToggleSelection, onSelectAll, onClearSelection, onSwipe, onFilter, onSearch)
-                // The band scrolls away; keep the status bar area pine so light icons stay readable.
-                Box(
-                    Modifier
-                        .fillMaxWidth()
-                        .windowInsetsTopHeight(WindowInsets.statusBars)
-                        .background(MaterialTheme.colorScheme.primaryContainer)
-                )
+            if (libraryOpen) {
+                LibraryPage(state, onLibrary, Modifier.weight(1f))
+            } else {
+                Column(Modifier.weight(1f).nestedScroll(scrollConnection)) {
+                    IdentityBand(
+                        state, compactHeight, collapsed, onSearch, onSelectAll, onClearSelection,
+                        search, onSearchQuery, onSearchBack,
+                    )
+                    if (search.open) {
+                        SearchContent(search, onSearchQuery, onSearchFilter, onSearchResult, onSearchRetry)
+                    } else {
+                        InboxList(state, listState, onOpen, onToggleSelection, onSwipe, onFilter)
+                    }
+                }
             }
         }
-    }
-    if (libraryOpen) {
-        LibrarySheet(
-            state = state,
-            onDismiss = { libraryOpen = false },
-            onOpen = {
-                libraryOpen = false
-                onLibrary(it)
-            },
-        )
     }
 }
 
@@ -224,24 +260,17 @@ fun InboxScreen(
 private fun InboxList(
     state: InboxUiState,
     listState: LazyListState,
-    compactHeight: Boolean,
     onOpen: (InboxRow) -> Unit,
     onToggleSelection: (InboxRow) -> Unit,
-    onSelectAll: () -> Unit,
-    onClearSelection: () -> Unit,
     onSwipe: (InboxRow, SwipeAction) -> Unit,
     onFilter: (InboxFilter) -> Unit,
-    onSearch: () -> Unit,
 ) {
     val sections = remember(state.rows) {
         val now = Calendar.getInstance()
         state.rows.groupBy { it.section(now) }
     }
     // Clears the extended FAB so the last row stays reachable.
-    LazyColumn(state = listState, contentPadding = PaddingValues(bottom = 88.dp)) {
-        item(key = "header", contentType = "header") {
-            IdentityBand(state, compactHeight, onSearch, onSelectAll, onClearSelection)
-        }
+    LazyColumn(state = listState, contentPadding = PaddingValues(bottom = 88.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         item(key = "filters", contentType = "filters") {
             FilterRow(state.filter, onFilter)
         }
@@ -250,7 +279,7 @@ private fun InboxList(
             state.rows.isEmpty() -> item(key = "empty") { EmptyState(state.filter) }
             else -> sections.forEach { (section, rows) ->
                 item(key = "section-${section.name}", contentType = "section") {
-                    SectionHeader(section, Modifier.animateItem())
+                    SectionHeader(section, Modifier.widthIn(max = 640.dp).fillMaxWidth().animateItem())
                 }
                 items(rows, key = { it.threadId }, contentType = { "row" }) { row ->
                     val selected = row.threadId in state.selected
@@ -259,7 +288,7 @@ private fun InboxList(
                         swipeRight = state.swipeRight,
                         enabled = !state.selecting,
                         onSwipe = { onSwipe(row, it) },
-                        modifier = Modifier.animateItem(),
+                        modifier = Modifier.widthIn(max = 640.dp).fillMaxWidth().animateItem(),
                     ) {
                         ConversationRow(
                             row = row,
@@ -267,6 +296,8 @@ private fun InboxList(
                             selecting = state.selecting,
                             onClick = { if (state.selecting) onToggleSelection(row) else onOpen(row) },
                             onLongClick = { onToggleSelection(row) },
+                            archiveAvailable = state.archiveAvailable,
+                            onAccessibleAction = { onSwipe(row, it) },
                         )
                     }
                 }
@@ -280,45 +311,107 @@ private fun InboxList(
 private fun IdentityBand(
     state: InboxUiState,
     compactHeight: Boolean,
+    collapsed: Boolean,
     onSearch: () -> Unit,
     onSelectAll: () -> Unit,
     onClearSelection: () -> Unit,
+    search: SearchUiState,
+    onSearchQuery: (String) -> Unit,
+    onSearchBack: () -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .background(colors.primaryContainer)
-            .windowInsetsPadding(WindowInsets.statusBars)
-            .padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 20.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        val title = if (state.selecting) {
-            pluralStringResource(R.plurals.inbox_selected, state.selected.size, state.selected.size)
-        } else {
-            stringResource(R.string.messages)
-        }
-        val subtitle = when {
-            state.selecting -> stringResource(R.string.inbox_selection_hint)
-            state.unreadMessages > 0 ->
-                pluralStringResource(R.plurals.inbox_new_messages, state.unreadMessages, state.unreadMessages)
-            else -> stringResource(R.string.no_unread_conversations)
-        }
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.headlineMedium,
-                color = colors.onPrimaryContainer,
-                modifier = Modifier.semantics { heading() },
-            )
-            if (!compactHeight) {
-                Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = OpenLine.colors.onBandVariant)
-            }
-        }
+    val title = if (state.selecting) {
+        pluralStringResource(R.plurals.inbox_selected, state.selected.size, state.selected.size)
+    } else {
+        stringResource(R.string.messages)
+    }
+    val subtitle = when {
+        state.selecting -> stringResource(R.string.inbox_selection_hint)
+        state.unreadMessages > 0 ->
+            pluralStringResource(R.plurals.inbox_new_messages, state.unreadMessages, state.unreadMessages)
+        else -> stringResource(R.string.no_unread_conversations)
+    }
+    val controls: @Composable () -> Unit = {
         if (state.selecting) {
             SelectionControls(onSelectAll, onClearSelection)
         } else {
             SearchField(onSearch)
+        }
+    }
+    val bandModifier = Modifier
+        .fillMaxWidth()
+        .background(colors.primaryContainer)
+        .windowInsetsPadding(WindowInsets.statusBars)
+
+    val layout = when {
+        search.open -> BandLayout.EXPANDED
+        collapsed -> BandLayout.COLLAPSED
+        compactHeight -> BandLayout.COMPACT
+        else -> BandLayout.EXPANDED
+    }
+    AnimatedContent(
+        targetState = layout,
+        modifier = bandModifier,
+        transitionSpec = {
+            (fadeIn(tween(180)) togetherWith fadeOut(tween(120))) using SizeTransform(clip = true)
+        },
+        label = "inbox band",
+    ) { visibleLayout ->
+        if (visibleLayout != BandLayout.EXPANDED) {
+        Row(
+            Modifier.fillMaxWidth().heightIn(min = if (visibleLayout == BandLayout.COLLAPSED) 64.dp else 104.dp).padding(horizontal = 20.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(20.dp),
+        ) {
+            if (state.selecting) {
+                IconButton(onClick = onClearSelection) {
+                    Icon(painterResource(org.fossify.commons.R.drawable.ic_cross_vector), stringResource(org.fossify.commons.R.string.close), tint = colors.onPrimaryContainer)
+                }
+            }
+            Text(
+                text = title,
+                style = MaterialTheme.typography.headlineMedium,
+                color = colors.onPrimaryContainer,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .weight(1f)
+                    .semantics { heading() },
+            )
+            if (state.selecting) {
+                TextButton(onClick = onSelectAll) {
+                    Text(stringResource(org.fossify.commons.R.string.select_all), style = MaterialTheme.typography.labelMedium, color = colors.onPrimaryContainer)
+                }
+            } else {
+                IconButton(onClick = onSearch) {
+                    Icon(painterResource(org.fossify.commons.R.drawable.ic_search_vector), stringResource(R.string.inbox_search_hint), tint = colors.onPrimaryContainer)
+                }
+            }
+        }
+        } else {
+        Column(
+            Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            AnimatedVisibility(
+                visible = !search.open,
+                enter = fadeIn(tween(SEARCH_TRANSITION_MS)) + expandVertically(tween(SEARCH_TRANSITION_MS)),
+                exit = fadeOut(tween(SEARCH_TRANSITION_MS)) + shrinkVertically(tween(SEARCH_TRANSITION_MS)),
+            ) {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = colors.onPrimaryContainer,
+                    modifier = Modifier.semantics { heading() },
+                )
+                if (!compactHeight && LocalConfiguration.current.screenWidthDp >= 360 && LocalDensity.current.fontScale < 1.5f) {
+                    Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = OpenLine.colors.onBandVariant)
+                }
+            }
+            }
+            if (search.open) SearchInput(search.query, onSearchQuery, onSearchBack) else controls()
+        }
         }
     }
 }
@@ -332,7 +425,7 @@ private fun SearchField(onClick: () -> Unit) {
         color = colors.surfaceContainer,
         modifier = Modifier
             .fillMaxWidth()
-            .height(BandControlHeight),
+            .heightIn(min = BandControlHeight * LocalDensity.current.fontScale.coerceAtLeast(1f)),
     ) {
         Row(
             Modifier.padding(horizontal = 16.dp),
@@ -356,7 +449,7 @@ private fun SelectionControls(onSelectAll: () -> Unit, onClearSelection: () -> U
     Row(
         Modifier
             .fillMaxWidth()
-            .height(BandControlHeight),
+            .heightIn(min = BandControlHeight * LocalDensity.current.fontScale.coerceAtLeast(1f)),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         IconButton(onClick = onClearSelection) {
@@ -481,17 +574,17 @@ private fun SwipeableRow(
     )
 }
 
-/** Muted until the drag passes the commit point, then the action colour: the user sees when letting go acts. */
+/** The tonal panel reveals its label only once releasing would commit the action. */
 @Composable
 private fun SwipeBackground(action: SwipeAction, armed: Boolean, alignStart: Boolean) {
     val colors = MaterialTheme.colorScheme
     val (actionColor, onAction) = when (action) {
-        SwipeAction.DELETE -> colors.error to colors.onError
-        SwipeAction.MUTE -> colors.onSurfaceVariant to colors.surface
-        else -> colors.primary to colors.onPrimary
+        SwipeAction.DELETE -> colors.errorContainer to colors.error
+        SwipeAction.MUTE -> colors.surfaceContainerHigh to colors.onSurfaceVariant
+        else -> colors.primaryContainer to colors.onPrimaryContainer
     }
-    val background by animateColorAsState(if (armed) actionColor else colors.surfaceContainerHigh, label = "swipe background")
-    val tint by animateColorAsState(if (armed) onAction else actionColor, label = "swipe icon")
+    val background by animateColorAsState(actionColor, label = "swipe background")
+    val tint by animateColorAsState(onAction, label = "swipe icon")
     val scale by animateFloatAsState(if (armed) 1.25f else 1f, spring(dampingRatio = Spring.DampingRatioMediumBouncy), label = "swipe icon scale")
     Box(
         Modifier
@@ -500,12 +593,11 @@ private fun SwipeBackground(action: SwipeAction, armed: Boolean, alignStart: Boo
             .padding(horizontal = 24.dp),
         contentAlignment = if (alignStart) Alignment.CenterStart else Alignment.CenterEnd,
     ) {
-        Icon(
-            painterResource(action.icon),
-            contentDescription = stringResource(action.label),
-            tint = tint,
-            modifier = Modifier.graphicsLayer { scaleX = scale; scaleY = scale },
-        )
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Icon(painterResource(action.icon), contentDescription = stringResource(action.label), tint = tint,
+                modifier = Modifier.graphicsLayer { scaleX = scale; scaleY = scale })
+            if (armed) Text(stringResource(action.label), color = tint, style = MaterialTheme.typography.labelMedium)
+        }
     }
 }
 
@@ -517,46 +609,71 @@ private fun ConversationRow(
     selecting: Boolean,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
+    archiveAvailable: Boolean,
+    onAccessibleAction: (SwipeAction) -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
     val conversation = row.conversation
     val unread = !conversation.read
+    val fontScale = LocalDensity.current.fontScale
+    val archiveLabel = stringResource(R.string.archive)
+    val deleteLabel = stringResource(org.fossify.commons.R.string.delete)
+    val muteLabel = stringResource(if (row.muted) R.string.unmute_conversation else R.string.mute_conversation)
+    val unreadLabel = if (unread) pluralStringResource(R.plurals.inbox_row_unread, conversation.unreadCount.coerceAtLeast(1), conversation.unreadCount.coerceAtLeast(1)) else null
+    val mutedLabel = stringResource(R.string.muted)
+    val pinnedLabel = stringResource(R.string.inbox_section_pinned)
+    val context = LocalContext.current
+    val configuration = LocalConfiguration.current
+    val time = remember(conversation.date, configuration) {
+        (conversation.date * 1000L).formatDateOrTime(context, hideTimeOnOtherDays = true, showCurrentYear = false)
+    }
+    val description = listOfNotNull(conversation.title, unreadLabel, row.draft ?: conversation.snippet, time,
+        mutedLabel.takeIf { row.muted }, pinnedLabel.takeIf { row.pinned }).joinToString(", ")
     Row(
         Modifier
+            .widthIn(max = 640.dp)
             .fillMaxWidth()
+            .clip(MaterialTheme.shapes.medium)
             .background(if (selected) colors.secondaryContainer else colors.surface)
             .combinedClickable(
                 onClick = onClick,
                 onLongClick = onLongClick,
                 onLongClickLabel = stringResource(R.string.inbox_select),
             )
-            .semantics { if (selecting) this.selected = selected }
+            .semantics(mergeDescendants = true) {
+                if (selecting) this.selected = selected
+                contentDescription = description
+                if (!selecting) customActions = listOfNotNull(
+                    CustomAccessibilityAction(archiveLabel) { onAccessibleAction(SwipeAction.ARCHIVE); true }.takeIf { archiveAvailable },
+                    CustomAccessibilityAction(deleteLabel) { onAccessibleAction(SwipeAction.DELETE); true },
+                    CustomAccessibilityAction(muteLabel) { onAccessibleAction(SwipeAction.MUTE); true },
+                )
+            }
             .padding(horizontal = 24.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Box(Modifier.size(AvatarSize), contentAlignment = Alignment.Center) {
-            if (selecting) {
-                Checkbox(
-                    checked = selected,
-                    onCheckedChange = null,
-                    colors = CheckboxDefaults.colors(checkedColor = colors.primary, checkmarkColor = colors.onPrimary),
-                )
+            if (selected) {
+                Box(Modifier.size(AvatarSize).clip(CircleShape).background(colors.primary), contentAlignment = Alignment.Center) {
+                    Icon(painterResource(org.fossify.commons.R.drawable.ic_check_vector), null, tint = colors.onPrimary)
+                }
             } else {
-                Avatar(conversation)
+                Avatar(conversation.title, conversation.photoUri, conversation.isGroupConversation, AvatarSize)
             }
         }
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Column(Modifier.weight(1f).clearAndSetSemantics { }, verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(
                 conversation.title,
                 style = MaterialTheme.typography.titleMedium,
                 color = colors.onSurface,
-                maxLines = 1,
+                maxLines = if (fontScale >= 1.3f) 2 else 1,
                 overflow = TextOverflow.Ellipsis,
             )
+            if (fontScale >= 1.5f) Metadata(row, unread, inline = true)
             SnippetText(row, unread)
         }
-        Metadata(row, unread)
+        if (fontScale < 1.5f) Box(Modifier.clearAndSetSemantics { }) { Metadata(row, unread) }
     }
 }
 
@@ -574,117 +691,63 @@ private fun SnippetText(row: InboxRow, unread: Boolean) {
             },
             style = MaterialTheme.typography.bodyMedium,
             color = colors.onSurfaceVariant,
-            maxLines = 2,
+            maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
+    } else if (row.conversation.isScheduled) {
+        val time = android.text.format.DateFormat.format("EEE HH:mm", row.conversation.date * 1000L).toString()
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            Icon(painterResource(org.fossify.commons.R.drawable.ic_clock_vector), null, tint = colors.primary, modifier = Modifier.size(16.dp))
+            Text(stringResource(R.string.inbox_scheduled_at, time), style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Bold, color = colors.primary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
     } else {
         Text(
             row.conversation.snippet,
             style = MaterialTheme.typography.bodyMedium,
             fontStyle = if (row.conversation.isScheduled) FontStyle.Italic else FontStyle.Normal,
             color = if (unread) colors.onSurface else colors.onSurfaceVariant,
-            maxLines = 2,
+            maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
     }
 }
 
 @Composable
-private fun Metadata(row: InboxRow, unread: Boolean) {
+private fun Metadata(row: InboxRow, unread: Boolean, inline: Boolean = false) {
     val colors = MaterialTheme.colorScheme
     val context = LocalContext.current
     val date = row.conversation.date
     val time = remember(date) {
         (date * 1000L).formatDateOrTime(context, hideTimeOnOtherDays = true, showCurrentYear = false)
     }
-    Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(time, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant, maxLines = 1)
+    val signals: @Composable () -> Unit = {
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-            if (row.muted) {
-                Icon(
-                    painterResource(R.drawable.ic_bell_off_vector),
-                    contentDescription = stringResource(R.string.muted),
-                    tint = colors.onSurfaceVariant,
-                    modifier = Modifier.size(16.dp),
-                )
-            }
+            if (row.pinned) Icon(painterResource(org.fossify.commons.R.drawable.ic_pin_vector), null, tint = colors.onSurfaceVariant, modifier = Modifier.size(16.dp))
+            if (row.muted) Icon(painterResource(R.drawable.ic_bell_off_vector), null, tint = colors.onSurfaceVariant, modifier = Modifier.size(16.dp))
             if (unread) {
-                val label = stringResource(R.string.inbox_unread)
-                Box(
-                    Modifier
-                        .size(10.dp)
-                        .clip(CircleShape)
-                        .background(colors.primary)
-                        .semantics { contentDescription = label }
-                )
+                if (row.conversation.unreadCount > 1) {
+                    Box(Modifier.heightIn(min = 22.dp).clip(CircleShape).background(colors.primaryContainer).padding(horizontal = 6.dp), contentAlignment = Alignment.Center) {
+                        Text(String.format(LocalConfiguration.current.locales[0], "%d", row.conversation.unreadCount),
+                            color = colors.onPrimaryContainer, style = MaterialTheme.typography.labelSmall)
+                    }
+                } else {
+                    Box(Modifier.size(10.dp).clip(CircleShape).background(colors.primary))
+                }
             }
         }
     }
-}
-
-@Composable
-private fun Avatar(conversation: Conversation) {
-    val extras = OpenLine.colors
-    val photo = rememberContactPhoto(conversation.photoUri)
-    if (photo != null) {
-        Image(
-            photo,
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .size(AvatarSize)
-                .clip(CircleShape),
-        )
-        return
-    }
-    val title = conversation.title
-    val initials = remember(title) { initials(title) }
-    Box(
-        Modifier
-            .size(AvatarSize)
-            .clip(CircleShape)
-            .background(extras.avatars[Math.floorMod(title.hashCode(), extras.avatars.size)]),
-        contentAlignment = Alignment.Center,
-    ) {
-        if (initials != null) {
-            Text(initials, style = MaterialTheme.typography.labelLarge.copy(fontSize = 17.sp), color = extras.onAvatar)
-        } else {
-            val icon = if (conversation.isGroupConversation) {
-                org.fossify.commons.R.drawable.ic_groups_outline_vector
-            } else {
-                org.fossify.commons.R.drawable.ic_person_vector
-            }
-            Icon(painterResource(icon), contentDescription = null, tint = extras.onAvatar)
+    if (inline) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(time, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant, maxLines = 1)
+            signals()
+        }
+    } else {
+        Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(time, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant, maxLines = 1)
+            signals()
         }
     }
-}
-
-internal fun initials(title: String): String? = title.split(' ')
-    .filter { it.firstOrNull()?.isLetter() == true }
-    .take(2)
-    .joinToString("") { it.first().uppercase() }
-    .ifEmpty { null }
-
-@Composable
-private fun rememberContactPhoto(uri: String): ImageBitmap? {
-    val context = LocalContext.current
-    val sizePx = with(LocalDensity.current) { AvatarSize.roundToPx() }
-    val photo by produceState<ImageBitmap?>(null, uri) {
-        // produceState keeps the previous key's value; a removed photo must not linger.
-        value = null
-        if (uri.isEmpty()) return@produceState
-        val glide = Glide.with(context.applicationContext)
-        val target = glide.asBitmap().load(uri).circleCrop().submit(sizePx, sizePx)
-        // Glide recycles the bitmap it hands out once the target is cleared, so keep a private copy.
-        try {
-            value = withContext(Dispatchers.IO) {
-                runCatching { target.get().let { it.copy(it.config ?: Bitmap.Config.ARGB_8888, false) }.asImageBitmap() }.getOrNull()
-            }
-        } finally {
-            glide.clear(target)
-        }
-    }
-    return photo
 }
 
 @Composable
@@ -716,7 +779,7 @@ private fun EmptyState(filter: InboxFilter) {
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Icon(
-            painterResource(R.drawable.ic_message_bubble),
+            painterResource(if (filter == InboxFilter.UNREAD) R.drawable.ic_check_double_vector else R.drawable.ic_message_bubble),
             contentDescription = null,
             tint = colors.primary,
             modifier = Modifier.size(34.dp),
@@ -747,11 +810,18 @@ private fun NewMessageButton(expanded: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
-private fun InboxNavigation(unreadSpam: Int, onLibrary: () -> Unit, onSettings: () -> Unit, vertical: Boolean = false) {
+private fun InboxNavigation(
+    unreadSpam: Int,
+    onLibrary: () -> Unit,
+    onSettings: () -> Unit,
+    vertical: Boolean = false,
+    librarySelected: Boolean = false,
+    onInbox: () -> Unit = {},
+) {
     @Composable
     fun Items(itemModifier: Modifier) {
-        NavItem(R.drawable.ic_message_bubble, stringResource(R.string.inbox_nav_inbox), true, {}, itemModifier)
-        NavItem(R.drawable.ic_library_vector, stringResource(R.string.inbox_nav_library), false, onLibrary, itemModifier, unreadSpam)
+        NavItem(R.drawable.ic_message_bubble, stringResource(R.string.inbox_nav_inbox), !librarySelected, onInbox, itemModifier)
+        NavItem(R.drawable.ic_library_vector, stringResource(R.string.inbox_nav_library), librarySelected, onLibrary, itemModifier, unreadSpam)
         NavItem(
             org.fossify.commons.R.drawable.ic_settings_cog_vector,
             stringResource(org.fossify.commons.R.string.settings),
@@ -771,6 +841,7 @@ private fun InboxNavigation(unreadSpam: Int, onLibrary: () -> Unit, onSettings: 
                     .verticalScroll(rememberScrollState())
                     .padding(8.dp)
                     .selectableGroup(),
+                horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically),
             ) {
                 Items(Modifier.fillMaxWidth())
@@ -841,7 +912,7 @@ private fun SelectionBar(state: InboxUiState, onAction: (InboxAction) -> Unit) {
                 .padding(8.dp),
         ) {
             bar.forEach { action ->
-                ActionItem(action.icon, stringResource(action.label), { onAction(action) }, Modifier.weight(1f))
+                ActionItem(action.icon, stringResource(action.label), { onAction(action) }, Modifier.weight(1f), destructive = action == InboxAction.DELETE)
             }
             if (overflow.isNotEmpty()) {
                 var open by remember { mutableStateOf(false) }
@@ -851,11 +922,16 @@ private fun SelectionBar(state: InboxUiState, onAction: (InboxAction) -> Unit) {
                         stringResource(org.fossify.commons.R.string.more_options),
                         { open = true },
                     )
-                    DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+                    DropdownMenu(expanded = open, onDismissRequest = { open = false }, containerColor = MaterialTheme.colorScheme.surfaceContainer, shape = MaterialTheme.shapes.medium) {
                         overflow.forEach { action ->
                             DropdownMenuItem(
                                 text = { Text(stringResource(action.label)) },
-                                leadingIcon = { Icon(painterResource(action.icon), contentDescription = null) },
+                                leadingIcon = { Icon(painterResource(action.icon), contentDescription = null, modifier = Modifier.size(20.dp)) },
+                                modifier = Modifier.heightIn(min = TargetSize),
+                                colors = androidx.compose.material3.MenuDefaults.itemColors(
+                                    textColor = if (action == InboxAction.BLOCK || action == InboxAction.DELETE) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+                                    leadingIconColor = if (action == InboxAction.BLOCK || action == InboxAction.DELETE) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                                ),
                                 onClick = {
                                     open = false
                                     onAction(action)
@@ -870,7 +946,7 @@ private fun SelectionBar(state: InboxUiState, onAction: (InboxAction) -> Unit) {
 }
 
 @Composable
-private fun ActionItem(icon: Int, label: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+private fun ActionItem(icon: Int, label: String, onClick: () -> Unit, modifier: Modifier = Modifier, destructive: Boolean = false) {
     Column(
         modifier
             .fillMaxWidth()
@@ -881,11 +957,11 @@ private fun ActionItem(icon: Int, label: String, onClick: () -> Unit, modifier: 
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
     ) {
-        Icon(painterResource(icon), contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
+        Icon(painterResource(icon), contentDescription = null, tint = if (destructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
         Text(
             label,
             style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurface,
+            color = if (destructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
@@ -900,38 +976,49 @@ private fun ActionItem(icon: Int, label: String, onClick: () -> Unit, modifier: 
 @Composable
 private fun CountBadge(count: Int) {
     Badge(containerColor = MaterialTheme.colorScheme.error, contentColor = MaterialTheme.colorScheme.onError) {
-        Text(String.format(LocalConfiguration.current.locales[0], "%d", count), style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp, lineHeight = 14.sp))
+        Text((String.format(LocalConfiguration.current.locales[0], "%d", count.coerceAtMost(99)) + if (count > 99) "+" else ""), style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp, lineHeight = 14.sp))
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun LibrarySheet(state: InboxUiState, onDismiss: () -> Unit, onOpen: (LibraryDestination) -> Unit) {
+private fun LibraryPage(state: InboxUiState, onOpen: (LibraryDestination) -> Unit, modifier: Modifier = Modifier) {
+    val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     val colors = MaterialTheme.colorScheme
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = colors.surfaceContainer) {
-        Text(
-            stringResource(R.string.inbox_nav_library),
-            style = MaterialTheme.typography.titleLarge,
-            color = colors.onSurface,
-            modifier = Modifier
-                .padding(horizontal = 24.dp, vertical = 8.dp)
-                .semantics { heading() },
-        )
+    Column(modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars).verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text(stringResource(R.string.inbox_nav_library), style = MaterialTheme.typography.headlineMedium,
+            color = colors.onSurface, modifier = Modifier.semantics { heading() })
+        Text(stringResource(R.string.library_subtitle), style = MaterialTheme.typography.bodyMedium,
+            color = colors.onSurfaceVariant, modifier = Modifier.padding(bottom = 8.dp))
         LibraryDestination.entries.filter { it.isAvailable(state) }.forEach { destination ->
             val count = if (destination == LibraryDestination.SPAM) state.unreadSpam else 0
-            ListItem(
-                headlineContent = { Text(stringResource(destination.label), style = MaterialTheme.typography.bodyLarge) },
-                leadingContent = { Icon(painterResource(destination.icon), contentDescription = null, tint = colors.primary) },
-                trailingContent = if (count > 0) {
-                    { CountBadge(count) }
-                } else {
-                    null
-                },
-                colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                modifier = Modifier.clickable { onOpen(destination) },
-            )
+            val description = when (destination) {
+                LibraryDestination.STARRED -> R.string.library_starred_description
+                LibraryDestination.ARCHIVE -> R.string.library_archive_description
+                LibraryDestination.SPAM -> R.string.library_spam_description
+                LibraryDestination.RECYCLE_BIN -> R.string.library_recycle_description
+            }
+            Row(Modifier.fillMaxWidth().heightIn(min = 75.dp).clip(MaterialTheme.shapes.medium)
+                .background(colors.surfaceContainer).clickable { onOpen(destination) }.padding(8.dp),
+                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Box(Modifier.size(46.dp).clip(MaterialTheme.shapes.medium).background(colors.secondaryContainer), contentAlignment = Alignment.Center) {
+                    Icon(painterResource(destination.icon), null, tint = colors.primary, modifier = Modifier.size(21.dp))
+                }
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(stringResource(destination.label), style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+                    Text(stringResource(description), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+                }
+                if (count > 0) CountBadge(count)
+                Icon(painterResource(org.fossify.commons.R.drawable.ic_chevron_right_vector), null,
+                    tint = colors.onSurfaceVariant, modifier = Modifier.size(18.dp).graphicsLayer {
+                        scaleX = if (rtl) -1f else 1f
+                    })
+            }
         }
-        Box(Modifier.padding(bottom = 16.dp))
+        Column(Modifier.fillMaxWidth().clip(MaterialTheme.shapes.small).background(colors.secondaryContainer).padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(stringResource(R.string.library_principle_title), style = MaterialTheme.typography.labelMedium, color = colors.onSecondaryContainer)
+            Text(stringResource(R.string.library_principle_body), style = MaterialTheme.typography.bodySmall, color = colors.onSecondaryContainer)
+        }
     }
 }
 

@@ -1,250 +1,173 @@
 package org.fossify.messages
 
-import android.content.ClipboardManager
-import android.content.Context
-import android.content.Intent
-import android.os.SystemClock
-import android.text.Spanned
-import android.text.style.ClickableSpan
-import android.text.style.URLSpan
-import android.view.MotionEvent
-import android.view.View
-import android.view.ViewGroup
-import android.widget.PopupWindow
-import android.widget.TextView
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.test.core.app.ActivityScenario
+import android.provider.Telephony
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.longClick
+import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import org.fossify.commons.views.MyRecyclerView
-import org.fossify.messages.activities.MainActivity
-import org.fossify.messages.adapters.ThreadAdapter
 import org.fossify.messages.models.Message
-import org.fossify.messages.views.MessageBodyView
-import org.junit.Assert.*
+import org.fossify.messages.ui.OpenLineTheme
+import org.fossify.messages.ui.thread.MessageAction
+import org.fossify.messages.ui.thread.ThreadEvent
+import org.fossify.messages.ui.thread.ThreadTimeline
+import org.fossify.messages.ui.thread.ScrollRequest
+import org.fossify.messages.ui.thread.ThreadUiState
+import org.fossify.messages.ui.thread.linkify
+import org.fossify.messages.ui.thread.selectionActions
+import org.fossify.messages.ui.thread.splitForBar
+import org.fossify.messages.ui.thread.starKey
+import org.fossify.messages.ui.thread.tapActions
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
 /** Uses in-memory bubbles only. Does not insert, send, or delete provider messages. */
 @RunWith(AndroidJUnit4::class)
 class MessageActionChecks {
-    private val instrumentation = InstrumentationRegistry.getInstrumentation()
-    private val context = instrumentation.targetContext
+    @get:Rule
+    val compose = createComposeRule()
+    private val context = InstrumentationRegistry.getInstrumentation().targetContext
 
-    @Test fun exactTextTapsAndLongPress() {
-        ActivityScenario.launch<MainActivity>(Intent(context, MainActivity::class.java)).use { scenario ->
-            scenario.onActivity { activity ->
-                val body = MessageBodyView(activity)
-                activity.addContentView(body, ViewGroup.LayoutParams(900, 600))
-                var clicks = 0
-                var holds = 0
-                body.setOnClickListener { clicks++ }
-                body.setOnLongClickListener { holds++; true }
-                body.setMessageBody("Use 123456 here, call +98 912 345 6789 or visit https://example.com/123?q=45 and کد ۱۲۳۴۵۶.")
-                body.measure(View.MeasureSpec.makeMeasureSpec(900, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(600, View.MeasureSpec.EXACTLY))
-                body.layout(0, 0, 900, 600)
-                val spans = body.text as Spanned
-                val links = spans.getSpans(0, spans.length, URLSpan::class.java)
-                assertEquals(1, links.size)
-                val numbers = spans.getSpans(0, spans.length, ClickableSpan::class.java).filterNot { it is URLSpan }
-                assertEquals(listOf("123456", "+98 912 345 6789", "۱۲۳۴۵۶"), numbers.map { spans.subSequence(spans.getSpanStart(it), spans.getSpanEnd(it)).toString() })
-                fun down(offset: Int) {
-                    val line = body.layout.getLineForOffset(offset)
-                    val x = (body.layout.getPrimaryHorizontal(offset) + body.layout.getPrimaryHorizontal(offset + 1)) / 2 + body.totalPaddingLeft
-                    val y = (body.layout.getLineTop(line) + body.layout.getLineBottom(line)) / 2f + body.totalPaddingTop
-                    val event = MotionEvent.obtain(SystemClock.uptimeMillis(), SystemClock.uptimeMillis(), MotionEvent.ACTION_DOWN, x, y, 0)
-                    body.dispatchTouchEvent(event)
-                    event.recycle()
-                }
-                down(5)
-                body.performClick()
-                assertEquals(0, clicks)
-                assertEquals("123456", (activity.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager).primaryClip?.getItemAt(0)?.text.toString())
-                down(1)
-                body.performClick()
-                assertEquals(1, clicks)
-                down(5)
-                body.performLongClick()
-                assertEquals(1, holds)
-                body.specialClicksEnabled = { false }
-                down(5)
-                body.performClick()
-                assertEquals(2, clicks)
-                body.setMessageBody("A plain recycled message")
-                assertEquals(0, (body.text as Spanned).getSpans(0, body.text.length, ClickableSpan::class.java).size)
+    private fun message(id: Long, body: String, scheduled: Boolean = false) =
+        Message(id, body, Telephony.Sms.MESSAGE_TYPE_SENT, 0, arrayListOf(), 1700000000, true, 987654321, false, null, "", "Fixture", "", -1, isScheduled = scheduled)
+
+    private fun show(state: ThreadUiState, textScale: Float = 1f, onEvent: (ThreadEvent) -> Unit) = compose.setContent {
+        OpenLineTheme(dark = false, textScale = textScale) {
+            Box(Modifier.size(360.dp, 640.dp)) {
+                ThreadTimeline(state, SnackbarHostState(), onEvent)
             }
         }
     }
 
-    @Test fun nativeTapReleaseAndHold() {
-        ActivityScenario.launch<MainActivity>(Intent(context, MainActivity::class.java)).use { scenario ->
-            lateinit var body: MessageBodyView
-            var clicks = 0
-            var holds = 0
-            scenario.onActivity { activity ->
-                body = MessageBodyView(activity).apply {
-                    setMessageBody("Code 654321 is ready")
-                    setOnClickListener { clicks++ }
-                    setOnLongClickListener { holds++; true }
-                }
-                activity.addContentView(body, ViewGroup.LayoutParams(900, 400))
-            }
-            instrumentation.waitForIdleSync()
-            fun touch(offset: Int, action: Int) {
-                scenario.onActivity {
-                    val line = body.layout.getLineForOffset(offset)
-                    val x = (body.layout.getPrimaryHorizontal(offset) + body.layout.getPrimaryHorizontal(offset + 1)) / 2 + body.totalPaddingLeft
-                    val y = (body.layout.getLineTop(line) + body.layout.getLineBottom(line)) / 2f + body.totalPaddingTop
-                    val event = MotionEvent.obtain(SystemClock.uptimeMillis(), SystemClock.uptimeMillis(), action, x, y, 0)
-                    body.dispatchTouchEvent(event)
-                    event.recycle()
-                }
-            }
-            touch(6, MotionEvent.ACTION_DOWN)
-            touch(6, MotionEvent.ACTION_UP)
-            instrumentation.waitForIdleSync()
-            scenario.onActivity { activity ->
-                assertEquals(0, clicks)
-                assertEquals("654321", (activity.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager).primaryClip?.getItemAt(0)?.text.toString())
-            }
-            touch(1, MotionEvent.ACTION_DOWN)
-            touch(1, MotionEvent.ACTION_UP)
-            instrumentation.waitForIdleSync()
-            scenario.onActivity { assertEquals(1, clicks) }
-            touch(6, MotionEvent.ACTION_DOWN)
-            SystemClock.sleep(android.view.ViewConfiguration.getLongPressTimeout().toLong() + 200)
-            touch(6, MotionEvent.ACTION_UP)
-            instrumentation.waitForIdleSync()
-            scenario.onActivity {
-                assertEquals(1, holds)
-                assertEquals("Releasing a hold must not open the menu", 1, clicks)
-            }
+    @Test fun linksOpenAndStandaloneNumbersCopy() {
+        val copied = mutableListOf<String>()
+        val text = linkify("Use 123456 here, call +98 912 345 6789 or visit https://example.com/123?q=45 and کد ۱۲۳۴۵۶، مبلغ: 70,000,000 ساعت 13:25.") { copied += it }
+        val links = text.getLinkAnnotations(0, text.length)
+        val urls = links.filter { it.item is LinkAnnotation.Url }
+        assertEquals(1, urls.size)
+        assertEquals("https://example.com/123?q=45", (urls.single().item as LinkAnnotation.Url).url)
+        val numbers = links.filter { it.item is LinkAnnotation.Clickable }.map { text.substring(it.start, it.end) }
+        assertEquals("Digits inside the URL stay part of the link", listOf("123456", "+98 912 345 6789", "۱۲۳۴۵۶", "70,000,000", "13:25"), numbers)
+        assertEquals("Plain text gets no links", 0, linkify("A plain recycled message") {}.getLinkAnnotations(0, 24).size)
+    }
+
+    @Test fun tapOpensMessageMenuAndLongPressSelects() {
+        val body = "Your code is 123456. Visit example.com for details."
+        val fixture = message(987654321, body)
+        val events = mutableListOf<ThreadEvent>()
+        show(ThreadUiState(items = listOf(fixture))) { events += it }
+        compose.onNode(hasContentDescription(context.getString(R.string.message_delivered), substring = true)).performClick()
+        compose.onNodeWithText(context.getString(org.fossify.commons.R.string.copy)).assertIsDisplayed()
+        compose.onNodeWithText(context.getString(org.fossify.commons.R.string.delete)).assertIsDisplayed()
+        compose.onNodeWithText(context.getString(R.string.star_message)).assertIsDisplayed()
+        compose.onNodeWithText(context.getString(org.fossify.commons.R.string.share)).assertExists()
+        compose.onNodeWithText(context.getString(R.string.forward_message)).performClick()
+        // The sheet acts only once it has slid away.
+        compose.waitUntil(5_000) { events.any { it is ThreadEvent.Act } }
+        assertEquals(ThreadEvent.Act(MessageAction.FORWARD, listOf(fixture)), events.filterIsInstance<ThreadEvent.Act>().single())
+    }
+
+    @Test fun longPressSelectsOnPlainAndLinkedText() {
+        val plain = message(987654323, "A plain message without links")
+        val linked = message(987654324, "Code 123456 at example.com today")
+        val events = mutableListOf<ThreadEvent>()
+        show(ThreadUiState(items = listOf(plain, linked))) { events += it }
+        for (fixture in listOf(plain, linked)) {
+            events.clear()
+            // The last word, since links carry bidi isolates that break a whole-body match.
+            compose.onNodeWithText(fixture.body.substringAfterLast(' '), substring = true).performTouchInput { longClick() }
+            assertEquals("Long press on \"${fixture.body}\" selects: $events", ThreadEvent.ToggleSelection(fixture), events.lastOrNull())
         }
     }
 
-    @Test fun bottomMessageMenuStaysReachable() {
-        ActivityScenario.launch<MainActivity>(Intent(context, MainActivity::class.java)).use { scenario ->
-            lateinit var recycler: MyRecyclerView
-            lateinit var adapter: ThreadAdapter
-            scenario.onActivity { activity ->
-                recycler = MyRecyclerView(activity).apply {
-                    layoutManager = LinearLayoutManager(activity).apply { stackFromEnd = true }
-                }
-                activity.addContentView(recycler, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
-                adapter = ThreadAdapter(activity, recycler, {}, false) { _, _, _ -> error("No deletion expected") }
-                // A large-font menu must remain scrollable even when taller than the available window.
-                ThreadAdapter::class.java.getDeclaredField("fontSize").apply { isAccessible = true }.setFloat(adapter, 180f)
-                recycler.adapter = adapter
-                adapter.updateMessages(arrayListOf(Message(987654322, "Bottom message", 2, 0, arrayListOf(), 1700000000, true, 987654322, false, null, "", "Fixture", "", -1)))
+    @Test fun scrollRequestJumpsToAnOffscreenMessage() {
+        val fixtures = (1L..60L).map { id ->
+            message(id, if (id == 2L) "Offscreen target message" else "Fixture message $id")
+        }
+        val events = mutableListOf<ThreadEvent>()
+        var state by mutableStateOf(ThreadUiState(items = fixtures))
+        val listState = LazyListState()
+        compose.setContent {
+            OpenLineTheme(dark = false, textScale = 1f) {
+                Box(Modifier.size(360.dp, 640.dp)) { ThreadTimeline(state, SnackbarHostState(), { events += it }, listState = listState) }
             }
-            instrumentation.waitForIdleSync()
-            SystemClock.sleep(300)
-            scenario.onActivity {
-                recycler.findViewHolderForAdapterPosition(0)!!.itemView.findViewById<MessageBodyView>(R.id.thread_message_body).performClick()
-            }
-            instrumentation.waitForIdleSync()
-            SystemClock.sleep(200)
-            scenario.onActivity { activity ->
-                val popup = ThreadAdapter::class.java.getDeclaredField("messageMenu").apply { isAccessible = true }.get(adapter) as PopupWindow
-                val view = popup.contentView
-                val frame = android.graphics.Rect().also { activity.window.decorView.getWindowVisibleDisplayFrame(it) }
-                val location = IntArray(2).also { view.getLocationOnScreen(it) }
-                assertTrue("Menu top ${location[1]} must stay below ${frame.top}", location[1] >= frame.top)
-                assertTrue("Menu bottom ${location[1] + view.height} must stay above ${frame.bottom}", location[1] + view.height <= frame.bottom)
-                val scroll = view as? android.widget.ScrollView
-                if (scroll != null) {
-                    scroll.isSmoothScrollingEnabled = false
-                    scroll.fullScroll(View.FOCUS_DOWN)
-                }
-                else {
-                    val content = view as ViewGroup
-                    val last = content.getChildAt(content.childCount - 1)
-                    val visible = android.graphics.Rect()
-                    assertTrue("Last action is clipped and cannot be reached", last.getGlobalVisibleRect(visible) && visible.height() >= last.height)
-                }
-            }
-            instrumentation.waitForIdleSync()
-            scenario.onActivity {
-                val popup = ThreadAdapter::class.java.getDeclaredField("messageMenu").apply { isAccessible = true }.get(adapter) as PopupWindow
-                val scroll = popup.contentView as android.widget.ScrollView
-                val content = scroll.getChildAt(0) as ViewGroup
-                val share = content.getChildAt(content.childCount - 1)
-                val visible = android.graphics.Rect()
-                assertTrue("Last action must be reachable: scroll=${scroll.scrollY}, viewport=${scroll.height}, content=${content.height}, last=${share.top}..${share.bottom}", share.getGlobalVisibleRect(visible))
-                assertTrue("Last action must be fully visible", visible.height() >= share.height)
-                popup.dismiss()
-            }
+        }
+        compose.onNodeWithText("Offscreen target message").assertDoesNotExist()
+        state = state.copy(scrollRequest = ScrollRequest.ToMessage(7, 2, isMms = false))
+        compose.waitForIdle()
+        val targetIndex = fixtures.asReversed().indexOfFirst { it.id == 2L }
+        val visibleIndices = listState.layoutInfo.visibleItemsInfo.joinToString { it.index.toString() }
+        val targetInfo = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == targetIndex }
+        val target = compose.onNodeWithText("Offscreen target message")
+        val targetBounds = target.fetchSemanticsNode().boundsInRoot
+        val diagnostics = "JumpSettled(7)=${ThreadEvent.JumpSettled(7) in events}; targetIndex=$targetIndex; firstVisible=${listState.firstVisibleItemIndex}; targetOffset=${targetInfo?.offset}; targetSize=${targetInfo?.size}; viewport=${listState.layoutInfo.viewportStartOffset}..${listState.layoutInfo.viewportEndOffset}; targetTextBounds=$targetBounds; visible=[$visibleIndices]"
+        assertTrue(
+            diagnostics,
+            ThreadEvent.JumpSettled(7) in events,
+        )
+        try {
+            target.assertIsDisplayed()
+        } catch (failure: AssertionError) {
+            throw AssertionError("Scroll request left its target undisplayed. $diagnostics", failure)
         }
     }
 
-    @Test fun bubbleMenuAndSelectionToolbar() {
-        ActivityScenario.launch<MainActivity>(Intent(context, MainActivity::class.java)).use { scenario ->
-            lateinit var recycler: MyRecyclerView
-            lateinit var adapter: ThreadAdapter
-            scenario.onActivity { activity ->
-                recycler = MyRecyclerView(activity).apply { layoutManager = LinearLayoutManager(activity) }
-                activity.addContentView(recycler, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
-                adapter = ThreadAdapter(activity, recycler, {}, false) { _, _, _ -> error("No deletion expected") }
-                recycler.adapter = adapter
-                adapter.updateMessages(arrayListOf(Message(987654321, "Your code is 123456. Visit example.com for details.", 2, 0, arrayListOf(), 1700000000, true, 987654321, false, null, "", "Fixture", "", -1)))
-            }
-            instrumentation.waitForIdleSync()
-            SystemClock.sleep(300)
-            scenario.onActivity { activity ->
-                val holder = checkNotNull(recycler.findViewHolderForAdapterPosition(0))
-                val body = holder.itemView.findViewById<MessageBodyView>(R.id.thread_message_body)
-                body.performClick()
-            }
-            instrumentation.waitForIdleSync()
-            SystemClock.sleep(200)
-            scenario.onActivity { activity ->
-                val popup = ThreadAdapter::class.java.getDeclaredField("messageMenu").apply { isAccessible = true }.get(adapter) as PopupWindow
-                assertTrue(popup.isShowing)
-                val content = (popup.contentView as android.widget.ScrollView).getChildAt(0) as ViewGroup
-                val labels = (0 until content.childCount).map { (content.getChildAt(it) as TextView).text.toString() }
-                assertFalse(labels.any { it.contains("2023") })
-                assertEquals(activity.getString(org.fossify.commons.R.string.copy), labels.first())
-                assertTrue(labels.contains(activity.getString(org.fossify.commons.R.string.delete)))
-                assertTrue(labels.contains(activity.getString(R.string.star_message)))
-                assertTrue(labels.contains(activity.getString(R.string.forward_message)))
-                assertTrue(labels.contains(activity.getString(org.fossify.commons.R.string.share)))
-                val forward = (0 until content.childCount).map { content.getChildAt(it) as TextView }.first { it.text == activity.getString(R.string.forward_message) }
-                assertTrue(forward.isEnabled)
-                assertTrue(forward.hasOnClickListeners())
-                content.measure(View.MeasureSpec.makeMeasureSpec(popup.width, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED))
-                content.layout(0, 0, content.measuredWidth, content.measuredHeight)
-                val bitmap = android.graphics.Bitmap.createBitmap(content.width, content.height, android.graphics.Bitmap.Config.ARGB_8888)
-                content.draw(android.graphics.Canvas(bitmap))
-                java.io.File(activity.cacheDir, "message-actions.png").outputStream().use { bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
-                bitmap.recycle()
-                var forwarded: Intent? = null
-                val monitor = object : android.app.Instrumentation.ActivityMonitor() {
-                    override fun onStartActivity(intent: Intent): android.app.Instrumentation.ActivityResult? {
-                        forwarded = Intent(intent)
-                        return android.app.Instrumentation.ActivityResult(android.app.Activity.RESULT_CANCELED, null)
-                    }
-                }
-                instrumentation.addMonitor(monitor)
-                try {
-                    forward.performClick()
-                    assertEquals(org.fossify.messages.activities.NewConversationActivity::class.java.name, forwarded?.component?.className)
-                    assertEquals(Intent.ACTION_SEND, forwarded?.action)
-                    assertEquals("Your code is 123456. Visit example.com for details.", forwarded?.getStringExtra(Intent.EXTRA_TEXT))
-                } finally { instrumentation.removeMonitor(monitor) }
-                (0 until content.childCount).map { content.getChildAt(it) as TextView }.first { it.text == activity.getString(org.fossify.commons.R.string.select_text) }.performClick()
-                assertFalse(popup.isShowing)
-                val menu = androidx.appcompat.view.menu.MenuBuilder(activity)
-                activity.menuInflater.inflate(R.menu.cab_thread, menu)
-                adapter.prepareActionMode(menu)
-                assertFalse("Select text must not select the message", menu.findItem(R.id.cab_copy_to_clipboard).isVisible)
-                recycler.findViewHolderForAdapterPosition(0)!!.itemView.findViewById<MessageBodyView>(R.id.thread_message_body).performLongClick()
-                adapter.prepareActionMode(menu)
-                assertTrue(menu.findItem(R.id.cab_copy_to_clipboard).isVisible)
-                assertTrue(menu.findItem(R.id.cab_delete).isVisible)
-                val quick = (0 until menu.size()).map { menu.getItem(it) }.filter { it.isVisible && (it as androidx.appcompat.view.menu.MenuItemImpl).requiresActionButton() }
-                assertEquals(listOf(R.id.cab_copy_to_clipboard, R.id.cab_delete), quick.map { it.itemId })
-                adapter.finishActMode()
-            }
-        }
+    @Test fun largeTextMenuKeepsLastActionReachable() {
+        show(ThreadUiState(items = listOf(message(987654322, "Bottom message"))), textScale = 2.5f) {}
+        compose.onNode(hasContentDescription(context.getString(R.string.message_delivered), substring = true)).performClick()
+        compose.onNodeWithText(context.getString(org.fossify.commons.R.string.share)).performScrollTo().assertIsDisplayed()
+    }
+
+    @Test fun selectionBarAndActionRules() {
+        val one = message(1, "First")
+        val two = message(2, "Second")
+        val selectedOne = ThreadUiState(items = listOf(one, two), selected = setOf(one.getStableId()))
+        val (bar, overflow) = selectionActions(selectedOne).splitForBar()
+        assertEquals(listOf(MessageAction.COPY, MessageAction.FORWARD, MessageAction.STAR, MessageAction.DELETE), bar)
+        assertTrue(overflow.containsAll(listOf(MessageAction.SHARE, MessageAction.SELECT_TEXT, MessageAction.DETAILS, MessageAction.SELECT_ALL)))
+        assertFalse("Plain messages have nothing to save", MessageAction.SAVE_AS in overflow)
+
+        val both = selectedOne.copy(selected = setOf(one.getStableId(), two.getStableId()))
+        val many = selectionActions(both)
+        assertFalse(MessageAction.FORWARD in many || MessageAction.SHARE in many || MessageAction.DETAILS in many)
+
+        val starred = both.copy(starred = setOf(one.starKey(), two.starKey()))
+        assertTrue(MessageAction.UNSTAR in selectionActions(starred) && MessageAction.STAR !in selectionActions(starred))
+        val recycled = both.copy(isRecycleBin = true)
+        assertTrue(MessageAction.RESTORE in selectionActions(recycled) && MessageAction.STAR !in selectionActions(recycled))
+
+        assertTrue("Scheduled messages offer edit and send now", MessageAction.DETAILS in tapActions(message(3, "Later", scheduled = true), selectedOne))
+        assertFalse(MessageAction.DETAILS in tapActions(one, selectedOne))
+
+        val mms = one.copy(isMMS = true)
+        val collided = ThreadUiState(items = listOf(one, mms), selected = setOf(one.getStableId()))
+        assertEquals("An SMS and an MMS with the same id select separately", listOf(one), collided.selectedMessages)
+        val withPhoto = one.copy(id = 4, attachment = org.fossify.messages.models.MessageAttachment(4, "", arrayListOf(
+            org.fossify.messages.models.Attachment(null, 4, "content://fixture/photo", "image/jpeg", 0, 0, "photo.jpg"))))
+        val mixed = ThreadUiState(items = listOf(withPhoto, two), selected = setOf(withPhoto.getStableId(), two.getStableId()))
+        assertTrue("Save as when any selected message has an attachment", MessageAction.SAVE_AS in selectionActions(mixed))
+
+        show(selectedOne) {}
+        bar.forEach { compose.onNodeWithText(context.getString(it.label)).assertIsDisplayed() }
+        compose.onNodeWithText(context.getString(org.fossify.commons.R.string.more_options)).assertIsDisplayed()
     }
 }
