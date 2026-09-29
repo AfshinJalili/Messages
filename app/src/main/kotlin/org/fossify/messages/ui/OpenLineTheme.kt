@@ -17,7 +17,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontVariation
@@ -68,6 +71,21 @@ private val body = FontFamily(
     Font(R.font.atkinson_hyperlegible_bold, FontWeight.Bold),
 )
 private val persian = FontFamily((400..800 step 100).map { variableFont(R.font.vazirmatn, it) })
+
+// Include joining controls and inherited marks so a Persian word remains one shaping run.
+private val persianRun = Regex("\\p{IsArabic}[\\p{IsArabic}\\p{M}\u200C\u200D]*")
+
+/** Content fonts follow script, independently of the language used by interface labels. */
+internal fun AnnotatedString.withContentFonts(): AnnotatedString = buildAnnotatedString {
+    append(this@withContentFonts)
+    addStyle(SpanStyle(fontFamily = body), 0, length)
+    persianRun.findAll(this@withContentFonts.text).forEach {
+        addStyle(SpanStyle(fontFamily = persian), it.range.first, it.range.last + 1)
+    }
+}
+
+internal fun TextStyle.forContent(text: CharSequence): TextStyle =
+    copy(fontFamily = body, lineHeight = if (persianRun.containsMatchIn(text)) 1.7.em else 1.45.em)
 
 private fun typography(rtl: Boolean): Typography {
     val displayFamily = if (rtl) persian else display
