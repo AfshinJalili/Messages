@@ -124,6 +124,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
@@ -147,6 +148,8 @@ import org.fossify.messages.models.Conversation
 import org.fossify.messages.ui.Avatar
 import org.fossify.messages.ui.OpenLine
 import org.fossify.messages.ui.OpenLineTheme
+import org.fossify.messages.ui.forContent
+import org.fossify.messages.ui.withContentFonts
 import java.util.Calendar
 
 // A deliberate half-row drag commits. Flicks do not: the default fling velocity made a short flick
@@ -664,8 +667,8 @@ private fun ConversationRow(
         }
         Column(Modifier.weight(1f).clearAndSetSemantics { }, verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(
-                conversation.title,
-                style = MaterialTheme.typography.titleMedium,
+                remember(conversation.title) { AnnotatedString(conversation.title).withContentFonts() },
+                style = MaterialTheme.typography.titleMedium.forContent(conversation.title),
                 color = colors.onSurface,
                 maxLines = if (fontScale >= 1.3f) 2 else 1,
                 overflow = TextOverflow.Ellipsis,
@@ -688,8 +691,8 @@ internal fun SnippetText(row: InboxRow, unread: Boolean) {
                 withStyle(SpanStyle(color = colors.error, fontWeight = FontWeight.Bold)) { append(label) }
                 append(' ')
                 append(draft)
-            },
-            style = MaterialTheme.typography.bodyMedium,
+            }.withContentFonts(),
+            style = MaterialTheme.typography.bodyMedium.forContent(draft),
             color = colors.onSurfaceVariant,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -703,8 +706,8 @@ internal fun SnippetText(row: InboxRow, unread: Boolean) {
         }
     } else {
         Text(
-            row.conversation.snippet,
-            style = MaterialTheme.typography.bodyMedium,
+            remember(row.conversation.snippet) { AnnotatedString(row.conversation.snippet).withContentFonts() },
+            style = MaterialTheme.typography.bodyMedium.forContent(row.conversation.snippet),
             fontStyle = if (row.conversation.isScheduled) FontStyle.Italic else FontStyle.Normal,
             color = if (unread) colors.onSurface else colors.onSurfaceVariant,
             maxLines = 1,

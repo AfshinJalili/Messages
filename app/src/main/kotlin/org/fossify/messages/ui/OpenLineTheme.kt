@@ -73,7 +73,7 @@ private val body = FontFamily(
 private val persian = FontFamily((400..800 step 100).map { variableFont(R.font.vazirmatn, it) })
 
 // Include joining controls and inherited marks so a Persian word remains one shaping run.
-private val persianRun = Regex("\\p{IsArabic}[\\p{IsArabic}\\p{M}\u200C\u200D]*")
+private val persianRun = Regex("[\\p{IsArabic}\\p{InArabic}][\\p{IsArabic}\\p{InArabic}\\p{M}\u200C\u200D]*")
 
 /** Content fonts follow script, independently of the language used by interface labels. */
 internal fun AnnotatedString.withContentFonts(): AnnotatedString = buildAnnotatedString {

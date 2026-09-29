@@ -82,7 +82,10 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.input.TransformedText
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.LayoutDirection
@@ -95,7 +98,9 @@ import org.fossify.messages.extensions.isVideoMimeType
 import org.fossify.messages.helpers.getIconResourceForMimeType
 import org.fossify.messages.models.AttachmentSelection
 import org.fossify.messages.ui.OpenLine
+import org.fossify.messages.ui.forContent
 import org.fossify.messages.ui.rememberBitmap
+import org.fossify.messages.ui.withContentFonts
 import java.util.Locale
 
 private val TargetSize = 48.dp
@@ -231,11 +236,14 @@ private fun EntryField(
             maxLines = MAX_FIELD_LINES,
             // Empty, the cursor starts on the app language's side; with text, each paragraph follows its first letter and
             // digits alone read left to right, as the sent bubble will.
-            textStyle = MaterialTheme.typography.bodyLarge.copy(
+            textStyle = MaterialTheme.typography.bodyLarge.forContent(text.text).copy(
                 color = colors.onSurface,
                 textDirection = if (text.text.isEmpty()) TextDirection.Content else TextDirection.ContentOrLtr,
             ),
             cursorBrush = SolidColor(colors.primary),
+            visualTransformation = remember {
+                VisualTransformation { TransformedText(it.withContentFonts(), OffsetMapping.Identity) }
+            },
             keyboardOptions = KeyboardOptions(
                 capitalization = KeyboardCapitalization.Sentences,
                 imeAction = if (sendOnEnter) ImeAction.Send else ImeAction.Default,

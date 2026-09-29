@@ -56,6 +56,8 @@ import androidx.compose.ui.unit.dp
 import org.fossify.messages.R
 import org.fossify.messages.models.SearchResult
 import org.fossify.messages.ui.OpenLineTheme
+import org.fossify.messages.ui.forContent
+import org.fossify.messages.ui.withContentFonts
 
 private val PagePadding = 20.dp
 private val ContentGap = 12.dp
@@ -332,9 +334,9 @@ private fun HighlightedText(
         }
     }
     Text(
-        highlighted,
+        remember(highlighted) { highlighted.withContentFonts() },
         modifier,
-        style = if (title) MaterialTheme.typography.titleMedium else MaterialTheme.typography.bodyMedium,
+        style = (if (title) MaterialTheme.typography.titleMedium else MaterialTheme.typography.bodyMedium).forContent(text),
         color = colors.onSurface,
         maxLines = if (title) 1 else EXCERPT_LINES,
         overflow = TextOverflow.Ellipsis,

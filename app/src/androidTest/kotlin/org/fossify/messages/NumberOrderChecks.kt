@@ -17,7 +17,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.activity.ComponentActivity
+import android.view.WindowManager
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onChild
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.text.LinkAnnotation
@@ -35,6 +37,7 @@ import org.fossify.messages.ui.thread.MessageText
 import org.fossify.messages.ui.thread.linkify
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -44,7 +47,15 @@ import java.util.Locale
 @RunWith(AndroidJUnit4::class)
 class NumberOrderChecks {
     @get:Rule
-    val compose = createComposeRule()
+    val compose = createAndroidComposeRule<ComponentActivity>()
+
+    @Before
+    fun keepSyntheticActivityVisible() {
+        compose.activityRule.scenario.onActivity {
+            it.window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON or
+                WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON)
+        }
+    }
 
     private val samples = listOf(
         "مانده70,000,000",
@@ -94,7 +105,8 @@ class NumberOrderChecks {
             compose.onNodeWithTag("$view-$direction-$i").onChild().fetchSemanticsNode()
                 .config[SemanticsActions.GetTextLayoutResult].action!!.invoke(layouts)
             val layout = layouts.single()
-            assertInOrder("$view $direction", layout.layoutInput.text.text) { layout.getBoundingBox(it).left }
+            // Selection paths follow drawn runs; getBoundingBox can invert a box at a font/bidi boundary.
+            assertInOrder("$view $direction", layout.layoutInput.text.text) { layout.getPathForRange(it, it + 1).getBounds().left }
         }
     }
 
