@@ -296,8 +296,28 @@ class InboxChecks {
         // Digit runs longer than 8 are account/order numbers, not codes.
         check("code 123456789012".extractOtpCode() == null)
         check("pin 123".extractOtpCode() == null)
+        check("انتقال به 123456*7890 مبلغ 900,000 رمز 6543210".extractOtpCode() == "6543210")
+        check("رمز 6543210 حساب 123456*7890".extractOtpCode() == "6543210")
+        check("Amount 4500 verification code 007890".extractOtpCode() == "007890")
+        check("OTP: 007890, do not share".extractOtpCode() == "007890")
+        check("کد تایید شما ۰۰۷۸۹۰ است".extractOtpCode() == "۰۰۷۸۹۰")
+        check("OTP: ٠٠٧٨٩٠".extractOtpCode() == "٠٠٧٨٩٠")
+        check("رمز صادر نشد حساب 123456*7890".extractOtpCode() == null)
+        check("Your pincode address is 123456".extractOtpCode() == null)
+        check("OTP 123456 or OTP 654321".extractOtpCode() == null)
+        check("OTP 123456 or 654321".extractOtpCode() == null)
+        check("رمز 123456 یا 654321".extractOtpCode() == null)
+        check("code 1234,567".extractOtpCode() == null)
+        check("code 1234, 5678".extractOtpCode() == null)
+        check("code 2026-09-30".extractOtpCode() == null)
+        check("رمز 123456*7890".extractOtpCode() == null)
+        check("code 1234abcd".extractOtpCode() == null)
+        check("code 1234۵۶۷۸۹".extractOtpCode() == null)
 
-
+        // Unsaved long-number senders still use OTP detection for Business classification.
+        val sender = Conversation(1, "کد تایید شما ۰۰۷۸۹۰ است", 1, true, "+15551234567", "", false, "+15551234567")
+        check(sender.category() == InboxFilter.BUSINESS)
+        check(sender.copy(snippet = "رمز صادر نشد حساب 123456*7890").category() == InboxFilter.UNKNOWN)
     }
 
     /** Swipe settings are physical directions; archive goes dead where the provider cannot archive. */
