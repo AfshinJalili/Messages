@@ -185,6 +185,8 @@ import org.fossify.messages.models.spamReasonLabel
 import org.fossify.messages.ui.Avatar
 import org.fossify.messages.ui.OpenLine
 import org.fossify.messages.ui.OpenLineTheme
+import org.fossify.messages.ui.forContent
+import org.fossify.messages.ui.withContentFonts
 import org.fossify.messages.ui.rememberBitmap
 import kotlin.coroutines.resume
 
@@ -890,10 +892,12 @@ private fun Modifier.longPressToSelect(label: String, onLongPress: () -> Unit): 
 /** Web links and email addresses open; standalone numbers copy, as in the View timeline. */
 @Composable
 internal fun MessageText(body: String, color: Color, linkColor: Color, links: Boolean, onCopy: (String) -> Unit) {
-    val text = remember(body, links, linkColor) { if (links) linkify(body, linkColor, onCopy) else AnnotatedString(body) }
+    val text = remember(body, links, linkColor) {
+        (if (links) linkify(body, linkColor, onCopy) else AnnotatedString(body)).withContentFonts()
+    }
     // Each paragraph takes its direction from its first letter, whatever the app language, and one
     // with no letters (a number, emoji) reads left to right, as in Telegram and WhatsApp.
-    Text(text, style = MaterialTheme.typography.bodyLarge.copy(textDirection = TextDirection.ContentOrLtr), color = color, modifier = Modifier.fillMaxWidth())
+    Text(text, style = MaterialTheme.typography.bodyLarge.forContent(body).copy(textDirection = TextDirection.ContentOrLtr), color = color, modifier = Modifier.fillMaxWidth())
 }
 
 // A match is the whole number or nothing. Isolating only part of it, as "000,000" out of
