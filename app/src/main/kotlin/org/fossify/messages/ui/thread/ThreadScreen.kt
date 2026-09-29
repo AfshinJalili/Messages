@@ -889,15 +889,19 @@ private fun Modifier.longPressToSelect(label: String, onLongPress: () -> Unit): 
 
 /** Web links and email addresses open; standalone numbers copy, as in the View timeline. */
 @Composable
-private fun MessageText(body: String, color: Color, linkColor: Color, links: Boolean, onCopy: (String) -> Unit) {
+internal fun MessageText(body: String, color: Color, linkColor: Color, links: Boolean, onCopy: (String) -> Unit) {
     val text = remember(body, links, linkColor) { if (links) linkify(body, linkColor, onCopy) else AnnotatedString(body) }
     // Each paragraph takes its direction from its first letter, whatever the app language, and one
     // with no letters (a number, emoji) reads left to right, as in Telegram and WhatsApp.
     Text(text, style = MaterialTheme.typography.bodyLarge.copy(textDirection = TextDirection.ContentOrLtr), color = color, modifier = Modifier.fillMaxWidth())
 }
 
-// Separators stay inside the match: split into runs, "70,000,000" in Persian text would read "000,000,70".
-private val NUMBER = Regex("(?<![\\p{L}\\p{N}])\\+?\\p{Nd}+(?:[ .,:/()\\-\u066B\u066C]\\p{Nd}+)*(?![\\p{L}\\p{N}])")
+// A match is the whole number or nothing. Isolating only part of it, as "000,000" out of
+// "مانده70,000,000", leaves a separator outside the isolate and the groups read "000,000,70".
+private const val NUMBER_SEPARATOR = "[ .,:/()\\-\u066B\u066C]"
+private val NUMBER = Regex(
+    "(?<![\\p{L}\\p{N}]|\\p{N}$NUMBER_SEPARATOR)\\+?\\p{Nd}+(?:$NUMBER_SEPARATOR\\p{Nd}+)*(?![\\p{L}\\p{N}]|$NUMBER_SEPARATOR\\p{N})"
+)
 
 internal fun linkify(body: String, linkColor: Color = Color.Unspecified, onCopy: (String) -> Unit): AnnotatedString {
     val spannable = SpannableString(body)

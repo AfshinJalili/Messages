@@ -678,7 +678,7 @@ private fun ConversationRow(
 }
 
 @Composable
-private fun SnippetText(row: InboxRow, unread: Boolean) {
+internal fun SnippetText(row: InboxRow, unread: Boolean) {
     val colors = MaterialTheme.colorScheme
     val draft = row.draft
     if (!draft.isNullOrEmpty()) {
