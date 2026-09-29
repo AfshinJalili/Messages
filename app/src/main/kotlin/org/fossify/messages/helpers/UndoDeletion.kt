@@ -23,7 +23,7 @@ object UndoDeletion {
 
     private class Action(val undo: () -> Unit, val commit: () -> Unit, val completed: () -> Unit)
     private class Batch(val actions: MutableList<Action>, val timer: Runnable, val deadline: Long) {
-        var snackbar: Snackbar? = null
+        var dismiss: (() -> Unit)? = null
         var activity: java.lang.ref.WeakReference<Activity>? = null
     }
 
@@ -31,13 +31,13 @@ object UndoDeletion {
         activity.runOnUiThread {
             version++
             val previous = batches.remove(activity.taskId)
-            previous?.let { handler.removeCallbacks(it.timer); it.snackbar?.dismiss() }
+            previous?.let { handler.removeCallbacks(it.timer); it.dismiss?.invoke() }
             val actions = previous?.actions ?: mutableListOf()
             actions.add(Action(undo, commit, completed))
             val taskId = activity.taskId
             val timer = Runnable {
                 val batch = batches.remove(taskId)
-                batch?.snackbar?.dismiss()
+                batch?.dismiss?.invoke()
                 ensureBackgroundThread {
                     actions.forEach { action ->
                         try {
@@ -68,23 +68,48 @@ object UndoDeletion {
         }
     }
 
+    /**
+     * Commits the task's pending deletions now. Used when another action's Undo replaces this one, so a
+     * delete never outlives its own Undo. Safe to call twice: the second call finds no batch.
+     */
+    fun commitNow(activity: Activity) {
+        val batch = batches[activity.taskId] ?: return
+        handler.removeCallbacks(batch.timer)
+        batch.timer.run()
+    }
+
     /** Preserve access to Undo when navigating or recreating an activity. */
     fun attach(activity: Activity) {
         val batch = batches[activity.taskId] ?: return
         val remaining = (batch.deadline - SystemClock.uptimeMillis()).toInt()
         if (remaining <= 0) return
         batch.activity = java.lang.ref.WeakReference(activity)
-        batch.snackbar?.dismiss()
-        batch.snackbar = Snackbar.make(activity.findViewById<View>(android.R.id.content), R.string.items_deleted, remaining)
-            .setAction(org.fossify.commons.R.string.undo) {
-                if (batches[activity.taskId] !== batch) return@setAction
-                batches.remove(activity.taskId)
-                handler.removeCallbacks(batch.timer)
+        batch.dismiss?.invoke()
+        // Offers merge into one batch per task, so an Undo from an older snackbar must still undo
+        // whatever is pending now instead of silently doing nothing.
+        val undo: () -> Unit = {
+            batches.remove(activity.taskId)?.let { current ->
+                handler.removeCallbacks(current.timer)
+                current.dismiss?.invoke()
                 version++
-                batch.actions.asReversed().forEach { it.undo() }
+                current.actions.asReversed().forEach { it.undo() }
                 (activity as? org.fossify.messages.activities.SimpleActivity)?.refreshAfterDeletion()
                 refreshConversations()
                 refreshMessages()
-            }.also { it.show() }
+            }
+        }
+        batch.dismiss = (activity as? UndoHost)?.showUndo(R.string.items_deleted, remaining, undo)
+            ?: Snackbar.make(activity.findViewById<View>(android.R.id.content), R.string.items_deleted, remaining)
+                .setAction(org.fossify.commons.R.string.undo) { undo() }
+                .also { it.show() }
+                .let { snackbar -> { snackbar.dismiss() } }
+    }
+
+    /**
+     * Screens with their own snackbar host (Compose) show the deletion Undo there, so one host owns
+     * every undo and a newer one cannot hide an older one. Returns a dismiss callback.
+     */
+    interface UndoHost {
+        fun showUndo(message: Int, durationMs: Int, onUndo: () -> Unit): () -> Unit
     }
 }

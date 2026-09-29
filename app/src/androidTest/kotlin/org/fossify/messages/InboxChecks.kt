@@ -11,30 +11,48 @@ import android.view.ContextThemeWrapper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.View.MeasureSpec
-import androidx.core.content.ContextCompat
-import androidx.recyclerview.widget.ItemTouchHelper
-import androidx.recyclerview.widget.RecyclerView
 import androidx.room.Room
 import androidx.room.migration.Migration
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.core.app.ActivityScenario
 import androidx.test.platform.app.InstrumentationRegistry
 import org.fossify.messages.databases.MessagesDatabase
 import org.fossify.messages.activities.ThreadActivity
-import org.fossify.messages.activities.MainActivity
 import org.fossify.messages.databinding.ItemConversationBinding
 import org.fossify.messages.extensions.config
 import org.fossify.messages.extensions.extractOtpCode
-import org.fossify.messages.helpers.ConversationSwipeCallback
 import org.fossify.messages.helpers.Config
 import org.fossify.messages.helpers.InboxFilter
 import org.fossify.messages.helpers.SwipeAction
 import org.fossify.messages.helpers.category
 import org.fossify.messages.helpers.sortedForInbox
 import org.fossify.messages.models.Conversation
-import org.fossify.messages.models.BlockedMessage
 import org.json.JSONObject
+import org.junit.Rule
 import org.junit.Test
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.test.assertHeightIsAtLeast
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.unit.dp
+import androidx.activity.ComponentActivity
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithText
+import org.fossify.messages.helpers.swipeAction
+import org.fossify.messages.ui.OpenLineTheme
+import org.fossify.messages.ui.inbox.InboxAction
+import org.fossify.messages.ui.inbox.InboxRow
+import org.fossify.messages.ui.inbox.InboxScreen
+import org.fossify.messages.ui.inbox.InboxSection
+import org.fossify.messages.ui.inbox.InboxUiState
+import org.fossify.messages.ui.inbox.PRIMARY_ACTION_COUNT
+import org.fossify.messages.ui.inbox.availableActions
+import org.fossify.messages.ui.inbox.section
+import org.fossify.messages.ui.inbox.splitForBar
+import java.util.Calendar
 import org.junit.runner.RunWith
 import java.io.File
 import java.util.Locale
@@ -45,32 +63,98 @@ class InboxChecks {
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private val targetContext: Context = instrumentation.targetContext
 
+    // An activity rule so assertions resolve strings in the same locale the screen renders in (the
+    // test phone runs Persian, which also localizes digits).
+    @get:Rule
+    val compose = createAndroidComposeRule<ComponentActivity>()
+    private fun text(id: Int) = compose.activity.getString(id)
+
+    private fun row(id: Long, title: String, read: Boolean = true, pinned: Boolean = false, muted: Boolean = false, isGroup: Boolean = false, phone: String = "+15551234567") =
+        InboxRow(Conversation(id, "hi", 1, read, title, "", isGroup, phone), draft = null, pinned = pinned, muted = muted)
+
+    /** Selection swaps the search field for same-height controls; rows must not move under the finger. */
     @Test
-    fun selectionHidesHeaderWithoutMovingRows() {
-        ActivityScenario.launch<MainActivity>(Intent(targetContext, MainActivity::class.java)).use { scenario ->
-            scenario.onActivity { activity ->
-                val header = activity.findViewById<View>(R.id.inbox_header)
-                activity.onInboxSelectionChanged(true)
-                check(header.visibility == View.INVISIBLE) { "Selection must hide the header and preserve its layout space" }
-                activity.onInboxSelectionChanged(false)
-                check(header.visibility == View.VISIBLE)
+    fun selectionKeepsRowsInPlace() {
+        var state by mutableStateOf(InboxUiState(rows = listOf(row(1, "Mina"), row(2, "Dad", read = false))))
+        compose.setContent {
+            OpenLineTheme(dark = false) {
+                InboxScreen(
+                    state = state,
+                    snackbarHostState = remember { SnackbarHostState() },
+                    onOpen = {}, onToggleSelection = {}, onSelectAll = {}, onClearSelection = {}, onAction = {},
+                    onSwipe = { _, _ -> }, onFilter = {}, onSearch = {}, onNewMessage = {}, onLibrary = {}, onSettings = {},
+                )
             }
-            if (InstrumentationRegistry.getArguments().getString("capture_inbox") == "true") {
-                instrumentation.waitForIdleSync()
-                android.os.SystemClock.sleep(500)
-                scenario.onActivity { activity ->
-                    val view = activity.window.decorView
-                    val image = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
-                    try {
-                        view.draw(Canvas(image))
-                        File(targetContext.cacheDir, "inbox-screen.png").outputStream().use {
-                            image.compress(Bitmap.CompressFormat.PNG, 100, it)
-                        }
-                    } finally {
-                        image.recycle()
-                    }
-                }
+        }
+        val dadRow = hasContentDescription("Dad", substring = true)
+        val before = compose.onNode(dadRow).getUnclippedBoundsInRoot().top
+        state = state.copy(selected = setOf(1L))
+        compose.onNodeWithText(compose.activity.resources.getQuantityString(R.plurals.inbox_selected, 1, 1)).assertExists()
+        check(compose.onNode(dadRow).getUnclippedBoundsInRoot().top == before)
+    }
+
+    /** uiautomator clips bounds at the system bar; measure the real Compose touch targets instead. */
+    @Test
+    fun navigationTargetsAreAtLeast48dp() {
+        compose.setContent {
+            OpenLineTheme(dark = false) {
+                InboxScreen(
+                    state = InboxUiState(rows = listOf(row(1, "Mina"))),
+                    snackbarHostState = remember { SnackbarHostState() },
+                    onOpen = {}, onToggleSelection = {}, onSelectAll = {}, onClearSelection = {}, onAction = {},
+                    onSwipe = { _, _ -> }, onFilter = {}, onSearch = {}, onNewMessage = {}, onLibrary = {}, onSettings = {},
+                )
             }
+        }
+        listOf(
+            R.string.inbox_nav_inbox, R.string.inbox_nav_library, org.fossify.commons.R.string.settings,
+            InboxFilter.ALL.label, InboxFilter.UNREAD.label,
+        ).forEach {
+            compose.onNodeWithText(text(it)).assertHeightIsAtLeast(48.dp)
+        }
+    }
+
+    @Test
+    fun selectionActions() {
+        val person = row(1, "Mina", read = false)
+        val group = row(2, "Book club", pinned = true, muted = true, isGroup = true)
+        val business = row(3, "FILIMO", phone = "FILIMO")
+
+        val single = availableActions(listOf(person), archiveAvailable = true)
+        check(InboxAction.DIAL in single && InboxAction.COPY_NUMBER in single && InboxAction.RENAME !in single)
+        check(InboxAction.MARK_READ in single && InboxAction.MARK_UNREAD !in single)
+        check(InboxAction.RENAME in availableActions(listOf(group), archiveAvailable = true))
+        check(InboxAction.DIAL !in availableActions(listOf(business), archiveAvailable = true)) { "Letter sender ids cannot be dialled" }
+
+        val both = availableActions(listOf(person, group), archiveAvailable = false)
+        check(InboxAction.ARCHIVE !in both && InboxAction.DETAILS !in both)
+        check(InboxAction.MARK_READ in both && InboxAction.MARK_UNREAD in both) {
+            "Mixed read state should allow normalizing the selection in either direction"
+        }
+        // mixed selection: pin/mute whichever is missing, never offer the inverse
+        check(InboxAction.PIN in both && InboxAction.UNPIN !in both && InboxAction.MUTE in both && InboxAction.UNMUTE !in both)
+
+        val (bar, overflow) = both.splitForBar()
+        check(bar.last() == InboxAction.DELETE && bar.size <= PRIMARY_ACTION_COUNT + 1)
+        check((bar + overflow).toSet() == both.toSet() && bar.none { it in overflow })
+        check(availableActions(emptyList(), archiveAvailable = true).isEmpty())
+    }
+
+    @Test
+    fun inboxSections() {
+        val now = Calendar.getInstance()
+        val seconds = (now.timeInMillis / 1000).toInt()
+        fun at(daysAgo: Int, pinned: Boolean = false) =
+            row(1, "x", pinned = pinned).let { it.copy(conversation = it.conversation.copy(date = seconds - daysAgo * 86_400)) }
+        check(at(0).section(now) == InboxSection.TODAY)
+        check(at(1).section(now) == InboxSection.YESTERDAY)
+        check(at(9).section(now) == InboxSection.EARLIER)
+        check(at(9, pinned = true).section(now) == InboxSection.PINNED)
+        val futureScheduled = at(-2).let { row ->
+            row.copy(conversation = row.conversation.copy(isScheduled = true))
+        }
+        check(futureScheduled.section(now) == InboxSection.TODAY) {
+            "Future scheduled sends stay in date order without a separate section"
         }
     }
 
@@ -85,8 +169,9 @@ class InboxChecks {
         prefs.edit().clear().commit()
         try {
             val config = Config(context)
-            val sms = BlockedMessage(id = 123, address = "test", body = "test", date = 0, reason = 0)
-                .toMessage(org.fossify.commons.models.SimpleContact(0, 0, "test", "", arrayListOf(), arrayListOf(), arrayListOf()))
+            val sms = org.fossify.messages.models.Message(
+                123, "test", android.provider.Telephony.Sms.MESSAGE_TYPE_INBOX, -1, ArrayList(), 0, false, 0L, false, null, "test", "test", "", -1
+            )
             val mms = sms.copy(isMMS = true)
             config.setMessageStarred(sms.id, sms.isMMS, true)
             check(config.isMessageStarred(sms.id, sms.isMMS))
@@ -215,69 +300,23 @@ class InboxChecks {
 
     }
 
-    /** Swipe directions are absolute, so the underlay must follow the finger, not the layout direction. */
+    /** Swipe settings are physical directions; archive goes dead where the provider cannot archive. */
     @Test
-    fun swipeActions() = instrumentation.runOnMainSync {
+    fun swipeActions() {
         val config = targetContext.config
         val originalLeft = config.swipeLeftAction
         val originalRight = config.swipeRightAction
         val originalArchiveAvailable = config.isArchiveAvailable
         try {
-            val themed = ContextThemeWrapper(targetContext, R.style.AppTheme)
-            val callback = ConversationSwipeCallback(context = themed, isSwipeEnabled = { true }, onSwipe = { _, _ -> })
-            val list = RecyclerView(themed)
-            val binding = ItemConversationBinding.inflate(LayoutInflater.from(themed))
-            val width = (360 * themed.resources.displayMetrics.density).toInt()
-            binding.conversationAddress.text = "FILIMO"
-            binding.conversationBodyShort.text = "Your verification code is 123456."
-            binding.root.measure(
-                MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY),
-                MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED)
-            )
-            binding.root.layout(0, 0, width, binding.root.measuredHeight)
-            val holder = object : RecyclerView.ViewHolder(binding.root) {}
-
-            fun flagsFor(vararg directions: Int) =
-                ItemTouchHelper.Callback.makeMovementFlags(0, directions.fold(0) { acc, it -> acc or it })
-
             config.isArchiveAvailable = true
             config.swipeLeftAction = SwipeAction.ARCHIVE
             config.swipeRightAction = SwipeAction.DELETE
-            check(callback.getMovementFlags(list, holder) == flagsFor(ItemTouchHelper.LEFT, ItemTouchHelper.RIGHT))
+            check(config.swipeAction(towardsRight = false) == SwipeAction.ARCHIVE)
+            check(config.swipeAction(towardsRight = true) == SwipeAction.DELETE)
 
-            config.swipeLeftAction = SwipeAction.NONE
-            check(callback.getMovementFlags(list, holder) == flagsFor(ItemTouchHelper.RIGHT))
-
-            // Archive is unavailable on some telephony providers; that direction must go dead, not crash.
-            config.swipeLeftAction = SwipeAction.ARCHIVE
-            config.swipeRightAction = SwipeAction.ARCHIVE
             config.isArchiveAvailable = false
-            check(callback.getMovementFlags(list, holder) == flagsFor())
-            config.isArchiveAvailable = true
-
-            val archive = ContextCompat.getColor(themed, R.color.swipe_archive_background)
-            val mute = ContextCompat.getColor(themed, R.color.swipe_mute_background)
-            val untouched = Color.WHITE
-            config.swipeRightAction = SwipeAction.ARCHIVE
-            config.swipeLeftAction = SwipeAction.MUTE
-
-            fun underlayAt(dX: Float, x: Int): Int {
-                val image = Bitmap.createBitmap(width, binding.root.height, Bitmap.Config.ARGB_8888)
-                try {
-                    val canvas = Canvas(image)
-                    canvas.drawColor(untouched)
-                    callback.onChildDraw(canvas, list, holder, dX, 0f, ItemTouchHelper.ACTION_STATE_SWIPE, true)
-                    return image.getPixel(x, binding.root.height / 2)
-                } finally {
-                    image.recycle()
-                }
-            }
-
-            val half = width / 2f
-            check(underlayAt(half, width / 4) == archive)
-            check(underlayAt(half, width * 3 / 4) == untouched)
-            check(underlayAt(-half, width * 3 / 4) == mute)
-            check(underlayAt(-half, width / 4) == untouched)
+            check(config.swipeAction(towardsRight = false) == SwipeAction.NONE)
+            check(config.swipeAction(towardsRight = true) == SwipeAction.DELETE)
         } finally {
             config.swipeLeftAction = originalLeft
             config.swipeRightAction = originalRight
@@ -306,14 +345,15 @@ class InboxChecks {
                 db.execSQL("INSERT INTO blocked_messages (address, body, date, reason) VALUES ('test', 'keep spam', 123, 1)")
                 db.version = 11
             }
-            val field = MessagesDatabase::class.java.getDeclaredField("MIGRATION_11_12").apply { isAccessible = true }
-            val migration = field.get(null) as Migration
+            val migrations = listOf("MIGRATION_11_12", "MIGRATION_12_13", "MIGRATION_13_14").map {
+                MessagesDatabase::class.java.getDeclaredField(it).apply { isAccessible = true }.get(null) as Migration
+            }
             val room = Room.databaseBuilder(targetContext, MessagesDatabase::class.java, name)
-                .addMigrations(migration).build()
+                .addMigrations(*migrations.toTypedArray()).build()
             try {
                 val db = room.openHelper.writableDatabase // Opens and validates against the actual Room entity schema.
                 check(room.DraftsDao().getDraftById(1)?.body == "keep draft")
-                check(room.BlockedMessagesDao().getAll().single().body == "keep spam")
+                db.query("SELECT body FROM blocked_messages").use { check(it.moveToFirst() && it.getString(0) == "keep spam") }
                 db.query("PRAGMA index_info(index_messages_thread_id_date)").use { cursor ->
                     val columns = mutableListOf<String>()
                     while (cursor.moveToNext()) columns.add(cursor.getString(2))

@@ -1,0 +1,43 @@
+name: Design gap
+description: A screen, component or state the design file does not decide yet
+labels: [design-gap]
+body:
+  - type: input
+    id: gap-id
+    attributes:
+      label: Gap ID
+      description: Row id from the old lists, or blank for a new gap (for example R10, C-L6, SEARCH-03)
+  - type: dropdown
+    id: status
+    attributes:
+      label: Status
+      options: [missing, partial, conflict]
+    validations:
+      required: true
+  - type: textarea
+    id: built-as
+    attributes:
+      label: Built as
+      description: The stand-in the app ships today
+    validations:
+      required: true
+  - type: textarea
+    id: decide
+    attributes:
+      label: Design needs to decide
+    validations:
+      required: true
+  - type: textarea
+    id: screens
+    attributes:
+      label: Screens and components
+      description: Frames in design/open-line.pen to read or change. The design agent fills in what it changed.
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance
+      value: |
+        - [ ] Designed in design/open-line.pen from existing components
+        - [ ] Persian RTL variant
+        - [ ] App matches the design
+        - [ ] Owner reviewed the design before the app change

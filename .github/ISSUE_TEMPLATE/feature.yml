@@ -1,0 +1,24 @@
+name: Feature
+description: New behavior
+labels: [feature]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What the user can do afterwards
+    validations:
+      required: true
+  - type: textarea
+    id: design
+    attributes:
+      label: Design
+      description: Frames in design/open-line.pen, or "needs design" (then add the needs-design label)
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance
+      value: |
+        - [ ] 
+        - [ ] Works in LTR and RTL/Persian
+        - [ ] Build and tests pass

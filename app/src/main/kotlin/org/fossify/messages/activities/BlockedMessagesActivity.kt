@@ -1,6 +1,5 @@
 package org.fossify.messages.activities
 
-import org.fossify.messages.helpers.UndoDeletion
 import android.content.Intent
 import android.os.Bundle
 import org.fossify.commons.dialogs.ConfirmationDialog
@@ -14,15 +13,17 @@ import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.messages.R
 import org.fossify.messages.adapters.BlockedMessagesAdapter
 import org.fossify.messages.databinding.ActivityBlockedMessagesBinding
-import org.fossify.messages.extensions.blockedMessagesDB
 import org.fossify.messages.extensions.config
+import org.fossify.messages.extensions.deleteMessage
+import org.fossify.messages.extensions.getSpamThreads
+import org.fossify.messages.extensions.messagesDB
 import org.fossify.messages.extensions.setupEmptyStateAction
 import org.fossify.messages.extensions.setupSurfaceAppBar
-import org.fossify.messages.extensions.getNameAndPhotoFromPhoneNumber
-import org.fossify.messages.extensions.restoreBlockedMessage
-import org.fossify.messages.helpers.THREAD_NUMBER
+import org.fossify.messages.helpers.InboxRepository
+import org.fossify.messages.helpers.OPEN_SPAM
+import org.fossify.messages.helpers.THREAD_ID
 import org.fossify.messages.helpers.THREAD_TITLE
-import org.fossify.messages.models.BlockedMessage
+import org.fossify.messages.helpers.UndoDeletion
 import org.fossify.messages.models.BlockedMessagesThread
 
 class BlockedMessagesActivity : SimpleActivity() {
@@ -61,34 +62,16 @@ class BlockedMessagesActivity : SimpleActivity() {
 
     private fun loadBlockedMessages() {
         ensureBackgroundThread {
-            val items = try {
-                blockedMessagesDB.getAll()
+            val threads = try {
+                getSpamThreads().filter { thread -> thread.messageIds.any { it !in UndoDeletion.spam } }
             } catch (e: Exception) {
                 emptyList()
             }
-            val threads = buildThreads(items)
 
             runOnUiThread {
-                showItems(threads)
+                showItems(ArrayList(threads))
             }
         }
-    }
-
-    private fun buildThreads(items: List<BlockedMessage>): ArrayList<BlockedMessagesThread> {
-        return items.filter { it.id !in UndoDeletion.spam }.groupBy { it.address }.map { (address, messages) ->
-            val sortedMessages = messages.sortedByDescending { it.date }
-            val latestMessage = sortedMessages.first()
-            val namePhoto = getNameAndPhotoFromPhoneNumber(address)
-            BlockedMessagesThread(
-                address = address,
-                title = namePhoto.name,
-                photoUri = namePhoto.photoUri.orEmpty(),
-                snippet = latestMessage.body,
-                date = latestMessage.date,
-                count = sortedMessages.size,
-                messages = sortedMessages
-            )
-        }.sortedByDescending { it.date }.toMutableList() as ArrayList<BlockedMessagesThread>
     }
 
     private fun showItems(items: ArrayList<BlockedMessagesThread>) {
@@ -113,9 +96,9 @@ class BlockedMessagesActivity : SimpleActivity() {
                 recyclerView = binding.blockedList,
                 onRefresh = { loadBlockedMessages() },
                 itemClick = { openThread(it as BlockedMessagesThread) },
-                restoreThreads = { restoreThreads(it) },
+                restoreThreads = { unmarkThreads(it, allowSender = false) },
                 deleteThreads = { deleteThreads(it) },
-                allowThreads = { allowThreads(it) }
+                allowThreads = { unmarkThreads(it, allowSender = true) }
             )
             binding.blockedList.adapter = currAdapter
         }
@@ -124,44 +107,23 @@ class BlockedMessagesActivity : SimpleActivity() {
     }
 
     private fun openThread(thread: BlockedMessagesThread) {
-        Intent(this, BlockedMessagesThreadActivity::class.java).apply {
-            putExtra(THREAD_NUMBER, thread.address)
+        Intent(this, ThreadActivity::class.java).apply {
+            putExtra(THREAD_ID, thread.threadId)
             putExtra(THREAD_TITLE, thread.title)
+            putExtra(OPEN_SPAM, true)
             startActivity(this)
         }
     }
 
-    private fun allowThreads(threads: List<BlockedMessagesThread>) {
+    private fun unmarkThreads(threads: List<BlockedMessagesThread>, allowSender: Boolean) {
         ensureBackgroundThread {
-            var failed = false
             threads.forEach { thread ->
-                config.addAllowedNumber(thread.address)
-                thread.messages.forEach {
-                    if (!restoreBlockedMessage(it)) {
-                        failed = true
-                    }
-                }
+                if (allowSender) config.addAllowedNumber(thread.address)
+                messagesDB.deleteThreadSpamMarkers(thread.threadId)
             }
+            InboxRepository.refreshUnreadCounts(this, threads.map { it.threadId })
             runOnUiThread {
-                if (failed) {
-                    toast(org.fossify.commons.R.string.unknown_error_occurred)
-                } else {
-                    toast(R.string.sender_allowed)
-                }
-                loadBlockedMessages()
-            }
-        }
-    }
-
-    private fun restoreThreads(threads: List<BlockedMessagesThread>) {
-        ensureBackgroundThread {
-            val failed = threads.flatMap { it.messages }.any { !restoreBlockedMessage(it) }
-            runOnUiThread {
-                if (failed) {
-                    toast(org.fossify.commons.R.string.unknown_error_occurred)
-                } else {
-                    toast(R.string.message_restored)
-                }
+                toast(if (allowSender) R.string.sender_allowed else R.string.message_restored)
                 loadBlockedMessages()
             }
         }
@@ -175,7 +137,7 @@ class BlockedMessagesActivity : SimpleActivity() {
             positive = org.fossify.commons.R.string.yes,
             negative = org.fossify.commons.R.string.no
         ) {
-            deleteSpamWithUndo(threads.flatMap { it.messages })
+            deleteSpamWithUndo(threads)
         }
     }
 
@@ -187,17 +149,22 @@ class BlockedMessagesActivity : SimpleActivity() {
             positive = org.fossify.commons.R.string.yes,
             negative = org.fossify.commons.R.string.no
         ) {
-            deleteSpamWithUndo(getOrCreateAdapter().currentList.flatMap { it.messages })
+            deleteSpamWithUndo(getOrCreateAdapter().currentList)
         }
     }
-    private fun deleteSpamWithUndo(items: List<BlockedMessage>) {
-        val ids = items.map { it.id }.toSet()
+
+    // Deletes only the spam SMS; real messages in the same threads stay.
+    private fun deleteSpamWithUndo(threads: List<BlockedMessagesThread>) {
+        val ids = threads.flatMap { it.messageIds }.toSet()
         UndoDeletion.spam.addAll(ids)
-        showItems(ArrayList(getOrCreateAdapter().currentList.filter { thread -> thread.messages.any { it.id !in ids } }))
+        showItems(ArrayList(getOrCreateAdapter().currentList.filter { thread -> thread.messageIds.any { it !in ids } }))
         UndoDeletion.offer(this,
             undo = { UndoDeletion.spam.removeAll(ids); loadBlockedMessages() },
-            commit = { ids.forEach { blockedMessagesDB.delete(it) } },
+            commit = {
+                ids.forEach { deleteMessage(it, isMMS = false) }
+                // Drops the rows of threads that are now empty and refreshes the rest.
+                InboxRepository.scheduleProviderReconcile(this, immediate = true)
+            },
             completed = { UndoDeletion.spam.removeAll(ids); loadBlockedMessages() })
     }
-
 }

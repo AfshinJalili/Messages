@@ -25,6 +25,7 @@ import org.fossify.messages.R
 import org.fossify.messages.activities.SimpleActivity
 import org.fossify.messages.databinding.ItemConversationBinding
 import org.fossify.messages.models.BlockedMessagesThread
+import org.fossify.messages.models.spamReasonLabel
 
 class BlockedMessagesAdapter(
     activity: SimpleActivity,
@@ -114,10 +115,10 @@ class BlockedMessagesAdapter(
     private fun setupView(view: View, thread: BlockedMessagesThread) {
         ItemConversationBinding.bind(view).apply {
             root.setupViewBackground(activity)
-            // reason chip: why the newest message in this thread was blocked
+            // reason chip: why the newest message in this thread was blocked, and how much spam the thread has
             draftIndicator.apply {
                 beVisible()
-                text = activity.getString(thread.messages.first().reasonLabel())
+                text = activity.getString(R.string.label_with_count, activity.getString(spamReasonLabel(thread.reason)), thread.count)
                 setTextColor(properPrimaryColor)
             }
             pinIndicator.beVisibleIf(false)
@@ -151,7 +152,7 @@ class BlockedMessagesAdapter(
                 it.setTextColor(textColor)
             }
 
-            setupBadgeCount(unreadCountBadge, thread.count)
+            setupBadgeCount(unreadCountBadge, thread.unreadCount)
             SimpleContactsHelper(activity).loadContactImage(
                 path = thread.photoUri,
                 imageView = conversationImage,
@@ -184,7 +185,7 @@ class BlockedMessagesAdapter(
         override fun areItemsTheSame(
             oldItem: BlockedMessagesThread,
             newItem: BlockedMessagesThread,
-        ) = oldItem.address == newItem.address
+        ) = oldItem.threadId == newItem.threadId
 
         override fun areContentsTheSame(
             oldItem: BlockedMessagesThread,

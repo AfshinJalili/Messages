@@ -8,7 +8,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.fossify.messages.activities.MainActivity
 import org.fossify.messages.activities.ThreadActivity
-import org.fossify.messages.adapters.ConversationsAdapter
 import org.fossify.messages.extensions.conversationsDB
 import org.fossify.messages.extensions.markThreadMessagesRead
 import org.fossify.messages.helpers.THREAD_ID
@@ -28,15 +27,7 @@ class ReadStateChecks {
             "Read-state fixture", "", false, "5550100999", isScheduled = true, unreadCount = 3)
         try {
             ActivityScenario.launch<MainActivity>(Intent(context, MainActivity::class.java)).use { scenario ->
-                scenario.onActivity { activity ->
-                    val bus = org.greenrobot.eventbus.EventBus.getDefault()
-                    if (!bus.isRegistered(activity)) bus.register(activity)
-                }
                 context.conversationsDB.insertOrUpdate(fixture)
-                scenario.onActivity { activity ->
-                    MainActivity::class.java.getDeclaredMethod("setupConversations", ArrayList::class.java)
-                        .apply { isAccessible = true }.invoke(activity, arrayListOf(fixture))
-                }
                 context.markThreadMessagesRead(fixture.threadId)
                 check(context.conversationsDB.getConversationWithThreadId(fixture.threadId)?.read == true)
                 fun awaitRead() {
@@ -44,8 +35,7 @@ class ReadStateChecks {
                     val readDeadline = SystemClock.elapsedRealtime() + 2000
                     while (!read && SystemClock.elapsedRealtime() < readDeadline) {
                         scenario.onActivity { activity ->
-                            val adapter = activity.findViewById<RecyclerView>(R.id.conversations_list).adapter as ConversationsAdapter
-                            val row = adapter.currentList.singleOrNull { it.threadId == fixture.threadId }
+                            val row = activity.inboxRows.singleOrNull { it.threadId == fixture.threadId }?.conversation
                             read = row?.read == true && row.unreadCount == 0
                         }
                         SystemClock.sleep(20)

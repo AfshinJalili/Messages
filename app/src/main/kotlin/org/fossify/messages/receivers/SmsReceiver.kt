@@ -12,7 +12,6 @@ import org.fossify.commons.models.SimpleContact
 import org.fossify.messages.extensions.getConversations
 import org.fossify.messages.extensions.getNameFromAddress
 import org.fossify.messages.extensions.getNotificationBitmap
-import org.fossify.messages.extensions.blockedMessagesDB
 import org.fossify.messages.extensions.getThreadId
 import org.fossify.messages.extensions.insertNewSMS
 import org.fossify.messages.extensions.insertOrUpdateConversation
@@ -23,8 +22,8 @@ import org.fossify.messages.extensions.updateConversationArchivedStatus
 import org.fossify.messages.helpers.IncomingSpamClassifier
 import org.fossify.messages.helpers.refreshConversations
 import org.fossify.messages.helpers.refreshMessages
-import org.fossify.messages.models.BlockedMessage
 import org.fossify.messages.models.Message
+import org.fossify.messages.models.SpamMessage
 
 class SmsReceiver : BroadcastReceiver() {
 
@@ -57,20 +56,8 @@ class SmsReceiver : BroadcastReceiver() {
                     threadId = threadId,
                     subscriptionId = subscriptionId,
                     status = status,
-                    showNotification = spamReason == null,
+                    spamReason = spamReason,
                 )
-
-                if (spamReason != null) {
-                    appContext.blockedMessagesDB.insert(
-                        BlockedMessage(
-                            address = address,
-                            body = body,
-                            date = date,
-                            reason = spamReason,
-                        )
-                    )
-                    refreshConversations()
-                }
             } finally {
                 pending.finish()
             }
@@ -88,7 +75,7 @@ class SmsReceiver : BroadcastReceiver() {
         type: Int = Telephony.Sms.MESSAGE_TYPE_INBOX,
         subscriptionId: Int,
         status: Int,
-        showNotification: Boolean,
+        spamReason: Int?,
     ) {
         val photoUri = SimpleContactsHelper(context).getPhotoUriFromPhoneNumber(address)
         val bitmap = context.getNotificationBitmap(photoUri)
@@ -103,6 +90,11 @@ class SmsReceiver : BroadcastReceiver() {
             type = type,
             subscriptionId = subscriptionId
         )
+
+        // Marked before the conversation row is written, so a spam-only thread never shows in the inbox.
+        if (spamReason != null && newMessageId != 0L) {
+            context.messagesDB.insertSpamMarker(SpamMessage(id = newMessageId, threadId = threadId, reason = spamReason))
+        }
 
         context.getConversations(threadId).firstOrNull()?.let { conv ->
             runCatching { context.insertOrUpdateConversation(conv) }
@@ -148,7 +140,7 @@ class SmsReceiver : BroadcastReceiver() {
         refreshMessages()
         refreshConversations()
 
-        if (showNotification) {
+        if (spamReason == null) {
             context.showReceivedMessageNotification(
                 messageId = newMessageId,
                 address = address,

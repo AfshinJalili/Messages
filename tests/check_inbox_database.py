@@ -27,14 +27,28 @@ def insert_rows(table, count, values):
 insert_rows("conversations", 1500, lambda i: {"thread_id": i, "snippet": "provider fallback"})
 insert_rows("messages", 30000, lambda i: {"id": i, "thread_id": (i - 1) % 1500 + 1, "date": i, "body": str(i)})
 db.execute("INSERT INTO recycle_bin_messages (id, deleted_ts) VALUES (30000, 1)")
-queries = re.findall(r'@Query\("(SELECT .*?)"\)', (source / "interfaces/ConversationsDao.kt").read_text())
-query = next(q for q in queries if q.endswith("WHERE archived = 0"))
+dao_source = (source / "interfaces/ConversationsDao.kt").read_text()
+
+def resolve_query_constants(sql):
+    """Expand the small SQL constants used by the shipped Room DAO query."""
+    def replace(match):
+        name = match[1]
+        declaration = re.search(rf"private const val {name} = (.*?)(?:\n\n|\n@Dao)", dao_source, re.S)
+        assert declaration, f"Missing DAO SQL constant: {name}"
+        return resolve_query_constants("".join(re.findall(r'"([^"]*)"', declaration[1])))
+
+    return re.sub(r"\$(\w+)", replace, sql)
+
+queries = re.findall(r'@Query\("(SELECT .*?)"\)', dao_source)
+query = resolve_query_constants(next(q for q in queries if "FROM conversations WHERE archived = 0" in q))
 start = time.perf_counter()
-rows = db.execute(query).fetchall()
+cursor = db.execute(query)
+columns = [column[0] for column in cursor.description]
+rows = cursor.fetchall()
 elapsed = time.perf_counter() - start
 plan = [row[3] for row in db.execute("EXPLAIN QUERY PLAN " + query)]
 assert len(rows) == 1500
-assert next(row[0] for row in rows if row[1] == 1500) == "28500", "Recycled latest message must not become the preview"
+assert next(row[columns.index("new_snippet")] for row in rows if row[columns.index("thread_id")] == 1500) == "28500", "Recycled latest message must not become the preview"
 print(f"Inbox: {len(rows)} conversations / 30000 messages in {elapsed:.3f}s")
 print("\n".join(plan))
 assert not any("SCAN messages" in step for step in plan), "Inbox scans all messages for every conversation"

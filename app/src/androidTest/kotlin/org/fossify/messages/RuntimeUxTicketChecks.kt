@@ -5,17 +5,16 @@ import android.content.ContentValues
 import android.content.Intent
 import android.os.SystemClock
 import android.provider.Telephony
-import android.view.View
-import android.widget.TextView
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
+import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToIndex
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.fossify.messages.activities.MainActivity
 import org.fossify.messages.activities.ThreadActivity
-import org.fossify.messages.adapters.ConversationsAdapter
-import org.fossify.messages.adapters.ThreadAdapter
 import org.fossify.messages.extensions.*
 import org.fossify.messages.helpers.THREAD_ID
 import org.fossify.messages.helpers.THREAD_NUMBER
@@ -24,13 +23,18 @@ import org.fossify.messages.helpers.refreshConversations
 import org.fossify.messages.helpers.refreshMessages
 import org.fossify.messages.models.Message
 import org.fossify.messages.models.ThreadItem.ThreadUnreadSeparator
+import org.fossify.messages.ui.thread.THREAD_JUMP_TAG
+import org.fossify.messages.ui.thread.THREAD_LIST_TAG
 import org.junit.Assert.*
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
 /** Inserts only disposable local provider rows; never sends SMS/MMS. Requires the default SMS role. */
 @RunWith(AndroidJUnit4::class)
 class RuntimeUxTicketChecks {
+    @get:Rule
+    val compose = createEmptyComposeRule()
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private val context = instrumentation.targetContext
     private val rows = mutableListOf<android.net.Uri>()
@@ -55,6 +59,8 @@ class RuntimeUxTicketChecks {
     private fun awaitCondition(message: String, diagnostics: () -> String = { "" }, condition: () -> Boolean) {
         val deadline = SystemClock.elapsedRealtime() + 10000
         while (SystemClock.elapsedRealtime() < deadline) {
+            // The compose rule owns the frame clock; without this, Compose effects never get a frame.
+            compose.waitForIdle()
             if (condition()) return
             SystemClock.sleep(50)
         }
@@ -73,17 +79,10 @@ class RuntimeUxTicketChecks {
                 awaitCondition("Read fixture appears") {
                     var found = false
                     scenario.onActivity { activity ->
-                        val adapter = activity.findViewById<RecyclerView>(R.id.conversations_list).adapter as? ConversationsAdapter
-                        found = adapter?.currentList?.any { it.threadId == threadId && it.read } == true
+                        found = activity.inboxRows.any { it.threadId == threadId && it.conversation.read }
                     }
                     found
                 }
-                scenario.onActivity { activity ->
-                    val list = activity.findViewById<RecyclerView>(R.id.conversations_list)
-                    val adapter = list.adapter as ConversationsAdapter
-                    list.scrollToPosition(adapter.currentList.indexOfFirst { it.threadId == threadId })
-                }
-                instrumentation.waitForIdleSync()
                 repeat(2) { index ->
                     sms(phone, threadId, false, index + 1)
                     refreshConversations()
@@ -93,15 +92,9 @@ class RuntimeUxTicketChecks {
                     }) {
                         var correct = false
                         scenario.onActivity { activity ->
-                            val list = activity.findViewById<RecyclerView>(R.id.conversations_list)
-                            val adapter = list.adapter as ConversationsAdapter
-                            val row = adapter.currentList.singleOrNull { it.threadId == threadId }
-                            val holder = row?.let { list.findViewHolderForAdapterPosition(adapter.currentList.indexOf(it)) }
-                            val badge = holder?.itemView?.findViewById<TextView>(R.id.unread_count_badge)
-                            val refreshing = MainActivity::class.java.getDeclaredField("refreshInProgress").apply { isAccessible = true }.getBoolean(activity)
-                            detail = "row=${row?.read}/${row?.unreadCount}; badge=${badge?.visibility}/${badge?.text}; refreshing=$refreshing"
-                            correct = row?.read == false && row.unreadCount == index + 1 &&
-                                badge?.visibility == View.VISIBLE && badge.text.toString() == (index + 1).toString()
+                            val row = activity.inboxRows.singleOrNull { it.threadId == threadId }?.conversation
+                            detail = "row=${row?.read}/${row?.unreadCount}"
+                            correct = row?.read == false && row.unreadCount == index + 1
                         }
                         correct
                     }
@@ -122,22 +115,21 @@ class RuntimeUxTicketChecks {
             ActivityScenario.launch<ThreadActivity>(intent).use { scenario ->
                 awaitCondition("Thread loads history") {
                     var loaded = false
-                    scenario.onActivity { loaded = (it.findViewById<RecyclerView>(R.id.thread_messages_list).adapter?.itemCount ?: 0) > 30 }
+                    scenario.onActivity { loaded = it.timelineItems.size > 30 }
                     loaded
                 }
                 awaitCondition("Many unreads open at first unread, not bottom") {
                     var correct = false
                     scenario.onActivity {
-                        val list = it.findViewById<RecyclerView>(R.id.thread_messages_list)
-                        correct = list.canScrollVertically(1) && list.scrollState == RecyclerView.SCROLL_STATE_IDLE
+                        correct = it.timelineItems.isNotEmpty() && !it.timelineSettledAtBottom
                     }
                     correct
                 }
                 assertEquals(12, context.getUnreadCountsByThread()[threadId])
-                scenario.onActivity {
-                    val list = it.findViewById<RecyclerView>(R.id.thread_messages_list)
-                    (list.layoutManager as LinearLayoutManager).scrollToPositionWithOffset(3, 0)
-                }
+                var size = 0
+                scenario.onActivity { size = it.timelineItems.size }
+                // The timeline is newest-first, so the oldest rows are at the far end.
+                compose.onNodeWithTag(THREAD_LIST_TAG).performScrollToIndex(size - 4)
                 instrumentation.waitForIdleSync()
             }
             val remainingAfterMidScrollLeave = context.getUnreadCountsByThread()[threadId] ?: 0
@@ -146,18 +138,19 @@ class RuntimeUxTicketChecks {
             ActivityScenario.launch<ThreadActivity>(intent).use { scenario ->
                 awaitCondition("Thread reloads") {
                     var loaded = false
-                    scenario.onActivity { loaded = (it.findViewById<RecyclerView>(R.id.thread_messages_list).adapter?.itemCount ?: 0) > 30 }
+                    scenario.onActivity { loaded = it.timelineItems.size > 30 }
                     loaded
                 }
-                scenario.onActivity { it.findViewById<View>(R.id.scroll_to_bottom_fab).performClick() }
-                awaitCondition("FAB scroll to bottom marks the whole thread read") {
-                    var correct = false
-                    scenario.onActivity {
-                        val list = it.findViewById<RecyclerView>(R.id.thread_messages_list)
-                        correct = !list.canScrollVertically(1) && list.scrollState == RecyclerView.SCROLL_STATE_IDLE &&
-                            (context.getUnreadCountsByThread()[threadId] ?: 0) == 0
-                    }
-                    correct
+                awaitCondition("Opens at the first unread, away from the bottom") {
+                    var away = false
+                    scenario.onActivity { away = !it.timelineSettledAtBottom }
+                    away
+                }
+                compose.onNodeWithTag(THREAD_JUMP_TAG).performClick()
+                awaitCondition("Jump to latest marks the whole thread read") {
+                    var settled = false
+                    scenario.onActivity { settled = it.timelineSettledAtBottom }
+                    settled && (context.getUnreadCountsByThread()[threadId] ?: 0) == 0
                 }
             }
             assertEquals(0, context.conversationsDB.getConversationWithThreadId(threadId)?.unreadCount)
@@ -179,26 +172,21 @@ class RuntimeUxTicketChecks {
             ActivityScenario.launch<ThreadActivity>(intent).use { scenario ->
                 awaitCondition("Read history loads") {
                     var loaded = false
-                    scenario.onActivity { loaded = (it.findViewById<RecyclerView>(R.id.thread_messages_list).adapter?.itemCount ?: 0) >= 30 }
+                    scenario.onActivity { loaded = it.timelineItems.size >= 30 }
                     loaded
                 }
-                scenario.onActivity {
-                    (it.findViewById<RecyclerView>(R.id.thread_messages_list).layoutManager as LinearLayoutManager).scrollToPositionWithOffset(2, 0)
-                }
+                var size = 0
+                scenario.onActivity { size = it.timelineItems.size }
+                compose.onNodeWithTag(THREAD_LIST_TAG).performScrollToIndex(size - 3)
                 instrumentation.waitForIdleSync()
-                scenario.onActivity {
-                    assertTrue("History navigation arrow remains available", it.findViewById<View>(R.id.scroll_to_bottom_fab).isShown)
-                    assertFalse("Read history has no unread counter", it.findViewById<View>(R.id.scroll_fab_unread_badge).isShown)
-                }
+                compose.onNodeWithTag(THREAD_JUMP_TAG).assertExists("History navigation arrow remains available")
+                compose.onNode(hasContentDescription(context.getString(R.string.scroll_to_latest_message)))
+                    .assertExists("Read history has no unread counter")
                 sms(phone, threadId, false, 30)
                 refreshMessages()
-                awaitCondition("One unread message shows a badge") {
-                    var shown = false
-                    scenario.onActivity {
-                        val badge = it.findViewById<TextView>(R.id.scroll_fab_unread_badge)
-                        shown = badge.isShown && badge.text.toString() == "1"
-                    }
-                    shown
+                awaitCondition("One unread message shows a count") {
+                    compose.onAllNodes(hasContentDescription(context.getString(R.string.scroll_to_unread_messages, 1)))
+                        .fetchSemanticsNodes().isNotEmpty()
                 }
                 val notification = android.app.Notification.Builder(context, channelId)
                     .setSmallIcon(android.R.drawable.ic_dialog_info).setContentTitle("Scroll test fixture").build()
@@ -207,29 +195,18 @@ class RuntimeUxTicketChecks {
                 awaitCondition("Both test notifications are present") {
                     manager.activeNotifications.map { it.id }.containsAll(listOf(threadId.hashCode(), otherNotificationId))
                 }
-                scenario.onActivity {
-                    captureThread(it, "msg15-unread-fab.png")
-                    it.findViewById<View>(R.id.scroll_to_bottom_fab).performClick()
-                }
+                scenario.onActivity { captureThread(it, "msg15-unread-fab.png") }
+                compose.onNodeWithTag(THREAD_JUMP_TAG).performClick()
                 awaitCondition("A single tap reaches bottom, reads the visible message and removes the divider") {
                     var reached = false
                     scenario.onActivity {
-                        val list = it.findViewById<RecyclerView>(R.id.thread_messages_list)
-                        reached = !list.canScrollVertically(1) && list.scrollState == RecyclerView.SCROLL_STATE_IDLE &&
-                            !it.findViewById<View>(R.id.scroll_fab_unread_badge).isShown &&
-                            !(list.adapter as ThreadAdapter).currentList.contains(ThreadUnreadSeparator)
+                        reached = it.timelineSettledAtBottom && !it.timelineItems.contains(ThreadUnreadSeparator)
                     }
-                    reached && (context.getUnreadCountsByThread()[threadId] ?: 0) == 0
+                    reached && (context.getUnreadCountsByThread()[threadId] ?: 0) == 0 &&
+                        compose.onAllNodes(hasContentDescription(context.getString(R.string.scroll_to_unread_messages, 1))).fetchSemanticsNodes().isEmpty()
                 }
                 assertTrue(manager.activeNotifications.none { it.id == threadId.hashCode() })
                 assertTrue("Unrelated notification is preserved", manager.activeNotifications.any { it.id == otherNotificationId })
-                awaitCondition("Divider removal is visible after the item animation") {
-                    var removed = false
-                    scenario.onActivity {
-                        removed = it.findViewById<View>(R.id.thread_unread_separator_holder)?.isShown != true
-                    }
-                    removed
-                }
                 scenario.onActivity { captureThread(it, "msg15-at-bottom.png") }
             }
         } finally {

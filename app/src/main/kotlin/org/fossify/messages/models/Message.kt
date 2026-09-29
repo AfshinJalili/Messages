@@ -55,7 +55,10 @@ data class Message(
         }
 
         fun areContentsTheSame(old: Message, new: Message): Boolean {
-            return old.body == new.body &&
+            return old.type == new.type &&
+                old.status == new.status &&
+                old.subscriptionId == new.subscriptionId &&
+                old.body == new.body &&
                 old.read == new.read &&
                 old.threadId == new.threadId &&
                 old.date == new.date &&

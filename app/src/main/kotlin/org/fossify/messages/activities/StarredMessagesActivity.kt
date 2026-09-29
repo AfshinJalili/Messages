@@ -12,6 +12,7 @@ import org.fossify.messages.extensions.messageSearchResult
 import org.fossify.messages.extensions.messagesDB
 import org.fossify.messages.extensions.setupSurfaceAppBar
 import org.fossify.messages.helpers.SEARCHED_MESSAGE_ID
+import org.fossify.messages.helpers.SEARCHED_MESSAGE_IS_MMS
 import org.fossify.messages.helpers.THREAD_ID
 import org.fossify.messages.helpers.THREAD_TITLE
 import org.fossify.messages.models.SearchResult
@@ -62,6 +63,7 @@ class StarredMessagesActivity : SimpleActivity() {
             putExtra(THREAD_ID, result.threadId)
             putExtra(THREAD_TITLE, result.title)
             putExtra(SEARCHED_MESSAGE_ID, result.messageId)
+            putExtra(SEARCHED_MESSAGE_IS_MMS, result.isMms)
             startActivity(this)
         }
     }

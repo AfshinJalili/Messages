@@ -1,4 +1,4 @@
-# Messages
+# Open Line
 
 <img alt="Logo" src="graphics/icon.webp" width="120" />
 
@@ -14,7 +14,7 @@ A private, lightweight SMS/MMS client for Android.
 
 **Search and organization:** Archive conversations, star messages, use a recycle bin, and search across threads.
 
-**Modern UI:** Material design with light/dark themes, swipe actions, and a cobalt accent palette. See [DESIGN.md](DESIGN.md) for the design system.
+**Modern UI:** The Open Line design: pine, lime and lilac on mineral paper, light and dark themes, Persian/RTL first-class, swipe actions. See [DESIGN.md](DESIGN.md).
 
 ## Build
 
@@ -22,7 +22,7 @@ A private, lightweight SMS/MMS client for Android.
 ./gradlew :app:assembleCoreDebug
 ```
 
-Instrumented checks are documented in [tests/README.md](tests/README.md).
+How the project is run (workflow, roles, tests, the real-phone rules) is in [AGENTS.md](AGENTS.md).
 
 ## License
 

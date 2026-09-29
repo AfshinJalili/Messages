@@ -1,7 +1,5 @@
 package org.fossify.messages.activities
 
-import org.fossify.messages.helpers.UndoDeletion
-import org.fossify.messages.helpers.designFloat
 import android.annotation.SuppressLint
 import android.app.role.RoleManager
 import android.content.Intent
@@ -12,108 +10,166 @@ import android.graphics.drawable.LayerDrawable
 import android.os.Bundle
 import android.provider.Telephony
 import android.text.TextUtils
-import android.content.res.ColorStateList
-import android.graphics.Color
-import android.os.Handler
-import android.os.Looper
 import android.view.HapticFeedbackConstants
-import android.view.View
-import androidx.core.view.children
-import androidx.core.widget.doAfterTextChanged
-import com.google.android.material.chip.Chip
-import com.google.android.material.search.SearchView
-import org.fossify.commons.extensions.setSystemBarsAppearance
-import org.fossify.messages.databinding.ItemInboxFilterChipBinding
-import org.fossify.messages.databinding.ItemRecentSearchChipBinding
-import org.fossify.messages.extensions.messageSearchResult
-import org.fossify.messages.extensions.setupEmptyStateAction
-import org.fossify.messages.helpers.INBOX_FILTER
-import org.fossify.messages.helpers.InboxFilter
-import org.fossify.messages.helpers.SwipeAction
-import org.fossify.messages.helpers.sortedForInbox
+import android.view.accessibility.AccessibilityManager
+import androidx.annotation.VisibleForTesting
 import androidx.appcompat.content.res.AppCompatResources
-import androidx.recyclerview.widget.ItemTouchHelper
-import com.google.android.material.snackbar.Snackbar
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.core.view.WindowCompat
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
+import org.fossify.messages.helpers.SearchRepository
+import org.fossify.messages.ui.search.SearchUiState
+import org.fossify.messages.ui.search.SearchFilter
+import org.fossify.messages.ui.search.SEARCH_DEBOUNCE_MS
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
+import org.fossify.commons.dialogs.ConfirmationDialog
 import org.fossify.commons.dialogs.PermissionRequiredDialog
-import org.fossify.commons.extensions.adjustAlpha
+import org.fossify.commons.extensions.applyColorFilter
 import org.fossify.commons.extensions.appLaunched
 import org.fossify.commons.extensions.appLockManager
-import org.fossify.commons.extensions.applyColorFilter
-import org.fossify.commons.extensions.beGone
-import org.fossify.commons.extensions.beGoneIf
-import org.fossify.commons.extensions.beVisible
-import org.fossify.commons.extensions.beVisibleIf
 import org.fossify.commons.extensions.convertToBitmap
-import org.fossify.commons.extensions.fadeIn
-import org.fossify.commons.extensions.formatDateOrTime
-import org.fossify.commons.extensions.getProperBackgroundColor
-import org.fossify.commons.extensions.getProperPrimaryColor
-import org.fossify.commons.extensions.getProperTextColor
+import org.fossify.commons.extensions.copyToClipboard
 import org.fossify.commons.extensions.hideKeyboard
+import org.fossify.commons.extensions.launchActivityIntent
 import org.fossify.commons.extensions.notificationManager
 import org.fossify.commons.extensions.openNotificationSettings
 import org.fossify.commons.extensions.toast
-import org.fossify.commons.extensions.underlineText
-import org.fossify.commons.extensions.updateTextColors
 import org.fossify.commons.extensions.viewBinding
+import org.fossify.commons.helpers.KEY_PHONE
 import org.fossify.commons.helpers.PERMISSION_READ_CONTACTS
 import org.fossify.commons.helpers.PERMISSION_READ_SMS
 import org.fossify.commons.helpers.PERMISSION_SEND_SMS
-import org.fossify.commons.helpers.SHORT_ANIMATION_DURATION
 import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.commons.helpers.isQPlus
 import org.fossify.messages.BuildConfig
 import org.fossify.messages.R
-import org.fossify.messages.adapters.ConversationsAdapter
-import org.fossify.messages.adapters.SearchResultsAdapter
 import org.fossify.messages.databinding.ActivityMainBinding
+import org.fossify.messages.dialogs.RenameConversationDialog
 import org.fossify.messages.extensions.checkAndDeleteOldRecycleBinMessages
 import org.fossify.messages.extensions.clearAllMessagesIfNeeded
 import org.fossify.messages.extensions.config
 import org.fossify.messages.extensions.conversationsDB
 import org.fossify.messages.extensions.deleteConversation
-import org.fossify.messages.extensions.messagesDB
+import org.fossify.messages.extensions.dialNumber
+import org.fossify.messages.extensions.getAllDrafts
+import org.fossify.messages.extensions.getUnreadSpamCounts
+import org.fossify.messages.extensions.launchConversationDetails
+import org.fossify.messages.extensions.markThreadMessagesRead
+import org.fossify.messages.extensions.markThreadMessagesUnread
+import org.fossify.messages.extensions.renameConversation
 import org.fossify.messages.extensions.updateConversationArchivedStatus
-import org.fossify.messages.helpers.ConversationSwipeCallback
+import org.fossify.messages.helpers.INBOX_FILTER
+import org.fossify.messages.helpers.InboxFilter
 import org.fossify.messages.helpers.InboxRepository
-import org.fossify.messages.helpers.SWIPE_UNDO_DURATION_MS
 import org.fossify.messages.helpers.SEARCHED_MESSAGE_ID
+import org.fossify.messages.helpers.SEARCHED_MESSAGE_IS_MMS
+import org.fossify.messages.helpers.SWIPE_UNDO_DURATION_MS
+import org.fossify.messages.helpers.SpamBackfill
+import org.fossify.messages.helpers.SwipeAction
 import org.fossify.messages.helpers.THREAD_ID
 import org.fossify.messages.helpers.THREAD_TITLE
+import org.fossify.messages.helpers.UndoDeletion
+import org.fossify.messages.helpers.refreshConversations
+import org.fossify.messages.helpers.sortedForInbox
+import org.fossify.messages.helpers.swipeAction
 import org.fossify.messages.models.Conversation
-import org.fossify.messages.models.Message
 import org.fossify.messages.models.SearchResult
+import org.fossify.messages.ui.OpenLineTheme
+import org.fossify.messages.ui.openLineDark
+import org.fossify.messages.ui.openLineTextScale
+import org.fossify.messages.ui.inbox.InboxAction
+import org.fossify.messages.ui.inbox.InboxRow
+import org.fossify.messages.ui.inbox.InboxScreen
+import org.fossify.messages.ui.inbox.InboxUiState
+import org.fossify.messages.ui.inbox.LibraryDestination
 
-class MainActivity : SimpleActivity() {
-    override var isSearchBarEnabled = true
-
+class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
     private val MAKE_DEFAULT_APP_REQUEST = 1
 
-    private var storedTextColor = 0
-    private var storedFontSize = 0
-    private var lastSearchedText = ""
-    private var inboxConversations = arrayListOf<Conversation>()
+    private var search by mutableStateOf(SearchUiState())
+    private var searchJob: Job? = null
+    private val searchRepository by lazy { SearchRepository(this) }
+    private var inboxConversations = listOf<Conversation>()
     private var providerReconcileActive = false
     private var inboxFilter = InboxFilter.ALL
-    private var inboxDeletionVersion = UndoDeletion.version
+    private var drafts: Map<Long, String> = emptyMap()
     private val pendingSwipes = mutableListOf<PendingSwipe>()
-    private val searchHandler = Handler(Looper.getMainLooper())
+    // Committed archives stay hidden until Room stops listing them, or a refresh would bring them back.
+    private val archiving = mutableSetOf<Long>()
+    private var undoJob: Job? = null
+    private var undoSettle: (() -> Unit)? = null
+
+    private var inbox by mutableStateOf(InboxUiState())
+    private var darkTheme by mutableStateOf(false)
+    private var textScale by mutableFloatStateOf(1f)
+    private var libraryOpen by mutableStateOf(false)
+    @VisibleForTesting
+    internal val snackbarHost = SnackbarHostState()
 
     private val binding by viewBinding(ActivityMainBinding::inflate)
+
+    @VisibleForTesting
+    internal val inboxRows get() = inbox.rows
 
     @SuppressLint("InlinedApi")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
         inboxFilter = InboxFilter.entries.getOrNull(savedInstanceState?.getInt(INBOX_FILTER) ?: 0) ?: InboxFilter.ALL
+        savedInstanceState?.getLongArray(INBOX_SELECTION)?.let { inbox = inbox.copy(selected = it.toSet()) }
         appLaunched(BuildConfig.APPLICATION_ID)
-        setupOptionsMenu()
-        setupSearch()
-        setupInboxFilters()
-        binding.inboxSpam.setOnClickListener { launchSpamFolder() }
-        refreshMenuItems()
+        libraryOpen = savedInstanceState?.getBoolean("library_open") ?: false
+        search = SearchUiState(
+            open = savedInstanceState?.getBoolean(SEARCH_OPEN) ?: false,
+            query = savedInstanceState?.getString(SEARCH_QUERY).orEmpty(),
+            filter = SearchFilter.entries.getOrNull(savedInstanceState?.getInt(SEARCH_FILTER) ?: 0) ?: SearchFilter.ALL,
+            recent = config.recentSearches,
+        )
+        if (search.open) loadSearchResults()
+        refreshInboxTheme()
+        binding.inboxCompose.setContent {
+            OpenLineTheme(dark = darkTheme, textScale = textScale) {
+                InboxScreen(
+                    state = inbox,
+                    snackbarHostState = snackbarHost,
+                    onOpen = { openConversation(it.conversation) },
+                    onToggleSelection = ::toggleSelection,
+                    onSelectAll = { inbox = inbox.copy(selected = inbox.rows.map { it.threadId }.toSet()) },
+                    onClearSelection = ::clearSelection,
+                    onAction = ::handleAction,
+                    onSwipe = ::handleSwipe,
+                    onFilter = ::setFilter,
+                    onSearch = ::openSearch,
+                    onNewMessage = ::launchNewConversation,
+                    onLibrary = ::openLibrary,
+                    onSettings = ::launchSettings,
+                    search = search,
+                    onSearchQuery = ::searchTextChanged,
+                    onSearchFilter = ::setSearchFilter,
+                    onSearchResult = ::openSearchResult,
+                    onSearchBack = ::closeSearch,
+                    onSearchRetry = ::loadSearchResults,
+                    libraryOpen = libraryOpen,
+                    onLibraryTab = {
+                        closeSearch()
+                        libraryOpen = it
+                        applySystemBars()
+                    },
+                )
+            }
+        }
 
-        setupEdgeToEdge(padBottomImeAndSystem = listOf(binding.conversationsList, binding.searchResultsList))
+        setupEdgeToEdge()
 
         checkAndDeleteOldRecycleBinMessages()
         clearAllMessagesIfNeeded {
@@ -123,169 +179,79 @@ class MainActivity : SimpleActivity() {
 
     override fun onResume() {
         super.onResume()
-        updateSearchColors()
-        refreshMenuItems()
-
-        getOrCreateConversationsAdapter().apply {
-            if (storedTextColor != getProperTextColor()) {
-                updateTextColor(getProperTextColor())
-            }
-
-            if (storedFontSize != config.fontSize) {
-                updateFontSize()
-            }
-
-            updateDrafts()
-        }
-
-        updateTextColors(binding.mainCoordinator)
-        updateFilterChipColors()
-
-        val properPrimaryColor = getProperPrimaryColor()
-        binding.inboxSpam.setTextColor(properPrimaryColor)
-        setupEmptyStateAction(binding.noConversationsPlaceholder2) { launchNewConversation() }
-        binding.conversationsFastscroller.updateColors(properPrimaryColor)
-        binding.conversationsProgressBar.setIndicatorColor(properPrimaryColor)
-        binding.conversationsProgressBar.trackColor = properPrimaryColor.adjustAlpha(resources.designFloat(R.dimen.opacity_outline))
+        refreshInboxTheme()
+        if (search.open) loadSearchResults()
+        applySystemBars()
+        refreshSpamBadge()
+        refreshDrafts()
+        publish()
         checkShortcut()
         // Debounced: give ThreadActivity read flushes time to reach Room before reconciling.
         InboxRepository.refreshInbox(this)
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
+        outState.putBoolean(SEARCH_OPEN, search.open)
+        outState.putString(SEARCH_QUERY, search.query)
+        outState.putInt(SEARCH_FILTER, search.filter.ordinal)
+        outState.putBoolean("library_open", libraryOpen)
         outState.putInt(INBOX_FILTER, inboxFilter.ordinal)
+        outState.putLongArray(INBOX_SELECTION, inbox.selected.toLongArray())
         super.onSaveInstanceState(outState)
-    }
-
-    override fun onPause() {
-        super.onPause()
-        storeStateVariables()
     }
 
     override fun onStop() {
         super.onStop()
-        // Leaving the inbox is the point of no return: commit rather than silently drop the swipe.
+        // Leaving the inbox is the point of no return: commit rather than silently drop the swipe. The
+        // snackbar goes too, so a later Undo tap cannot claim to reverse a write that already ran.
+        undoJob?.cancel()
+        undoSettle = null
         pendingSwipes.toList().forEach { commitSwipe(it) }
     }
 
     override fun onDestroy() {
         InboxRepository.setReconcileListener(null)
-        searchHandler.removeCallbacksAndMessages(null)
+        searchJob?.cancel()
         super.onDestroy()
     }
 
     override fun onBackPressedCompat(): Boolean {
-        return if (binding.mainSearchView.isShowing) {
-            binding.mainSearchView.hide()
-            true
-        } else {
-            appLockManager.lock()
-            false
+        if (libraryOpen && !search.open) {
+            libraryOpen = false
+            applySystemBars()
+            return true
         }
-    }
-
-    private fun setupOptionsMenu() {
-        binding.mainSearchBar.inflateMenu(R.menu.menu_main)
-        binding.mainSearchBar.setOnMenuItemClickListener { menuItem ->
-            when (menuItem.itemId) {
-                R.id.show_recycle_bin -> launchRecycleBin()
-                R.id.show_archived -> launchArchivedConversations()
-                R.id.show_starred -> launchStarredMessages()
-                R.id.settings -> launchSettings()
-                else -> return@setOnMenuItemClickListener false
+        return when {
+            search.open -> {
+                closeSearch()
+                true
             }
-            return@setOnMenuItemClickListener true
-        }
-    }
 
-    private fun setupSearch() {
-        binding.mainSearchView.editText.doAfterTextChanged { text ->
-            // Each query is a LIKE over every cached message, so wait for a pause in typing.
-            searchHandler.removeCallbacksAndMessages(null)
-            searchHandler.postDelayed({ searchTextChanged(text?.toString().orEmpty()) }, SEARCH_DEBOUNCE_MS)
-        }
+            inbox.selecting -> {
+                clearSelection()
+                true
+            }
 
-        binding.mainSearchView.addTransitionListener { _, _, newState ->
-            when (newState) {
-                SearchView.TransitionState.SHOWING -> searchTextChanged(binding.mainSearchView.text.toString())
-                SearchView.TransitionState.HIDDEN -> {
-                    searchHandler.removeCallbacksAndMessages(null)
-                    binding.mainSearchView.clearText()
-                }
-
-                else -> Unit
+            else -> {
+                appLockManager.lock()
+                false
             }
         }
     }
 
-    private fun setupInboxFilters() {
-        InboxFilter.entries.forEach { filter ->
-            ItemInboxFilterChipBinding.inflate(layoutInflater, binding.inboxFilters, false).root.apply {
-                id = View.generateViewId()
-                tag = filter
-                setText(filter.label)
-                isChecked = filter == inboxFilter
-                binding.inboxFilters.addView(this)
-            }
-        }
-
-        binding.inboxFilters.setOnCheckedStateChangeListener { group, checkedIds ->
-            val checked = checkedIds.firstOrNull() ?: return@setOnCheckedStateChangeListener
-            inboxFilter = group.findViewById<Chip>(checked).tag as InboxFilter
-            // a selection made under one filter must not act on rows the next filter hides
-            getOrCreateConversationsAdapter().finishActMode()
-            setupConversations(inboxConversations)
-        }
+    /** The Open Line palette follows the app's light/dark choice, not the Commons accent. */
+    private fun refreshInboxTheme() {
+        darkTheme = openLineDark()
+        textScale = openLineTextScale()
     }
 
-    private fun updateFilterChipColors() {
-        val textColor = getProperTextColor()
-        val primaryColor = getProperPrimaryColor()
-        val states = arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf())
-        val background = ColorStateList(states, intArrayOf(primaryColor.adjustAlpha(resources.designFloat(R.dimen.opacity_selected_tint)), Color.TRANSPARENT))
-        val content = ColorStateList(states, intArrayOf(primaryColor, textColor))
-        val stroke = ColorStateList(states, intArrayOf(Color.TRANSPARENT, textColor.adjustAlpha(resources.designFloat(R.dimen.opacity_outline))))
-        binding.inboxFilters.children.filterIsInstance<Chip>().forEach {
-            it.chipBackgroundColor = background
-            it.chipStrokeColor = stroke
-            it.setTextColor(content)
-        }
-    }
-
-    private fun updateSearchColors() {
-        val backgroundColor = getProperBackgroundColor()
-        val textColor = getProperTextColor()
-        val hintColor = textColor.adjustAlpha(resources.designFloat(R.dimen.opacity_hint))
-        window.setSystemBarsAppearance(backgroundColor)
-        binding.mainAppbar.setBackgroundColor(backgroundColor)
-        binding.mainSearchBar.apply {
-            backgroundTintList = ColorStateList.valueOf(textColor.adjustAlpha(resources.designFloat(R.dimen.opacity_surface_tint)))
-            textView.setTextColor(textColor)
-            textView.setHintTextColor(hintColor)
-            navigationIcon?.applyColorFilter(textColor)
-            overflowIcon?.applyColorFilter(textColor)
-        }
-        updateMenuItemColors(binding.mainSearchBar.menu, baseColor = backgroundColor)
-
-        // SearchView has no background setter; its surface comes from theme attrs that ignore Fossify's colors
-        binding.mainSearchView.apply {
-            findViewById<View>(com.google.android.material.R.id.open_search_view_background)?.setBackgroundColor(backgroundColor)
-            editText.setTextColor(textColor)
-            editText.setHintTextColor(hintColor)
-            toolbar.navigationIcon?.applyColorFilter(textColor)
-        }
-    }
-
-    fun onInboxSelectionChanged(selecting: Boolean) {
-        // Keep the header's space so drag-select does not move another row under the finger.
-        binding.inboxHeader.visibility = if (selecting) View.INVISIBLE else View.VISIBLE
-        binding.conversationsFab.beGoneIf(selecting)
-    }
-
-    private fun refreshMenuItems() {
-        binding.mainSearchBar.menu.apply {
-            findItem(R.id.show_recycle_bin).isVisible = config.useRecycleBin
-            findItem(R.id.show_archived).isVisible = config.isArchiveAvailable
+    private fun applySystemBars() {
+        // The bottom bar paints its own surface; a system scrim on top would double it.
+        if (isQPlus()) window.isNavigationBarContrastEnforced = false
+        // Inbox uses the pine band; Library uses the theme surface.
+        WindowCompat.getInsetsController(window, window.decorView).apply {
+            isAppearanceLightStatusBars = libraryOpen && !darkTheme
+            isAppearanceLightNavigationBars = !darkTheme
         }
     }
 
@@ -298,11 +264,6 @@ class MainActivity : SimpleActivity() {
                 finish()
             }
         }
-    }
-
-    private fun storeStateVariables() {
-        storedTextColor = getProperTextColor()
-        storedFontSize = config.fontSize
     }
 
     private fun loadMessages() {
@@ -360,119 +321,170 @@ class MainActivity : SimpleActivity() {
     }
 
     private fun initMessenger() {
-        storeStateVariables()
         InboxRepository.setReconcileListener { active ->
             providerReconcileActive = active
             if (!isDestroyed && !isFinishing) {
-                showOrHideProgress(active && inboxConversations.isEmpty())
+                publish()
             }
         }
         conversationsDB.observeNonArchivedWithLatestSnippet().observe(this) { rows ->
             if (isDestroyed || isFinishing) return@observe
-            setupConversations(ArrayList(rows.map { it.toConversation() }))
+            inboxConversations = rows.map { it.toConversation() }
+            archiving.retainAll(inboxConversations.map { it.threadId }.toSet())
+            publish()
+            // Marker changes also invalidate this query, so new spam updates the badge here.
+            refreshSpamBadge()
         }
         InboxRepository.scheduleProviderReconcile(this, immediate = true)
-        binding.conversationsFab.setOnClickListener {
-            launchNewConversation()
-        }
+        SpamBackfill.run(this)
     }
 
-    private fun getOrCreateConversationsAdapter(): ConversationsAdapter {
-        var currAdapter = binding.conversationsList.adapter
-        if (currAdapter == null) {
-            hideKeyboard()
-            currAdapter = ConversationsAdapter(
-                activity = this,
-                recyclerView = binding.conversationsList,
-                onRefresh = { notifyDatasetChanged() },
-                itemClick = { handleConversationClick(it) }
-            )
-
-            binding.conversationsList.adapter = currAdapter
-            setupSwipeActions(currAdapter)
-        }
-        return currAdapter as ConversationsAdapter
-    }
-
-    private fun setupSwipeActions(adapter: ConversationsAdapter) {
-        val callback = ConversationSwipeCallback(
-            context = this,
-            isSwipeEnabled = { !adapter.isSelecting },
-            onSwipe = { position, action -> handleSwipe(position, action) }
-        )
-        ItemTouchHelper(callback).attachToRecyclerView(binding.conversationsList)
-    }
-
-    private fun handleSwipe(position: Int, action: SwipeAction) {
-        val adapter = getOrCreateConversationsAdapter()
-        val conversation = adapter.currentList.getOrNull(position) ?: return
-        when (action) {
-            SwipeAction.NONE -> adapter.notifyItemChanged(position)
-            SwipeAction.MUTE -> toggleMute(conversation)
-            SwipeAction.ARCHIVE -> deferSwipe(conversation, action)
-            SwipeAction.DELETE -> adapter.deleteWithUndo(listOf(conversation)) { id ->
-                deleteConversation(id)
-                notificationManager.cancel(id.hashCode())
+    /** Rebuilds the screen state from the Room snapshot plus everything only this activity knows. */
+    private fun publish() {
+        val hidden = pendingSwipes.map { it.conversation.threadId }.toSet() + UndoDeletion.threads + archiving
+        val present = inboxConversations.filter { it.threadId !in hidden }
+        val pinned = config.pinnedConversations
+        val rows = present
+            .filter { inboxFilter.matches(it) }
+            .sortedForInbox(pinned)
+            .map {
+                InboxRow(
+                    conversation = it,
+                    draft = drafts[it.threadId],
+                    pinned = it.threadId.toString() in pinned,
+                    muted = config.isConversationMuted(it.threadId),
+                )
             }
+        val visibleIds = rows.map { it.threadId }.toSet()
+        inbox = inbox.copy(
+            rows = rows,
+            filter = inboxFilter,
+            unreadMessages = present.filter { !it.read }.sumOf { it.unreadCount.coerceAtLeast(1) },
+            loading = providerReconcileActive && inboxConversations.isEmpty(),
+            // A selection must not act on rows the current filter or an undo window hides. Before the
+            // first snapshot arrives, keep a selection restored from saved state.
+            selected = if (inboxConversations.isEmpty()) inbox.selected else inbox.selected intersect visibleIds,
+            archiveAvailable = config.isArchiveAvailable,
+            recycleBinAvailable = config.useRecycleBin,
+            swipeLeft = config.swipeAction(towardsRight = false),
+            swipeRight = config.swipeAction(towardsRight = true),
+        )
+    }
+
+    private fun refreshDrafts() {
+        ensureBackgroundThread {
+            val fresh = getAllDrafts()
+            runOnUiThread {
+                if (fresh != drafts) {
+                    drafts = fresh
+                    publish()
+                }
+            }
+        }
+    }
+
+    private fun setFilter(filter: InboxFilter) {
+        inboxFilter = filter
+        clearSelection()
+        publish()
+    }
+
+    private fun toggleSelection(row: InboxRow) {
+        val selected = inbox.selected
+        inbox = inbox.copy(selected = if (row.threadId in selected) selected - row.threadId else selected + row.threadId)
+    }
+
+    private fun clearSelection() {
+        inbox = inbox.copy(selected = emptySet())
+    }
+
+    private fun handleSwipe(row: InboxRow, action: SwipeAction) {
+        val conversation = row.conversation
+        window.decorView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+        when (action) {
+            SwipeAction.NONE -> Unit
+            SwipeAction.MUTE -> toggleMute(conversation, muted = !row.muted)
+            SwipeAction.ARCHIVE -> deferArchive(conversation)
+            SwipeAction.DELETE -> deleteWithUndo(listOf(conversation))
         }
     }
 
     /** Muting is harmless and instantly reversible, so it applies at once and Undo flips it back. */
-    private fun toggleMute(conversation: Conversation) {
-        val threadId = conversation.threadId
-        val muted = !config.isConversationMuted(threadId)
-        config.setConversationMuted(threadId, muted)
-        notifyConversationChanged(threadId)
-        binding.conversationsList.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
-
+    private fun toggleMute(conversation: Conversation, muted: Boolean) {
+        setMuted(listOf(conversation), muted)
         val message = if (muted) R.string.conversation_muted else R.string.conversation_unmuted
-        Snackbar.make(binding.mainCoordinator, message, SWIPE_UNDO_DURATION_MS)
-            .setAction(org.fossify.commons.R.string.undo) {
-                config.setConversationMuted(threadId, !muted)
-                notifyConversationChanged(threadId)
-            }
-            .show()
+        showUndo(message, onUndo = { setMuted(listOf(conversation), !muted) })
     }
 
-    private fun notifyConversationChanged(threadId: Long) {
-        val adapter = getOrCreateConversationsAdapter()
-        val position = adapter.currentList.indexOfFirst { it.threadId == threadId }
-        if (position != -1) {
-            adapter.notifyItemChanged(position)
+    private fun setMuted(conversations: List<Conversation>, muted: Boolean) {
+        conversations.forEach { config.setConversationMuted(it.threadId, muted) }
+        publish()
+    }
+
+    /**
+     * Archiving is deferred until the undo snackbar goes away, because the provider write cannot be
+     * reversed once it has run.
+     */
+    private fun deferArchive(conversation: Conversation) {
+        val pending = PendingSwipe(conversation, SwipeAction.ARCHIVE)
+        pendingSwipes.add(pending)
+        publish()
+        showUndo(R.string.conversation_archived, onUndo = { undoSwipe(pending) }, onTimeout = { commitSwipe(pending) })
+    }
+
+    private fun showUndo(message: Int, onUndo: () -> Unit, onTimeout: () -> Unit = {}) {
+        launchUndo(message, undoTimeoutMs(), onUndo, onTimeout)
+    }
+
+    /**
+     * Deletion Undo from [UndoDeletion]. Its own timer normally commits; if another action's Undo
+     * replaces this snackbar, the deletion commits then instead of lingering without an Undo.
+     */
+    override fun showUndo(message: Int, durationMs: Int, onUndo: () -> Unit): () -> Unit {
+        val job = launchUndo(message, durationMs.toLong(), onUndo, onTimeout = { UndoDeletion.commitNow(this) })
+        val settle = undoSettle
+        // UndoDeletion dismisses its own snackbar when batches merge, time out or re-show; that is not
+        // a replacement by another action, so the deletion must not commit early.
+        return {
+            job.cancel()
+            if (undoSettle === settle) undoSettle = null
         }
     }
 
     /**
-     * The action is deferred until the undo Snackbar goes away, because deleting a conversation
-     * hits the telephony provider and cannot be reversed once it has run.
+     * Every undo shares one host. A new one dismisses the current one, which settles it through its
+     * timeout path. Cancelling the job hides the snackbar without running either callback.
      */
-    private fun deferSwipe(conversation: Conversation, action: SwipeAction) {
-        val pending = PendingSwipe(conversation, action)
-        pendingSwipes.add(pending)
-        binding.conversationsList.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
-        setupConversations(inboxConversations)
+    private fun launchUndo(message: Int, durationMs: Long, onUndo: () -> Unit, onTimeout: () -> Unit): Job {
+        // Settle and cancel the previous offer before showing this one. Only dismissing it let a second
+        // showSnackbar queue behind the first, so Undo "reshowed" a snackbar instead of undoing.
+        undoJob?.cancel()
+        undoSettle?.invoke()
+        undoSettle = onTimeout
+        return lifecycleScope.launch {
+            val result = withTimeoutOrNull(durationMs) {
+                snackbarHost.showSnackbar(
+                    message = getString(message),
+                    actionLabel = getString(org.fossify.commons.R.string.undo),
+                    duration = SnackbarDuration.Indefinite,
+                )
+            }
+            undoSettle = null
+            if (result == SnackbarResult.ActionPerformed) onUndo() else onTimeout()
+        }.also { undoJob = it }
+    }
 
-        val message = if (action == SwipeAction.ARCHIVE) {
-            R.string.conversation_archived
-        } else {
-            R.string.conversation_deleted
-        }
-
-        Snackbar.make(binding.mainCoordinator, message, SWIPE_UNDO_DURATION_MS)
-            .setAction(org.fossify.commons.R.string.undo) { undoSwipe(pending) }
-            .addCallback(object : Snackbar.Callback() {
-                override fun onDismissed(transientBottomBar: Snackbar?, event: Int) {
-                    if (event != DISMISS_EVENT_ACTION) {
-                        commitSwipe(pending)
-                    }
-                }
-            })
-            .show()
+    /** Honours the system "time to take action" accessibility setting on API 29+. */
+    private fun undoTimeoutMs(): Long {
+        val base = SWIPE_UNDO_DURATION_MS
+        if (!isQPlus()) return base.toLong()
+        val flags = AccessibilityManager.FLAG_CONTENT_TEXT or AccessibilityManager.FLAG_CONTENT_CONTROLS
+        return getSystemService(AccessibilityManager::class.java).getRecommendedTimeoutMillis(base, flags).toLong()
     }
 
     private fun undoSwipe(pending: PendingSwipe) {
         if (pendingSwipes.remove(pending)) {
-            setupConversations(inboxConversations)
+            publish()
         }
     }
 
@@ -482,13 +494,12 @@ class MainActivity : SimpleActivity() {
         }
 
         val threadId = pending.conversation.threadId
-        inboxConversations.removeAll { it.threadId == threadId }
+        archiving += threadId
+        publish()
         notificationManager.cancel(threadId.hashCode())
         ensureBackgroundThread {
-            when (pending.action) {
-                SwipeAction.ARCHIVE -> updateConversationArchivedStatus(threadId, true)
-                SwipeAction.DELETE -> deleteConversation(threadId)
-                else -> Unit
+            if (pending.action == SwipeAction.ARCHIVE) {
+                updateConversationArchivedStatus(threadId, true)
             }
         }
     }
@@ -496,63 +507,109 @@ class MainActivity : SimpleActivity() {
     /** Identity-based on purpose, so each swipe is committed or undone exactly once. */
     private class PendingSwipe(val conversation: Conversation, val action: SwipeAction)
 
-    private fun setupConversations(conversations: ArrayList<Conversation>) {
-        inboxDeletionVersion = UndoDeletion.version
-        inboxConversations = conversations
-        val swipedAway = pendingSwipes.map { it.conversation.threadId }.toSet()
-        val visibleConversations = conversations
-            .filter { it.threadId !in swipedAway && it.threadId !in UndoDeletion.threads && inboxFilter.matches(it) }
-            .sortedForInbox(config.pinnedConversations)
+    @VisibleForTesting
+    internal fun deleteWithUndo(conversations: List<Conversation>) {
+        // A repeated swipe or tap must not queue a second deletion of the same thread.
+        val ids = conversations.map { it.threadId }.toSet() - UndoDeletion.threads
+        if (ids.isEmpty()) return
+        UndoDeletion.threads.addAll(ids)
+        clearSelection()
+        publish()
+        refreshConversations()
+        UndoDeletion.offer(
+            this,
+            undo = {
+                UndoDeletion.threads.removeAll(ids)
+                publish()
+            },
+            commit = {
+                ids.forEach {
+                    deleteConversation(it)
+                    notificationManager.cancel(it.hashCode())
+                }
+            },
+            completed = {
+                UndoDeletion.threads.removeAll(ids)
+                refreshConversations()
+            },
+        )
+    }
 
-        if (providerReconcileActive && conversations.isEmpty()) {
-            showOrHideProgress(true)
-        } else {
-            showOrHideProgress(false)
-            showOrHidePlaceholder(visibleConversations.isEmpty())
-        }
+    private fun handleAction(action: InboxAction) {
+        val selected = inbox.selectedRows.map { it.conversation }
+        val first = selected.firstOrNull() ?: return
+        when (action) {
+            InboxAction.ARCHIVE -> confirm(R.string.archive_confirmation, selected.size) { archive(selected) }
+            InboxAction.DELETE -> confirm(org.fossify.commons.R.string.deletion_confirmation, selected.size) {
+                deleteWithUndo(selected)
+            }
 
-        try {
-            getOrCreateConversationsAdapter().apply {
-                updateConversations(visibleConversations) {
-                    showOrHidePlaceholder(currentList.isEmpty())
+            InboxAction.MARK_READ -> updateInBackground { selected.filter { !it.read }.forEach { markThreadMessagesRead(it.threadId) } }
+            InboxAction.MARK_UNREAD -> updateInBackground { selected.filter { it.read }.forEach { markThreadMessagesUnread(it.threadId) } }
+            InboxAction.MUTE, InboxAction.UNMUTE -> {
+                setMuted(selected, muted = action == InboxAction.MUTE)
+                clearSelection()
+            }
+
+            InboxAction.PIN, InboxAction.UNPIN -> {
+                if (action == InboxAction.PIN) config.addPinnedConversations(selected) else config.removePinnedConversations(selected)
+                clearSelection()
+                publish()
+            }
+
+            InboxAction.DIAL -> dialNumber(first.phoneNumber) { clearSelection() }
+            InboxAction.ADD_TO_CONTACT -> Intent().apply {
+                this.action = Intent.ACTION_INSERT_OR_EDIT
+                type = "vnd.android.cursor.item/contact"
+                putExtra(KEY_PHONE, first.phoneNumber)
+                launchActivityIntent(this)
+            }
+
+            InboxAction.COPY_NUMBER -> {
+                copyToClipboard(first.phoneNumber)
+                clearSelection()
+            }
+
+            InboxAction.RENAME -> RenameConversationDialog(this, first) { title ->
+                updateInBackground { renameConversation(first, newTitle = title) }
+            }
+
+            InboxAction.DETAILS -> launchConversationDetails(first.threadId)
+            InboxAction.BLOCK -> {
+                val numbers = TextUtils.join(", ", selected.map { it.phoneNumber }.distinct())
+                ConfirmationDialog(this, getString(org.fossify.commons.R.string.block_confirmation, numbers)) {
+                    // App-level block: new SMS from these numbers are stored and go to Spam. Existing messages stay where they are.
+                    selected.forEach { config.addSpamNumber(it.phoneNumber) }
+                    clearSelection()
                 }
             }
-        } catch (_: Exception) {
         }
     }
 
-    private fun showOrHideProgress(show: Boolean) {
-        if (show) {
-            binding.conversationsProgressBar.show()
-            binding.noConversationsPlaceholder.beVisible()
-            binding.noConversationsPlaceholder.text = getString(R.string.loading_messages)
-        } else {
-            binding.conversationsProgressBar.hide()
-            binding.noConversationsPlaceholder.beGone()
+    private fun confirm(question: Int, count: Int, onConfirm: () -> Unit) {
+        val items = resources.getQuantityString(R.plurals.delete_conversations, count, count)
+        ConfirmationDialog(this, getString(question, items)) { onConfirm() }
+    }
+
+    private fun archive(conversations: List<Conversation>) = updateInBackground {
+        conversations.forEach {
+            updateConversationArchivedStatus(it.threadId, true)
+            notificationManager.cancel(it.threadId.hashCode())
         }
     }
 
-    private fun showOrHidePlaceholder(show: Boolean) {
-        binding.conversationsFastscroller.beGoneIf(show)
-        binding.noConversationsPlaceholder.beVisibleIf(show)
-        binding.noConversationsPlaceholder.setText(
-            when (inboxFilter) {
-                InboxFilter.ALL -> R.string.no_conversations_found
-                InboxFilter.UNREAD -> R.string.no_unread_conversations
-                else -> R.string.no_filtered_conversations
+    private fun updateInBackground(work: () -> Unit) {
+        ensureBackgroundThread {
+            work()
+            runOnUiThread {
+                refreshConversations()
+                clearSelection()
             }
-        )
-        binding.noConversationsPlaceholder2.beVisibleIf(show && inboxFilter == InboxFilter.ALL)
+        }
     }
 
-    @SuppressLint("NotifyDataSetChanged")
-    private fun notifyDatasetChanged() {
-        getOrCreateConversationsAdapter().notifyDataSetChanged()
-    }
-
-    private fun handleConversationClick(any: Any) {
+    private fun openConversation(conversation: Conversation) {
         Intent(this, ThreadActivity::class.java).apply {
-            val conversation = any as Conversation
             putExtra(THREAD_ID, conversation.threadId)
             putExtra(THREAD_TITLE, conversation.title)
             startActivity(this)
@@ -604,136 +661,105 @@ class MainActivity : SimpleActivity() {
             .build()
     }
 
-    private fun searchTextChanged(text: String) {
-        lastSearchedText = text
-        val recentSearches = config.recentSearches
-        val showRecent = text.isEmpty() && recentSearches.isNotEmpty()
-        binding.recentSearchesHolder.beVisibleIf(showRecent)
-        if (showRecent) {
-            showRecentSearches(recentSearches)
-        }
+    private fun openSearch() {
+        search = SearchUiState(open = true, recent = config.recentSearches)
+        applySystemBars()
+    }
 
-        val isQuery = text.length >= 2
-        binding.searchPlaceholder2.beVisibleIf(!isQuery && !showRecent)
-        if (!isQuery) {
-            binding.searchPlaceholder.beGone()
-            binding.searchResultsList.beGone()
+    private fun closeSearch() {
+        if (!search.open) return
+        searchJob?.cancel()
+        search = SearchUiState()
+        hideKeyboard()
+        applySystemBars()
+    }
+
+    private fun setSearchFilter(filter: SearchFilter) {
+        search = search.copy(filter = filter)
+        if (search.entry) loadSearchResults()
+    }
+
+    private fun searchTextChanged(query: String) {
+        searchJob?.cancel()
+        val filter = if (query.isBlank()) SearchFilter.ALL else search.filter
+        search = search.copy(
+            query = query,
+            filter = filter,
+            matches = emptyList(),
+            failed = false,
+            loading = query.isNotBlank(),
+        )
+        loadSearchResults()
+    }
+
+    private fun loadSearchResults() {
+        searchJob?.cancel()
+        if (search.showingHistory) {
+            search = search.copy(matches = emptyList(), loading = false, failed = false)
             return
         }
-
-        ensureBackgroundThread {
-            val searchQuery = "%$text%"
-            val messages = messagesDB.getMessagesWithText(searchQuery)
-            val conversations = conversationsDB.getConversationsWithText(searchQuery)
-            if (text == lastSearchedText) {
-                showSearchResults(messages, conversations, text)
-            }
-        }
-    }
-
-    private fun showRecentSearches(recentSearches: List<String>) {
-        val textColor = getProperTextColor()
-        binding.recentSearches.removeAllViews()
-        recentSearches.forEach { query ->
-            ItemRecentSearchChipBinding.inflate(layoutInflater, binding.recentSearches, false).root.apply {
-                text = query
-                setTextColor(textColor)
-                setOnClickListener {
-                    binding.mainSearchView.setText(query)
-                    binding.mainSearchView.editText.setSelection(query.length)
-                }
-                binding.recentSearches.addView(this)
-            }
-        }
-    }
-
-    private fun showSearchResults(
-        messages: List<Message>,
-        conversations: List<Conversation>,
-        searchedText: String,
-    ) {
-        val searchResults = ArrayList<SearchResult>()
-        conversations.forEach { conversation ->
-            val date = (conversation.date * 1000L).formatDateOrTime(
-                context = this,
-                hideTimeOnOtherDays = true,
-                showCurrentYear = true
-            )
-
-            val searchResult = SearchResult(
-                messageId = -1,
-                title = conversation.title,
-                snippet = conversation.phoneNumber,
-                date = date,
-                threadId = conversation.threadId,
-                photoUri = conversation.photoUri
-            )
-            searchResults.add(searchResult)
-        }
-
-        messages.sortedByDescending { it.id }.forEach { message ->
-            searchResults.add(messageSearchResult(message))
-        }
-
-        runOnUiThread {
-            if (isDestroyed || isFinishing || searchedText != lastSearchedText || !binding.mainSearchView.isShowing) {
-                return@runOnUiThread
-            }
-
-            binding.searchResultsList.beVisibleIf(searchResults.isNotEmpty())
-            binding.searchPlaceholder.beVisibleIf(searchResults.isEmpty())
-
-            val currAdapter = binding.searchResultsList.adapter
-            if (currAdapter == null) {
-                SearchResultsAdapter(this, searchResults, binding.searchResultsList, searchedText) {
-                    openSearchResult(it as SearchResult)
-                }.apply {
-                    binding.searchResultsList.adapter = this
-                }
-            } else {
-                (currAdapter as SearchResultsAdapter).updateItems(searchResults, searchedText)
+        val query = search.query
+        val includeMessages = query.isNotBlank() || search.filter != SearchFilter.PEOPLE
+        search = search.copy(loading = true, failed = false)
+        searchJob = lifecycleScope.launch {
+            delay(SEARCH_DEBOUNCE_MS)
+            try {
+                val matches = searchRepository.search(query, includeMessageResults = includeMessages)
+                search = search.copy(matches = matches, loading = false)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                search = search.copy(loading = false, failed = true)
             }
         }
     }
 
     private fun openSearchResult(result: SearchResult) {
         // only queries that led somewhere are worth offering again
-        config.addRecentSearch(lastSearchedText)
+        if (search.query.isNotBlank()) {
+            config.addRecentSearch(search.query.trim())
+            search = search.copy(recent = config.recentSearches)
+        }
         hideKeyboard()
         Intent(this, ThreadActivity::class.java).apply {
             putExtra(THREAD_ID, result.threadId)
             putExtra(THREAD_TITLE, result.title)
             putExtra(SEARCHED_MESSAGE_ID, result.messageId)
+            putExtra(SEARCHED_MESSAGE_IS_MMS, result.isMms)
             startActivity(this)
         }
     }
 
-    private fun launchRecycleBin() {
+    private fun openLibrary(destination: LibraryDestination) {
         hideKeyboard()
-        startActivity(Intent(applicationContext, RecycleBinConversationsActivity::class.java))
+        val target = when (destination) {
+            LibraryDestination.STARRED -> StarredMessagesActivity::class.java
+            LibraryDestination.ARCHIVE -> ArchivedConversationsActivity::class.java
+            LibraryDestination.SPAM -> BlockedMessagesActivity::class.java
+            LibraryDestination.RECYCLE_BIN -> RecycleBinConversationsActivity::class.java
+        }
+        startActivity(Intent(applicationContext, target))
     }
 
-    private fun launchArchivedConversations() {
-        hideKeyboard()
-        startActivity(Intent(applicationContext, ArchivedConversationsActivity::class.java))
-    }
-
-    private fun launchStarredMessages() {
-        hideKeyboard()
-        startActivity(Intent(applicationContext, StarredMessagesActivity::class.java))
-    }
-
-    private fun launchSpamFolder() {
-        hideKeyboard()
-        startActivity(Intent(applicationContext, BlockedMessagesActivity::class.java))
+    private fun refreshSpamBadge() {
+        ensureBackgroundThread {
+            val unread = getUnreadSpamCounts().values.sum()
+            runOnUiThread {
+                inbox = inbox.copy(unreadSpam = unread)
+            }
+        }
     }
 
     private fun launchSettings() {
+        closeSearch()
         hideKeyboard()
         startActivity(Intent(applicationContext, SettingsActivity::class.java))
     }
 
     companion object {
-        private const val SEARCH_DEBOUNCE_MS = 200L
+        private const val SEARCH_OPEN = "search_open"
+        private const val SEARCH_QUERY = "search_query"
+        private const val SEARCH_FILTER = "search_filter"
+        private const val INBOX_SELECTION = "inbox_selection"
     }
 }
