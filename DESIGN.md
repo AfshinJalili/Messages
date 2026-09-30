@@ -1,5 +1,7 @@
 # Open Line design system
 
+The final v2 implementation reference is [Open Line Design System v2](design/reference/Open%20Line%20Design%20System%20v2.dc.html), supplied by the owner on 2026-09-30. Its token, component, screen, dark/RTL and accessibility sections define the implementation target. The already shipped 4a Corner · Pine logo stays in place.
+
 Personal messaging as a clear, living line between people. The inbox favors sender, latest meaning, and urgency over decorative conversation cards. Cool mineral paper, deep pine ink, sharp lime for new activity, lilac for media, coral for attention. A fine route line, round contact markers, flat slabs, and strong typography replace the current cobalt styling. No literal vintage hardware.
 
 The design source is `design/open-line.pen` (encrypted; edit only through the pen CLI or pencil MCP). PNG exports in `design/exports/` are previews only; the canvas is the truth. Screens are fixed 390 × 844 frames and the design decides open questions through issues labeled `design-gap`.
