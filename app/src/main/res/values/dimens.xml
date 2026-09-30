@@ -13,10 +13,10 @@
     <dimen name="conversation_row_vertical_padding">12dp</dimen>
     <dimen name="inbox_fab_clearance">108dp</dimen>
     <!-- Shared component geometry. -->
-    <dimen name="message_bubble_radius">20dp</dimen>
+    <dimen name="message_bubble_radius">16dp</dimen>
     <dimen name="message_bubble_tail_radius">4dp</dimen>
     <dimen name="touch_target_size">48dp</dimen>
-    <dimen name="conversation_avatar_size">40dp</dimen>
+    <dimen name="conversation_avatar_size">50dp</dimen>
     <dimen name="conversation_row_min_height">88dp</dimen>
     <dimen name="unread_badge_size">22dp</dimen>
     <dimen name="conversation_action_min_height">72dp</dimen>

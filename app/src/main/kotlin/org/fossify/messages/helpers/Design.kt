@@ -17,9 +17,9 @@ import org.fossify.messages.R
 fun Resources.designFloat(@DimenRes token: Int): Float =
     TypedValue().also { getValue(token, it, true) }.float
 
-fun Context.cobaltColorFor(background: Int): Int = ContextCompat.getColor(
+fun Context.openLineColorFor(background: Int): Int = ContextCompat.getColor(
     this,
-    if (ColorUtils.calculateLuminance(background) > 0.5) R.color.brand_cobalt else R.color.brand_cobalt_dark
+    if (ColorUtils.calculateLuminance(background) > 0.5) R.color.open_line_pine else R.color.open_line_primary_dark
 )
 
 fun Context.tonalSurfaceColor(): Int = ColorUtils.compositeColors(
@@ -28,15 +28,15 @@ fun Context.tonalSurfaceColor(): Int = ColorUtils.compositeColors(
 )
 
 /** Commons' fixed palette falls back to green for custom colors. */
-fun Context.cobaltTheme(): Int? {
+fun Context.openLineTheme(): Int? {
     if (isDynamicTheme()) return null
     val primary = getProperPrimaryColor()
-    if (primary != ContextCompat.getColor(this, R.color.brand_cobalt) &&
-        primary != ContextCompat.getColor(this, R.color.brand_cobalt_dark)
+    if (primary != ContextCompat.getColor(this, R.color.open_line_pine) &&
+        primary != ContextCompat.getColor(this, R.color.open_line_primary_dark)
     ) return null
     return if (ColorUtils.calculateLuminance(getProperBackgroundColor()) > 0.5) {
-        R.style.AppTheme_Cobalt_Light
+        R.style.AppTheme_OpenLine_Light
     } else {
-        R.style.AppTheme_Cobalt_Dark
+        R.style.AppTheme_OpenLine_Dark
     }
 }

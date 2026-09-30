@@ -1,4 +1,4 @@
-package org.fossify.messages.ui.thread
+package org.fossify.messages.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
@@ -7,8 +7,8 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.border
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -55,6 +55,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
@@ -100,8 +101,8 @@ import org.fossify.messages.models.AttachmentSelection
 import org.fossify.messages.ui.OpenLine
 import org.fossify.messages.ui.forContent
 import org.fossify.messages.ui.rememberBitmap
+import org.fossify.messages.ui.thread.*
 import org.fossify.messages.ui.withContentFonts
-import java.util.Locale
 
 private val TargetSize = 48.dp
 // R6-41: every control in the composer row.
@@ -168,7 +169,7 @@ fun ThreadComposer(
                         .size(TargetSize, RowHeight)
                         .semantics { contentDescription = attachLabel },
                 ) {
-                    Icon(painterResource(org.fossify.commons.R.drawable.ic_plus_vector), contentDescription = null, tint = colors.primary)
+                    Icon(painterResource(R.drawable.ic_ol_plus), contentDescription = null, tint = colors.primary)
                 }
                 Spacer(Modifier.width(8.dp))
                 // R6-42: collapses on the first character and the field grows into its place.
@@ -227,6 +228,7 @@ private fun EntryField(
             .heightIn(min = RowHeight)
             .clip(MaterialTheme.shapes.medium)
             .background(colors.surface)
+            .openLineFocus(MaterialTheme.shapes.medium)
             .padding(horizontal = 16.dp, vertical = vertical),
         contentAlignment = Alignment.CenterStart,
     ) {
@@ -293,6 +295,7 @@ private fun ReplyDisabledField(onEvent: (ComposerEvent) -> Unit, modifier: Modif
 @Composable
 private fun SendButton(composer: ComposerState, text: String, onEvent: (ComposerEvent) -> Unit) {
     val colors = MaterialTheme.colorScheme
+    val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     val canSend = composer.hasContent(text)
     // Mic while the field is empty and nothing is ready to send; dictation inserts, it never sends. A picked send time keeps
     // the schedule-send icon, disabled until there is content.
@@ -305,15 +308,16 @@ private fun SendButton(composer: ComposerState, text: String, onEvent: (Composer
         else -> stringResource(R.string.send_message)
     }
     val icon = when {
-        dictate -> org.fossify.commons.R.drawable.ic_microphone_vector
+        dictate -> R.drawable.ic_ol_mic
         composer.scheduledAt != null -> R.drawable.ic_schedule_send_vector
-        else -> R.drawable.ic_arrow_up_right_vector
+        else -> R.drawable.ic_ol_arrow_up_right
     }
     Box(
         Modifier
             .size(64.dp, RowHeight)
             .clip(MaterialTheme.shapes.medium)
             .background(if (enabled) OpenLine.colors.accent else colors.surfaceContainerHigh)
+            .openLineFocus(MaterialTheme.shapes.medium)
             .clickable(enabled = enabled) { onEvent(if (dictate) ComposerEvent.Dictate else ComposerEvent.Send) }
             .semantics {
                 contentDescription = label
@@ -322,16 +326,16 @@ private fun SendButton(composer: ComposerState, text: String, onEvent: (Composer
             .testTag(COMPOSER_SEND_TAG),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(painterResource(icon), contentDescription = null, tint = if (enabled) OpenLine.colors.onAccent else colors.onSurfaceVariant, modifier = Modifier.size(24.dp))
+        Icon(painterResource(icon), contentDescription = null, tint = if (enabled) OpenLine.colors.onAccent else colors.onSurfaceVariant, modifier = Modifier.size(24.dp).scale(scaleX = if (rtl && !dictate) -1f else 1f, scaleY = 1f))
     }
 }
 
-/** R6-45: "2 · 18" (SMS parts · characters left) near the limit, or "MMS". Always Latin digits, never wider than send. */
+/** R6-45: "2 · 18" (SMS parts · characters left) near the limit, or "MMS". Localized digits in LTR order, never wider than send. */
 @Composable
 private fun LengthPill(composer: ComposerState) {
     val text = when {
         composer.isMms -> stringResource(R.string.mms)
-        composer.smsParts > 0 -> String.format(Locale.US, "%d · %d", composer.smsParts, composer.smsLeft)
+        composer.smsParts > 0 -> String.format(LocalConfiguration.current.locales[0], "%d · %d", composer.smsParts, composer.smsLeft)
         else -> return
     }
     val description = if (composer.isMms) text else stringResource(R.string.composer_sms_counter, composer.smsLeft, composer.smsParts)
@@ -345,7 +349,7 @@ private fun LengthPill(composer: ComposerState) {
             .padding(horizontal = 4.dp),
         contentAlignment = Alignment.Center,
     ) {
-        // Latin digits keep Latin order: RTL would turn "1 · 150" into "150 · 1".
+        // Keep the count order: RTL would turn "1 · 150" into "150 · 1".
         Text(text, style = MaterialTheme.typography.bodySmall.copy(textDirection = TextDirection.Ltr), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, maxLines = 1)
     }
 }
@@ -428,11 +432,11 @@ private fun ScheduledChip(scheduledAt: String, onEvent: (ComposerEvent) -> Unit,
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            Icon(painterResource(org.fossify.commons.R.drawable.ic_clock_vector), contentDescription = null, tint = colors.primary, modifier = Modifier.size(16.dp))
+            Icon(painterResource(R.drawable.ic_ol_clock), contentDescription = null, tint = colors.primary, modifier = Modifier.size(16.dp))
             Text(scheduledAt, style = MaterialTheme.typography.labelMedium, color = colors.primary, maxLines = 1)
         }
         IconButton(onClick = { onEvent(ComposerEvent.CancelSchedule) }, modifier = Modifier.semantics { contentDescription = cancel }) {
-            Icon(painterResource(org.fossify.commons.R.drawable.ic_cross_vector), contentDescription = null, tint = colors.primary, modifier = Modifier.size(18.dp))
+            Icon(painterResource(R.drawable.ic_ol_x), contentDescription = null, tint = colors.primary, modifier = Modifier.size(18.dp))
         }
     }
 }
@@ -452,7 +456,7 @@ private fun AttachmentTray(attachments: List<AttachmentSelection>, onEvent: (Com
                     attachment.mimetype.isImageMimeType() || attachment.mimetype.isVideoMimeType() -> MediaTile(attachment, open)
                     attachment.mimetype.isVCardMimeType() -> {
                         val (name, subtitle) = rememberVCardSummary(attachment.uri)
-                        FileTile(org.fossify.commons.R.drawable.ic_person_vector, name, subtitle, open)
+                        FileTile(R.drawable.ic_ol_user, name, subtitle, open)
                     }
 
                     else -> FileTile(
@@ -538,7 +542,7 @@ private fun RemoveBadge(modifier: Modifier, onClick: () -> Unit) {
                 .background(colors.inverseSurface),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(painterResource(org.fossify.commons.R.drawable.ic_cross_vector), contentDescription = null, tint = colors.inverseOnSurface, modifier = Modifier.size(14.dp))
+            Icon(painterResource(R.drawable.ic_ol_x), contentDescription = null, tint = colors.inverseOnSurface, modifier = Modifier.size(14.dp))
         }
     }
 }
@@ -548,7 +552,8 @@ private fun RemoveBadge(modifier: Modifier, onClick: () -> Unit) {
 @Composable
 private fun AttachSheet(onDismiss: () -> Unit, onPick: (AttachOption) -> Unit) {
     val colors = MaterialTheme.colorScheme
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = colors.surface) {
+    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = colors.surfaceContainer, scrimColor = colors.scrim,
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)) {
         Column(
             Modifier
                 .verticalScroll(rememberScrollState())
@@ -556,7 +561,7 @@ private fun AttachSheet(onDismiss: () -> Unit, onPick: (AttachOption) -> Unit) {
         ) {
             Text(
                 stringResource(R.string.attach_title),
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.headlineSmall,
                 color = colors.onSurface,
                 modifier = Modifier
                     .padding(horizontal = 24.dp, vertical = 8.dp)
@@ -586,6 +591,22 @@ private fun AttachSheet(onDismiss: () -> Unit, onPick: (AttachOption) -> Unit) {
                     }
                 }
             }
+        }
+    }
+}
+
+@androidx.compose.ui.tooling.preview.Preview(widthDp = 390, showBackground = true)
+@androidx.compose.ui.tooling.preview.Preview(widthDp = 390, showBackground = true, locale = "fa")
+@androidx.compose.ui.tooling.preview.Preview(widthDp = 390, showBackground = true, uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)
+@androidx.compose.ui.tooling.preview.Preview(widthDp = 390, showBackground = true, uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES, locale = "fa")
+@Composable
+private fun ComposerPreview() {
+    org.fossify.messages.ui.OpenLineTheme(dark = androidx.compose.foundation.isSystemInDarkTheme()) {
+        Column {
+            val state = ComposerState(sims = listOf(SimOption(1, "SIM 1"), SimOption(2, "SIM 2")))
+            ThreadComposer(state, "Mina", TextFieldValue(), false, {}, {})
+            ThreadComposer(state, "Mina", TextFieldValue("See you soon"), false, {}, {})
+            ThreadComposer(state.copy(canReply = false), "", TextFieldValue(), false, {}, {})
         }
     }
 }

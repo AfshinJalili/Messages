@@ -64,7 +64,7 @@ interface ConversationsDao {
 
     @Query(
         """SELECT * FROM conversations WHERE $NOT_ALL_SPAM
-        AND (title LIKE :pattern ESCAPE '\' OR phone_number LIKE :pattern ESCAPE '\')
+        AND (REPLACE(REPLACE(title, 'ي', 'ی'), 'ك', 'ک') LIKE :pattern ESCAPE '\' OR phone_number LIKE :pattern ESCAPE '\')
         AND EXISTS (SELECT 1 $LATEST_VISIBLE_MESSAGE)
         ORDER BY date DESC"""
     )
