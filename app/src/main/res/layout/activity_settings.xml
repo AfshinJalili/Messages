@@ -49,7 +49,9 @@
 
                 <org.fossify.commons.views.MyTextView
                     android:id="@+id/settings_color_customization_label"
-                    style="@style/SettingsTextLabelStyle"
+                    android:drawableStart="@drawable/ic_ol_pencil"
+                    android:drawableTint="?attr/colorPrimary"
+                    style="@style/OpenLine.SettingsLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/customize_colors"
@@ -77,7 +79,7 @@
 
                 <org.fossify.commons.views.MyMaterialSwitch
                     android:id="@+id/settings_use_english"
-                    style="@style/SettingsSwitchStyle"
+                    style="@style/OpenLine.SettingsSwitch"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="@string/use_english_language" />
@@ -92,14 +94,16 @@
 
                 <org.fossify.commons.views.MyTextView
                     android:id="@+id/settings_language_label"
-                    style="@style/SettingsTextLabelStyle"
+                    android:drawableStart="@drawable/ic_ol_text_cursor_input"
+                    android:drawableTint="?attr/colorPrimary"
+                    style="@style/OpenLine.SettingsLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/language" />
 
                 <org.fossify.commons.views.MyTextView
                     android:id="@+id/settings_language"
-                    style="@style/SettingsTextValueStyle"
+                    style="@style/OpenLine.SettingsValue"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_below="@+id/settings_language_label"
@@ -115,7 +119,9 @@
 
                 <org.fossify.commons.views.MyTextView
                     android:id="@+id/settings_change_date_time_format"
-                    style="@style/SettingsTextLabelStyle"
+                    android:drawableStart="@drawable/ic_ol_calendar"
+                    android:drawableTint="?attr/colorPrimary"
+                    style="@style/OpenLine.SettingsLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/change_date_and_time_format" />
@@ -130,7 +136,9 @@
 
                 <org.fossify.commons.views.MyTextView
                     android:id="@+id/settings_manage_blocked_numbers"
-                    style="@style/SettingsTextLabelStyle"
+                    android:drawableStart="@drawable/ic_ol_ban"
+                    android:drawableTint="?attr/colorPrimary"
+                    style="@style/OpenLine.SettingsLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/manage_blocked_numbers" />
@@ -145,7 +153,9 @@
 
                 <org.fossify.commons.views.MyTextView
                     android:id="@+id/settings_manage_blocked_keywords"
-                    style="@style/SettingsTextLabelStyle"
+                    android:drawableStart="@drawable/ic_ol_shield_alert"
+                    android:drawableTint="?attr/colorPrimary"
+                    style="@style/OpenLine.SettingsLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/manage_blocked_keywords" />
@@ -160,14 +170,16 @@
 
                 <org.fossify.commons.views.MyTextView
                     android:id="@+id/settings_font_size_label"
-                    style="@style/SettingsTextLabelStyle"
+                    android:drawableStart="@drawable/ic_ol_text_cursor_input"
+                    android:drawableTint="?attr/colorPrimary"
+                    style="@style/OpenLine.SettingsLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/font_size" />
 
                 <org.fossify.commons.views.MyTextView
                     android:id="@+id/settings_font_size"
-                    style="@style/SettingsTextValueStyle"
+                    style="@style/OpenLine.SettingsValue"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_below="@+id/settings_font_size_label"
@@ -183,14 +195,16 @@
 
                 <org.fossify.commons.views.MyTextView
                     android:id="@+id/settings_swipe_left_action_label"
-                    style="@style/SettingsTextLabelStyle"
+                    android:drawableStart="@drawable/ic_ol_arrow_left"
+                    android:drawableTint="?attr/colorPrimary"
+                    style="@style/OpenLine.SettingsLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/swipe_left_action" />
 
                 <org.fossify.commons.views.MyTextView
                     android:id="@+id/settings_swipe_left_action"
-                    style="@style/SettingsTextValueStyle"
+                    style="@style/OpenLine.SettingsValue"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_below="@+id/settings_swipe_left_action_label"
@@ -206,14 +220,16 @@
 
                 <org.fossify.commons.views.MyTextView
                     android:id="@+id/settings_swipe_right_action_label"
-                    style="@style/SettingsTextLabelStyle"
+                    android:drawableStart="@drawable/ic_ol_arrow_right"
+                    android:drawableTint="?attr/colorPrimary"
+                    style="@style/OpenLine.SettingsLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/swipe_right_action" />
 
                 <org.fossify.commons.views.MyTextView
                     android:id="@+id/settings_swipe_right_action"
-                    style="@style/SettingsTextValueStyle"
+                    style="@style/OpenLine.SettingsValue"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_below="@+id/settings_swipe_right_action_label"
@@ -240,7 +256,9 @@
 
                 <org.fossify.commons.views.MyTextView
                     android:id="@+id/settings_customize_notifications_label"
-                    style="@style/SettingsTextLabelStyle"
+                    android:drawableStart="@drawable/ic_ol_bell"
+                    android:drawableTint="?attr/colorPrimary"
+                    style="@style/OpenLine.SettingsLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/customize_notifications" />
@@ -255,14 +273,16 @@
 
                 <org.fossify.commons.views.MyTextView
                     android:id="@+id/settings_lock_screen_visibility_label"
-                    style="@style/SettingsTextLabelStyle"
+                    android:drawableStart="@drawable/ic_ol_lock_keyhole"
+                    android:drawableTint="?attr/colorPrimary"
+                    style="@style/OpenLine.SettingsLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/lock_screen_visibility" />
 
                 <org.fossify.commons.views.MyTextView
                     android:id="@+id/settings_lock_screen_visibility"
-                    style="@style/SettingsTextValueStyle"
+                    style="@style/OpenLine.SettingsValue"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_below="@+id/settings_lock_screen_visibility_label"
@@ -289,7 +309,7 @@
 
                 <org.fossify.commons.views.MyMaterialSwitch
                     android:id="@+id/settings_rule_filter_enabled"
-                    style="@style/SettingsSwitchStyle"
+                    style="@style/OpenLine.SettingsSwitch"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="@string/rule_filter_enable" />
@@ -315,7 +335,7 @@
 
                 <org.fossify.commons.views.MyMaterialSwitch
                     android:id="@+id/settings_show_character_counter"
-                    style="@style/SettingsSwitchStyle"
+                    style="@style/OpenLine.SettingsSwitch"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="@string/show_character_counter" />
@@ -330,7 +350,7 @@
 
                 <org.fossify.commons.views.MyMaterialSwitch
                     android:id="@+id/settings_use_simple_characters"
-                    style="@style/SettingsSwitchStyle"
+                    style="@style/OpenLine.SettingsSwitch"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="@string/use_simple_characters" />
@@ -345,7 +365,7 @@
 
                 <org.fossify.commons.views.MyMaterialSwitch
                     android:id="@+id/settings_send_on_enter"
-                    style="@style/SettingsSwitchStyle"
+                    style="@style/OpenLine.SettingsSwitch"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="@string/send_on_enter" />
@@ -360,7 +380,7 @@
 
                 <org.fossify.commons.views.MyMaterialSwitch
                     android:id="@+id/settings_enable_delivery_reports"
-                    style="@style/SettingsSwitchStyle"
+                    style="@style/OpenLine.SettingsSwitch"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="@string/enable_delivery_reports" />
@@ -375,7 +395,7 @@
 
                 <org.fossify.commons.views.MyMaterialSwitch
                     android:id="@+id/settings_send_long_message_mms"
-                    style="@style/SettingsSwitchStyle"
+                    style="@style/OpenLine.SettingsSwitch"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="@string/send_long_message_mms" />
@@ -390,7 +410,7 @@
 
                 <org.fossify.commons.views.MyMaterialSwitch
                     android:id="@+id/settings_send_group_message_mms"
-                    style="@style/SettingsSwitchStyle"
+                    style="@style/OpenLine.SettingsSwitch"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="@string/group_message_mms" />
@@ -405,14 +425,16 @@
 
                 <org.fossify.commons.views.MyTextView
                     android:id="@+id/settings_mms_file_size_limit_label"
-                    style="@style/SettingsTextLabelStyle"
+                    android:drawableStart="@drawable/ic_ol_file"
+                    android:drawableTint="?attr/colorPrimary"
+                    style="@style/OpenLine.SettingsLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/mms_file_size_limit" />
 
                 <org.fossify.commons.views.MyTextView
                     android:id="@+id/settings_mms_file_size_limit"
-                    style="@style/SettingsTextValueStyle"
+                    style="@style/OpenLine.SettingsValue"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_below="@+id/settings_mms_file_size_limit_label"
@@ -439,7 +461,7 @@
 
                 <org.fossify.commons.views.MyMaterialSwitch
                     android:id="@+id/settings_keep_conversations_archived"
-                    style="@style/SettingsSwitchStyle"
+                    style="@style/OpenLine.SettingsSwitch"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="@string/keep_conversations_archived" />
@@ -465,7 +487,7 @@
 
                 <org.fossify.commons.views.MyMaterialSwitch
                     android:id="@+id/settings_use_recycle_bin"
-                    style="@style/SettingsSwitchStyle"
+                    style="@style/OpenLine.SettingsSwitch"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="@string/move_items_into_recycle_bin" />
@@ -480,14 +502,16 @@
 
                 <org.fossify.commons.views.MyTextView
                     android:id="@+id/settings_empty_recycle_bin_label"
-                    style="@style/SettingsTextLabelStyle"
+                    android:drawableStart="@drawable/ic_lucide_trash"
+                    android:drawableTint="?attr/colorPrimary"
+                    style="@style/OpenLine.SettingsLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/empty_recycle_bin" />
 
                 <org.fossify.commons.views.MyTextView
                     android:id="@+id/settings_empty_recycle_bin_size"
-                    style="@style/SettingsTextValueStyle"
+                    style="@style/OpenLine.SettingsValue"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_below="@+id/settings_empty_recycle_bin_label"
@@ -514,7 +538,7 @@
 
                 <org.fossify.commons.views.MyMaterialSwitch
                     android:id="@+id/settings_app_password_protection"
-                    style="@style/SettingsSwitchStyle"
+                    style="@style/OpenLine.SettingsSwitch"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="@string/password_protect_whole_app" />
@@ -540,7 +564,9 @@
 
                 <org.fossify.commons.views.MyTextView
                     android:id="@+id/settings_export_messages"
-                    style="@style/SettingsTextLabelStyle"
+                    android:drawableStart="@drawable/ic_ol_upload"
+                    android:drawableTint="?attr/colorPrimary"
+                    style="@style/OpenLine.SettingsLabel"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="@string/export_messages" />
@@ -555,7 +581,9 @@
 
                 <org.fossify.commons.views.MyTextView
                     android:id="@+id/settings_import_messages"
-                    style="@style/SettingsTextLabelStyle"
+                    android:drawableStart="@drawable/ic_ol_download"
+                    android:drawableTint="?attr/colorPrimary"
+                    style="@style/OpenLine.SettingsLabel"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="@string/import_messages" />

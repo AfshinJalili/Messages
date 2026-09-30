@@ -31,7 +31,7 @@ class SearchRepository(
         includeMessageResults: Boolean = true,
     ): List<SearchMatch> = withContext(Dispatchers.IO) {
         val text = query.trim()
-        val pattern = literalPattern(text)
+        val pattern = literalSearchPattern(text)
         val browsePhotos = text.isEmpty() && includeMessageResults
         val people = if (browsePhotos) {
             emptyList()
@@ -70,8 +70,8 @@ class SearchRepository(
 
     private fun messageMatch(message: Message, text: String): SearchMatch? {
         val attachments = message.attachment?.attachments.orEmpty()
-        val filename = attachments.firstOrNull { it.filename.contains(text, ignoreCase = true) }?.filename
-        val bodyMatches = message.body.contains(text, ignoreCase = true)
+        val filename = attachments.firstOrNull { it.filename.normalizeSearchText().contains(text.normalizeSearchText(), ignoreCase = true) }?.filename
+        val bodyMatches = message.body.normalizeSearchText().contains(text.normalizeSearchText(), ignoreCase = true)
         if (!bodyMatches && filename == null) return null
 
         val snippet = if (bodyMatches && message.body.isNotBlank()) message.body else filename.orEmpty()
@@ -85,11 +85,7 @@ class SearchRepository(
     private fun filenamePattern(text: String): String {
         val encoded = gson.toJson(text).removeSurrounding("\"")
         // Anchor the candidate to filename values so common letters do not match every JSON key.
-        return "%\"filename\":\"${literalPattern(encoded)}\"%"
+        return "%\"filename\":\"${literalSearchPattern(encoded)}\"%"
     }
 
-    private fun literalPattern(text: String): String {
-        val escaped = text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
-        return "%$escaped%"
-    }
 }

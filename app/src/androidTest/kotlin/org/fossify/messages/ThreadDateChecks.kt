@@ -32,9 +32,9 @@ import org.fossify.messages.models.MessageAttachment
 import org.fossify.messages.models.ThreadItem.ThreadDateTime
 import org.fossify.messages.models.buildThreadItems
 import org.fossify.messages.ui.OpenLineTheme
-import org.fossify.messages.ui.thread.THREAD_LIST_TAG
-import org.fossify.messages.ui.thread.THREAD_STICKY_DATE_TAG
-import org.fossify.messages.ui.thread.ThreadTimeline
+import org.fossify.messages.ui.components.THREAD_LIST_TAG
+import org.fossify.messages.ui.components.THREAD_STICKY_DATE_TAG
+import org.fossify.messages.ui.components.ThreadTimeline
 import org.fossify.messages.ui.thread.ThreadUiState
 import org.joda.time.DateTime
 import org.junit.Assert.assertEquals

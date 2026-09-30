@@ -33,6 +33,8 @@ import android.widget.LinearLayout
 import android.widget.LinearLayout.LayoutParams
 import android.widget.RelativeLayout
 import android.widget.Toast
+import org.fossify.messages.helpers.normalizeSearchText
+import org.fossify.messages.helpers.literalSearchPattern
 import android.speech.RecognizerIntent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
@@ -205,16 +207,16 @@ import org.fossify.messages.ui.thread.ComposerEvent
 import org.fossify.messages.ui.thread.ComposerState
 import org.fossify.messages.ui.thread.InitialScroll
 import org.fossify.messages.ui.thread.SimOption
-import org.fossify.messages.ui.thread.ThreadComposer
+import org.fossify.messages.ui.components.ThreadComposer
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import org.fossify.messages.ui.thread.MessageAction
 import org.fossify.messages.ui.thread.ScrollRequest
 import org.fossify.messages.ui.thread.ThreadEvent
-import org.fossify.messages.ui.thread.ThreadHeader
+import org.fossify.messages.ui.components.ThreadHeader
 import org.fossify.messages.ui.thread.ThreadHeaderState
 import org.fossify.messages.ui.thread.ThreadMenuAction
-import org.fossify.messages.ui.thread.ThreadTimeline
+import org.fossify.messages.ui.components.ThreadTimeline
 import org.fossify.messages.ui.thread.ThreadUiState
 import org.fossify.messages.ui.thread.starKey
 import org.greenrobot.eventbus.EventBus
@@ -223,8 +225,6 @@ import org.greenrobot.eventbus.ThreadMode
 import org.joda.time.DateTime
 import java.io.File
 import android.graphics.drawable.ColorDrawable
-import androidx.compose.ui.graphics.toArgb
-import org.fossify.messages.ui.thread.LiftScrim
 import kotlin.math.roundToInt
 
 class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
@@ -512,11 +512,13 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
     }
 
     // The header is its own ComposeView, outside the timeline's lift scrim.
-    // setAlpha replaces the colour's own alpha, so the drawable is opaque and the scrim's 40% is applied here.
-    private val headerScrim by lazy { ColorDrawable(LiftScrim.copy(alpha = 1f).toArgb()).also { binding.threadHeader.foreground = it } }
+    // Drawable alpha replaces color alpha, so apply the theme's scrim opacity once.
+    private val headerScrim by lazy { ColorDrawable().also { binding.threadHeader.foreground = it } }
 
     private fun dimHeader(progress: Float) {
-        headerScrim.alpha = (progress * LiftScrim.alpha * 255).roundToInt()
+        val color = getColor(if (darkTheme) R.color.open_line_scrim_dark else R.color.open_line_scrim)
+        headerScrim.color = androidx.core.graphics.ColorUtils.setAlphaComponent(color, 255)
+        headerScrim.alpha = (progress * android.graphics.Color.alpha(color)).roundToInt()
     }
 
     private fun refreshOpenLineTheme() {
@@ -541,8 +543,11 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
             ThreadEvent.OpenDetails -> if (conversation != null && !isRecycleBin) launchConversationDetails(threadId)
             ThreadEvent.Dial -> if (participants.isNotEmpty()) dialNumber()
             is ThreadEvent.Menu -> if (participants.isNotEmpty()) handleMenuItemAction(event.action)
-            is ThreadEvent.SearchSubmit -> jumpToNextMatch(event.query)
-            ThreadEvent.SearchChanged -> lastSearchMatchKey = null
+            is ThreadEvent.SearchSubmit -> jumpToNextMatch(event.query, event.backwards)
+            is ThreadEvent.SearchChanged -> {
+                lastSearchMatchKey = null
+                ui = ui.copy(searchQuery = event.query, searchMatchCount = 0, searchMatchPosition = 0)
+            }
             ThreadEvent.SearchClose -> closeSearch()
             is ThreadEvent.ToggleSelection -> toggleSelection(event.message)
             is ThreadEvent.Act -> onMessageAction(event.action, event.messages)
@@ -608,7 +613,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
     private fun closeSearch() {
         hideKeyboard()
         lastSearchMatchKey = null
-        ui = ui.copy(searching = false)
+        ui = ui.copy(searching = false, searchQuery = "", searchMatchCount = 0, searchMatchPosition = 0)
     }
 
     private fun onMessageAction(action: MessageAction, selected: List<Message>) {
@@ -626,6 +631,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
                 deleteMessages(toDelete, toRecycleBin, false)
             }
             MessageAction.SHARE -> shareTextIntent(first.body)
+            MessageAction.SELECT -> toggleSelection(first)
             MessageAction.SELECT_TEXT -> if (first.body.isNotBlank()) SelectTextDialog(this, first.body)
             MessageAction.DETAILS -> if (first.isScheduled) showScheduledMessageInfo(first) else MessageDetailsDialog(this, first)
             MessageAction.SAVE_AS -> selected.flatMap { it.attachment?.attachments.orEmpty() }.takeIf { it.isNotEmpty() }?.let { saveMMS(it) }
@@ -633,6 +639,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
                 clearSelection()
                 unmarkSpam(selected)
             }
+            MessageAction.BLOCK_SENDER -> blockNumber(listOf(first.senderPhoneNumber))
             MessageAction.RESTORE -> confirmRestoreMessages(selected) { deleteMessages(it, false, true) }
             MessageAction.SELECT_ALL -> ui = ui.copy(selected = ui.items.filterIsInstance<Message>().map { it.getStableId() }.toSet())
         }
@@ -675,20 +682,24 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
     }
 
     /** Each submit steps to the next older match and wraps around. */
-    private fun jumpToNextMatch(query: String) {
-        val loaded = messages.filter { it.body.contains(query, ignoreCase = true) }
+    private fun jumpToNextMatch(query: String, backwards: Boolean = false) {
+        val loaded = messages.filter { it.body.normalizeSearchText().contains(query.normalizeSearchText(), ignoreCase = true) }
         ensureBackgroundThread {
             // the Room cache also holds messages older than the loaded page
-            val cached = messagesDB.getMessagesWithText("%$query%").filter { it.threadId == threadId }
+            val cached = messagesDB.searchThreadMessages(threadId, literalSearchPattern(query))
             val matches = (loaded + cached).distinctBy { it.getStableId() }.sortedByDescending { it.date }
             runOnUiThread {
+                if (!ui.searching || query != ui.searchQuery) return@runOnUiThread
+                ui = ui.copy(searchMatchCount = matches.size)
                 if (matches.isEmpty()) {
                     toast(R.string.no_matching_messages)
                     return@runOnUiThread
                 }
 
                 val current = matches.indexOfFirst { it.getStableId() == lastSearchMatchKey }
-                val next = matches[(current + 1) % matches.size]
+                val position = if (current < 0) 0 else Math.floorMod(current + if (backwards) -1 else 1, matches.size)
+                val next = matches[position]
+                ui = ui.copy(searchMatchPosition = position + 1)
                 lastSearchMatchKey = next.getStableId()
                 jumpToMessage(next.id, next.isMMS)
             }
@@ -1460,8 +1471,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         blockNumber()
     }
 
-    private fun blockNumber() {
-        val numbers = participants.getAddresses()
+    private fun blockNumber(numbers: List<String> = participants.getAddresses()) {
         val numbersString = TextUtils.join(", ", numbers)
         val question = String.format(
             resources.getString(org.fossify.commons.R.string.block_confirmation),

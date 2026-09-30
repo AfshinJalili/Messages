@@ -1,13 +1,13 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
 
-    <style name="AppTheme" parent="AppTheme.Cobalt.Dark" />
+    <style name="AppTheme" parent="AppTheme.OpenLine.Dark" />
 
-    <style name="AppTheme.Cobalt.Dark" parent="AppTheme.Base">
-        <item name="colorPrimary">@color/brand_cobalt_dark</item>
+    <style name="AppTheme.OpenLine.Dark" parent="AppTheme.Base">
+        <item name="colorPrimary">@color/open_line_primary_dark</item>
         <item name="colorOnPrimary">@color/design_ink</item>
-        <item name="colorPrimaryDark">@color/brand_cobalt_dark</item>
-        <item name="colorAccent">@color/brand_cobalt_dark</item>
-        <item name="colorSecondary">@color/brand_cobalt_dark</item>
+        <item name="colorPrimaryDark">@color/open_line_primary_dark</item>
+        <item name="colorAccent">@color/open_line_primary_dark</item>
+        <item name="colorSecondary">@color/open_line_primary_dark</item>
         <item name="colorOnSecondary">@color/design_ink</item>
         <item name="colorPrimaryContainer">@color/brand_container_dark</item>
         <item name="colorOnPrimaryContainer">@color/brand_on_container_dark</item>
@@ -16,16 +16,17 @@
         <item name="colorSurface">@color/surface_dark</item>
         <item name="colorOnSurface">@color/on_surface_dark</item>
         <item name="android:colorBackground">@color/surface_dark</item>
-        <item name="android:colorControlActivated">@color/brand_cobalt_dark</item>
-        <item name="colorControlActivated">@color/brand_cobalt_dark</item>
+        <item name="android:colorControlActivated">@color/open_line_primary_dark</item>
+        <item name="colorControlActivated">@color/open_line_primary_dark</item>
+        <item name="materialAlertDialogTheme">@style/OpenLine.Dialog</item>
     </style>
 
-    <style name="AppTheme.Cobalt.Light" parent="Theme.Material3.Light.NoActionBar">
-        <item name="colorPrimary">@color/brand_cobalt</item>
+    <style name="AppTheme.OpenLine.Light" parent="Theme.Material3.Light.NoActionBar">
+        <item name="colorPrimary">@color/open_line_pine</item>
         <item name="colorOnPrimary">@color/on_action</item>
-        <item name="colorPrimaryDark">@color/brand_cobalt</item>
-        <item name="colorAccent">@color/brand_cobalt</item>
-        <item name="colorSecondary">@color/brand_cobalt</item>
+        <item name="colorPrimaryDark">@color/open_line_pine</item>
+        <item name="colorAccent">@color/open_line_pine</item>
+        <item name="colorSecondary">@color/open_line_pine</item>
         <item name="colorOnSecondary">@color/on_action</item>
         <item name="colorPrimaryContainer">@color/brand_container</item>
         <item name="colorOnPrimaryContainer">@color/brand_on_container</item>
@@ -34,8 +35,9 @@
         <item name="colorSurface">@color/surface_light</item>
         <item name="colorOnSurface">@color/on_surface_light</item>
         <item name="android:colorBackground">@color/surface_light</item>
-        <item name="android:colorControlActivated">@color/brand_cobalt</item>
-        <item name="colorControlActivated">@color/brand_cobalt</item>
+        <item name="android:colorControlActivated">@color/open_line_pine</item>
+        <item name="colorControlActivated">@color/open_line_pine</item>
+        <item name="materialAlertDialogTheme">@style/OpenLine.Dialog</item>
         <item name="android:forceDarkAllowed" tools:targetApi="29">false</item>
         <item name="windowActionModeOverlay">true</item>
     </style>
@@ -59,5 +61,32 @@
     <style name="InboxComposeShape">
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">50%</item>
+    </style>
+    <style name="OpenLine.Dialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+        <item name="shapeAppearance">@style/OpenLine.DialogShape</item>
+    </style>
+    <style name="OpenLine.DialogShape" parent="ShapeAppearance.Material3.LargeComponent">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">24dp</item>
+    </style>
+    <style name="OpenLine.SettingsLabel" parent="SettingsTextLabelStyle">
+        <item name="android:textSize">18sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:fontFamily">@font/open_line_body_font</item>
+        <item name="android:minHeight">@dimen/touch_target_size</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:drawablePadding">12dp</item>
+    </style>
+    <style name="OpenLine.SettingsValue" parent="SettingsTextValueStyle">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textStyle">normal</item>
+        <item name="android:textFontWeight">400</item>
+        <item name="android:fontFamily">@font/open_line_body_font</item>
+        <item name="android:alpha">@dimen/opacity_opaque</item>
+    </style>
+    <style name="OpenLine.SettingsSwitch" parent="SettingsSwitchStyle">
+        <item name="android:textSize">18sp</item>
+        <item name="android:fontFamily">@font/open_line_body_font</item>
+        <item name="android:minHeight">@dimen/touch_target_size</item>
     </style>
 </resources>

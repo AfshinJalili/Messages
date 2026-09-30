@@ -1,10 +1,8 @@
 package org.fossify.messages.ui.search
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -17,45 +15,34 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectableGroup
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import org.fossify.messages.R
+import org.fossify.messages.helpers.searchRanges
 import org.fossify.messages.models.SearchResult
 import org.fossify.messages.ui.OpenLineTheme
+import org.fossify.messages.ui.components.*
 import org.fossify.messages.ui.forContent
 import org.fossify.messages.ui.withContentFonts
 
@@ -67,78 +54,6 @@ private val TouchTarget = 48.dp
 private val ContentWidth = 640.dp
 private val FocusStroke = 2.dp
 private const val EXCERPT_LINES = 3
-
-@Composable
-fun SearchInput(
-    query: String,
-    onQuery: (String) -> Unit,
-    onBack: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val focus = remember { FocusRequester() }
-    val keyboard = LocalSoftwareKeyboardController.current
-    val colors = MaterialTheme.colorScheme
-    val searchLabel = stringResource(R.string.inbox_search_hint)
-    LaunchedEffect(Unit) {
-        focus.requestFocus()
-        keyboard?.show()
-    }
-    Surface(
-        shape = MaterialTheme.shapes.medium,
-        color = colors.surfaceContainer,
-        border = BorderStroke(FocusStroke, colors.secondaryContainer),
-        modifier = modifier.fillMaxWidth()
-            .heightIn(min = ControlHeight * LocalDensity.current.fontScale.coerceAtLeast(1f)),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) {
-                Icon(
-                    painterResource(org.fossify.commons.R.drawable.ic_arrow_left_vector),
-                    stringResource(R.string.search_back),
-                    tint = colors.onSurface,
-                )
-            }
-            BasicTextField(
-                value = query,
-                onValueChange = onQuery,
-                textStyle = MaterialTheme.typography.bodyMedium.copy(color = colors.onSurface),
-                cursorBrush = SolidColor(colors.primary),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                keyboardActions = KeyboardActions(onSearch = { keyboard?.hide() }),
-                modifier = Modifier.weight(1f)
-                    .padding(vertical = ContentGap)
-                    .focusRequester(focus)
-                    .semantics { contentDescription = searchLabel },
-                decorationBox = { input ->
-                    Box {
-                        if (query.isEmpty()) {
-                            Text(
-                                stringResource(R.string.search_query_hint),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = colors.onSurfaceVariant,
-                            )
-                        }
-                        input()
-                    }
-                },
-            )
-            if (query.isNotEmpty()) {
-                IconButton(onClick = {
-                    onQuery("")
-                    focus.requestFocus()
-                    keyboard?.show()
-                }) {
-                    Icon(
-                        painterResource(org.fossify.commons.R.drawable.ic_cross_vector),
-                        stringResource(R.string.search_clear),
-                        tint = colors.onSurfaceVariant,
-                    )
-                }
-            }
-        }
-    }
-}
 
 @Composable
 fun SearchContent(
@@ -176,7 +91,9 @@ fun SearchContent(
                 }
             }
             state.loading && matches.isEmpty() -> item(key = "loading") {
-                LinearProgressIndicator(Modifier.widthIn(max = ContentWidth).fillMaxWidth())
+                Column(Modifier.widthIn(max = ContentWidth).fillMaxWidth()) {
+                    repeat(3) { OpenLineLoadingResult(stringResource(R.string.loading_messages)) }
+                }
             }
             state.failed && matches.isEmpty() -> item(key = "error") { SearchError(onRetry) }
             matches.isEmpty() -> item(key = "empty") { SearchEmpty(state.query) }
@@ -224,20 +141,7 @@ private fun SearchFilters(state: SearchUiState, onFilter: (SearchFilter) -> Unit
                 state.entry && filter == SearchFilter.MEDIA -> R.string.search_photos
                 else -> filter.label
             }
-            Surface(
-                onClick = { onFilter(filter) },
-                shape = CircleShape,
-                color = if (active) colors.primaryContainer else colors.surfaceContainer,
-                contentColor = if (active) colors.onPrimaryContainer else colors.primary,
-                modifier = Modifier.heightIn(min = TouchTarget).semantics { selected = active },
-            ) {
-                Box(
-                    Modifier.padding(horizontal = PagePadding, vertical = ContentGap),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(stringResource(label), style = MaterialTheme.typography.labelMedium)
-                }
-            }
+            OpenLineFilterChip(stringResource(label), active, { onFilter(filter) })
         }
     }
 }
@@ -317,18 +221,9 @@ private fun HighlightedText(
         buildAnnotatedString {
             append(text)
             if (term.isNotEmpty()) {
-                var index = text.indexOf(term, ignoreCase = true)
-                while (index >= 0) {
-                    addStyle(
-                        SpanStyle(
-                            background = colors.secondaryContainer,
-                            color = colors.onSecondaryContainer,
-                            fontWeight = FontWeight.Bold,
-                        ),
-                        index,
-                        index + term.length,
-                    )
-                    index = text.indexOf(term, index + term.length, ignoreCase = true)
+                searchRanges(text, term).forEach { range ->
+                    addStyle(SpanStyle(background = colors.secondaryContainer, color = colors.onSecondaryContainer,
+                        fontWeight = FontWeight.Bold), range.first, range.last + 1)
                 }
             }
         }
@@ -352,7 +247,7 @@ private fun RecentSearchRow(query: String, onQuery: (String) -> Unit) {
         horizontalArrangement = Arrangement.spacedBy(ContentGap),
     ) {
         Icon(
-            painterResource(org.fossify.commons.R.drawable.ic_clock_vector),
+            painterResource(R.drawable.ic_ol_clock),
             contentDescription = null,
             tint = MaterialTheme.colorScheme.primary,
         )
@@ -376,6 +271,6 @@ private fun SearchEntryPreview() {
 private fun SearchError(onRetry: () -> Unit) {
     Column(Modifier.widthIn(max = ContentWidth).fillMaxWidth()) {
         Text(stringResource(R.string.search_error), color = MaterialTheme.colorScheme.onSurface)
-        TextButton(onClick = onRetry) { Text(stringResource(R.string.search_retry)) }
+        OpenLineButton(stringResource(R.string.search_retry), onRetry, kind = OpenLineButtonKind.QUIET)
     }
 }

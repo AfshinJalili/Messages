@@ -281,4 +281,17 @@
     <string name="search_nothing_yet">هنوز چیزی اینجا نیست</string>
     <string name="search_nothing_for">نتیجه‌ای برای «%1$s» نیست</string>
     <string name="search_empty_hint">نام یک فرد یا کلمهٔ دیگری از پیام را امتحان کنید.</string>
+
+    <string name="start_chat">شروع گفت‌وگو</string>
+    <string name="inbox_caught_up">همهٔ پیام‌ها را خوانده‌اید</string>
+    <string name="inbox_empty_people">هنوز پیامی از مخاطبان ندارید</string>
+    <string name="inbox_empty_services">پیامی از خدمات ندارید</string>
+    <string name="inbox_empty_unknown">فرستندهٔ ناشناسی ندارید</string>
+    <string name="inbox_empty_unread_body">پیام‌های خوانده‌نشدهٔ تازه اینجا نمایش داده می‌شوند.</string>
+    <string name="inbox_empty_people_body">پیام‌های مخاطبان شما اینجا نمایش داده می‌شوند.</string>
+    <string name="inbox_empty_services_body">اطلاع‌رسانی‌ها و کدهای تأیید اینجا نمایش داده می‌شوند.</string>
+    <string name="inbox_empty_unknown_body">پیام‌های شماره‌های خارج از مخاطبان شما اینجا نمایش داده می‌شوند.</string>
+    <string name="search_match_position">%1$d از %2$d</string>
+    <string name="search_previous_match">مورد قبلی</string>
+    <string name="block_sender">مسدود کردن فرستنده</string>
 </resources>

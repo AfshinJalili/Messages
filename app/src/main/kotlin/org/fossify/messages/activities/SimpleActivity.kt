@@ -2,7 +2,7 @@ package org.fossify.messages.activities
 
 import org.fossify.commons.activities.BaseSimpleActivity
 import org.fossify.messages.R
-import org.fossify.messages.helpers.cobaltTheme
+import org.fossify.messages.helpers.openLineTheme
 
 open class SimpleActivity : BaseSimpleActivity() {
     open fun refreshAfterDeletion() {}
@@ -13,7 +13,7 @@ open class SimpleActivity : BaseSimpleActivity() {
     }
 
     override fun setTheme(resId: Int) {
-        super.setTheme(cobaltTheme() ?: resId)
+        super.setTheme(openLineTheme() ?: resId)
     }
 
     override fun getAppIconIDs() = arrayListOf(

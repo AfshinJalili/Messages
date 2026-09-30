@@ -25,10 +25,10 @@ import org.fossify.messages.models.Message
 import org.fossify.messages.ui.OpenLineTheme
 import org.fossify.messages.ui.thread.MessageAction
 import org.fossify.messages.ui.thread.ThreadEvent
-import org.fossify.messages.ui.thread.ThreadTimeline
+import org.fossify.messages.ui.components.ThreadTimeline
 import org.fossify.messages.ui.thread.ScrollRequest
 import org.fossify.messages.ui.thread.ThreadUiState
-import org.fossify.messages.ui.thread.linkify
+import org.fossify.messages.ui.components.linkify
 import org.fossify.messages.ui.thread.selectionActions
 import org.fossify.messages.ui.thread.splitForBar
 import org.fossify.messages.ui.thread.starKey
@@ -70,7 +70,7 @@ class MessageActionChecks {
         assertEquals("Plain text gets no links", 0, linkify("A plain recycled message") {}.getLinkAnnotations(0, 24).size)
     }
 
-    @Test fun tapOpensMessageMenuAndLongPressSelects() {
+    @Test fun tapOpensMessageMenu() {
         val body = "Your code is 123456. Visit example.com for details."
         val fixture = message(987654321, body)
         val events = mutableListOf<ThreadEvent>()
@@ -86,7 +86,7 @@ class MessageActionChecks {
         assertEquals(ThreadEvent.Act(MessageAction.FORWARD, listOf(fixture)), events.filterIsInstance<ThreadEvent.Act>().single())
     }
 
-    @Test fun longPressSelectsOnPlainAndLinkedText() {
+    @Test fun longPressOpensActionsOnPlainAndLinkedText() {
         val plain = message(987654323, "A plain message without links")
         val linked = message(987654324, "Code 123456 at example.com today")
         val events = mutableListOf<ThreadEvent>()
@@ -95,7 +95,9 @@ class MessageActionChecks {
             events.clear()
             // The last word, since links carry bidi isolates that break a whole-body match.
             compose.onNodeWithText(fixture.body.substringAfterLast(' '), substring = true).performTouchInput { longClick() }
-            assertEquals("Long press on \"${fixture.body}\" selects: $events", ThreadEvent.ToggleSelection(fixture), events.lastOrNull())
+            compose.onNodeWithText(context.getString(R.string.inbox_select)).performClick()
+            compose.waitUntil(5_000) { events.any { it is ThreadEvent.Act } }
+            assertEquals(ThreadEvent.Act(MessageAction.SELECT, listOf(fixture)), events.filterIsInstance<ThreadEvent.Act>().single())
         }
     }
 
@@ -157,6 +159,10 @@ class MessageActionChecks {
 
         assertTrue("Scheduled messages offer edit and send now", MessageAction.DETAILS in tapActions(message(3, "Later", scheduled = true), selectedOne))
         assertFalse(MessageAction.DETAILS in tapActions(one, selectedOne))
+
+        val held = selectedOne.copy(spamReasons = mapOf(one.id to org.fossify.messages.helpers.BLOCK_REASON_KEYWORD))
+        assertEquals(listOf(MessageAction.NOT_SPAM, MessageAction.BLOCK_SENDER), tapActions(one.copy(senderPhoneNumber = "fixture-sender"), held))
+        assertFalse(MessageAction.BLOCK_SENDER in selectionActions(held))
 
         val mms = one.copy(isMMS = true)
         val collided = ThreadUiState(items = listOf(one, mms), selected = setOf(one.getStableId()))
