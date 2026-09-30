@@ -809,13 +809,14 @@ private fun Bubble(
             if (incoming) {
                 val code = remember(message.body) { message.body.extractOtpCode() }
                 if (code != null) {
+                    val copyLabel = stringResource(R.string.copy_otp_code, code)
                     FilledTonalButton(
                         onClick = { onEvent(ThreadEvent.CopyText(code)) },
                         colors = ButtonDefaults.filledTonalButtonColors(containerColor = colors.surfaceContainerHigh, contentColor = colors.primary),
-                        modifier = Modifier.heightIn(min = TargetSize),
+                        modifier = Modifier.heightIn(min = TargetSize).semantics { contentDescription = copyLabel },
                     ) {
                         Icon(painterResource(org.fossify.commons.R.drawable.ic_copy_vector), null, modifier = Modifier.size(18.dp))
-                        Text(stringResource(R.string.copy_otp_code, code), style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(start = 8.dp))
+                        Text(code, style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(start = 8.dp))
                     }
                 }
             }
