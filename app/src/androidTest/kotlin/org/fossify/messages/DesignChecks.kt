@@ -54,6 +54,7 @@ class DesignChecks {
 
     @Test
     fun previousCobaltDefaultsMigrateToPine() = withIsolatedPreferences { context, config ->
+        config.backgroundColor = ContextCompat.getColor(context, R.color.surface_light)
         config.primaryColor = ContextCompat.getColor(context, R.color.brand_cobalt)
         config.accentColor = config.primaryColor
         config.isSystemThemeEnabled = false
