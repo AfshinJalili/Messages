@@ -86,7 +86,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.semantics.CustomAccessibilityAction
@@ -164,7 +163,6 @@ import org.fossify.commons.extensions.formatSize
 import org.fossify.commons.extensions.formatTime
 import org.fossify.commons.models.SimpleContact
 import org.fossify.messages.R
-import org.fossify.messages.extensions.extractOtpCode
 import org.fossify.messages.extensions.getFileSizeFromUri
 import org.fossify.messages.extensions.isVCardMimeType
 import org.fossify.messages.extensions.isVideoMimeType
@@ -805,19 +803,6 @@ private fun Bubble(
             }
             if (message.body.isNotEmpty()) {
                 MessageText(message.body, content, linkColor = if (incoming || selected || failed) colors.primary else OpenLine.colors.accent, links = !state.selecting, onCopy = { onEvent(ThreadEvent.CopyText(it)) })
-            }
-            if (incoming) {
-                val code = remember(message.body) { message.body.extractOtpCode() }
-                if (code != null) {
-                    FilledTonalButton(
-                        onClick = { onEvent(ThreadEvent.CopyText(code)) },
-                        colors = ButtonDefaults.filledTonalButtonColors(containerColor = colors.surfaceContainerHigh, contentColor = colors.primary),
-                        modifier = Modifier.heightIn(min = TargetSize),
-                    ) {
-                        Icon(painterResource(org.fossify.commons.R.drawable.ic_copy_vector), null, modifier = Modifier.size(18.dp))
-                        Text(stringResource(R.string.copy_otp_code, code), style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(start = 8.dp))
-                    }
-                }
             }
             // Never hide a failure, in-flight send, scheduled time, star, or spam explanation in a run.
             if (!groupedBelow || failed || message.isScheduled || message.type == Telephony.Sms.MESSAGE_TYPE_OUTBOX || state.isStarred(message) || state.spamReason(message) != null) {
