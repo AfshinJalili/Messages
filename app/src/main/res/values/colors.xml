@@ -18,7 +18,7 @@
     <color name="color_accent">@color/brand_cobalt</color>
     <color name="default_primary_color">@color/brand_cobalt_dark</color>
     <color name="default_accent_color">@color/brand_cobalt</color>
-    <color name="launcher_cobalt">@color/brand_cobalt</color>
+    <color name="launcher_pine">@color/open_line_pine</color>
     <color name="icon_mask">@color/design_white</color>
     <color name="on_action">@color/design_white</color>
     <color name="surface_light">@color/design_white</color>

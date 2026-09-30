@@ -4,8 +4,9 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path
-        android:fillColor="@color/icon_mask"
-        android:fillType="evenOdd"
-        android:pathData="M41,32 H67 C75,32 80,37 80,45 V57 C80,65 75,70 67,70 H49 L37,78 C35.5,79 34,78.5 34,76.5 V67 C30,64.5 28,61 28,56 V45 C28,37 33,32 41,32 Z M42,44 C40.34,44 39,45.34 39,47 C39,48.66 40.34,50 42,50 H66 C67.66,50 69,48.66 69,47 C69,45.34 67.66,44 66,44 Z M42,55 C40.34,55 39,56.34 39,58 C39,59.66 40.34,61 42,61 H57 C58.66,61 60,59.66 60,58 C60,56.34 58.66,55 57,55 Z" />
+    <!-- Open Line 4a "Corner" mark. Dots are cut out so every launcher background colour shows through. -->
+    <group android:translateX="21" android:translateY="24.3" android:scaleX="0.66" android:scaleY="0.66">
+        <path android:fillColor="@color/open_line_paper" android:fillType="evenOdd" android:pathData="M32 16 H68 A18 18 0 0 1 86 34 V56 A18 18 0 0 1 68 74 H18 A4 4 0 0 1 14 70 V34 A18 18 0 0 1 32 16 Z M25.5,45 a8.5,8.5 0 1,0 17,0 a8.5,8.5 0 1,0 -17,0 Z M43,45 a7,7 0 1,0 14,0 a7,7 0 1,0 -14,0 Z M59,45 a7,7 0 1,0 14,0 a7,7 0 1,0 -14,0 Z" />
+        <path android:fillColor="@color/open_line_lime" android:pathData="M28.5,45 a5.5,5.5 0 1,0 11,0 a5.5,5.5 0 1,0 -11,0 Z" />
+    </group>
 </vector>
