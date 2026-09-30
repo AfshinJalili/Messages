@@ -25611,6 +25611,7 @@
                       "type": "text",
                       "id": "gtujhr",
                       "name": "Incoming body",
+                      "context": "Inline number 482913 is a link: tap to copy the exact digits; no separate OTP copy button.",
                       "fill": "$on-surface",
                       "textGrowth": "fixed-width",
                       "width": "fill_container",
@@ -25619,41 +25620,6 @@
                       "fontFamily": "$fontBody",
                       "fontSize": "$text-body",
                       "fontWeight": "normal"
-                    },
-                    {
-                      "type": "frame",
-                      "id": "g16d2x",
-                      "name": "Copy code · 48dp",
-                      "fill": "$surface-container-high",
-                      "cornerRadius": "$radius-full",
-                      "gap": "$space-2",
-                      "padding": [
-                        0,
-                        "$space-4"
-                      ],
-                      "alignItems": "center",
-                      "children": [
-                        {
-                          "type": "icon",
-                          "id": "g07yvw",
-                          "name": "Copy icon",
-                          "width": 18,
-                          "height": 18,
-                          "icon": "copy",
-                          "library": "lucide",
-                          "fill": "$primary"
-                        },
-                        {
-                          "type": "text",
-                          "id": "grlt8u",
-                          "name": "Copy code label",
-                          "fill": "$primary",
-                          "content": "Copy 482913",
-                          "fontFamily": "$fontBody",
-                          "fontSize": "$text-body-sm",
-                          "fontWeight": "700"
-                        }
-                      ]
                     },
                     {
                       "type": "text",
@@ -31879,7 +31845,7 @@
           "fill": "$on-surface",
           "textGrowth": "fixed-width",
           "width": "fill_container",
-          "content": "Runs within 60s sit 4dp apart, with the tail and time on the last bubble. Codes get a Copy pill. Links: accent on outgoing, primary on incoming. Divider reads “New messages”. Spam collapses to one row.",
+          "content": "Runs within 60s sit 4dp apart, with the tail and time on the last bubble. Tap inline codes to copy; no separate OTP button. Links: accent on outgoing, primary on incoming. Divider reads “New messages”. Spam collapses to one row.",
           "fontFamily": "$fontBody",
           "fontSize": "$text-meta",
           "fontWeight": "normal"
@@ -34451,6 +34417,7 @@
                       "type": "text",
                       "id": "frgs41",
                       "name": "Incoming body",
+                      "context": "Inline number 482913 is a link: tap to copy the exact digits; no separate OTP copy button.",
                       "fill": "$on-surface",
                       "textGrowth": "fixed-width",
                       "width": "fill_container",
@@ -34460,42 +34427,6 @@
                       "fontFamily": "$fontBody",
                       "fontSize": "$text-body",
                       "fontWeight": "normal"
-                    },
-                    {
-                      "type": "frame",
-                      "id": "f6oek9",
-                      "name": "Copy code · 48dp",
-                      "fill": "$surface-container-high",
-                      "cornerRadius": "$radius-full",
-                      "gap": "$space-2",
-                      "padding": [
-                        0,
-                        "$space-4"
-                      ],
-                      "justifyContent": "end",
-                      "alignItems": "center",
-                      "children": [
-                        {
-                          "type": "text",
-                          "id": "fbndlh",
-                          "name": "Copy code label",
-                          "fill": "$primary",
-                          "content": "کپی ⁦482913⁩",
-                          "fontFamily": "$fontBody",
-                          "fontSize": "$text-body-sm",
-                          "fontWeight": "700"
-                        },
-                        {
-                          "type": "icon",
-                          "id": "fsn388",
-                          "name": "Copy icon",
-                          "width": 18,
-                          "height": 18,
-                          "icon": "copy",
-                          "library": "lucide",
-                          "fill": "$primary"
-                        }
-                      ]
                     },
                     {
                       "type": "text",
@@ -39830,7 +39761,7 @@
                   "fill": "$on-surface",
                   "textGrowth": "fixed-width",
                   "width": "fill_container",
-                  "content": "Runs within 60s, tail on the last bubble · ✓ / ✓✓ icons · Copy-code pill · link colours · “New messages” divider · arrow-only jump pill · collapsed spam.",
+                  "content": "Runs within 60s, tail on the last bubble · ✓ / ✓✓ icons · tap inline codes to copy, no separate OTP button · link colours · “New messages” divider · arrow-only jump pill · collapsed spam.",
                   "fontFamily": "$fontBody",
                   "fontSize": "$text-body-sm",
                   "fontWeight": "normal"
