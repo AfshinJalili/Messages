@@ -32,6 +32,8 @@
     <!-- Open Line palette (design/open-line.pen). Compose screens map these to roles in OpenLineTheme. -->
     <color name="open_line_paper">#F1F5F1</color>
     <color name="open_line_ink">#152621</color>
+    <!-- Design screen 97: ink at 40%, dims the thread behind a lifted message. -->
+    <color name="lift_scrim">#66152621</color>
     <color name="open_line_pine">#194C43</color>
     <color name="open_line_pine_2">#2C6258</color>
     <color name="open_line_lime">#D9F46A</color>
