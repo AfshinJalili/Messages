@@ -2,14 +2,18 @@ package org.fossify.messages
 
 import android.content.Intent
 import android.os.SystemClock
+import android.provider.Telephony
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.fossify.messages.activities.MainActivity
+import org.fossify.messages.extensions.clearAllMessagesIfNeeded
 import org.fossify.messages.extensions.conversationsDB
+import org.fossify.messages.extensions.messagesDB
 import org.fossify.messages.helpers.refreshConversations
 import org.fossify.messages.helpers.UndoDeletion
 import org.fossify.messages.models.Conversation
+import org.fossify.messages.models.Message
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.util.concurrent.CountDownLatch
@@ -24,9 +28,16 @@ class DeletionChecks {
     fun conversationStaysHiddenAcrossRefreshAndUndoSurvivesRecreation() {
         val context = instrumentation.targetContext
         // Scheduled with a number no provider thread uses, so reconciliation keeps this Room-only row.
+        // It also needs a pending scheduled message: reconciliation deletes a scheduled thread with none.
         val fixture = Conversation(
             Long.MAX_VALUE - 123, "Fixture", 1, true, "Fixture", "", false, "5550100987654", isScheduled = true,
         )
+        val trace = StringBuilder()
+        fun snap(label: String) {
+            trace.append(" [$label: room=${context.conversationsDB.getConversationWithThreadId(fixture.threadId) != null}" +
+                " scheduled=${context.messagesDB.getScheduledThreadMessages(fixture.threadId).size}" +
+                " hidden=${fixture.threadId in UndoDeletion.threads}]")
+        }
         fun MainActivity.shows() = inboxRows.any { it.threadId == fixture.threadId }
         fun ActivityScenario<MainActivity>.await(message: String, timeoutMs: Long = 5000, condition: (MainActivity) -> Boolean) {
             val deadline = SystemClock.elapsedRealtime() + timeoutMs
@@ -35,22 +46,41 @@ class DeletionChecks {
                 onActivity { met = condition(it) }
                 if (!met) SystemClock.sleep(50)
             }
-            check(met) { message }
+            check(met) {
+                snap("failed")
+                "$message$trace"
+            }
         }
+        val pending = Message(
+            Long.MAX_VALUE - 124, "See you at five", Telephony.Sms.MESSAGE_TYPE_SENT, 0, arrayListOf(),
+            (System.currentTimeMillis() / 1000 + 3600).toInt(), true, fixture.threadId, false, null, "5550100987654", "Fixture", "", -1,
+            isScheduled = true,
+        )
+        // The first launch on a fresh install wipes every cached message, which would delete the pending one.
+        val cleared = CountDownLatch(1)
+        context.clearAllMessagesIfNeeded { cleared.countDown() }
+        check(cleared.await(10, TimeUnit.SECONDS)) { "Cache clear did not finish" }
         context.conversationsDB.insertOrUpdate(fixture)
+        context.messagesDB.insertOrUpdate(pending)
         try {
             ActivityScenario.launch<MainActivity>(Intent(context, MainActivity::class.java)).use { scenario ->
                 // A cold start loads the owner's whole inbox first, which can take longer than the undo window.
                 scenario.await("Fixture reaches the inbox", timeoutMs = 20_000) { it.shows() }
+                snap("inbox")
                 scenario.onActivity { it.deleteWithUndo(listOf(fixture)) }
+                snap("deleted")
                 scenario.onActivity { check(!it.shows()) { "Deleted conversation must disappear immediately" } }
                 // Recreate first: the whole check has to fit inside the 5 s undo window.
                 scenario.recreate()
+                snap("recreated")
                 // Undo must survive recreation: the new activity re-shows it a frame after resume. The M3
                 // snackbar hides its action from the unmerged semantics tree, so press it through the host.
                 scenario.await("Undo is offered again after recreation") { it.snackbarHost.currentSnackbarData != null }
                 refreshConversations()
                 instrumentation.waitForIdleSync()
+                snap("refreshed")
+                Thread.sleep(2000)
+                snap("refreshed+2s")
                 scenario.onActivity { check(!it.shows()) { "Refresh resurrected a pending deletion" } }
                 scenario.onActivity { activity ->
                     val undo = activity.snackbarHost.currentSnackbarData
@@ -62,6 +92,7 @@ class DeletionChecks {
                 check(context.conversationsDB.getConversationWithThreadId(fixture.threadId) != null) { "Undo must prevent the delete" }
             }
         } finally {
+            context.messagesDB.delete(pending.id)
             context.conversationsDB.deleteThreadId(fixture.threadId)
         }
     }
