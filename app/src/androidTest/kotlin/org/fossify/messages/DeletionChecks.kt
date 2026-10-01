@@ -31,6 +31,12 @@ class DeletionChecks {
         val fixture = Conversation(
             Long.MAX_VALUE - 123, "Fixture", 1, true, "Fixture", "", false, "5550100987654", isScheduled = true,
         )
+        val trace = StringBuilder()
+        fun snap(label: String) {
+            trace.append(" [$label: room=${context.conversationsDB.getConversationWithThreadId(fixture.threadId) != null}" +
+                " scheduled=${context.messagesDB.getScheduledThreadMessages(fixture.threadId).size}" +
+                " hidden=${fixture.threadId in UndoDeletion.threads}]")
+        }
         fun MainActivity.shows() = inboxRows.any { it.threadId == fixture.threadId }
         fun ActivityScenario<MainActivity>.await(message: String, timeoutMs: Long = 5000, condition: (MainActivity) -> Boolean) {
             val deadline = SystemClock.elapsedRealtime() + timeoutMs
@@ -40,8 +46,8 @@ class DeletionChecks {
                 if (!met) SystemClock.sleep(50)
             }
             check(met) {
-                "$message (room row=${context.conversationsDB.getConversationWithThreadId(fixture.threadId) != null}, " +
-                    "hidden=${fixture.threadId in UndoDeletion.threads})"
+                snap("failed")
+                "$message$trace"
             }
         }
         val pending = Message(
@@ -58,14 +64,20 @@ class DeletionChecks {
             ActivityScenario.launch<MainActivity>(Intent(context, MainActivity::class.java)).use { scenario ->
                 // A cold start loads the owner's whole inbox first, which can take longer than the undo window.
                 scenario.await("Fixture reaches the inbox", timeoutMs = 20_000) { it.shows() }
+                snap("inbox")
                 scenario.onActivity { it.deleteWithUndo(listOf(fixture)) }
+                snap("deleted")
                 scenario.onActivity { check(!it.shows()) { "Deleted conversation must disappear immediately" } }
                 scenario.recreate()
+                snap("recreated")
                 // Undo must survive recreation: the new activity re-shows it a frame after resume. The M3
                 // snackbar hides its action from the unmerged semantics tree, so press it through the host.
                 scenario.await("Undo is offered again after recreation") { it.snackbarHost.currentSnackbarData != null }
                 refreshConversations()
                 instrumentation.waitForIdleSync()
+                snap("refreshed")
+                Thread.sleep(2000)
+                snap("refreshed+2s")
                 scenario.onActivity { check(!it.shows()) { "Refresh resurrected a pending deletion" } }
                 scenario.onActivity { activity ->
                     val undo = activity.snackbarHost.currentSnackbarData
