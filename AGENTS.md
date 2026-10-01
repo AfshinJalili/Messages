@@ -6,7 +6,7 @@ This file is the single source of truth for how the project is run. Update it in
 
 ## Run
 
-- Build: `./gradlew :app:assembleFossDebug :app:assembleFossDebugAndroidTest` (flavors: `core`, `foss`, `gplay`; CI builds `core`; `.github/workflows/ci.yml` also runs the host checks and unit tests, since instrumented tests need the phone).
+- Build: `./gradlew :app:assembleFossDebug :app:assembleFossDebugAndroidTest` (flavors: `core`, `foss`, `gplay`; CI builds `core`; `.github/workflows/ci.yml` also runs the host checks and unit tests, and an `instrumented` job runs the instrumented classes on a clean emulator via `tools/ci_instrumented.sh`, non-blocking until #100 is done; the phone is still the owner's QA).
 - Install: `adb install -r` both APKs from `app/build/outputs/apk`. The debug app is `org.fossify.messages.debug`.
 - Instrumented class: `adb shell am instrument --user 0 -w -e class org.fossify.messages.<Class> org.fossify.messages.debug.test/androidx.test.runner.AndroidJUnitRunner`. Read the `OK (n tests)` line; the exit code does not show failures. Wake and unlock the phone first.
 - Host checks: `python3 tests/check_design_tokens.py` (no inline colors or opacity), `python3 tests/check_inbox_database.py` (inbox SQL against the Room schema).
