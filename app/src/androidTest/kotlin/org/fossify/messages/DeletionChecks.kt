@@ -7,6 +7,7 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.fossify.messages.activities.MainActivity
+import org.fossify.messages.extensions.clearAllMessagesIfNeeded
 import org.fossify.messages.extensions.conversationsDB
 import org.fossify.messages.extensions.messagesDB
 import org.fossify.messages.helpers.refreshConversations
@@ -55,11 +56,12 @@ class DeletionChecks {
             (System.currentTimeMillis() / 1000 + 3600).toInt(), true, fixture.threadId, false, null, "5550100987654", "Fixture", "", -1,
             isScheduled = true,
         )
+        // The first launch on a fresh install wipes every cached message, which would delete the pending one.
+        val cleared = CountDownLatch(1)
+        context.clearAllMessagesIfNeeded { cleared.countDown() }
+        check(cleared.await(10, TimeUnit.SECONDS)) { "Cache clear did not finish" }
         context.conversationsDB.insertOrUpdate(fixture)
         context.messagesDB.insertOrUpdate(pending)
-        // A slow emulator can take longer than the real 5 s window to recreate the activity.
-        val window = UndoDeletion.windowMs
-        UndoDeletion.windowMs = 60_000
         try {
             ActivityScenario.launch<MainActivity>(Intent(context, MainActivity::class.java)).use { scenario ->
                 // A cold start loads the owner's whole inbox first, which can take longer than the undo window.
@@ -68,6 +70,7 @@ class DeletionChecks {
                 scenario.onActivity { it.deleteWithUndo(listOf(fixture)) }
                 snap("deleted")
                 scenario.onActivity { check(!it.shows()) { "Deleted conversation must disappear immediately" } }
+                // Recreate first: the whole check has to fit inside the 5 s undo window.
                 scenario.recreate()
                 snap("recreated")
                 // Undo must survive recreation: the new activity re-shows it a frame after resume. The M3
@@ -85,11 +88,10 @@ class DeletionChecks {
                     undo?.performAction()
                 }
                 scenario.await("Undo restores the row") { fixture.threadId !in UndoDeletion.threads && it.shows() }
-                Thread.sleep(1000)
+                Thread.sleep(5200)
                 check(context.conversationsDB.getConversationWithThreadId(fixture.threadId) != null) { "Undo must prevent the delete" }
             }
         } finally {
-            UndoDeletion.windowMs = window
             context.messagesDB.delete(pending.id)
             context.conversationsDB.deleteThreadId(fixture.threadId)
         }
