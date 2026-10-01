@@ -39,11 +39,14 @@ class DeletionChecks {
                 onActivity { met = condition(it) }
                 if (!met) SystemClock.sleep(50)
             }
-            check(met) { message }
+            check(met) {
+                "$message (room row=${context.conversationsDB.getConversationWithThreadId(fixture.threadId) != null}, " +
+                    "hidden=${fixture.threadId in UndoDeletion.threads})"
+            }
         }
         val pending = Message(
-            Long.MAX_VALUE - 124, "Fixture", Telephony.Sms.MESSAGE_TYPE_SENT, 0, arrayListOf(),
-            (System.currentTimeMillis() / 1000 + 3600).toInt(), true, fixture.threadId, false, null, "", "Fixture", "", -1,
+            Long.MAX_VALUE - 124, "See you at five", Telephony.Sms.MESSAGE_TYPE_SENT, 0, arrayListOf(),
+            (System.currentTimeMillis() / 1000 + 3600).toInt(), true, fixture.threadId, false, null, "5550100987654", "Fixture", "", -1,
             isScheduled = true,
         )
         context.conversationsDB.insertOrUpdate(fixture)
