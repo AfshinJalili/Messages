@@ -5,6 +5,7 @@ import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
 import android.view.View
+import androidx.annotation.VisibleForTesting
 import com.google.android.material.snackbar.Snackbar
 import org.fossify.commons.extensions.showErrorToast
 import org.fossify.commons.helpers.ensureBackgroundThread
@@ -15,6 +16,9 @@ import java.util.concurrent.ConcurrentHashMap
 object UndoDeletion {
     var version = 0
         private set
+    /** How long Undo is offered before the deletion commits. Tests lengthen it so a slow device cannot outrun it. */
+    @VisibleForTesting
+    var windowMs = 5000L
     val threads: MutableSet<Long> = ConcurrentHashMap.newKeySet()
     val messages: MutableSet<Long> = ConcurrentHashMap.newKeySet()
     val spam: MutableSet<Long> = ConcurrentHashMap.newKeySet()
@@ -62,8 +66,8 @@ object UndoDeletion {
                     }
                 }
             }
-            batches[taskId] = Batch(actions, timer, SystemClock.uptimeMillis() + 5000)
-            handler.postDelayed(timer, 5000)
+            batches[taskId] = Batch(actions, timer, SystemClock.uptimeMillis() + windowMs)
+            handler.postDelayed(timer, windowMs)
             attach(activity)
         }
     }
