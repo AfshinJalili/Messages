@@ -2,14 +2,17 @@ package org.fossify.messages
 
 import android.content.Intent
 import android.os.SystemClock
+import android.provider.Telephony
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.fossify.messages.activities.MainActivity
 import org.fossify.messages.extensions.conversationsDB
+import org.fossify.messages.extensions.messagesDB
 import org.fossify.messages.helpers.refreshConversations
 import org.fossify.messages.helpers.UndoDeletion
 import org.fossify.messages.models.Conversation
+import org.fossify.messages.models.Message
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.util.concurrent.CountDownLatch
@@ -24,6 +27,7 @@ class DeletionChecks {
     fun conversationStaysHiddenAcrossRefreshAndUndoSurvivesRecreation() {
         val context = instrumentation.targetContext
         // Scheduled with a number no provider thread uses, so reconciliation keeps this Room-only row.
+        // It also needs a pending scheduled message: reconciliation deletes a scheduled thread with none.
         val fixture = Conversation(
             Long.MAX_VALUE - 123, "Fixture", 1, true, "Fixture", "", false, "5550100987654", isScheduled = true,
         )
@@ -37,16 +41,20 @@ class DeletionChecks {
             }
             check(met) { message }
         }
+        val pending = Message(
+            Long.MAX_VALUE - 124, "Fixture", Telephony.Sms.MESSAGE_TYPE_SENT, 0, arrayListOf(),
+            (System.currentTimeMillis() / 1000 + 3600).toInt(), true, fixture.threadId, false, null, "", "Fixture", "", -1,
+            isScheduled = true,
+        )
         context.conversationsDB.insertOrUpdate(fixture)
-        // A slow emulator can take longer than the real 5 s window to recreate the activity.
-        val window = UndoDeletion.windowMs
-        UndoDeletion.windowMs = 60_000
+        context.messagesDB.insertOrUpdate(pending)
         try {
             ActivityScenario.launch<MainActivity>(Intent(context, MainActivity::class.java)).use { scenario ->
                 // A cold start loads the owner's whole inbox first, which can take longer than the undo window.
                 scenario.await("Fixture reaches the inbox", timeoutMs = 20_000) { it.shows() }
                 scenario.onActivity { it.deleteWithUndo(listOf(fixture)) }
                 scenario.onActivity { check(!it.shows()) { "Deleted conversation must disappear immediately" } }
+                // Recreate first: the whole check has to fit inside the 5 s undo window.
                 scenario.recreate()
                 // Undo must survive recreation: the new activity re-shows it a frame after resume. The M3
                 // snackbar hides its action from the unmerged semantics tree, so press it through the host.
@@ -60,11 +68,11 @@ class DeletionChecks {
                     undo?.performAction()
                 }
                 scenario.await("Undo restores the row") { fixture.threadId !in UndoDeletion.threads && it.shows() }
-                Thread.sleep(1000)
+                Thread.sleep(5200)
                 check(context.conversationsDB.getConversationWithThreadId(fixture.threadId) != null) { "Undo must prevent the delete" }
             }
         } finally {
-            UndoDeletion.windowMs = window
+            context.messagesDB.delete(pending.id)
             context.conversationsDB.deleteThreadId(fixture.threadId)
         }
     }
