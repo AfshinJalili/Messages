@@ -223,8 +223,8 @@ import org.greenrobot.eventbus.ThreadMode
 import org.joda.time.DateTime
 import java.io.File
 import android.graphics.drawable.ColorDrawable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
-import org.fossify.messages.ui.thread.LiftScrim
 import kotlin.math.roundToInt
 
 class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
@@ -513,10 +513,11 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
 
     // The header is its own ComposeView, outside the timeline's lift scrim.
     // setAlpha replaces the colour's own alpha, so the drawable is opaque and the scrim's 40% is applied here.
-    private val headerScrim by lazy { ColorDrawable(LiftScrim.copy(alpha = 1f).toArgb()).also { binding.threadHeader.foreground = it } }
+    private val liftScrim by lazy { Color(getColor(R.color.lift_scrim)) }
+    private val headerScrim by lazy { ColorDrawable(liftScrim.copy(alpha = 1f).toArgb()).also { binding.threadHeader.foreground = it } }
 
     private fun dimHeader(progress: Float) {
-        headerScrim.alpha = (progress * LiftScrim.alpha * 255).roundToInt()
+        headerScrim.alpha = (progress * liftScrim.alpha * 255).roundToInt()
     }
 
     private fun refreshOpenLineTheme() {
