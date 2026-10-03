@@ -16,7 +16,7 @@ androidx-documentfile = "1.1.0"
 eventbus = "3.3.1"
 #Compose
 # Matches the Compose that Fossify commons already resolves (ui 1.9.2, material3 1.4.0).
-compose-bom = "2025.09.01"
+compose-bom = "2026.09.00"
 #Room
 room = "2.8.4"
 #Test
