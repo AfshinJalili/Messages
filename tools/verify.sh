@@ -64,8 +64,7 @@ adb shell wm dismiss-keyguard >/dev/null 2>&1 || true
 adb install -r -g app/build/outputs/apk/core/debug/*.apk >/dev/null
 adb install -r -g app/build/outputs/apk/androidTest/core/debug/*.apk >/dev/null
 adb shell cmd role add-role-holder android.app.role.SMS $APP 0
-shots=/sdcard/Android/data/$APP/files/screenshots
-adb shell rm -rf "$shots"
+adb shell run-as $APP rm -rf files/screenshots
 
 classes=()
 for c in "$@"; do classes+=("org.fossify.messages.$c"); done
@@ -74,7 +73,7 @@ args=()
 
 echo "== instrumenting ${*:-all classes}"
 adb shell am instrument --user 0 -w -r "${args[@]}" $RUNNER | tee "$out/instrument.txt" | grep -E "^(OK|FAILURES|Tests run)|INSTRUMENTATION_STATUS: (class|test)=" | grep -v "INSTRUMENTATION_STATUS: class" | uniq || true
-adb pull "$shots/." "$out/screenshots" >/dev/null 2>&1 || true
+adb exec-out "run-as $APP sh -c 'cd files/screenshots && tar cf - .'" | tar xf - -C "$out/screenshots" 2>/dev/null || true
 adb logcat -d > "$out/logcat.txt"
 
 echo "== results in $out ($(ls "$out/screenshots" | wc -l) screenshots)"

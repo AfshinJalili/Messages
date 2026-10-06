@@ -1,7 +1,8 @@
 package org.fossify.messages
 
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasText
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.fossify.messages.activities.MainActivity
 import org.junit.Rule
@@ -17,7 +18,9 @@ class ScreenTourChecks {
     @Test
     fun inboxRendersAndIsCaptured() {
         val searchHint = compose.activity.getString(R.string.inbox_search_hint)
-        compose.waitUntil(RENDER_TIMEOUT_MS) { compose.onAllNodesWithText(searchHint).fetchSemanticsNodes().isNotEmpty() }
+        // The search entry is text in the tall layout and an icon description in the compact one.
+        val searchEntry = hasText(searchHint) or hasContentDescription(searchHint)
+        compose.waitUntil(RENDER_TIMEOUT_MS) { compose.onAllNodes(searchEntry, useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() }
         compose.waitForIdle()
         check(Screenshots.capture("inbox").length() > 0)
     }
