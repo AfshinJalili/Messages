@@ -1,6 +1,6 @@
 name: Feature
 description: New behavior
-labels: [feature]
+labels: [feature, needs-triage]
 body:
   - type: textarea
     id: summary
@@ -10,15 +10,16 @@ body:
     validations:
       required: true
   - type: textarea
-    id: design
-    attributes:
-      label: Design
-      description: Frames in design/open-line.pen, or "needs design" (then add the needs-design label)
-  - type: textarea
     id: acceptance
     attributes:
       label: Acceptance
       value: |
         - [ ] 
         - [ ] Works in LTR and RTL/Persian
-        - [ ] Build and tests pass
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Emulator evidence
+      description: Instrumented classes that must pass and screenshots to capture

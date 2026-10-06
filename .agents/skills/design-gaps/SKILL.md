@@ -57,13 +57,13 @@ When the issue's **Design needs to decide** conflicts with a node already on the
 
 ## One gap
 
-1. Take the issue the user names, or the oldest open `design-gap` issue with no `status:*` label. Follow the workflow in `AGENTS.md`: branch `<issue>-<slug>`, draft PR with `Closes #<n>`.
+1. Take the issue the user names, or the oldest open `design-gap` issue labelled `ready-for-agent` with no open PR. Follow the workflow in `AGENTS.md`: branch `<issue>-<slug>`, draft PR with `Closes #<n>`.
    Done when that issue is the only gap this run touches.
 
 2. Design it on the canvas, using the rules above.
    Done when the new or updated component is instanced on the screen, the Persian RTL variant exists, and no other gap was drawn.
 
-3. Comment on the issue what a reviewer opens, canvas first, then stop for the owner's review of the design. Implement in the app only after that review. Before editing Kotlin UI, read `compose-multiplatform-patterns` and `kotlin-patterns`.
+3. Comment on the issue what a reviewer opens, canvas first, then implement it in the app on the same branch. Before editing Kotlin UI, read `compose-multiplatform-patterns` and `kotlin-patterns`.
 
 ```
 Screens: 01 everyday inbox; ui/inbox/InboxScreen.kt
@@ -74,4 +74,4 @@ Name a frame, file, or component only when this gap edited it. Omit a mark that 
 
 ## Stop
 
-The run ends when the comment is posted, or when a canvas conflict stops the run. Report the issue number and the comment. The next issue waits until the owner reviews this one.
+The run ends when the app matches the design and the PR follows the workflow in `AGENTS.md`, or when a canvas conflict stops the run. Report the issue number, the comment and the PR.
