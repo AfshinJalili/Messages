@@ -29,7 +29,7 @@ serial=$(emulators | head -n1)
 if [ -z "$serial" ]; then
   if [ ! -d "$SDK/system-images/android-$API/google_apis/x86_64" ] || [ ! -x "$SDK/emulator/emulator" ]; then
     echo "== installing $IMAGE"
-    yes | sdkmanager --sdk_root="$SDK" emulator platform-tools "$IMAGE" >/dev/null
+    { yes || true; } | sdkmanager --sdk_root="$SDK" emulator platform-tools "$IMAGE" >/dev/null
   fi
   if ! avdmanager list avd -c | grep -qx "$AVD"; then
     echo "== creating AVD $AVD"
@@ -44,7 +44,11 @@ if [ -z "$serial" ]; then
 fi
 export ANDROID_SERIAL=$serial
 adb wait-for-device
-until [ "$(adb shell getprop sys.boot_completed | tr -d '\r')" = 1 ]; do sleep 2; done
+deadline=$((SECONDS + ${BOOT_TIMEOUT:-600}))
+until [ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = 1 ]; do
+  [ $SECONDS -lt $deadline ] || { echo "emulator did not finish booting"; [ -f "$out/emulator.log" ] && tail -20 "$out/emulator.log"; exit 1; }
+  sleep 2
+done
 
 # Never touch a real phone: the target must report itself as an emulator.
 [ "$(adb shell getprop ro.kernel.qemu | tr -d '\r')" = 1 ] || { echo "refusing: $serial is not an emulator"; exit 1; }
