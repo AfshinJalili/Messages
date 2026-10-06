@@ -25,7 +25,7 @@ Labels on every issue: one triage label, one type (`bug`, `feature`, `enhancemen
 
 - Build: `./gradlew :app:assembleCoreDebug :app:assembleCoreDebugAndroidTest` (flavors `core`, `foss`, `gplay`). The debug app is `org.fossify.messages.debug`.
 - Host checks: `python3 tests/check_design_tokens.py` (no inline colors or opacity), `python3 tests/check_inbox_database.py` (inbox SQL against the Room schema).
-- Emulator: `tools/verify.sh` runs every instrumented class; `tools/verify.sh InboxChecks SearchChecks` runs some. The first run installs the system image and creates the `openline` AVD. `HEADLESS=0` shows the emulator window.
+- Emulator: `tools/verify.sh` runs every instrumented class; `tools/verify.sh InboxChecks SearchChecks` runs some. The first run installs the system image and creates the `openline-api35` AVD (`API=<n>` picks another level). `HEADLESS=0` shows the emulator window. CI reuses the emulator the workflow boots.
 - Screenshots in tests: `Screenshots.capture("name")` in androidTest captures the whole screen. Files land in `.scratch/qa/<branch>/screenshots/` locally and in the `emulator-qa` CI artifact.
 - Review: `tools/review.sh [base]`, default base `main`.
 - Icons: `python3 tools/export_icon.py`.
