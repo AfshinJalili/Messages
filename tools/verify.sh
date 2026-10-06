@@ -6,7 +6,7 @@ cd "$(git rev-parse --show-toplevel)"
 
 SDK=${ANDROID_HOME:-${ANDROID_SDK_ROOT:-$HOME/Android/Sdk}}
 API=${API:-35}
-AVD=${AVD:-openline}
+AVD=${AVD:-openline-api$API}
 IMAGE="system-images;android-$API;google_apis;x86_64"
 APP=org.fossify.messages.debug
 RUNNER=$APP.test/androidx.test.runner.AndroidJUnitRunner
@@ -25,7 +25,9 @@ echo "== build"
 ./gradlew -q :app:assembleCoreDebug :app:assembleCoreDebugAndroidTest
 
 emulators() { adb devices | awk '/^emulator-[0-9]+\tdevice/{print $1}'; }
-serial=$(emulators | head -n1)
+matching() { for e in $(emulators); do [ "$(adb -s "$e" emu avd name 2>/dev/null | head -n1 | tr -d '\r')" = "$AVD" ] && echo "$e"; done; true; }
+serial=$(matching | head -n1)
+[ -z "$serial" ] && [ -n "${CI:-}" ] && serial=$(emulators | head -n1)
 if [ -z "$serial" ]; then
   if [ ! -d "$SDK/system-images/android-$API/google_apis/x86_64" ] || [ ! -x "$SDK/emulator/emulator" ]; then
     echo "== installing $IMAGE"
@@ -39,7 +41,7 @@ if [ -z "$serial" ]; then
   flags=(-no-snapshot-save -no-audio -no-boot-anim -gpu swiftshader_indirect)
   [ "${HEADLESS:-1}" = 1 ] && flags+=(-no-window)
   emulator -avd "$AVD" "${flags[@]}" >"$out/emulator.log" 2>&1 &
-  for _ in $(seq 120); do serial=$(emulators | head -n1); [ -n "$serial" ] && break; sleep 2; done
+  for _ in $(seq 120); do serial=$(matching | head -n1); [ -n "$serial" ] && break; sleep 2; done
   [ -n "$serial" ] || { echo "emulator did not start, see $out/emulator.log"; exit 1; }
 fi
 export ANDROID_SERIAL=$serial
@@ -52,6 +54,8 @@ done
 
 # Never touch a real phone: the target must report itself as an emulator.
 [ "$(adb shell getprop ro.kernel.qemu | tr -d '\r')" = 1 ] || { echo "refusing: $serial is not an emulator"; exit 1; }
+sdk=$(adb shell getprop ro.build.version.sdk | tr -d '\r')
+[ "$sdk" = "$API" ] || { echo "refusing: $serial runs API $sdk, expected $API (delete or rename AVD $AVD)"; exit 1; }
 
 echo "== preparing $serial"
 for s in window_animation_scale transition_animation_scale animator_duration_scale; do adb shell settings put global $s 0; done
