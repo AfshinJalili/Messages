@@ -39,12 +39,12 @@ import org.fossify.messages.models.Conversation
 import org.fossify.messages.ui.OpenLineTheme
 import org.fossify.messages.ui.forContent
 import org.fossify.messages.ui.inbox.InboxRow
-import org.fossify.messages.ui.components.SnippetText
-import org.fossify.messages.ui.components.MessageText
-import org.fossify.messages.ui.components.COMPOSER_FIELD_TAG
+import org.fossify.messages.ui.inbox.SnippetText
+import org.fossify.messages.ui.thread.MessageText
+import org.fossify.messages.ui.thread.COMPOSER_FIELD_TAG
 import org.fossify.messages.ui.thread.ComposerState
-import org.fossify.messages.ui.components.ThreadComposer
-import org.fossify.messages.ui.components.linkify
+import org.fossify.messages.ui.thread.ThreadComposer
+import org.fossify.messages.ui.thread.linkify
 import org.fossify.messages.ui.withContentFonts
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

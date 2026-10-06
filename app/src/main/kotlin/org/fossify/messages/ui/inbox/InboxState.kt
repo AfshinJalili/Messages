@@ -64,20 +64,20 @@ private fun Calendar.sameDayAs(other: Calendar) =
     get(Calendar.YEAR) == other.get(Calendar.YEAR) && get(Calendar.DAY_OF_YEAR) == other.get(Calendar.DAY_OF_YEAR)
 
 enum class InboxAction(@StringRes val label: Int, @DrawableRes val icon: Int) {
-    ARCHIVE(R.string.archive, R.drawable.ic_ol_archive),
-    MARK_UNREAD(R.string.mark_as_unread, R.drawable.ic_ol_mail),
-    MARK_READ(R.string.mark_as_read, R.drawable.ic_ol_check_check),
-    MUTE(R.string.mute_conversation, R.drawable.ic_ol_bell_off),
-    UNMUTE(R.string.unmute_conversation, R.drawable.ic_ol_bell),
-    PIN(R.string.pin_conversation, R.drawable.ic_ol_pin),
+    ARCHIVE(R.string.archive, R.drawable.ic_archive_vector),
+    MARK_UNREAD(R.string.mark_as_unread, org.fossify.commons.R.drawable.ic_mail_vector),
+    MARK_READ(R.string.mark_as_read, R.drawable.ic_check_double_vector),
+    MUTE(R.string.mute_conversation, R.drawable.ic_bell_off_vector),
+    UNMUTE(R.string.unmute_conversation, org.fossify.commons.R.drawable.ic_bell_vector),
+    PIN(R.string.pin_conversation, org.fossify.commons.R.drawable.ic_pin_vector),
     UNPIN(R.string.unpin_conversation, R.drawable.ic_unpin_vector),
-    DELETE(org.fossify.commons.R.string.delete, R.drawable.ic_lucide_trash),
-    DIAL(org.fossify.commons.R.string.dial_number, R.drawable.ic_ol_phone),
-    ADD_TO_CONTACT(org.fossify.commons.R.string.add_number_to_contact, R.drawable.ic_ol_user_plus),
-    COPY_NUMBER(org.fossify.commons.R.string.copy_number_to_clipboard, R.drawable.ic_lucide_copy),
-    RENAME(R.string.rename_conversation, R.drawable.ic_ol_pencil),
-    DETAILS(R.string.conversation_details, R.drawable.ic_lucide_info),
-    BLOCK(org.fossify.commons.R.string.block_number, R.drawable.ic_ol_ban),
+    DELETE(org.fossify.commons.R.string.delete, org.fossify.commons.R.drawable.ic_delete_vector),
+    DIAL(org.fossify.commons.R.string.dial_number, org.fossify.commons.R.drawable.ic_phone_vector),
+    ADD_TO_CONTACT(org.fossify.commons.R.string.add_number_to_contact, org.fossify.commons.R.drawable.ic_add_person_vector),
+    COPY_NUMBER(org.fossify.commons.R.string.copy_number_to_clipboard, org.fossify.commons.R.drawable.ic_copy_vector),
+    RENAME(R.string.rename_conversation, org.fossify.commons.R.drawable.ic_edit_vector),
+    DETAILS(R.string.conversation_details, org.fossify.commons.R.drawable.ic_info_vector),
+    BLOCK(org.fossify.commons.R.string.block_number, org.fossify.commons.R.drawable.ic_block_vector),
 }
 
 /** Declaration order of [InboxAction] is the display order; the bar shows the first few, the rest overflow. */
@@ -95,12 +95,10 @@ fun availableActions(selected: List<InboxRow>, archiveAvailable: Boolean): List<
             InboxAction.PIN -> selected.any { !it.pinned }
             InboxAction.UNPIN -> selected.all { it.pinned }
             InboxAction.DIAL -> person && !isShortCodeWithLetters(first.conversation.phoneNumber)
-            InboxAction.ADD_TO_CONTACT -> person && first.conversation.title == first.conversation.phoneNumber
-            InboxAction.COPY_NUMBER -> person
+            InboxAction.ADD_TO_CONTACT, InboxAction.COPY_NUMBER -> person
             InboxAction.RENAME -> single && first.conversation.isGroupConversation
             InboxAction.DETAILS -> single
-            InboxAction.DELETE -> true
-            InboxAction.BLOCK -> selected.none { it.conversation.isGroupConversation }
+            InboxAction.DELETE, InboxAction.BLOCK -> true
         }
     }
 }
@@ -111,7 +109,7 @@ const val PRIMARY_ACTION_COUNT = 3
 fun List<InboxAction>.splitForBar(): Pair<List<InboxAction>, List<InboxAction>> {
     val candidates = listOfNotNull(
         InboxAction.ARCHIVE.takeIf { it in this },
-        if (InboxAction.MARK_READ in this) InboxAction.MARK_READ else InboxAction.MARK_UNREAD.takeIf { it in this },
+        firstOrNull { it == InboxAction.MARK_READ || it == InboxAction.MARK_UNREAD },
         firstOrNull { it == InboxAction.MUTE || it == InboxAction.UNMUTE },
     )
     val bar = candidates.take(PRIMARY_ACTION_COUNT) + listOfNotNull(InboxAction.DELETE.takeIf { it in this })
@@ -120,30 +118,20 @@ fun List<InboxAction>.splitForBar(): Pair<List<InboxAction>, List<InboxAction>> 
 
 fun InboxFilter.emptyTitle() = when (this) {
     InboxFilter.ALL -> R.string.inbox_empty_title
-    InboxFilter.UNREAD -> R.string.inbox_caught_up
-    InboxFilter.PERSONAL -> R.string.inbox_empty_people
-    InboxFilter.BUSINESS -> R.string.inbox_empty_services
-    InboxFilter.UNKNOWN -> R.string.inbox_empty_unknown
+    InboxFilter.UNREAD -> R.string.no_unread_conversations
+    else -> R.string.no_filtered_conversations
 }
 
 // Child activities return to the Library tab retained by the inbox composition.
 enum class LibraryDestination(@StringRes val label: Int, @DrawableRes val icon: Int) {
-    STARRED(R.string.starred_messages, R.drawable.ic_lucide_star),
-    ARCHIVE(R.string.archived_conversations, R.drawable.ic_ol_archive),
-    SPAM(R.string.inbox_spam, R.drawable.ic_ol_ban),
-    RECYCLE_BIN(org.fossify.commons.R.string.recycle_bin, R.drawable.ic_lucide_trash);
+    STARRED(R.string.starred_messages, org.fossify.commons.R.drawable.ic_star_vector),
+    ARCHIVE(R.string.archived_conversations, R.drawable.ic_archive_vector),
+    SPAM(R.string.inbox_spam, org.fossify.commons.R.drawable.ic_block_vector),
+    RECYCLE_BIN(org.fossify.commons.R.string.recycle_bin, org.fossify.commons.R.drawable.ic_delete_vector);
 
     fun isAvailable(state: InboxUiState) = when (this) {
         ARCHIVE -> state.archiveAvailable
         RECYCLE_BIN -> state.recycleBinAvailable
         else -> true
     }
-}
-
-fun InboxFilter.emptyBody() = when (this) {
-    InboxFilter.ALL -> R.string.inbox_empty_text
-    InboxFilter.UNREAD -> R.string.inbox_empty_unread_body
-    InboxFilter.PERSONAL -> R.string.inbox_empty_people_body
-    InboxFilter.BUSINESS -> R.string.inbox_empty_services_body
-    InboxFilter.UNKNOWN -> R.string.inbox_empty_unknown_body
 }

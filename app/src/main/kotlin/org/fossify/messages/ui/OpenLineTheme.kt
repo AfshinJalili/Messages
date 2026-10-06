@@ -50,15 +50,6 @@ data class OpenLineColors(
     val onBandVariant: Color,
     val avatars: List<Color>,
     val onAvatar: Color,
-    val onSecondaryVariant: Color = Color.Unspecified,
-    val inverseAccent: Color = Color.Unspecified,
-    val statePressed: Color = Color.Unspecified,
-    val focusRing: Color = Color.Unspecified,
-    val skeleton: Color = Color.Unspecified,
-    val skeletonHigh: Color = Color.Unspecified,
-    val lineDraft: Color = Color.Unspecified,
-    val lineSending: Color = Color.Unspecified,
-    val lineBlocked: Color = Color.Unspecified,
 )
 
 val LocalOpenLineColors = staticCompositionLocalOf {
@@ -68,14 +59,6 @@ val LocalOpenLineColors = staticCompositionLocalOf {
 object OpenLine {
     val colors: OpenLineColors
         @Composable get() = LocalOpenLineColors.current
-
-    val brand: TextStyle
-        @Composable get() = TextStyle(
-            fontFamily = if (LocalLayoutDirection.current == LayoutDirection.Rtl) persian else display,
-            fontSize = 76.sp,
-            fontWeight = FontWeight.ExtraBold,
-            lineHeight = 1.em,
-        )
 }
 
 @OptIn(androidx.compose.ui.text.ExperimentalTextApi::class)
@@ -111,9 +94,7 @@ private fun typography(rtl: Boolean): Typography {
     fun style(family: FontFamily, size: Int, weight: FontWeight) =
         TextStyle(fontFamily = family, fontSize = size.sp, fontWeight = weight, lineHeight = leading)
     return Typography(
-        displaySmall = style(displayFamily, 45, FontWeight.ExtraBold).copy(lineHeight = if (rtl) leading else 1.1.em),
-        headlineSmall = style(displayFamily, 25, FontWeight.ExtraBold).copy(lineHeight = if (rtl) leading else 1.3.em),
-        headlineMedium = style(displayFamily, 31, FontWeight.ExtraBold).copy(lineHeight = if (rtl) leading else 1.25.em),
+        headlineMedium = style(displayFamily, 31, FontWeight.ExtraBold).copy(lineHeight = 1.25.em),
         titleLarge = style(bodyFamily, 20, FontWeight.Bold),
         titleMedium = style(bodyFamily, 18, FontWeight.Bold),
         bodyLarge = style(bodyFamily, 18, FontWeight.Normal),
@@ -155,7 +136,6 @@ private fun colorScheme(dark: Boolean): ColorScheme {
             inverseSurface = paper,
             inverseOnSurface = ink,
             inversePrimary = pine,
-            scrim = colorResource(R.color.open_line_scrim_dark),
         )
     } else {
         lightColorScheme(
@@ -179,7 +159,6 @@ private fun colorScheme(dark: Boolean): ColorScheme {
             inverseSurface = ink,
             inverseOnSurface = white,
             inversePrimary = lime,
-            scrim = colorResource(R.color.open_line_scrim),
         )
     }
 }
@@ -198,25 +177,14 @@ fun OpenLineTheme(dark: Boolean, textScale: Float = 1f, content: @Composable () 
         onBandVariant = colorResource(R.color.open_line_band_variant),
         avatars = listOf(colorResource(R.color.open_line_lilac), colorResource(R.color.open_line_lime)),
         onAvatar = colorResource(R.color.open_line_pine),
-        onSecondaryVariant = colorResource(if (dark) R.color.open_line_on_secondary_variant_dark else R.color.open_line_on_secondary_variant),
-        inverseAccent = colorResource(if (dark) R.color.open_line_pine else R.color.open_line_lime),
-        statePressed = colorResource(if (dark) R.color.open_line_state_pressed_dark else R.color.open_line_state_pressed),
-        focusRing = colorResource(if (dark) R.color.open_line_focus_dark else R.color.open_line_focus),
-        skeleton = colorResource(R.color.open_line_skeleton),
-        skeletonHigh = colorResource(R.color.open_line_skeleton_high),
-        lineDraft = colorResource(R.color.open_line_lilac),
-        lineSending = colorResource(R.color.open_line_lime),
-        lineBlocked = colorResource(R.color.open_line_coral),
     )
     MaterialTheme(
         colorScheme = colorScheme(dark),
         typography = typography(rtl),
         shapes = Shapes(
-            extraSmall = RoundedCornerShape(4.dp),
             small = RoundedCornerShape(12.dp),
             medium = RoundedCornerShape(16.dp),
             large = RoundedCornerShape(22.dp),
-            extraLarge = RoundedCornerShape(24.dp),
         ),
     ) {
         CompositionLocalProvider(

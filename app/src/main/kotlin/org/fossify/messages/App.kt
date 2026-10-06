@@ -20,7 +20,7 @@ class App : FossifyApp() {
     override fun onCreate() {
         super.onCreate()
         InboxRepository.init(this)
-        config.applyOpenLineDefaults()
+        config.applyCobaltDefaults()
         if (hasPermission(PERMISSION_READ_CONTACTS)) {
             listOf(
                 ContactsContract.Contacts.CONTENT_URI,

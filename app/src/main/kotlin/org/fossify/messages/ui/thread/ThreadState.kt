@@ -33,9 +33,6 @@ data class ThreadUiState(
     val isGroup: Boolean = false,
     val isRecycleBin: Boolean = false,
     val searching: Boolean = false,
-    val searchQuery: String = "",
-    val searchMatchCount: Int = 0,
-    val searchMatchPosition: Int = 0,
     val initialScroll: InitialScroll? = null,
     val scrollRequest: ScrollRequest? = null,
     /** Set once the provider confirms the thread has no messages (design 79). */
@@ -95,14 +92,14 @@ sealed interface ComposerEvent {
 
 /** Declaration order is the attach sheet's order (design 11). */
 enum class AttachOption(@StringRes val title: Int, @StringRes val subtitle: Int, @DrawableRes val icon: Int) {
-    PHOTO(R.string.attach_photos, R.string.attach_photos_text, R.drawable.ic_ol_image),
-    CAMERA(R.string.attach_camera, R.string.attach_camera_text, R.drawable.ic_ol_camera),
+    PHOTO(R.string.attach_photos, R.string.attach_photos_text, R.drawable.ic_image_vector),
+    CAMERA(R.string.attach_camera, R.string.attach_camera_text, org.fossify.commons.R.drawable.ic_camera_vector),
     VIDEO(R.string.attach_video, R.string.attach_video_text, R.drawable.ic_videocam_vector),
     RECORD_VIDEO(R.string.attach_record_video, R.string.attach_record_video_text, R.drawable.ic_video_camera_vector),
-    AUDIO(R.string.attach_audio, R.string.attach_audio_text, R.drawable.ic_ol_mic),
-    FILE(R.string.attach_file, R.string.attach_file_text, R.drawable.ic_ol_file_text),
-    CONTACT(R.string.attach_contact, R.string.attach_contact_text, R.drawable.ic_ol_user),
-    SEND_LATER(R.string.composer_send_later, R.string.attach_send_later_text, R.drawable.ic_ol_clock),
+    AUDIO(R.string.attach_audio, R.string.attach_audio_text, org.fossify.commons.R.drawable.ic_microphone_vector),
+    FILE(R.string.attach_file, R.string.attach_file_text, R.drawable.ic_document_vector),
+    CONTACT(R.string.attach_contact, R.string.attach_contact_text, org.fossify.commons.R.drawable.ic_person_vector),
+    SEND_LATER(R.string.composer_send_later, R.string.attach_send_later_text, org.fossify.commons.R.drawable.ic_clock_vector),
 }
 
 /** Matches [org.fossify.messages.helpers.Config.isMessageStarred]'s key space: MMS and SMS ids can collide. */
@@ -133,8 +130,8 @@ sealed interface ThreadEvent {
     data object OpenDetails : ThreadEvent
     data object Dial : ThreadEvent
     data class Menu(val action: ThreadMenuAction) : ThreadEvent
-    data class SearchSubmit(val query: String, val backwards: Boolean = false) : ThreadEvent
-    data class SearchChanged(val query: String) : ThreadEvent
+    data class SearchSubmit(val query: String) : ThreadEvent
+    data object SearchChanged : ThreadEvent
     data object SearchClose : ThreadEvent
 
     data class ToggleSelection(val message: Message) : ThreadEvent
@@ -155,21 +152,21 @@ sealed interface ThreadEvent {
 
 /** Declaration order is the overflow menu order (design view 40). */
 enum class ThreadMenuAction(@StringRes val label: Int, @DrawableRes val icon: Int) {
-    SEARCH(R.string.search_in_conversation, R.drawable.ic_ol_search),
-    DETAILS(R.string.conversation_details, R.drawable.ic_lucide_info),
-    MUTE(R.string.mute_conversation, R.drawable.ic_ol_bell_off),
-    UNMUTE(R.string.unmute_conversation, R.drawable.ic_ol_bell),
-    MARK_UNREAD(R.string.mark_as_unread, R.drawable.ic_ol_mail),
-    RENAME(R.string.rename_conversation, R.drawable.ic_ol_pencil),
-    ADD_PERSON(R.string.add_person, R.drawable.ic_ol_user_plus),
-    ADD_TO_CONTACT(org.fossify.commons.R.string.add_number_to_contact, R.drawable.ic_ol_user_plus),
-    COPY_NUMBER(org.fossify.commons.R.string.copy_number_to_clipboard, R.drawable.ic_lucide_copy),
-    ARCHIVE(R.string.archive, R.drawable.ic_ol_archive),
+    SEARCH(R.string.search_in_conversation, org.fossify.commons.R.drawable.ic_search_vector),
+    DETAILS(R.string.conversation_details, org.fossify.commons.R.drawable.ic_info_vector),
+    MUTE(R.string.mute_conversation, R.drawable.ic_bell_off_vector),
+    UNMUTE(R.string.unmute_conversation, org.fossify.commons.R.drawable.ic_bell_vector),
+    MARK_UNREAD(R.string.mark_as_unread, org.fossify.commons.R.drawable.ic_mail_vector),
+    RENAME(R.string.rename_conversation, org.fossify.commons.R.drawable.ic_edit_vector),
+    ADD_PERSON(R.string.add_person, org.fossify.commons.R.drawable.ic_add_person_vector),
+    ADD_TO_CONTACT(org.fossify.commons.R.string.add_number_to_contact, org.fossify.commons.R.drawable.ic_add_person_vector),
+    COPY_NUMBER(org.fossify.commons.R.string.copy_number_to_clipboard, org.fossify.commons.R.drawable.ic_copy_vector),
+    ARCHIVE(R.string.archive, R.drawable.ic_archive_vector),
     UNARCHIVE(R.string.unarchive, R.drawable.ic_unarchive_vector),
     ALLOW_SENDER(R.string.allow_sender, org.fossify.commons.R.drawable.ic_check_circle_vector),
-    BLOCK(org.fossify.commons.R.string.block_number, R.drawable.ic_ol_ban),
+    BLOCK(org.fossify.commons.R.string.block_number, org.fossify.commons.R.drawable.ic_block_vector),
     RESTORE(R.string.restore_all_messages, org.fossify.commons.R.drawable.ic_restart_alt_vector),
-    DELETE(org.fossify.commons.R.string.delete, R.drawable.ic_lucide_trash),
+    DELETE(org.fossify.commons.R.string.delete, org.fossify.commons.R.drawable.ic_delete_vector),
 }
 
 /** Declaration order is the display order; the bar takes the first few (design view 10), the rest overflow. */
@@ -180,12 +177,10 @@ enum class MessageAction(@StringRes val label: Int, @DrawableRes val icon: Int) 
     UNSTAR(R.string.unstar_message, R.drawable.ic_lucide_star_filled),
     DELETE(org.fossify.commons.R.string.delete, R.drawable.ic_lucide_trash),
     SHARE(org.fossify.commons.R.string.share, R.drawable.ic_lucide_share),
-    SELECT(R.string.inbox_select, R.drawable.ic_ol_square_check),
     SELECT_TEXT(org.fossify.commons.R.string.select_text, R.drawable.ic_lucide_text_cursor),
     DETAILS(org.fossify.commons.R.string.properties, R.drawable.ic_lucide_info),
     SAVE_AS(org.fossify.commons.R.string.save_as, org.fossify.commons.R.drawable.ic_save_vector),
-    NOT_SPAM(R.string.not_spam, R.drawable.ic_ol_check_check),
-    BLOCK_SENDER(R.string.block_sender, R.drawable.ic_ol_ban),
+    NOT_SPAM(R.string.not_spam, org.fossify.commons.R.drawable.ic_check_circle_vector),
     RESTORE(R.string.restore, org.fossify.commons.R.drawable.ic_restart_alt_vector),
     SELECT_ALL(org.fossify.commons.R.string.select_all, org.fossify.commons.R.drawable.ic_select_all_vector),
 }
@@ -199,7 +194,6 @@ fun selectionActions(state: ThreadUiState): List<MessageAction> {
     val allStarred = selected.all { state.isStarred(it) }
     return MessageAction.entries.filter { action ->
         when (action) {
-            MessageAction.SELECT, MessageAction.BLOCK_SENDER -> false
             MessageAction.COPY -> hasText
             MessageAction.FORWARD, MessageAction.DETAILS -> single
             MessageAction.STAR -> !state.isRecycleBin && !allStarred
@@ -213,16 +207,12 @@ fun selectionActions(state: ThreadUiState): List<MessageAction> {
     }
 }
 
-/** The sheet a tap or long press on one message opens (R6-48), in sheet order. Details only for scheduled messages, where it offers edit and send now. */
+/** The sheet a tap on one message opens (R6-48), in sheet order. Details only for scheduled messages, where it offers edit and send now. */
 fun tapActions(message: Message, state: ThreadUiState): List<MessageAction> {
-    if (state.spamReason(message) != null) return listOfNotNull(
-        MessageAction.NOT_SPAM,
-        MessageAction.BLOCK_SENDER.takeIf { message.senderPhoneNumber.isNotBlank() },
-    )
     val failed = message.type == android.provider.Telephony.Sms.MESSAGE_TYPE_FAILED
     return listOf(
         MessageAction.COPY, MessageAction.FORWARD, MessageAction.STAR, MessageAction.UNSTAR, MessageAction.SHARE,
-        MessageAction.SELECT_TEXT, MessageAction.DETAILS, MessageAction.SELECT, MessageAction.DELETE,
+        MessageAction.SELECT_TEXT, MessageAction.DETAILS, MessageAction.DELETE,
     ).filter { action ->
         when (action) {
             MessageAction.COPY -> message.body.isNotEmpty()

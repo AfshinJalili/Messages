@@ -1,21 +1,50 @@
 package org.fossify.messages.ui.inbox
 
-import android.content.res.Configuration
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.layout.imePadding
+import org.fossify.messages.ui.search.SearchContent
+import org.fossify.messages.ui.search.SearchInput
+import org.fossify.messages.ui.search.SearchUiState
+import org.fossify.messages.ui.search.SearchFilter
+import org.fossify.messages.ui.search.SEARCH_TRANSITION_MS
+import org.fossify.messages.models.SearchResult
+import android.content.res.Configuration
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
-import androidx.compose.animation.togetherWith
+import androidx.compose.material3.SwipeToDismissBoxState
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalHapticFeedback
+import kotlin.math.abs
+import android.graphics.Bitmap
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,64 +53,68 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.SwipeToDismissBox
-import androidx.compose.material3.SwipeToDismissBoxState
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
@@ -89,37 +122,43 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import java.util.Calendar
-import kotlin.math.abs
+import androidx.compose.ui.unit.sp
+import com.bumptech.glide.Glide
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.fossify.commons.extensions.formatDateOrTime
 import org.fossify.messages.R
 import org.fossify.messages.helpers.InboxFilter
 import org.fossify.messages.helpers.SwipeAction
 import org.fossify.messages.models.Conversation
-import org.fossify.messages.models.SearchResult
+import org.fossify.messages.ui.Avatar
 import org.fossify.messages.ui.OpenLine
 import org.fossify.messages.ui.OpenLineTheme
-import org.fossify.messages.ui.components.*
-import org.fossify.messages.ui.search.SEARCH_TRANSITION_MS
-import org.fossify.messages.ui.search.SearchContent
-import org.fossify.messages.ui.search.SearchFilter
-import org.fossify.messages.ui.search.SearchUiState
+import org.fossify.messages.ui.forContent
+import org.fossify.messages.ui.withContentFonts
+import java.util.Calendar
 
 // A deliberate half-row drag commits. Flicks do not: the default fling velocity made a short flick
 // delete or archive a conversation.
-private val SwipeCommitDistance = 120.dp
+private const val SWIPE_COMMIT_FRACTION = 0.5f
 private val AvatarSize = 50.dp
 private val TargetSize = 48.dp
 private const val COMPACT_HEIGHT_DP = 480
-private const val EXPANDED_WIDTH_DP = 840
+private const val EXPANDED_WIDTH_DP = 600
 
 // Both controls share a minimum that grows with the text scale.
 private val BandControlHeight = 56.dp
@@ -151,7 +190,6 @@ fun InboxScreen(
     onLibraryTab: (Boolean) -> Unit = {},
 ) {
     val listState = rememberLazyListState()
-    val fabExpanded by remember { derivedStateOf { listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0 } }
     var scrolledDown by rememberSaveable { mutableStateOf(false) }
     val searchOpen by rememberUpdatedState(search.open)
     val scrollConnection = remember {
@@ -167,16 +205,16 @@ fun InboxScreen(
     val configuration = LocalConfiguration.current
     val compactHeight = configuration.screenHeightDp < COMPACT_HEIGHT_DP
     val collapsed = scrolledDown || configuration.screenHeightDp < 320 || LocalDensity.current.fontScale >= 1.5f
-    val showRail = (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE || configuration.screenWidthDp >= EXPANDED_WIDTH_DP) && !state.selecting
+    val showRail = (compactHeight || configuration.screenWidthDp >= EXPANDED_WIDTH_DP) && !state.selecting
     Scaffold(
         modifier = modifier.imePadding(),
         containerColor = MaterialTheme.colorScheme.surface,
         // With no bottom bar, the FAB, snackbar and list tail must clear the navigation bar themselves.
         contentWindowInsets = if (showRail) WindowInsets.navigationBars else WindowInsets(0),
-        snackbarHost = { OpenLineSnackbarHost(snackbarHostState) },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
             if (!state.selecting && !libraryOpen && !search.open) {
-                NewMessageButton(expanded = fabExpanded, onClick = onNewMessage)
+                NewMessageButton(expanded = !collapsed, onClick = onNewMessage)
             }
         },
         bottomBar = {
@@ -330,7 +368,7 @@ private fun IdentityBand(
         ) {
             if (state.selecting) {
                 IconButton(onClick = onClearSelection) {
-                    Icon(painterResource(R.drawable.ic_ol_x), stringResource(org.fossify.commons.R.string.close), tint = colors.onPrimaryContainer)
+                    Icon(painterResource(org.fossify.commons.R.drawable.ic_cross_vector), stringResource(org.fossify.commons.R.string.close), tint = colors.onPrimaryContainer)
                 }
             }
             Text(
@@ -341,7 +379,7 @@ private fun IdentityBand(
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier
                     .weight(1f)
-                    .semantics { heading(); liveRegion = androidx.compose.ui.semantics.LiveRegionMode.Polite },
+                    .semantics { heading() },
             )
             if (state.selecting) {
                 TextButton(onClick = onSelectAll) {
@@ -349,7 +387,7 @@ private fun IdentityBand(
                 }
             } else {
                 IconButton(onClick = onSearch) {
-                    Icon(painterResource(R.drawable.ic_ol_search), stringResource(R.string.inbox_search_hint), tint = colors.onPrimaryContainer)
+                    Icon(painterResource(org.fossify.commons.R.drawable.ic_search_vector), stringResource(R.string.inbox_search_hint), tint = colors.onPrimaryContainer)
                 }
             }
         }
@@ -368,7 +406,7 @@ private fun IdentityBand(
                     text = title,
                     style = MaterialTheme.typography.headlineMedium,
                     color = colors.onPrimaryContainer,
-                    modifier = Modifier.semantics { heading(); liveRegion = androidx.compose.ui.semantics.LiveRegionMode.Polite },
+                    modifier = Modifier.semantics { heading() },
                 )
                 if (!compactHeight && LocalConfiguration.current.screenWidthDp >= 360 && LocalDensity.current.fontScale < 1.5f) {
                     Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = OpenLine.colors.onBandVariant)
@@ -398,7 +436,7 @@ private fun SearchField(onClick: () -> Unit) {
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Icon(
-                painterResource(R.drawable.ic_ol_search),
+                painterResource(org.fossify.commons.R.drawable.ic_search_vector),
                 contentDescription = null,
                 tint = colors.onSurfaceVariant,
                 modifier = Modifier.size(24.dp),
@@ -419,7 +457,7 @@ private fun SelectionControls(onSelectAll: () -> Unit, onClearSelection: () -> U
     ) {
         IconButton(onClick = onClearSelection) {
             Icon(
-                painterResource(R.drawable.ic_ol_x),
+                painterResource(org.fossify.commons.R.drawable.ic_cross_vector),
                 contentDescription = stringResource(org.fossify.commons.R.string.close),
                 tint = onBand,
             )
@@ -444,7 +482,21 @@ private fun FilterRow(current: InboxFilter, onFilter: (InboxFilter) -> Unit) {
     ) {
         InboxFilter.entries.forEach { filter ->
             val selected = filter == current
-            OpenLineFilterChip(stringResource(filter.label), selected, { onFilter(filter) })
+            Box(
+                Modifier
+                    .heightIn(min = TargetSize)
+                    .clip(CircleShape)
+                    .background(if (selected) colors.primaryContainer else colors.surfaceContainer)
+                    .selectable(selected = selected, role = Role.Tab, onClick = { onFilter(filter) })
+                    .padding(horizontal = 16.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    stringResource(filter.label),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = if (selected) colors.onPrimaryContainer else colors.primary,
+                )
+            }
         }
     }
 }
@@ -477,7 +529,7 @@ private fun SwipeableRow(
     val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     val startToEnd = if (rtl) swipeLeft else swipeRight
     val endToStart = if (rtl) swipeRight else swipeLeft
-    val commitPx = with(LocalDensity.current) { SwipeCommitDistance.toPx() }
+    var widthPx by remember { mutableFloatStateOf(0f) }
     val stateRef = remember { arrayOfNulls<SwipeToDismissBoxState>(1) }
     // The deprecated overload is the only one that can veto a dismiss; used here to ignore flicks
     // that were released short of the commit distance.
@@ -485,14 +537,14 @@ private fun SwipeableRow(
     val state = rememberSwipeToDismissBoxState(
         confirmValueChange = { value ->
             val released = runCatching { stateRef[0]?.requireOffset() }.getOrNull() ?: 0f
-            value == SwipeToDismissBoxValue.Settled || abs(released) >= commitPx
+            value == SwipeToDismissBoxValue.Settled || abs(released) >= widthPx * SWIPE_COMMIT_FRACTION
         },
-        positionalThreshold = { commitPx },
+        positionalThreshold = { it * SWIPE_COMMIT_FRACTION },
     ).also { stateRef[0] = it }
     val armed by remember {
         derivedStateOf {
             val offset = runCatching { state.requireOffset() }.getOrNull() ?: 0f
-            abs(offset) >= commitPx
+            widthPx > 0f && abs(offset) >= widthPx * SWIPE_COMMIT_FRACTION
         }
     }
     val haptics = LocalHapticFeedback.current
@@ -502,7 +554,7 @@ private fun SwipeableRow(
     val scope = rememberCoroutineScope()
     SwipeToDismissBox(
         state = state,
-        modifier = modifier,
+        modifier = modifier.onSizeChanged { widthPx = it.width.toFloat() },
         enableDismissFromStartToEnd = enabled && startToEnd != SwipeAction.NONE,
         enableDismissFromEndToStart = enabled && endToStart != SwipeAction.NONE,
         onDismiss = { value ->
@@ -552,21 +604,198 @@ private fun SwipeBackground(action: SwipeAction, armed: Boolean, alignStart: Boo
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun ConversationRow(
+    row: InboxRow,
+    selected: Boolean,
+    selecting: Boolean,
+    onClick: () -> Unit,
+    onLongClick: () -> Unit,
+    archiveAvailable: Boolean,
+    onAccessibleAction: (SwipeAction) -> Unit,
+) {
+    val colors = MaterialTheme.colorScheme
+    val conversation = row.conversation
+    val unread = !conversation.read
+    val fontScale = LocalDensity.current.fontScale
+    val archiveLabel = stringResource(R.string.archive)
+    val deleteLabel = stringResource(org.fossify.commons.R.string.delete)
+    val muteLabel = stringResource(if (row.muted) R.string.unmute_conversation else R.string.mute_conversation)
+    val unreadLabel = if (unread) pluralStringResource(R.plurals.inbox_row_unread, conversation.unreadCount.coerceAtLeast(1), conversation.unreadCount.coerceAtLeast(1)) else null
+    val mutedLabel = stringResource(R.string.muted)
+    val pinnedLabel = stringResource(R.string.inbox_section_pinned)
+    val context = LocalContext.current
+    val configuration = LocalConfiguration.current
+    val time = remember(conversation.date, configuration) {
+        (conversation.date * 1000L).formatDateOrTime(context, hideTimeOnOtherDays = true, showCurrentYear = false)
+    }
+    val description = listOfNotNull(conversation.title, unreadLabel, row.draft ?: conversation.snippet, time,
+        mutedLabel.takeIf { row.muted }, pinnedLabel.takeIf { row.pinned }).joinToString(", ")
+    Row(
+        Modifier
+            .widthIn(max = 640.dp)
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.medium)
+            .background(if (selected) colors.secondaryContainer else colors.surface)
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick,
+                onLongClickLabel = stringResource(R.string.inbox_select),
+            )
+            .semantics(mergeDescendants = true) {
+                if (selecting) this.selected = selected
+                contentDescription = description
+                if (!selecting) customActions = listOfNotNull(
+                    CustomAccessibilityAction(archiveLabel) { onAccessibleAction(SwipeAction.ARCHIVE); true }.takeIf { archiveAvailable },
+                    CustomAccessibilityAction(deleteLabel) { onAccessibleAction(SwipeAction.DELETE); true },
+                    CustomAccessibilityAction(muteLabel) { onAccessibleAction(SwipeAction.MUTE); true },
+                )
+            }
+            .padding(horizontal = 24.dp, vertical = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Box(Modifier.size(AvatarSize), contentAlignment = Alignment.Center) {
+            if (selected) {
+                Box(Modifier.size(AvatarSize).clip(CircleShape).background(colors.primary), contentAlignment = Alignment.Center) {
+                    Icon(painterResource(org.fossify.commons.R.drawable.ic_check_vector), null, tint = colors.onPrimary)
+                }
+            } else {
+                Avatar(conversation.title, conversation.photoUri, conversation.isGroupConversation, AvatarSize)
+            }
+        }
+        Column(Modifier.weight(1f).clearAndSetSemantics { }, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(
+                remember(conversation.title) { AnnotatedString(conversation.title).withContentFonts() },
+                style = MaterialTheme.typography.titleMedium.forContent(conversation.title),
+                color = colors.onSurface,
+                maxLines = if (fontScale >= 1.3f) 2 else 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (fontScale >= 1.5f) Metadata(row, unread, inline = true)
+            SnippetText(row, unread)
+        }
+        if (fontScale < 1.5f) Box(Modifier.clearAndSetSemantics { }) { Metadata(row, unread) }
+    }
+}
+
+@Composable
+internal fun SnippetText(row: InboxRow, unread: Boolean) {
+    val colors = MaterialTheme.colorScheme
+    val draft = row.draft
+    if (!draft.isNullOrEmpty()) {
+        val label = stringResource(R.string.inbox_draft_label)
+        Text(
+            buildAnnotatedString {
+                withStyle(SpanStyle(color = colors.error, fontWeight = FontWeight.Bold)) { append(label) }
+                append(' ')
+                append(draft)
+            }.withContentFonts(),
+            style = MaterialTheme.typography.bodyMedium.forContent(draft),
+            color = colors.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    } else if (row.conversation.isScheduled) {
+        val time = android.text.format.DateFormat.format("EEE HH:mm", row.conversation.date * 1000L).toString()
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            Icon(painterResource(org.fossify.commons.R.drawable.ic_clock_vector), null, tint = colors.primary, modifier = Modifier.size(16.dp))
+            Text(stringResource(R.string.inbox_scheduled_at, time), style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Bold, color = colors.primary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+    } else {
+        Text(
+            remember(row.conversation.snippet) { AnnotatedString(row.conversation.snippet).withContentFonts() },
+            style = MaterialTheme.typography.bodyMedium.forContent(row.conversation.snippet),
+            fontStyle = if (row.conversation.isScheduled) FontStyle.Italic else FontStyle.Normal,
+            color = if (unread) colors.onSurface else colors.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+@Composable
+private fun Metadata(row: InboxRow, unread: Boolean, inline: Boolean = false) {
+    val colors = MaterialTheme.colorScheme
+    val context = LocalContext.current
+    val date = row.conversation.date
+    val time = remember(date) {
+        (date * 1000L).formatDateOrTime(context, hideTimeOnOtherDays = true, showCurrentYear = false)
+    }
+    val signals: @Composable () -> Unit = {
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+            if (row.pinned) Icon(painterResource(org.fossify.commons.R.drawable.ic_pin_vector), null, tint = colors.onSurfaceVariant, modifier = Modifier.size(16.dp))
+            if (row.muted) Icon(painterResource(R.drawable.ic_bell_off_vector), null, tint = colors.onSurfaceVariant, modifier = Modifier.size(16.dp))
+            if (unread) {
+                if (row.conversation.unreadCount > 1) {
+                    Box(Modifier.heightIn(min = 22.dp).clip(CircleShape).background(colors.primaryContainer).padding(horizontal = 6.dp), contentAlignment = Alignment.Center) {
+                        Text(String.format(LocalConfiguration.current.locales[0], "%d", row.conversation.unreadCount),
+                            color = colors.onPrimaryContainer, style = MaterialTheme.typography.labelSmall)
+                    }
+                } else {
+                    Box(Modifier.size(10.dp).clip(CircleShape).background(colors.primary))
+                }
+            }
+        }
+    }
+    if (inline) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(time, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant, maxLines = 1)
+            signals()
+        }
+    } else {
+        Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(time, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant, maxLines = 1)
+            signals()
+        }
+    }
+}
+
 @Composable
 private fun LoadingState() {
-    Column(Modifier.padding(20.dp)) {
-        repeat(3) { OpenLineLoadingResult(stringResource(R.string.loading_messages)) }
+    Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        LinearProgressIndicator(
+            modifier = Modifier.fillMaxWidth(),
+            color = MaterialTheme.colorScheme.primary,
+            trackColor = MaterialTheme.colorScheme.outlineVariant,
+        )
+        Text(
+            stringResource(R.string.loading_messages),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
 @Composable
 private fun EmptyState(filter: InboxFilter) {
-    OpenLineEmptyState(
-        title = stringResource(filter.emptyTitle()),
-        body = stringResource(filter.emptyBody()),
-        icon = if (filter == InboxFilter.UNREAD) R.drawable.ic_ol_check_check else R.drawable.ic_message_circle_vector,
-        modifier = Modifier.padding(20.dp),
-    )
+    val colors = MaterialTheme.colorScheme
+    Column(
+        Modifier
+            .padding(20.dp)
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.medium)
+            .background(colors.secondaryContainer)
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Icon(
+            painterResource(if (filter == InboxFilter.UNREAD) R.drawable.ic_check_double_vector else R.drawable.ic_message_bubble),
+            contentDescription = null,
+            tint = colors.primary,
+            modifier = Modifier.size(34.dp),
+        )
+        Text(
+            stringResource(filter.emptyTitle()),
+            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
+            color = colors.onSecondaryContainer,
+        )
+        if (filter == InboxFilter.ALL) {
+            Text(stringResource(R.string.inbox_empty_text), style = MaterialTheme.typography.bodyMedium, color = colors.onSecondaryContainer)
+        }
+    }
 }
 
 @Composable
@@ -578,9 +807,99 @@ private fun NewMessageButton(expanded: Boolean, onClick: () -> Unit) {
         contentColor = OpenLine.colors.onAccent,
         shape = MaterialTheme.shapes.medium,
         // Collapsed it shows only the icon, so the icon must carry the label for TalkBack.
-        icon = { Icon(painterResource(R.drawable.ic_ol_square_pen), contentDescription = if (expanded) null else stringResource(R.string.start_chat)) },
-        text = { Text(stringResource(R.string.start_chat), style = MaterialTheme.typography.titleMedium) },
+        icon = { Icon(painterResource(R.drawable.ic_message_bubble), contentDescription = if (expanded) null else stringResource(R.string.new_message)) },
+        text = { Text(stringResource(R.string.new_message), style = MaterialTheme.typography.labelLarge) },
     )
+}
+
+@Composable
+private fun InboxNavigation(
+    unreadSpam: Int,
+    onLibrary: () -> Unit,
+    onSettings: () -> Unit,
+    vertical: Boolean = false,
+    librarySelected: Boolean = false,
+    onInbox: () -> Unit = {},
+) {
+    @Composable
+    fun Items(itemModifier: Modifier) {
+        NavItem(R.drawable.ic_message_bubble, stringResource(R.string.inbox_nav_inbox), !librarySelected, onInbox, itemModifier)
+        NavItem(R.drawable.ic_library_vector, stringResource(R.string.inbox_nav_library), librarySelected, onLibrary, itemModifier, unreadSpam)
+        NavItem(
+            org.fossify.commons.R.drawable.ic_settings_cog_vector,
+            stringResource(org.fossify.commons.R.string.settings),
+            false,
+            onSettings,
+            itemModifier,
+        )
+    }
+    Surface(color = MaterialTheme.colorScheme.surfaceContainer) {
+        if (vertical) {
+            Column(
+                Modifier
+                    .fillMaxHeight()
+                    // Insets before the width: a landscape cutout must widen the rail, not squeeze its labels.
+                    .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Start + WindowInsetsSides.Vertical))
+                    .width(96.dp)
+                    .verticalScroll(rememberScrollState())
+                    .padding(8.dp)
+                    .selectableGroup(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically),
+            ) {
+                Items(Modifier.fillMaxWidth())
+            }
+        } else {
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .windowInsetsPadding(WindowInsets.navigationBars)
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .selectableGroup(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Items(Modifier.weight(1f))
+            }
+        }
+    }
+}
+
+@Composable
+private fun NavItem(
+    icon: Int,
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    badge: Int = 0,
+) {
+    val colors = MaterialTheme.colorScheme
+    val tint = if (selected) colors.primary else colors.onSurfaceVariant
+    Column(
+        modifier
+            .heightIn(min = 64.dp)
+            .clip(MaterialTheme.shapes.small)
+            .background(if (selected) colors.secondaryContainer else Color.Transparent)
+            .selectable(selected = selected, role = Role.Tab, onClick = onClick)
+            .padding(4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
+    ) {
+        BadgedBox(badge = {
+            if (badge > 0) {
+                CountBadge(badge)
+            }
+        }) {
+            Icon(painterResource(icon), contentDescription = null, tint = tint, modifier = Modifier.size(22.dp))
+        }
+        Text(
+            label,
+            style = if (selected) MaterialTheme.typography.labelMedium else MaterialTheme.typography.labelSmall,
+            color = tint,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
 }
 
 @Composable
@@ -602,7 +921,7 @@ private fun SelectionBar(state: InboxUiState, onAction: (InboxAction) -> Unit) {
                 var open by remember { mutableStateOf(false) }
                 Box(Modifier.weight(1f)) {
                     ActionItem(
-                        R.drawable.ic_ol_ellipsis,
+                        org.fossify.commons.R.drawable.ic_three_dots_vector,
                         stringResource(org.fossify.commons.R.string.more_options),
                         { open = true },
                     )
@@ -613,7 +932,7 @@ private fun SelectionBar(state: InboxUiState, onAction: (InboxAction) -> Unit) {
                                 leadingIcon = { Icon(painterResource(action.icon), contentDescription = null, modifier = Modifier.size(20.dp)) },
                                 modifier = Modifier.heightIn(min = TargetSize),
                                 colors = androidx.compose.material3.MenuDefaults.itemColors(
-                                    textColor = MaterialTheme.colorScheme.onSurface,
+                                    textColor = if (action == InboxAction.BLOCK || action == InboxAction.DELETE) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
                                     leadingIconColor = if (action == InboxAction.BLOCK || action == InboxAction.DELETE) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
                                 ),
                                 onClick = {
@@ -645,11 +964,22 @@ private fun ActionItem(icon: Int, label: String, onClick: () -> Unit, modifier: 
         Text(
             label,
             style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurface,
+            color = if (destructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
         )
+    }
+}
+
+/**
+ * Badge text keeps its own compact line height; the Persian 1.7 leading would otherwise push the
+ * badge past the nav item's clip. Digits are localized (۸۴ in Persian).
+ */
+@Composable
+private fun CountBadge(count: Int) {
+    Badge(containerColor = MaterialTheme.colorScheme.error, contentColor = MaterialTheme.colorScheme.onError) {
+        Text((String.format(LocalConfiguration.current.locales[0], "%d", count.coerceAtMost(99)) + if (count > 99) "+" else ""), style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp, lineHeight = 14.sp))
     }
 }
 
@@ -682,7 +1012,7 @@ private fun LibraryPage(state: InboxUiState, onOpen: (LibraryDestination) -> Uni
                     Text(stringResource(description), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
                 }
                 if (count > 0) CountBadge(count)
-                Icon(painterResource(R.drawable.ic_ol_chevron_right), null,
+                Icon(painterResource(org.fossify.commons.R.drawable.ic_chevron_right_vector), null,
                     tint = colors.onSurfaceVariant, modifier = Modifier.size(18.dp).graphicsLayer {
                         scaleX = if (rtl) -1f else 1f
                     })
@@ -690,7 +1020,7 @@ private fun LibraryPage(state: InboxUiState, onOpen: (LibraryDestination) -> Uni
         }
         Column(Modifier.fillMaxWidth().clip(MaterialTheme.shapes.small).background(colors.secondaryContainer).padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(stringResource(R.string.library_principle_title), style = MaterialTheme.typography.labelMedium, color = colors.onSecondaryContainer)
-            Text(stringResource(R.string.library_principle_body), style = MaterialTheme.typography.bodySmall, color = OpenLine.colors.onSecondaryVariant)
+            Text(stringResource(R.string.library_principle_body), style = MaterialTheme.typography.bodySmall, color = colors.onSecondaryContainer)
         }
     }
 }

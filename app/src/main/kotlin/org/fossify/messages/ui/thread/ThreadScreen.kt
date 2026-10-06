@@ -1,21 +1,46 @@
-package org.fossify.messages.ui.components
+package org.fossify.messages.ui.thread
 
 import android.content.res.Configuration
+import android.text.format.DateFormat
+import androidx.compose.animation.core.Animatable
+import androidx.compose.foundation.layout.absoluteOffset
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionOnScreen
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.toSize
+import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 import android.net.Uri
 import android.provider.Telephony
 import android.text.SpannableString
-import android.text.format.DateFormat
 import android.text.style.URLSpan
 import android.text.util.Linkify
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -23,18 +48,20 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
-import androidx.compose.foundation.layout.absoluteOffset
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
@@ -42,44 +69,42 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.union
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.withFrameNanos
@@ -87,18 +112,9 @@ import androidx.compose.ui.AbsoluteAlignment
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.graphics.BlendMode
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -109,26 +125,17 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.LayoutCoordinates
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.layout.positionOnScreen
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.CustomAccessibilityAction
-import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.onLongClick
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
@@ -145,17 +152,11 @@ import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.toSize
 import androidx.core.text.util.LinkifyCompat
-import kotlin.coroutines.resume
-import kotlin.math.roundToInt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import org.fossify.commons.extensions.formatSize
@@ -163,9 +164,9 @@ import org.fossify.commons.extensions.formatTime
 import org.fossify.commons.models.SimpleContact
 import org.fossify.messages.R
 import org.fossify.messages.extensions.getFileSizeFromUri
-import org.fossify.messages.extensions.isImageMimeType
 import org.fossify.messages.extensions.isVCardMimeType
 import org.fossify.messages.extensions.isVideoMimeType
+import org.fossify.messages.extensions.isImageMimeType
 import org.fossify.messages.helpers.THREAD_DATE_TIME
 import org.fossify.messages.helpers.THREAD_SPAM_GROUP
 import org.fossify.messages.helpers.THREAD_UNREAD_SEPARATOR
@@ -174,18 +175,18 @@ import org.fossify.messages.helpers.generateStableId
 import org.fossify.messages.helpers.getIconResourceForMimeType
 import org.fossify.messages.helpers.parseNameFromVCard
 import org.fossify.messages.helpers.parseVCardFromUri
-import org.fossify.messages.helpers.searchRanges
 import org.fossify.messages.models.Attachment
 import org.fossify.messages.models.Message
 import org.fossify.messages.models.MessageAttachment
 import org.fossify.messages.models.ThreadItem
 import org.fossify.messages.models.spamReasonLabel
+import org.fossify.messages.ui.Avatar
 import org.fossify.messages.ui.OpenLine
 import org.fossify.messages.ui.OpenLineTheme
 import org.fossify.messages.ui.forContent
-import org.fossify.messages.ui.rememberBitmap
-import org.fossify.messages.ui.thread.*
 import org.fossify.messages.ui.withContentFonts
+import org.fossify.messages.ui.rememberBitmap
+import kotlin.coroutines.resume
 
 // Same limits the View timeline used.
 private const val JUMP_BUTTON_ITEM_LIMIT = 20
@@ -197,6 +198,8 @@ private const val STICKY_DATE_HIDE_DELAY_MS = 700L
 private const val STICKY_DATE_FADE_MS = 180
 // R6-48: the lift shares the sheet's curve and length.
 private const val LIFT_MS = 300
+// Design screen 97: #152621 at 40%.
+val LiftScrim = Color(0x66152621)
 private val LiftGap = 12.dp
 private val LiftElevation = 2.dp
 private val LiftFade = 32.dp
@@ -220,45 +223,44 @@ fun ThreadHeader(state: ThreadUiState, onEvent: (ThreadEvent) -> Unit, modifier:
             Modifier
                 .windowInsetsPadding(WindowInsets.statusBars.union(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)))
                 .heightIn(min = if (compact) 56.dp else 72.dp)
-                .padding(horizontal = 16.dp, vertical = if (compact) 4.dp else 12.dp),
+                .padding(horizontal = 8.dp, vertical = if (compact) 4.dp else 8.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             when {
                 state.selecting -> {
                     LabeledIconButton(stringResource(org.fossify.commons.R.string.close), onClick = { onEvent(ThreadEvent.ClearSelection) }) {
-                        Icon(painterResource(R.drawable.ic_ol_x), contentDescription = null)
+                        Icon(painterResource(org.fossify.commons.R.drawable.ic_cross_vector), contentDescription = null)
                     }
                     Identity(header, pluralStringResource(R.plurals.inbox_selected, state.selected.size, state.selected.size), Modifier.weight(1f))
                 }
 
                 state.searching -> {
                     LabeledIconButton(stringResource(org.fossify.commons.R.string.close), onClick = { onEvent(ThreadEvent.SearchClose) }) {
-                        Icon(painterResource(R.drawable.ic_ol_arrow_left), contentDescription = null)
+                        Icon(painterResource(org.fossify.commons.R.drawable.ic_arrow_left_vector), contentDescription = null)
                     }
-                    SearchField(state, onEvent, Modifier.weight(1f))
+                    SearchField(onEvent, Modifier.weight(1f))
                 }
 
                 else -> {
                     LabeledIconButton(stringResource(org.fossify.commons.R.string.back), onClick = { onEvent(ThreadEvent.Back) }) {
-                        Icon(painterResource(R.drawable.ic_ol_arrow_left), contentDescription = null)
+                        Icon(painterResource(org.fossify.commons.R.drawable.ic_arrow_left_vector), contentDescription = null)
                     }
                     Row(
                         Modifier
                             .weight(1f)
-                            .heightIn(min = TargetSize)
                             .clip(MaterialTheme.shapes.small)
-                            .openLineFocus(MaterialTheme.shapes.small)
                             .clickable(enabled = ThreadMenuAction.DETAILS in header.actions) { onEvent(ThreadEvent.OpenDetails) }
                             .padding(vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
+                        Avatar(header.title, header.photoUri, header.isGroup, size = 44.dp)
                         Identity(header, if (compact) "" else header.subtitle, Modifier.weight(1f))
                     }
                     if (header.canDial) {
                         LabeledIconButton(stringResource(org.fossify.commons.R.string.dial_number), onClick = { onEvent(ThreadEvent.Dial) }) {
-                            Icon(painterResource(R.drawable.ic_ol_phone), contentDescription = null)
+                            Icon(painterResource(org.fossify.commons.R.drawable.ic_phone_vector), contentDescription = null)
                         }
                     }
                     if (header.actions.isNotEmpty()) {
@@ -273,15 +275,15 @@ fun ThreadHeader(state: ThreadUiState, onEvent: (ThreadEvent) -> Unit, modifier:
 /** The label sits on the 48 dp button, not the 24 dp icon, so accessibility tools see one labelled target. */
 @Composable
 private fun LabeledIconButton(label: String, onClick: () -> Unit, icon: @Composable () -> Unit) {
-    OpenLineIconButton(label, onClick, content = icon)
+    IconButton(onClick = onClick, modifier = Modifier.semantics { contentDescription = label }, content = icon)
 }
 
 @Composable
 private fun Identity(header: ThreadHeaderState, subtitle: String, modifier: Modifier = Modifier) {
     Column(modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Text(
-            remember(header.title) { AnnotatedString(header.title).withContentFonts() },
-            style = MaterialTheme.typography.titleLarge.forContent(header.title),
+            header.title,
+            style = MaterialTheme.typography.titleLarge,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.semantics { heading() },
@@ -297,7 +299,7 @@ private fun OverflowMenu(actions: List<ThreadMenuAction>, onEvent: (ThreadEvent)
     var open by remember { mutableStateOf(false) }
     Box {
         LabeledIconButton(stringResource(org.fossify.commons.R.string.more_options), onClick = { open = true }) {
-            Icon(painterResource(R.drawable.ic_ol_ellipsis), contentDescription = null)
+            Icon(painterResource(org.fossify.commons.R.drawable.ic_three_dots_vector), contentDescription = null)
         }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }, containerColor = MaterialTheme.colorScheme.surfaceContainer, shape = MaterialTheme.shapes.medium) {
             actions.forEach { action ->
@@ -306,7 +308,7 @@ private fun OverflowMenu(actions: List<ThreadMenuAction>, onEvent: (ThreadEvent)
                     leadingIcon = { Icon(painterResource(action.icon), contentDescription = null) },
                     colors = if (action == ThreadMenuAction.DELETE || action == ThreadMenuAction.BLOCK) {
                         androidx.compose.material3.MenuDefaults.itemColors(
-                            textColor = MaterialTheme.colorScheme.onSurface,
+                            textColor = MaterialTheme.colorScheme.error,
                             leadingIconColor = MaterialTheme.colorScheme.error,
                         )
                     } else {
@@ -323,64 +325,46 @@ private fun OverflowMenu(actions: List<ThreadMenuAction>, onEvent: (ThreadEvent)
 }
 
 @Composable
-private fun SearchField(state: ThreadUiState, onEvent: (ThreadEvent) -> Unit, modifier: Modifier = Modifier) {
+private fun SearchField(onEvent: (ThreadEvent) -> Unit, modifier: Modifier = Modifier) {
     val colors = MaterialTheme.colorScheme
-    val query = state.searchQuery
-    val searchLabel = stringResource(R.string.search_in_conversation)
+    var query by rememberSaveable { mutableStateOf("") }
     val focus = remember { FocusRequester() }
     LaunchedEffect(Unit) { focus.requestFocus() }
-    Surface(shape = MaterialTheme.shapes.medium, color = androidx.compose.ui.res.colorResource(R.color.open_line_pine_2),
-        modifier = modifier.heightIn(min = 56.dp).openLineFocus(MaterialTheme.shapes.medium)) {
-        BoxWithConstraints {
-            val stackActions = maxWidth < 300.dp || LocalDensity.current.fontScale >= 1.5f
-            Column(Modifier.padding(horizontal = 12.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Icon(painterResource(R.drawable.ic_ol_search), contentDescription = null, tint = OpenLine.colors.onBandVariant)
-                    Box(Modifier.weight(1f).padding(vertical = 12.dp), contentAlignment = Alignment.CenterStart) {
-                        if (query.isEmpty()) {
-                            Text(stringResource(R.string.search_in_conversation), style = MaterialTheme.typography.bodyMedium,
-                                color = OpenLine.colors.onBandVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        }
-                        BasicTextField(
-                            value = query,
-                            onValueChange = { onEvent(ThreadEvent.SearchChanged(it)) },
-                            singleLine = true,
-                            textStyle = MaterialTheme.typography.bodyMedium.copy(color = colors.onPrimaryContainer),
-                            cursorBrush = SolidColor(OpenLine.colors.accent),
-                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                            keyboardActions = KeyboardActions(onSearch = { if (query.isNotBlank()) onEvent(ThreadEvent.SearchSubmit(query)) }),
-                            modifier = Modifier.fillMaxWidth().focusRequester(focus)
-                                .semantics { contentDescription = searchLabel }
-                                .onPreviewKeyEvent {
-                                    val enter = it.key == Key.Enter || it.key == Key.NumPadEnter
-                                    if (enter && it.type == KeyEventType.KeyUp && query.isNotBlank()) onEvent(ThreadEvent.SearchSubmit(query))
-                                    enter
-                                },
-                        )
-                    }
-                    if (query.isNotEmpty() && !stackActions) SearchMatchControls(state, onEvent)
+    Surface(shape = MaterialTheme.shapes.medium, color = colors.surfaceContainer, modifier = modifier.height(TargetSize)) {
+        Row(Modifier.padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Icon(painterResource(org.fossify.commons.R.drawable.ic_search_vector), contentDescription = null, tint = colors.onSurfaceVariant)
+            Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
+                if (query.isEmpty()) {
+                    Text(stringResource(R.string.search_in_conversation), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, maxLines = 1)
                 }
-                if (query.isNotEmpty() && stackActions) {
-                    Row(Modifier.horizontalScroll(rememberScrollState()), verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)) { SearchMatchControls(state, onEvent) }
+                BasicTextField(
+                    value = query,
+                    onValueChange = {
+                        query = it
+                        onEvent(ThreadEvent.SearchChanged)
+                    },
+                    singleLine = true,
+                    textStyle = MaterialTheme.typography.bodyMedium.copy(color = colors.onSurface),
+                    cursorBrush = SolidColor(colors.primary),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    keyboardActions = KeyboardActions(onSearch = { if (query.isNotBlank()) onEvent(ThreadEvent.SearchSubmit(query)) }),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .focusRequester(focus)
+                        // Hardware keyboards and some IMEs send Enter instead of the search action.
+                        .onPreviewKeyEvent {
+                            val enter = it.key == Key.Enter || it.key == Key.NumPadEnter
+                            if (enter && it.type == KeyEventType.KeyUp && query.isNotBlank()) onEvent(ThreadEvent.SearchSubmit(query))
+                            enter
+                        },
+                )
+            }
+            if (query.isNotEmpty()) {
+                LabeledIconButton(stringResource(R.string.thread_search_next), onClick = { onEvent(ThreadEvent.SearchSubmit(query)) }) {
+                    Icon(painterResource(org.fossify.commons.R.drawable.ic_chevron_up_vector), contentDescription = null, tint = colors.onSurface)
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun SearchMatchControls(state: ThreadUiState, onEvent: (ThreadEvent) -> Unit) {
-    val colors = MaterialTheme.colorScheme
-    if (state.searchMatchCount > 0) Text(
-        stringResource(R.string.search_match_position, state.searchMatchPosition, state.searchMatchCount),
-        style = MaterialTheme.typography.bodySmall, color = OpenLine.colors.onBandVariant, maxLines = 1,
-    )
-    LabeledIconButton(stringResource(R.string.search_previous_match), onClick = { onEvent(ThreadEvent.SearchSubmit(state.searchQuery, backwards = true)) }) {
-        Icon(painterResource(R.drawable.ic_ol_chevron_down), null, tint = colors.onPrimaryContainer)
-    }
-    LabeledIconButton(stringResource(R.string.thread_search_next), onClick = { onEvent(ThreadEvent.SearchSubmit(state.searchQuery)) }) {
-        Icon(painterResource(R.drawable.ic_ol_chevron_up), null, tint = colors.onPrimaryContainer)
     }
 }
 
@@ -441,7 +425,7 @@ fun ThreadTimeline(
             if (state.empty && shown.isEmpty()) EmptyConversation(state.firstName)
             StickyDate(newestFirst, listState, Modifier.align(Alignment.TopCenter))
             JumpToLatest(state, newestFirst, listState, onEvent, Modifier.align(Alignment.BottomEnd))
-            OpenLineSnackbarHost(snackbarHostState, Modifier.align(Alignment.BottomCenter))
+            SnackbarHost(snackbarHostState, Modifier.align(Alignment.BottomCenter))
             lifted?.let { lift -> LiftOverlay(lift, sheetOpen, sheetTop, state, onDim, onGone = { if (lifted === lift) lifted = null }) }
         }
         if (state.selecting) {
@@ -471,13 +455,12 @@ private fun LiftOverlay(lift: LiftedBubble, up: Boolean, sheetTop: Float, state:
         if (!up) onGone()
     }
     val density = LocalDensity.current
-    val scrim = MaterialTheme.colorScheme.scrim
     var origin by remember { mutableStateOf<Offset?>(null) }
     Box(
         Modifier
             .fillMaxSize()
             .onGloballyPositioned { origin = it.positionOnScreen() }
-            .drawBehind { drawRect(scrim, alpha = progress.value) }
+            .drawBehind { drawRect(LiftScrim, alpha = progress.value) }
             .clearAndSetSemantics {},
         // Bounds are absolute screen positions; a start-aligned child would sit at the right edge in RTL.
         contentAlignment = AbsoluteAlignment.TopLeft,
@@ -558,8 +541,8 @@ private fun MessageSheet(message: Message, state: ThreadUiState, onTop: (Float) 
         ) {
             Text(info, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant, modifier = Modifier.padding(horizontal = 4.dp, vertical = 12.dp))
             HorizontalDivider(color = colors.outlineVariant)
-            tapActions(message, state).sortedBy { it == MessageAction.DELETE || it == MessageAction.BLOCK_SENDER }.forEach { action ->
-                val danger = action == MessageAction.DELETE || action == MessageAction.BLOCK_SENDER
+            tapActions(message, state).forEach { action ->
+                val danger = action == MessageAction.DELETE
                 Row(
                     Modifier
                         .fillMaxWidth()
@@ -578,7 +561,7 @@ private fun MessageSheet(message: Message, state: ThreadUiState, onTop: (Float) 
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     Icon(painterResource(action.icon), contentDescription = null, tint = if (danger) colors.error else colors.primary, modifier = Modifier.size(24.dp))
-                    Text(stringResource(action.label), style = MaterialTheme.typography.labelLarge, color = colors.onSurface)
+                    Text(stringResource(action.label), style = MaterialTheme.typography.bodyLarge, color = if (danger) colors.error else colors.onSurface)
                 }
             }
         }
@@ -595,7 +578,7 @@ private fun EmptyConversation(firstName: String) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Icon(painterResource(R.drawable.ic_ol_messages_square), contentDescription = null, tint = colors.primary, modifier = Modifier.size(32.dp))
+        Icon(painterResource(R.drawable.ic_message_circle_vector), contentDescription = null, tint = colors.primary, modifier = Modifier.size(32.dp))
         Text(stringResource(R.string.thread_empty_title), style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
         if (firstName.isNotEmpty()) {
             Text(stringResource(R.string.thread_empty_text, firstName), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
@@ -773,16 +756,9 @@ private fun Bubble(
     val (container, content) = when {
         selected -> colors.secondaryContainer to colors.onSecondaryContainer
         failed -> colors.errorContainer to colors.onErrorContainer
-        incoming && state.spamReason(message) != null -> colors.secondaryContainer to colors.onSecondaryContainer
         incoming -> colors.surfaceContainer to colors.onSurface
         else -> colors.primaryContainer to colors.onPrimaryContainer
     }
-    val statusLine = when {
-        message.type == Telephony.Sms.MESSAGE_TYPE_OUTBOX && !message.isScheduled -> OpenLine.colors.lineSending
-        state.spamReason(message) != null -> OpenLine.colors.lineBlocked
-        else -> null
-    }
-    val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     val shape = bubbleShape(incoming, groupedBelow)
     val attachments = message.attachment?.attachments.orEmpty()
     val coordinates = remember { arrayOfNulls<LayoutCoordinates>(1) }
@@ -804,17 +780,8 @@ private fun Bubble(
                 .onGloballyPositioned { coordinates[0] = it }
                 .clip(shape)
                 .background(container)
-                .drawBehind {
-                    statusLine?.let {
-                        val width = 4.dp.toPx()
-                        drawRect(it, Offset(if (rtl) size.width - width else 0f, 0f), Size(width, size.height))
-                    }
-                }
-                .then(if (selected) Modifier.border(2.dp, colors.primary, shape) else if (state.spamReason(message) != null) Modifier.border(1.dp, colors.primary, shape) else Modifier)
-                .longPressAction(if (state.selecting) selectLabel else stringResource(org.fossify.commons.R.string.more_options)) {
-                    if (state.selecting) onEvent(ThreadEvent.ToggleSelection(message))
-                    else coordinates[0]?.takeIf { it.isAttached }?.let { onOpen?.invoke(it) }
-                }
+                .then(if (selected) Modifier.border(2.dp, colors.primary, shape) else Modifier)
+                .longPressToSelect(selectLabel) { onEvent(ThreadEvent.ToggleSelection(message)) }
                 .clickable(enabled = onOpen != null) {
                     if (state.selecting) {
                         onEvent(ThreadEvent.ToggleSelection(message))
@@ -835,9 +802,8 @@ private fun Bubble(
                 }
             }
             if (message.body.isNotEmpty()) {
-                MessageText(message.body, content, linkColor = if (incoming || selected || failed) colors.primary else OpenLine.colors.accent, links = !state.selecting, onCopy = { onEvent(ThreadEvent.CopyText(it)) }, query = if (state.searching) state.searchQuery else "")
+                MessageText(message.body, content, linkColor = if (incoming || selected || failed) colors.primary else OpenLine.colors.accent, links = !state.selecting, onCopy = { onEvent(ThreadEvent.CopyText(it)) })
             }
-            if (selected) Icon(painterResource(R.drawable.ic_ol_square_check), null, tint = content, modifier = Modifier.size(20.dp))
             // Never hide a failure, in-flight send, scheduled time, star, or spam explanation in a run.
             if (!groupedBelow || failed || message.isScheduled || message.type == Telephony.Sms.MESSAGE_TYPE_OUTBOX || state.isStarred(message) || state.spamReason(message) != null) {
                 Metadata(message, state, content, Modifier.align(if (failed) Alignment.Start else Alignment.End))
@@ -845,12 +811,15 @@ private fun Bubble(
             if (failed) {
                 // R6-46: Retry sends on the SIM shown; the switcher beside it only changes that SIM.
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    OpenLineButton(
-                        stringResource(R.string.thread_retry),
-                        { onEvent(ThreadEvent.Retry(message)) },
-                        Modifier.weight(1f),
-                        kind = OpenLineButtonKind.SECONDARY,
-                    )
+                    Button(
+                        onClick = { onEvent(ThreadEvent.Retry(message)) },
+                        colors = ButtonDefaults.buttonColors(containerColor = colors.surfaceContainerLowest, contentColor = colors.primary),
+                        modifier = Modifier
+                            .weight(1f)
+                            .heightIn(min = TargetSize),
+                    ) {
+                        Text(stringResource(R.string.thread_retry), style = MaterialTheme.typography.labelMedium)
+                    }
                     if (state.sendSim > 0) {
                         SimSwitcher(state.sendSim, carrier = "", expanded = true, onClick = { onEvent(ThreadEvent.NextSim) })
                     }
@@ -871,12 +840,12 @@ private fun bubbleShape(incoming: Boolean, groupedBelow: Boolean): RoundedCorner
 }
 
 /**
- * Long press anywhere on a bubble opens its actions, including over a link, whose own handler
- * would otherwise take the gesture. While selecting, it toggles selection. Watches the Initial pass so it sees the press before the text does,
+ * Long press anywhere on a bubble selects it, including over a link, whose own handler would
+ * otherwise take the gesture. Watches the Initial pass so it sees the press before the text does,
  * and swallows the release so the link or bubble tap does not fire as well.
  */
 @Composable
-private fun Modifier.longPressAction(label: String, onLongPress: () -> Unit): Modifier {
+private fun Modifier.longPressToSelect(label: String, onLongPress: () -> Unit): Modifier {
     val haptics = LocalHapticFeedback.current
     val action by rememberUpdatedState(onLongPress)
     return semantics {
@@ -887,7 +856,7 @@ private fun Modifier.longPressAction(label: String, onLongPress: () -> Unit): Mo
     }.pointerInput(Unit) {
         awaitEachGesture {
             val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
-            val endedEarly = withTimeoutOrNull(450L) {
+            val endedEarly = withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
                 while (true) {
                     val change = awaitPointerEvent(PointerEventPass.Initial).changes.firstOrNull { it.id == down.id } ?: break
                     if (!change.pressed || change.isConsumed || (change.position - down.position).getDistance() > viewConfiguration.touchSlop) break
@@ -907,17 +876,9 @@ private fun Modifier.longPressAction(label: String, onLongPress: () -> Unit): Mo
 
 /** Web links and email addresses open; standalone numbers copy, as in the View timeline. */
 @Composable
-internal fun MessageText(body: String, color: Color, linkColor: Color, links: Boolean, query: String = "", onCopy: (String) -> Unit) {
-    val highlight = MaterialTheme.colorScheme.secondaryContainer
-    val highlightInk = MaterialTheme.colorScheme.onSecondaryContainer
-    val text = remember(body, links, linkColor, query, highlight, highlightInk) {
-        val source = if (links) linkify(body, linkColor, onCopy) else AnnotatedString(body)
-        buildAnnotatedString {
-            append(source)
-            searchRanges(source.text, query).forEach { range ->
-                addStyle(SpanStyle(background = highlight, color = highlightInk, fontWeight = FontWeight.Bold), range.first, range.last + 1)
-            }
-        }.withContentFonts()
+internal fun MessageText(body: String, color: Color, linkColor: Color, links: Boolean, onCopy: (String) -> Unit) {
+    val text = remember(body, links, linkColor) {
+        (if (links) linkify(body, linkColor, onCopy) else AnnotatedString(body)).withContentFonts()
     }
     // Each paragraph takes its direction from its first letter, whatever the app language, and one
     // with no letters (a number, emoji) reads left to right, as in Telegram and WhatsApp.
@@ -968,13 +929,12 @@ private fun Metadata(message: Message, state: ThreadUiState, content: Color, mod
     val incoming = message.isReceivedMessage()
     val metaColor = when {
         message.type == Telephony.Sms.MESSAGE_TYPE_FAILED -> content
-        message.getStableId() in state.selected || state.spamReason(message) != null -> OpenLine.colors.onSecondaryVariant
-        incoming -> colors.onSurfaceVariant
+        incoming || message.getStableId() in state.selected -> colors.onSurfaceVariant
         else -> OpenLine.colors.onBandVariant
     }
     val time = remember(message.date) { (message.date * 1000L).formatTime(context) }
     val failed = message.type == Telephony.Sms.MESSAGE_TYPE_FAILED
-    // Final v2 keeps the clock and a visible sending label; TalkBack announces the same state.
+    // R6-47: the clock alone says sending, where the tick will go; TalkBack still hears the word.
     val sending = message.type == Telephony.Sms.MESSAGE_TYPE_OUTBOX && !message.isScheduled
     val parts = buildList {
         if (failed) add(stringResource(R.string.message_not_sent_short))
@@ -994,20 +954,17 @@ private fun Metadata(message: Message, state: ThreadUiState, content: Color, mod
     val sendingLabel = stringResource(R.string.sending).takeIf { sending }
     val description = (listOfNotNull(starredLabel.takeIf { starred }) + parts + listOfNotNull(statusLabel, sendingLabel)).joinToString(", ")
     Row(
-        modifier.semantics(mergeDescendants = true) {
-            contentDescription = description
-            liveRegion = androidx.compose.ui.semantics.LiveRegionMode.Polite
-        },
+        modifier.semantics(mergeDescendants = true) { contentDescription = description },
         // Top, so the warning stays beside the first line when the failure line wraps.
         verticalAlignment = if (failed) Alignment.Top else Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        if (starred) Icon(painterResource(R.drawable.ic_lucide_star), null, tint = metaColor, modifier = Modifier.size(14.dp))
+        if (starred) Icon(painterResource(org.fossify.commons.R.drawable.ic_star_vector), null, tint = metaColor, modifier = Modifier.size(14.dp))
         when {
             message.isScheduled ->
-                Icon(painterResource(R.drawable.ic_ol_clock), null, tint = metaColor, modifier = Modifier.size(14.dp))
+                Icon(painterResource(org.fossify.commons.R.drawable.ic_clock_vector), null, tint = metaColor, modifier = Modifier.size(14.dp))
 
-            failed -> Icon(painterResource(R.drawable.ic_ol_triangle_alert), null, tint = colors.error, modifier = Modifier.size(16.dp))
+            failed -> Icon(painterResource(R.drawable.ic_alert_triangle_vector), null, tint = colors.error, modifier = Modifier.size(16.dp))
         }
         if (parts.isNotEmpty()) {
             Text(
@@ -1019,10 +976,9 @@ private fun Metadata(message: Message, state: ThreadUiState, content: Color, mod
             )
         }
         if (sending) {
-            Text(stringResource(R.string.sending), style = MaterialTheme.typography.bodySmall, color = metaColor)
-            Icon(painterResource(R.drawable.ic_ol_clock), null, tint = metaColor, modifier = Modifier.size(14.dp))
+            Icon(painterResource(org.fossify.commons.R.drawable.ic_clock_vector), null, tint = metaColor, modifier = Modifier.size(14.dp))
         } else if (sent) {
-            val icon = if (delivered) R.drawable.ic_ol_check_check else R.drawable.ic_ol_check
+            val icon = if (delivered) R.drawable.ic_check_double_vector else org.fossify.commons.R.drawable.ic_check_vector
             Icon(painterResource(icon), null, tint = metaColor, modifier = Modifier.size(16.dp))
         }
     }
@@ -1045,17 +1001,23 @@ private fun ImageAttachment(attachment: Attachment, clickable: Modifier) {
     BoxWithConstraints(Modifier.fillMaxWidth()) {
         val widthPx = with(LocalDensity.current) { maxWidth.roundToPx() }
         val bitmap = rememberBitmap(attachment.uriString, widthPx, widthPx * MAX_MEDIA_HEIGHT_RATIO)
+        // Known dimensions reserve the right height before the bitmap arrives, so the list doesn't jump.
+        val ratio = when {
+            bitmap != null -> bitmap.width.toFloat() / bitmap.height
+            attachment.width > 0 && attachment.height > 0 -> attachment.width.toFloat() / attachment.height
+            else -> null
+        }?.coerceAtLeast(1f / MAX_MEDIA_HEIGHT_RATIO)
         Box(
             Modifier
                 .fillMaxWidth()
-                .height(180.dp)
+                .then(if (ratio != null) Modifier.aspectRatio(ratio) else Modifier.height(180.dp))
                 .clip(MaterialTheme.shapes.small)
                 .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                 .then(clickable),
             contentAlignment = Alignment.Center,
         ) {
             if (bitmap != null) {
-                Image(bitmap, contentDescription = attachment.filename.ifEmpty { null }, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                Image(bitmap, contentDescription = attachment.filename.ifEmpty { null }, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize())
             }
             if (attachment.mimetype.isVideoMimeType()) {
                 Icon(
@@ -1100,7 +1062,7 @@ internal fun rememberFileSize(uri: Uri): String {
 @Composable
 private fun VCardAttachment(attachment: Attachment, clickable: Modifier) {
     val (name, subtitle) = rememberVCardSummary(attachment.getUri())
-    AttachmentTile(R.drawable.ic_ol_user, name, subtitle, clickable)
+    AttachmentTile(org.fossify.commons.R.drawable.ic_person_vector, name, subtitle, clickable)
 }
 
 @Composable
@@ -1202,7 +1164,7 @@ private fun SpamGroupRow(group: ThreadItem.ThreadSpamGroup, onClick: () -> Unit)
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
     ) {
-        Icon(painterResource(R.drawable.ic_ol_shield_alert), null, tint = colors.onSurfaceVariant, modifier = Modifier.size(20.dp))
+        Icon(painterResource(R.drawable.ic_shield_vector), null, tint = colors.onSurfaceVariant, modifier = Modifier.size(20.dp))
         Text(
             pluralStringResource(if (group.expanded) R.plurals.spam_group_count else R.plurals.spam_group_hidden, group.messageIds.size, group.messageIds.size),
             style = MaterialTheme.typography.labelMedium,
@@ -1210,7 +1172,7 @@ private fun SpamGroupRow(group: ThreadItem.ThreadSpamGroup, onClick: () -> Unit)
             modifier = Modifier.weight(1f),
         )
         Icon(
-            painterResource(R.drawable.ic_ol_chevron_down),
+            painterResource(org.fossify.commons.R.drawable.ic_chevron_down_vector),
             contentDescription = null,
             tint = colors.onSurfaceVariant,
             modifier = Modifier.graphicsLayer { rotationZ = rotation },
@@ -1306,7 +1268,7 @@ private fun JumpToLatest(state: ThreadUiState, newestFirst: List<ThreadItem>, li
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Icon(painterResource(R.drawable.ic_ol_arrow_down), contentDescription = null, modifier = Modifier.size(20.dp))
+                Icon(painterResource(R.drawable.ic_arrow_down_vector), contentDescription = null, modifier = Modifier.size(20.dp))
                 if (unread > 0) {
                     Text(pluralStringResource(R.plurals.thread_new_count, unread, unread), style = MaterialTheme.typography.labelMedium)
                 }
@@ -1334,7 +1296,7 @@ private fun SelectionBar(state: ThreadUiState, onEvent: (ThreadEvent) -> Unit) {
             if (overflow.isNotEmpty()) {
                 var open by remember { mutableStateOf(false) }
                 Box(Modifier.weight(1f)) {
-                    BarItem(R.drawable.ic_ol_ellipsis, stringResource(org.fossify.commons.R.string.more_options)) { open = true }
+                    BarItem(org.fossify.commons.R.drawable.ic_three_dots_vector, stringResource(org.fossify.commons.R.string.more_options)) { open = true }
                     DropdownMenu(expanded = open, onDismissRequest = { open = false }, containerColor = MaterialTheme.colorScheme.surfaceContainer, shape = MaterialTheme.shapes.medium) {
                         overflow.forEach { action ->
                             DropdownMenuItem(

@@ -87,13 +87,3 @@ for count in (12, 3, 0):
     db.execute(count_query, {"threadId": 1, "count": count})
     assert db.execute("SELECT read, unread_count FROM conversations WHERE thread_id = 1").fetchone() == (int(count == 0), count)
 print("PASS: partial read updates preserve unseen rows and provider identity; counts reach zero")
-
-# Exercise the shipped literal Persian/Arabic search SQL with synthetic messages.
-thread_query = re.search(r'@Query\("""(SELECT messages\.\* FROM messages.*?)"""\)\s+fun searchThreadMessages', dao, re.S)[1]
-db.execute("UPDATE messages SET body = 'كي 100%_\\ twice کی' WHERE id IN (1, 2, 30000)")
-db.execute("UPDATE messages SET body = 'کی 100XX twice کی' WHERE id = 1501")
-params = {"threadId": 1, "pattern": r"%کی 100\%\_\\%"}
-hits = db.execute(thread_query, params).fetchall()
-assert len(hits) == 1 and hits[0][0] == 1, "Search must normalize letters, escape wildcards and stay in its thread"
-assert not db.execute(thread_query, dict(params, threadId=1500)).fetchall(), "Search exposes recycled text"
-print("PASS: literal Persian/Arabic thread search and recycle-bin exclusion")

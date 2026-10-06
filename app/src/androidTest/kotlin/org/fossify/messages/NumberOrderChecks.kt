@@ -32,9 +32,9 @@ import org.fossify.messages.databinding.ItemConversationBinding
 import org.fossify.messages.models.Conversation
 import org.fossify.messages.ui.OpenLineTheme
 import org.fossify.messages.ui.inbox.InboxRow
-import org.fossify.messages.ui.components.SnippetText
-import org.fossify.messages.ui.components.MessageText
-import org.fossify.messages.ui.components.linkify
+import org.fossify.messages.ui.inbox.SnippetText
+import org.fossify.messages.ui.thread.MessageText
+import org.fossify.messages.ui.thread.linkify
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before

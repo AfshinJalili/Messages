@@ -19,17 +19,16 @@ class Config(context: Context) : BaseConfig(context) {
         fun newInstance(context: Context) = Config(context)
     }
 
-    fun applyOpenLineDefaults() {
-        if (prefs.getBoolean("open_line_defaults_applied", false)) return
+    fun applyCobaltDefaults() {
+        if (prefs.getBoolean("cobalt_defaults_applied", false)) return
         val background = context.getProperBackgroundColor()
-        val primary = context.openLineColorFor(background)
+        val cobalt = context.cobaltColorFor(background)
         val legacyGreen = ContextCompat.getColor(context, org.fossify.commons.R.color.md_green_900)
-        val previousDefaults = setOf(legacyGreen, ContextCompat.getColor(context, R.color.brand_cobalt), ContextCompat.getColor(context, R.color.brand_cobalt_dark))
-        if (!prefs.contains(PRIMARY_COLOR) || primaryColor in previousDefaults) primaryColor = primary
-        if (!prefs.contains(ACCENT_COLOR) || accentColor in previousDefaults) accentColor = primary
+        if (!prefs.contains(PRIMARY_COLOR) || primaryColor == legacyGreen) primaryColor = cobalt
+        if (!prefs.contains(ACCENT_COLOR) || accentColor == legacyGreen) accentColor = cobalt
         // Adopt the brand by default; keep explicit theme and custom-color choices.
         if (!prefs.contains(IS_SYSTEM_THEME_ENABLED)) {
-            val light = primary == ContextCompat.getColor(context, R.color.open_line_pine)
+            val light = cobalt == ContextCompat.getColor(context, R.color.brand_cobalt)
             if (!prefs.contains(BACKGROUND_COLOR)) {
                 backgroundColor = ContextCompat.getColor(context, if (light) R.color.surface_light else R.color.surface_dark)
             }
@@ -38,7 +37,7 @@ class Config(context: Context) : BaseConfig(context) {
             }
             isSystemThemeEnabled = false
         }
-        prefs.edit().putBoolean("open_line_defaults_applied", true).apply()
+        prefs.edit().putBoolean("cobalt_defaults_applied", true).apply()
     }
 
     fun saveUseSIMIdAtNumber(number: String, SIMId: Int) {

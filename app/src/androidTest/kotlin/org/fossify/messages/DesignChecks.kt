@@ -13,7 +13,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import org.fossify.commons.extensions.getProperPrimaryColor
 import org.fossify.messages.activities.MainActivity
 import org.fossify.messages.helpers.Config
-import org.fossify.messages.helpers.openLineTheme
+import org.fossify.messages.helpers.cobaltTheme
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -41,26 +41,15 @@ class DesignChecks {
         config.accentColor = config.primaryColor
         config.isSystemThemeEnabled = false
         config.backgroundColor = ContextCompat.getColor(context, R.color.surface_light)
-        config.applyOpenLineDefaults()
-        check(context.getProperPrimaryColor() == ContextCompat.getColor(context, R.color.open_line_pine))
-        check(context.openLineTheme() == R.style.AppTheme_OpenLine_Light)
+        config.applyCobaltDefaults()
+        check(context.getProperPrimaryColor() == ContextCompat.getColor(context, R.color.brand_cobalt))
+        check(context.cobaltTheme() == R.style.AppTheme_Cobalt_Light)
         val custom = ContextCompat.getColor(context, org.fossify.commons.R.color.md_orange_700)
         config.primaryColor = custom
         config.accentColor = custom
-        config.applyOpenLineDefaults()
+        config.applyCobaltDefaults()
         check(context.getProperPrimaryColor() == custom)
-        check(context.openLineTheme() == null)
-    }
-
-    @Test
-    fun previousCobaltDefaultsMigrateToPine() = withIsolatedPreferences { context, config ->
-        config.backgroundColor = ContextCompat.getColor(context, R.color.surface_light)
-        config.primaryColor = ContextCompat.getColor(context, R.color.brand_cobalt)
-        config.accentColor = config.primaryColor
-        config.isSystemThemeEnabled = false
-        config.applyOpenLineDefaults()
-        check(config.primaryColor == ContextCompat.getColor(context, R.color.open_line_pine))
-        check(config.accentColor == config.primaryColor)
+        check(context.cobaltTheme() == null)
     }
 
     @Test
@@ -69,17 +58,17 @@ class DesignChecks {
         config.primaryColor = custom
         config.accentColor = custom
         config.isSystemThemeEnabled = true
-        config.applyOpenLineDefaults()
+        config.applyCobaltDefaults()
         check(config.primaryColor == custom && config.accentColor == custom)
         check(config.isSystemThemeEnabled)
-        check(context.openLineTheme() == null)
+        check(context.cobaltTheme() == null)
     }
 
     @Test
-    fun bothThemesUseReadableOpenLineRoles() {
+    fun bothThemesUseReadableCobaltRoles() {
         for ((style, accent) in listOf(
-            R.style.AppTheme_OpenLine_Light to R.color.open_line_pine,
-            R.style.AppTheme_OpenLine_Dark to R.color.open_line_primary_dark
+            R.style.AppTheme_Cobalt_Light to R.color.brand_cobalt,
+            R.style.AppTheme_Cobalt_Dark to R.color.brand_cobalt_dark
         )) {
             val context = ContextThemeWrapper(target, style)
             fun attr(id: Int): Int = TypedValue().also { check(context.theme.resolveAttribute(id, it, true)) }.data
@@ -96,7 +85,7 @@ class DesignChecks {
     fun activityWidgetsMatchRuntimeAccent() {
         ActivityScenario.launch<MainActivity>(Intent(target, MainActivity::class.java)).use { scenario ->
             scenario.onActivity { activity ->
-                check(activity.openLineTheme() != null) { "Installed app has not adopted Open Line" }
+                check(activity.cobaltTheme() != null) { "Installed app has not adopted cobalt" }
                 val primary = TypedValue().also {
                     activity.theme.resolveAttribute(androidx.appcompat.R.attr.colorPrimary, it, true)
                 }.data
