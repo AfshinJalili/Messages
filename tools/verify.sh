@@ -64,7 +64,7 @@ adb shell wm dismiss-keyguard >/dev/null 2>&1 || true
 adb install -r -g app/build/outputs/apk/core/debug/*.apk >/dev/null
 adb install -r -g app/build/outputs/apk/androidTest/core/debug/*.apk >/dev/null
 if [ "$sdk" -ge 29 ]; then adb shell cmd role add-role-holder android.app.role.SMS $APP 0
-else adb shell settings put secure sms_default_application $APP; fi
+else adb shell settings put secure sms_default_application $APP; adb shell appops set $APP WRITE_SMS allow; fi
 adb shell run-as $APP rm -rf files/screenshots
 
 classes=()
