@@ -1,32 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <!-- Previous defaults are retained only to recognize existing installations during migration. -->
+    <!-- Brand palette. Screens consume the semantic roles below. -->
     <color name="brand_cobalt">#345AE8</color>
     <color name="brand_cobalt_dark">#A9BAFF</color>
-    <color name="brand_container">@color/open_line_pine</color>
-    <color name="brand_on_container">@color/design_white</color>
-    <color name="brand_container_dark">@color/open_line_pine_2</color>
-    <color name="brand_on_container_dark">@color/design_white</color>
+    <color name="brand_container">#E3E9FF</color>
+    <color name="brand_on_container">#132967</color>
+    <color name="brand_container_dark">#243466</color>
+    <color name="brand_on_container_dark">#DEE4FF</color>
     <color name="design_white">#FFFFFF</color>
-    <color name="design_ink">@color/open_line_ink</color>
-    <color name="design_error">@color/open_line_error</color>
+    <color name="design_ink">#202124</color>
+    <color name="design_error">#B3261E</color>
 
     <!-- Commons configuration and XML widgets share these defaults. -->
-    <color name="color_primary">@color/open_line_pine</color>
-    <color name="color_primary_dark">@color/open_line_primary_dark</color>
-    <color name="color_accent">@color/open_line_pine</color>
-    <color name="default_primary_color">@color/open_line_primary_dark</color>
-    <color name="default_accent_color">@color/open_line_pine</color>
+    <color name="color_primary">@color/brand_cobalt</color>
+    <color name="color_primary_dark">@color/brand_cobalt_dark</color>
+    <color name="color_accent">@color/brand_cobalt</color>
+    <color name="default_primary_color">@color/brand_cobalt_dark</color>
+    <color name="default_accent_color">@color/brand_cobalt</color>
     <color name="launcher_pine">@color/open_line_pine</color>
     <color name="icon_mask">@color/design_white</color>
     <color name="on_action">@color/design_white</color>
-    <color name="surface_light">@color/open_line_paper</color>
-    <color name="on_surface_light">@color/open_line_ink</color>
-    <color name="surface_dark">@color/open_line_night</color>
-    <color name="on_surface_dark">@color/open_line_paper</color>
-    <color name="swipe_archive_background">@color/open_line_pine</color>
-    <color name="swipe_delete_background">@color/open_line_error_container</color>
+    <color name="surface_light">@color/design_white</color>
+    <color name="on_surface_light">@color/design_ink</color>
+    <color name="surface_dark">@color/theme_dark_background_color</color>
+    <color name="on_surface_dark">@color/theme_dark_text_color</color>
+    <color name="swipe_archive_background">@color/brand_cobalt</color>
+    <color name="swipe_delete_background">@color/design_error</color>
     <color name="swipe_mute_background">@color/md_blue_grey_700</color>
 
     <!-- Open Line palette (design/open-line.pen). Compose screens map these to roles in OpenLineTheme. -->
@@ -51,17 +51,6 @@
     <color name="open_line_error_container_dark">#4A2420</color>
     <color name="open_line_surface_high">#E5EBE7</color>
     <color name="open_line_surface_high_dark">#24403A</color>
-
-    <color name="open_line_on_secondary_variant">#4E5B57</color>
-    <color name="open_line_on_secondary_variant_dark">#B9BEE3</color>
-    <color name="open_line_skeleton">#DCE8E1</color>
-    <color name="open_line_skeleton_high">#EAF0EC</color>
-    <color name="open_line_scrim">#99152621</color>
-    <color name="open_line_scrim_dark">#B3000000</color>
-    <color name="open_line_state_pressed">#1F152621</color>
-    <color name="open_line_state_pressed_dark">#1FF1F5F1</color>
-    <color name="open_line_focus">@color/open_line_pine</color>
-    <color name="open_line_focus_dark">@color/open_line_lime</color>
 
     <color name="message_sim_one">#2463EB</color>
     <color name="message_sim_two">#128147</color>

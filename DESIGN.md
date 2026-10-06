@@ -1,8 +1,6 @@
 # Open Line design system
 
-The final v2 implementation reference is [Open Line Design System v2](design/reference/Open%20Line%20Design%20System%20v2.dc.html), supplied by the owner on 2026-09-30. Its token, component, screen, dark/RTL and accessibility sections define the implementation target. The already shipped 4a Corner · Pine logo stays in place.
-
-Personal messaging as a clear, living line between people. The inbox favors sender, latest meaning, and urgency over decorative conversation cards. Cool mineral paper, deep pine ink, sharp lime for new activity, lilac for media, coral for attention. A fine route line, round contact markers, flat slabs, and strong typography define the visual identity. No literal vintage hardware.
+Personal messaging as a clear, living line between people. The inbox favors sender, latest meaning, and urgency over decorative conversation cards. Cool mineral paper, deep pine ink, sharp lime for new activity, lilac for media, coral for attention. A fine route line, round contact markers, flat slabs, and strong typography replace the current cobalt styling. No literal vintage hardware.
 
 The design source is `design/open-line.pen` (encrypted; edit only through the pen CLI or pencil MCP). PNG exports in `design/exports/` are previews only; the canvas is the truth. Screens are fixed 390 × 844 frames and the design decides open questions through issues labeled `design-gap`.
 
@@ -51,16 +49,16 @@ The family-album image in the media message and full-screen viewer was generated
 
 The generated asset is saved as `design/generated.png` beside the `.pen` file so the image fills can resolve when the canvas is reopened.
 
-The design canvas uses editable Lucide vector paths (ISC license). Android interface icons come from the same Lucide paths bundled in the supplied `ol-icons.js`, rendered at 24dp with a 2dp round stroke. Only directional icons mirror in RTL.
+The interface icons are editable vector paths from `lucide-static` 1.48.0 (ISC license), replacing font-backed icon nodes that failed to render in the headless Pendev preview.
 
 The app bundles the design's fonts in `app/src/main/res/font/`, copied unmodified from [google/fonts](https://github.com/google/fonts) under the SIL Open Font License 1.1: Funnel Sans (variable), Atkinson Hyperlegible Regular and Bold, and Vazirmatn (variable). The Library nav icon `ic_library_vector.xml` is Lucide `layers` (ISC).
 
 
-## Android implementation
+## Legacy XML screens
 
-Shared Compose components live in `ui/components/`: conversation rows, avatars, bottom navigation and rail, search input, conversation header and timeline/bubbles, composer and SIM switcher, buttons, filter chips, empty and loading states, and snackbar styling. Inbox, search, conversation and composer use these components. Light, dark and Persian previews provide synthetic examples. XML settings retain native widgets with Open Line fonts, colors, specific Lucide icons and minimum touch targets. Remaining View-to-Compose migration is tracked separately in #55.
+Screens not yet moved to Compose still use the Fossify theme and this system. Android resources are the source of truth; this document does not keep a second palette or sizing table.
 
-Android resources are the source of truth; this document does not maintain a second palette or sizing table.
+Android resources are the source of truth. This document describes how to use them; it does not maintain a second palette or a second sizing table.
 
 ### Ownership
 
@@ -75,28 +73,26 @@ Android resources are the source of truth; this document does not maintain a sec
 
 ### Color
 
-Pine is the default accent; the dark theme uses mint for accent content and pine containers for sent messages. Paper and night are the respective surfaces. Swipe archive uses pine; swipe delete uses the error container. Secondary-container text uses the dedicated contrast-safe variant roles. Pressed state, focus ring, inverse accent, skeleton and draft/sending/blocked line colors are semantic roles in `OpenLineColors`. Scrims are ink at 60% in light mode and black at 70% in dark mode.
+Cobalt is the default accent. The launcher and light theme use `brand_cobalt`; the dark theme uses `brand_cobalt_dark` for readable accent text and controls. Both themes use neutral backgrounds. Destructive actions use `design_error`, archive uses cobalt, and mute uses a neutral slate. White icon paths are tint masks, not independent palette choices.
 
-`Config.applyOpenLineDefaults()` runs once at application startup. It replaces recognized old green and cobalt defaults, including implicit system-theme defaults, while retaining explicit custom palettes and explicit system-theme selections. Later settings changes are preserved. `brand_cobalt` and `brand_cobalt_dark` remain solely to recognize the previous defaults; logo color variants are unchanged. `SimpleActivity.setTheme()` chooses Open Line light/dark widget themes when the configured accent matches pine. Explicit custom palettes and Material You keep Commons theme selection.
+Kotlin screens obtain the current accent, foreground and background through Commons' `getProperPrimaryColor()`, `getProperTextColor()` and `getProperBackgroundColor()`. These respect customization. Use `getContrastColor()` for content on a user-selected fill. Static action colors come from the semantic resources in `colors.xml`. Do not add hex colors or RGB calls to activities, adapters, layouts or drawables.
 
-Legacy Kotlin screens obtain accent, foreground and background through Commons helpers, respecting customization. Compose uses the final semantic palette, and retains the app background/theme and font-size choices. Use `getContrastColor()` on user-selected fills. Do not add hex colors or opacity literals to activities, adapters, layouts or drawables.
+`SimpleActivity.setTheme()` selects our cobalt theme when the configured accent is cobalt. This keeps XML controls consistent with runtime colors and avoids Commons' green fallback for custom colors. Explicit custom palettes and Material You continue to use Commons' theme selection.
 
-### Geometry, type and states
+`Config.applyCobaltDefaults()` runs once at application startup. It replaces the old default green, opts implicit system-theme defaults into cobalt, and retains explicit custom color or system-theme selections. Later settings changes are not reset on startup.
 
-Message bubbles use a 16dp radius and 4dp tail. Inbox rows use 50dp avatars and a 70dp metadata column; previews remain a single ellipsized line. Shapes are 4/12/16/22/24dp. Typography includes 25sp and 45sp extra-bold headings and a 76sp brand style; Persian content uses Vazirmatn and 1.7em leading. Controls measure content at enlarged font sizes, with minimum targets of 48dp (56dp in the composer), rather than forcing a fixed text height.
+### Components
 
-The navigation rail appears at 840dp or in landscape; the primary band collapses to 64dp while scrolling. The Start chat FAB collapses after scrolling and remains available across inbox filters. Search highlights use bold text over lilac. Persian search treats Arabic/Persian yeh and kaf alike without rewriting the message body. Thread search displays the current match and count, supports both directions, and excludes recycled messages.
+Keep surface-colored app bars, one filled icon family, letter avatars for individual contacts, and group icons for groups. Reserve accent for actions, unread indicators, selected filters and sent messages. Attachment actions share a neutral tinted background.
 
-Long press opens the message action sheet; Select enters selection mode. Selected bubbles retain the check affordance. Draft, sending and held-message states use 4dp semantic status lines. Held-message sheets offer Not spam and a confirmed Block sender action. Delivery states expose spoken labels; sending also shows its final-v2 visible label. Shared snackbars use inverse roles above navigation or the composer. Removal confirmations and configured swipe directions remain unchanged: removing delete confirmations requires explicit approval because deletion can be irreversible. Permanent loss always requires confirmation.
+Use the named bubble and tail radii in `dimens.xml`, the shared minimum touch target for composer actions, and the shared attachment action dimensions. Component-local constraint geometry can remain in its layout; reusable sizes belong in resources.
+
+Keep system typography and the user's font-size choice. List primary, secondary and metadata text use the multipliers in `design_values.xml`. Read and unread rows share their geometry; unread emphasis changes weight and opacity.
 
 ### Icon exports and checks
 
 The monochrome launcher icon aliases the foreground vector. `python3 tools/export_icon.py` regenerates the SVG, WebP, store PNGs and `ic_message_bubble.xml` from that vector and `colors.xml`. The notification and new-conversation icons use this bubble without the launcher's adaptive-icon padding. Run the exporter with system Python containing PyGObject/Rsvg and Pillow. Exported assets are generated copies, not editable design sources.
 
-`python3 tools/export_ui_icons.py` regenerates only the UI glyphs referenced by Kotlin/XML from the supplied reference paths. `python3 tools/export_ui_icons.py --check` verifies generated files are current.
-
-`python3 tests/check_design_tokens.py` rejects inline colors and opacity values. Android `DesignChecks` verifies readable light/dark accents, matching XML/runtime colors, migration and preserved customization. The existing `InboxChecks` covers layout and message behavior. `SearchChecks` covers literal wildcard matching, Persian/Arabic normalization, preserved highlights and recycle exclusion on synthetic data; the host database check exercises shipped SQL against an in-memory schema.
-
-Build and host checks establish source/resource validity. Owner QA remains required for TalkBack traversal, keyboard/switch access, 200% font scale, keyboard-open layouts, dark mode and Persian rendering on the phone. No screenshot export establishes Android pixel parity.
+`python3 tests/check_design_tokens.py` rejects inline colors and opacity values. Android `DesignChecks` verifies readable light/dark accents, matching XML/runtime colors, migration and preserved customization. The existing `InboxChecks` covers layout and message behavior.
 
 Conversation day dividers, the temporary sticky date and in-card metadata follow [the thread date behavior](docs/thread-dates.md).

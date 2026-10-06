@@ -1,6 +1,5 @@
 package org.fossify.messages.ui.search
 
-import org.fossify.messages.helpers.searchRanges
 import androidx.annotation.StringRes
 import org.fossify.messages.R
 import org.fossify.messages.models.SearchMatch
@@ -38,7 +37,7 @@ data class SearchUiState(
 
 /** Keep enough context before the first literal match to make a long message recognisable. */
 fun searchExcerpt(text: String, query: String): String {
-    val match = searchRanges(text, query).firstOrNull()?.first ?: -1
+    val match = text.indexOf(query.trim(), ignoreCase = true)
     val start = (match - EXCERPT_CONTEXT_CHARS).coerceAtLeast(0)
     return if (start == 0) text else "…${text.substring(start)}"
 }

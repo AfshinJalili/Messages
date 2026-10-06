@@ -24,8 +24,6 @@ import kotlinx.coroutines.runBlocking
 import org.fossify.messages.databases.MessagesDatabase
 import org.fossify.messages.helpers.BLOCK_REASON_KEYWORD
 import org.fossify.messages.helpers.SearchRepository
-import org.fossify.messages.helpers.literalSearchPattern
-import org.fossify.messages.helpers.searchRanges
 import org.fossify.messages.models.Attachment
 import org.fossify.messages.models.Conversation
 import org.fossify.messages.models.CONVERSATION_SEARCH_RESULT_ID
@@ -40,7 +38,7 @@ import org.fossify.messages.ui.inbox.InboxScreen
 import org.fossify.messages.ui.inbox.InboxUiState
 import org.fossify.messages.ui.search.SearchContent
 import org.fossify.messages.ui.search.SearchFilter
-import org.fossify.messages.ui.components.SearchInput
+import org.fossify.messages.ui.search.SearchInput
 import org.fossify.messages.ui.search.SearchUiState
 import org.fossify.messages.ui.search.searchExcerpt
 import org.junit.Rule
@@ -115,23 +113,6 @@ class SearchChecks {
         } finally {
             database.close()
         }
-    }
-
-    @Test
-    fun persianSearchPreservesTextAndMatchesArabicForms() = withInMemorySearchDatabase { database ->
-        val body = "كي 100%_\\ twice کی"
-        val query = "کی"
-        check(searchRanges(body, query) == listOf(0..1, 16..17))
-        check(searchRanges(body, " ").isEmpty())
-        database.MessagesDao().insertOrUpdate(fixtureMessage(83_001, 8_301, body))
-        database.ConversationsDao().insertOrUpdate(fixtureConversation(8_301, "كي"))
-        val matches = runBlocking { SearchRepository(targetContext, database.MessagesDao(), database.ConversationsDao()).search(query) }
-        check(matches.count { it.person } == 1 && matches.count { !it.person } == 1)
-        val literal = literalSearchPattern("كي 100%_\\")
-        check(database.MessagesDao().searchThreadMessages(8_301, literal).single().body == body)
-        check(database.MessagesDao().searchThreadMessages(8_302, literal).isEmpty())
-        database.MessagesDao().insertRecycleBinEntry(RecycleBinMessage(83_001, deletedTS = 1))
-        check(database.MessagesDao().searchThreadMessages(8_301, literal).isEmpty())
     }
 
     @Test

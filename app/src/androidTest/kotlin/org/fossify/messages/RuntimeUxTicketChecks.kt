@@ -23,8 +23,8 @@ import org.fossify.messages.helpers.refreshConversations
 import org.fossify.messages.helpers.refreshMessages
 import org.fossify.messages.models.Message
 import org.fossify.messages.models.ThreadItem.ThreadUnreadSeparator
-import org.fossify.messages.ui.components.THREAD_JUMP_TAG
-import org.fossify.messages.ui.components.THREAD_LIST_TAG
+import org.fossify.messages.ui.thread.THREAD_JUMP_TAG
+import org.fossify.messages.ui.thread.THREAD_LIST_TAG
 import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test

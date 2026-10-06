@@ -591,7 +591,7 @@
           "fill": "$on-surface-variant",
           "textGrowth": "fixed-width",
           "width": "fill_container",
-          "content": "Delivery status uses clock, check and double-check icons, with spoken labels. Sending also has a visible label in the final v2 reference. Failure keeps an alert and recovery controls. Message bodies remain as sent; Persian chrome uses localized digits.",
+          "content": "Delivery status is an icon, not a word: clock = sending, ✓ = sent, ✓✓ = delivered, same colour and size as the timestamp (16dp), placed after the time at the bubble's end edge (left in RTL). Every icon carries a spoken label (Sent / ارسال شد). Only failure keeps words — red alert + “Not sent · Tap to retry”. Message info screens still spell out Sent and Delivered times.",
           "fontFamily": "$fontBody",
           "fontSize": "$text-body",
           "fontWeight": "normal"
@@ -42240,19 +42240,6 @@
               ]
             }
           ]
-        },
-        {
-          "type": "text",
-          "id": "FUmdI",
-          "name": "2026-09-30 / Final v2 implementation",
-          "fill": "$on-surface-variant",
-          "textGrowth": "fixed-width",
-          "width": "fill_container",
-          "content": "2026-09-30 · Owner-supplied Design System v2 applied. Pine replaces cobalt in legacy default themes, preserving explicit custom and system-theme choices. Bubble radius 16, tail 4, row avatar 50, metadata column 70. Focus ring 2; scrim ink 60% / black 70%; secondary text uses the contrast-safe variant roles. Shared Android components, 24dp Lucide glyphs, per-filter empty states and 48dp controls. Persian search treats ي/ی and ك/ک alike without rewriting message content. Long press opens the message sheet; Select enters multi-selection. Deletion confirmations remain pending explicit approval to change destructive behavior.",
-          "lineHeight": "$leading-body",
-          "fontFamily": "$fontBody",
-          "fontSize": "$text-body-sm",
-          "fontWeight": "normal"
         }
       ]
     },
@@ -43935,22 +43922,6 @@
     "skeleton-high": {
       "type": "color",
       "value": "#EAF0EC"
-    },
-    "line-draft": {
-      "type": "color",
-      "value": "$lilac"
-    },
-    "line-sending": {
-      "type": "color",
-      "value": "$lime"
-    },
-    "line-blocked": {
-      "type": "color",
-      "value": "$coral"
-    },
-    "size-avatar": {
-      "type": "number",
-      "value": 50
     }
   },
   "fileToken": "c1d5d55c-9692-4e67-99da-397c3c4baac0"

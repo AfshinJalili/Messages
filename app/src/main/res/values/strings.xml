@@ -305,17 +305,4 @@
     <string name="search_nothing_yet">Nothing here yet</string>
     <string name="search_nothing_for">Nothing for “%1$s”</string>
     <string name="search_empty_hint">Try a person’s name or a different word from the message.</string>
-
-    <string name="start_chat">Start chat</string>
-    <string name="inbox_caught_up">You’re all caught up</string>
-    <string name="inbox_empty_people">No messages from people yet</string>
-    <string name="inbox_empty_services">No service messages</string>
-    <string name="inbox_empty_unknown">No unknown senders</string>
-    <string name="inbox_empty_unread_body">New unread messages appear here.</string>
-    <string name="inbox_empty_people_body">Messages from your contacts appear here.</string>
-    <string name="inbox_empty_services_body">Updates and verification codes appear here.</string>
-    <string name="inbox_empty_unknown_body">Messages from numbers outside your contacts appear here.</string>
-    <string name="search_match_position">%1$d of %2$d</string>
-    <string name="search_previous_match">Previous match</string>
-    <string name="block_sender">Block sender</string>
 </resources>
