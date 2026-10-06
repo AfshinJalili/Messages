@@ -22,7 +22,7 @@ A private, lightweight SMS/MMS client for Android.
 ./gradlew :app:assembleCoreDebug
 ```
 
-How the project is run (workflow, roles, tests, the real-phone rules) is in [AGENTS.md](AGENTS.md).
+How the project is run (workflow, emulator testing, review) is in [AGENTS.md](AGENTS.md).
 
 ## License
 

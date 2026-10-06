@@ -1,6 +1,6 @@
 name: Bug
 description: Something is broken
-labels: [bug]
+labels: [bug, needs-triage]
 body:
   - type: textarea
     id: steps
@@ -19,3 +19,8 @@ body:
     attributes:
       label: Build and device
       description: Build variant, Android version, locale, font scale
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Emulator evidence
+      description: Instrumented classes that must pass and screenshots that prove the fix

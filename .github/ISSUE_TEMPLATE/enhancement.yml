@@ -1,17 +1,12 @@
 name: Enhancement
-description: Improve something that already exists
-labels: [enhancement]
+description: Improve existing behavior
+labels: [enhancement, needs-triage]
 body:
   - type: textarea
-    id: current
+    id: summary
     attributes:
-      label: Current behavior
-    validations:
-      required: true
-  - type: textarea
-    id: wanted
-    attributes:
-      label: Wanted behavior
+      label: Summary
+      description: What changes for the user
     validations:
       required: true
   - type: textarea
@@ -20,4 +15,11 @@ body:
       label: Acceptance
       value: |
         - [ ] 
-        - [ ] Build and tests pass
+        - [ ] Works in LTR and RTL/Persian
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Emulator evidence
+      description: Instrumented classes that must pass and screenshots to capture

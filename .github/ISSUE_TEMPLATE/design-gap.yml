@@ -1,6 +1,6 @@
 name: Design gap
 description: A screen, component or state the design file does not decide yet
-labels: [design-gap]
+labels: [design-gap, needs-triage]
 body:
   - type: input
     id: gap-id
@@ -39,5 +39,4 @@ body:
       value: |
         - [ ] Designed in design/open-line.pen from existing components
         - [ ] Persian RTL variant
-        - [ ] App matches the design
-        - [ ] Owner reviewed the design before the app change
+        - [ ] App matches the design, proven by emulator screenshots

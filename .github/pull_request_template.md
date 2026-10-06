@@ -1,13 +1,20 @@
 Closes #
 
-## What changed
+<!-- Write this body with the pr skill. -->
 
-## Design
-<!-- Frames in design/open-line.pen, or "none" -->
+## Summary
 
-## Verification
-<!-- Build and test results from the test agent -->
+<!-- Smallest view that makes the point: diff sketch, call tree, component tree, file tree or Mermaid. -->
 
-## Owner QA
-<!-- Short checklist for the phone: LTR and RTL/Persian where it matters -->
-- [ ] 
+## Evidence
+
+- **Before:** <!-- emulator screenshot, failing test or output -->
+  **After:** <!-- emulator screenshot, passing test or output -->
+
+Gates: <!-- tools/verify.sh classes and result; tools/review.sh (gpt-6.1-sol) result; unverified acceptance criteria -->
+
+## Merge Danger
+
+**Door:** <!-- one-way or two-way -->
+
+**Blast Radius:** <!-- one word -->
