@@ -131,6 +131,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -198,8 +199,6 @@ private const val STICKY_DATE_HIDE_DELAY_MS = 700L
 private const val STICKY_DATE_FADE_MS = 180
 // R6-48: the lift shares the sheet's curve and length.
 private const val LIFT_MS = 300
-// Design screen 97: #152621 at 40%.
-val LiftScrim = Color(0x66152621)
 private val LiftGap = 12.dp
 private val LiftElevation = 2.dp
 private val LiftFade = 32.dp
@@ -455,12 +454,13 @@ private fun LiftOverlay(lift: LiftedBubble, up: Boolean, sheetTop: Float, state:
         if (!up) onGone()
     }
     val density = LocalDensity.current
+    val liftScrim = colorResource(R.color.lift_scrim)
     var origin by remember { mutableStateOf<Offset?>(null) }
     Box(
         Modifier
             .fillMaxSize()
             .onGloballyPositioned { origin = it.positionOnScreen() }
-            .drawBehind { drawRect(LiftScrim, alpha = progress.value) }
+            .drawBehind { drawRect(liftScrim, alpha = progress.value) }
             .clearAndSetSemantics {},
         // Bounds are absolute screen positions; a start-aligned child would sit at the right edge in RTL.
         contentAlignment = AbsoluteAlignment.TopLeft,
