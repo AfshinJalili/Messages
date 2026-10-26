@@ -6,9 +6,6 @@ import android.content.Intent
 import android.net.Uri
 import android.provider.ContactsContract
 import android.view.MenuItem
-import android.widget.TextView
-import org.fossify.commons.extensions.getProperPrimaryColor
-import org.fossify.commons.extensions.underlineText
 import org.fossify.commons.activities.BaseSimpleActivity
 import org.fossify.commons.extensions.getMimeType
 import org.fossify.commons.extensions.getProperBackgroundColor
@@ -122,12 +119,6 @@ fun BaseSimpleActivity.setupSurfaceAppBar(appBar: MyAppBarLayout, searchMenuItem
 }
 
 /** The underlined accent action under an empty list, e.g. "Start a conversation". */
-fun Activity.setupEmptyStateAction(view: TextView, onClick: () -> Unit) {
-    view.setTextColor(getProperPrimaryColor())
-    view.underlineText()
-    view.setOnClickListener { onClick() }
-}
-
 fun Activity.launchConversationDetails(threadId: Long) {
     Intent(this, ConversationDetailsActivity::class.java).apply {
         putExtra(THREAD_ID, threadId)

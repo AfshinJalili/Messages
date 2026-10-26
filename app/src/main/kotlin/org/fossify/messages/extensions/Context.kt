@@ -60,8 +60,6 @@ import org.fossify.messages.helpers.MessagingCache
 import org.fossify.messages.helpers.NotificationHelper
 import org.fossify.messages.helpers.ShortcutHelper
 import org.fossify.messages.helpers.generateRandomId
-import org.fossify.messages.helpers.refreshConversations
-import org.fossify.messages.helpers.refreshMessages
 import org.fossify.messages.interfaces.AttachmentsDao
 import org.fossify.messages.interfaces.ConversationsDao
 import org.fossify.messages.interfaces.DraftsDao
@@ -73,6 +71,7 @@ import org.fossify.messages.messaging.SmsSender
 import org.fossify.messages.messaging.scheduleMessage
 import org.fossify.messages.models.Attachment
 import org.fossify.messages.models.BlockedMessagesThread
+import org.fossify.messages.models.SpamReviewMessage
 import org.fossify.messages.models.Conversation
 import org.fossify.messages.models.Events
 import org.greenrobot.eventbus.EventBus
@@ -368,9 +367,19 @@ fun Context.getUnreadSpamCounts(): Map<Long, Int> {
     return result
 }
 
-// Reads the spam SMS from Telephony, so a marker whose SMS was deleted elsewhere shows nothing.
-fun Context.getSpamThreads(): List<BlockedMessagesThread> {
-    class Row(val id: Long, val threadId: Long, val address: String, val body: String, val date: Long, val read: Boolean)
+/**
+ * The spam SMS, newest first, read from Telephony: a marker whose SMS was deleted elsewhere shows
+ * nothing. Each sender is resolved once.
+ */
+fun Context.getSpamMessages(): List<SpamReviewMessage> {
+    class Row(
+        val id: Long,
+        val threadId: Long,
+        val address: String,
+        val body: String,
+        val date: Long,
+        val read: Boolean,
+    )
 
     val markers = messagesDB.getSpamMarkers().associateBy { it.id }
     if (markers.isEmpty()) return emptyList()
@@ -393,24 +402,47 @@ fun Context.getSpamThreads(): List<BlockedMessagesThread> {
         )
     }
 
-    return rows.groupBy { it.threadId }.map { (threadId, messages) ->
-        val newest = messages.maxBy { it.date }
-        val conversation = conversationsDB.getConversationWithThreadId(threadId)
-        val namePhoto = if (conversation == null) getNameAndPhotoFromPhoneNumber(newest.address) else null
+    val senders = HashMap<Long, Pair<String, String>>()
+    return rows.map { row ->
+        val (title, photo) = senders.getOrPut(row.threadId) {
+            val conversation = conversationsDB.getConversationWithThreadId(row.threadId)
+            if (conversation != null) {
+                conversation.title to conversation.photoUri
+            } else {
+                getNameAndPhotoFromPhoneNumber(row.address).let { it.name to it.photoUri.orEmpty() }
+            }
+        }
+        SpamReviewMessage(
+            id = row.id,
+            threadId = row.threadId,
+            address = row.address,
+            sender = title,
+            photoUri = photo,
+            body = row.body,
+            date = row.date,
+            read = row.read,
+            reason = markers.getValue(row.id).reason,
+        )
+    }.sortedByDescending { it.date }
+}
+
+/** The spam SMS grouped by Telephony thread, newest thread first. */
+fun Context.getSpamThreads(): List<BlockedMessagesThread> =
+    getSpamMessages().groupBy { it.threadId }.map { (threadId, messages) ->
+        val newest = messages.first()
         BlockedMessagesThread(
             threadId = threadId,
             address = newest.address,
-            title = conversation?.title ?: namePhoto!!.name,
-            photoUri = conversation?.photoUri ?: namePhoto!!.photoUri.orEmpty(),
+            title = newest.sender,
+            photoUri = newest.photoUri,
             snippet = newest.body,
             date = newest.date,
             count = messages.size,
             unreadCount = messages.count { !it.read },
-            reason = markers.getValue(newest.id).reason,
+            reason = newest.reason,
             messageIds = messages.map { it.id }
         )
-    }.sortedByDescending { it.date }
-}
+    }
 
 // Spam deleted by another app leaves its marker behind, and extra markers can hide a thread that has real messages.
 fun Context.removeOrphanSpamMarkers() {

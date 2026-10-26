@@ -54,6 +54,10 @@ data class OpenLineColors(
     val onSecondaryContainerVariant: Color = Color.Unspecified,
     /** Actions on inverse surfaces such as the snackbar (`inverse-accent`). */
     val inverseAccent: Color = Color.Unspecified,
+    /** Behind a held message or a focused task (`scrim`). */
+    val scrim: Color = Color.Unspecified,
+    /** Outline of the focused control (`focus-ring`). */
+    val focusRing: Color = Color.Unspecified,
 )
 
 val LocalOpenLineColors = staticCompositionLocalOf {
@@ -187,6 +191,8 @@ fun OpenLineTheme(dark: Boolean, textScale: Float = 1f, content: @Composable () 
             if (dark) R.color.open_line_on_lilac_variant_dark else R.color.open_line_on_lilac_variant,
         ),
         inverseAccent = colorResource(if (dark) R.color.open_line_pine else R.color.open_line_lime),
+        scrim = colorResource(if (dark) R.color.open_line_scrim_dark else R.color.open_line_scrim),
+        focusRing = colorResource(if (dark) R.color.open_line_lime else R.color.open_line_pine),
     )
     MaterialTheme(
         colorScheme = colorScheme(dark),

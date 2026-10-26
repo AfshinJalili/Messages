@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -27,6 +28,8 @@ import org.fossify.messages.ui.OpenLine
 private val MarkSize = 46.dp
 private val MarkIconSize = 21.dp
 private val DestinationHeight = 75.dp
+private val ProminentPanelPadding = PaddingValues(horizontal = 12.dp, vertical = 16.dp)
+private val CompactPanelPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)
 
 /** Library row: a lilac mark, a label with its description, and a disclosure chevron. */
 @Composable
@@ -83,14 +86,20 @@ fun DestinationCard(
  * Archive's "Need it in your inbox?" (prominent).
  */
 @Composable
-fun InfoPanel(title: String, body: String, modifier: Modifier = Modifier, prominent: Boolean = false) {
+fun InfoPanel(
+    title: String,
+    body: String,
+    modifier: Modifier = Modifier,
+    prominent: Boolean = false,
+    contentPadding: PaddingValues = if (prominent) ProminentPanelPadding else CompactPanelPadding,
+) {
     val colors = MaterialTheme.colorScheme
     Column(
         modifier
             .fillMaxWidth()
             .clip(if (prominent) MaterialTheme.shapes.medium else MaterialTheme.shapes.small)
             .background(colors.secondaryContainer)
-            .padding(horizontal = if (prominent) 12.dp else 16.dp, vertical = if (prominent) 16.dp else 12.dp),
+            .padding(contentPadding),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Text(

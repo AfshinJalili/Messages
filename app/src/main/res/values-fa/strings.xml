@@ -309,4 +309,65 @@
     <string name="delete_forever">حذف برای همیشه</string>
     <string name="delete_forever_title">برای همیشه حذف شود؟</string>
     <string name="delete_forever_conversation_text">این گفت‌وگو پس از حذف همیشگی قابل بازگرداندن نیست.</string>
+
+    <!-- Spam and block rules (design 20, 21, 38, 50, 51) -->
+    <string name="spam_subtitle">جدا از کسانی که به آن‌ها اعتماد دارید</string>
+    <string name="spam_empty_text">پیام‌های مسدود و مشکوک بدون اعلان در صندوق، اینجا می‌مانند.</string>
+    <string name="spam_hold_label">کارهای پیام</string>
+    <string name="not_spam_short">هرزنامه نیست</string>
+    <string name="block_sender">مسدود کردن فرستنده</string>
+    <string name="block_sender_title">%s مسدود شود؟</string>
+    <string name="block_sender_text">پیام‌های تازه‌اش بی‌اعلان مستقیم به هرزنامه می‌روند. در قوانین مسدودسازی می‌توانید رفع مسدودی کنید.</string>
+    <string name="clear_spam_title">همهٔ هرزنامه‌ها حذف شوند؟</string>
+    <string name="block_rules">قوانین مسدودسازی</string>
+    <string name="block_rules_subtitle">فهرستی کوتاه و روشن از آنچه فیلتر می‌شود</string>
+    <plurals name="blocked_senders">
+        <item quantity="one">%d فرستنده</item>
+        <item quantity="other">%d فرستنده</item>
+    </plurals>
+    <string name="blocked_phrases">عبارت‌های مسدود</string>
+    <plurals name="blocked_phrase_count">
+        <item quantity="one">%d عبارت</item>
+        <item quantity="other">%d عبارت</item>
+    </plurals>
+    <plurals name="blocked_number_count">
+        <item quantity="one">%d شماره</item>
+        <item quantity="other">%d شماره</item>
+    </plurals>
+    <string name="filter_obvious_spam">فیلتر هرزنامه‌های آشکار</string>
+    <string name="filter_obvious_spam_on">روشن · با قوانین روی گوشی</string>
+    <string name="filter_obvious_spam_off">خاموش</string>
+    <string name="edit_phrase">ویرایش عبارت</string>
+    <string name="remove_phrase">حذف %s</string>
+    <string name="add_phrase_or_number">افزودن عبارت یا شماره</string>
+    <string name="block_a_phrase">مسدود کردن عبارت</string>
+    <string name="block_a_phrase_subtitle">پیام‌هایی که این عبارت را دارند به هرزنامه می‌روند</string>
+    <string name="block_a_number">مسدود کردن شماره</string>
+    <string name="block_a_number_subtitle">پیام‌های این فرستنده به هرزنامه می‌روند</string>
+    <string name="blocked_numbers_subtitle">این فرستنده‌ها به صندوق شما نمی‌رسند</string>
+    <string name="no_blocked_numbers">شماره‌ی مسدودی نیست</string>
+    <string name="no_blocked_numbers_text">فرستنده را از هرزنامه یا گفت‌وگو مسدود کنید، یا شماره‌ای اینجا اضافه کنید.</string>
+    <string name="phrase">عبارت</string>
+    <string name="phone_number_label">شماره یا نام فرستنده</string>
+    <string name="phrase_guidance">بزرگی و کوچکی حروف مهم نیست. پیام‌های فیلترشده را در هرزنامه ببینید.</string>
+    <string name="number_guidance">پیام‌هایش همچنان نگه داشته می‌شوند. آن‌ها را در هرزنامه ببینید.</string>
+    <string name="example_match">نمونهٔ مطابق</string>
+    <string name="quoted">«%s»</string>
+    <string name="no_current_match">هنوز پیامی روی این گوشی مطابق نیست.</string>
+    <string name="add_phrase">افزودن عبارت</string>
+    <string name="save_phrase">ذخیرهٔ عبارت</string>
+    <string name="phrase_already_blocked">این عبارت از قبل مسدود است</string>
+    <string name="phrase_error_detail">همان عبارت را ویرایش کنید، یا واژه‌های دیگری امتحان کنید.</string>
+    <string name="number_invalid">شماره یا نام فرستنده را وارد کنید</string>
+    <string name="number_error_detail">رقم‌ها یا نامی را بنویسید که پیام‌ها با آن می‌رسند.</string>
+    <string name="move_block_rules">انتقال قوانین مسدودسازی</string>
+    <string name="move_block_rules_subtitle">انتخاب‌های فیلترتان را روی گوشی دیگر نگه دارید</string>
+    <string name="what_will_be_exported">چه چیزی برون‌بری می‌شود</string>
+    <string name="rules_summary">%1$s · %2$s</string>
+    <string name="rules_export_privacy">این فایل شماره‌ها و عبارت‌های مسدود را فهرست می‌کند. آن را خصوصی نگه دارید.</string>
+    <string name="export_block_list">برون‌بری فهرست مسدودها</string>
+    <string name="have_a_block_list">فهرست مسدودها دارید؟</string>
+    <string name="have_a_block_list_text">فایلی انتخاب کنید تا قوانینش با این گوشی ادغام شود.</string>
+    <string name="block_rules_exported">فهرست مسدودها برون‌بری شد</string>
+    <string name="block_rules_imported">%s اضافه شد</string>
 </resources>

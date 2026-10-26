@@ -333,4 +333,66 @@
     <string name="delete_forever">Delete forever</string>
     <string name="delete_forever_title">Delete forever?</string>
     <string name="delete_forever_conversation_text">This conversation cannot be restored after permanent deletion.</string>
+
+    <!-- Spam and block rules (design 20, 21, 38, 50, 51) -->
+    <string name="spam_subtitle">Separate from the people you trust</string>
+    <string name="spam_empty_text">Blocked and suspicious messages stay here without an inbox alert.</string>
+    <string name="spam_hold_label">Message actions</string>
+    <string name="not_spam_short">Not spam</string>
+    <string name="block_sender">Block sender</string>
+    <string name="block_sender_title">Block %s?</string>
+    <string name="block_sender_text">Their new messages will go straight to Spam, without an alert. You can unblock them in Block rules.</string>
+    <string name="clear_spam_title">Delete all spam?</string>
+    <string name="block_rules">Block rules</string>
+    <string name="block_rules_subtitle">A short, understandable list of what gets filtered</string>
+    <plurals name="blocked_senders">
+        <item quantity="one">%d sender</item>
+        <item quantity="other">%d senders</item>
+    </plurals>
+    <string name="blocked_phrases">Blocked phrases</string>
+    <plurals name="blocked_phrase_count">
+        <item quantity="one">%d phrase</item>
+        <item quantity="other">%d phrases</item>
+    </plurals>
+    <plurals name="blocked_number_count">
+        <item quantity="one">%d number</item>
+        <item quantity="other">%d numbers</item>
+    </plurals>
+    <string name="filter_obvious_spam">Filter obvious spam</string>
+    <string name="filter_obvious_spam_on">On · Uses local rules</string>
+    <string name="filter_obvious_spam_off">Off</string>
+    <string name="edit_phrase">Edit phrase</string>
+    <string name="remove_phrase">Remove %s</string>
+    <string name="add_phrase_or_number">Add a phrase or number</string>
+    <string name="block_a_phrase">Block a phrase</string>
+    <string name="block_a_phrase_subtitle">Messages matching this phrase move to Spam</string>
+    <string name="block_a_number">Block a number</string>
+    <string name="block_a_number_subtitle">Messages from this sender move to Spam</string>
+    <string name="blocked_numbers_subtitle">These senders cannot reach your inbox</string>
+    <string name="no_blocked_numbers">No blocked numbers</string>
+    <string name="no_blocked_numbers_text">Block a sender from Spam or a conversation, or add a number here.</string>
+    <string name="phrase">Phrase</string>
+    <string name="phone_number_label">Phone number or sender name</string>
+    <string name="phrase_guidance">Matching is case-insensitive. Review filtered messages in Spam.</string>
+    <string name="number_guidance">Their messages are still kept. Review them in Spam.</string>
+    <string name="example_match">Example match</string>
+    <string name="quoted">“%s”</string>
+    <string name="no_current_match">No message on this phone matches yet.</string>
+    <string name="add_phrase">Add phrase</string>
+    <string name="save_phrase">Save phrase</string>
+    <string name="phrase_already_blocked">This phrase is already blocked</string>
+    <string name="phrase_error_detail">Edit the blocked phrase instead, or try different words.</string>
+    <string name="number_invalid">Enter a number or sender name</string>
+    <string name="number_error_detail">Use the digits or the name the messages come from.</string>
+    <string name="move_block_rules">Move block rules</string>
+    <string name="move_block_rules_subtitle">Keep your filtering choices on another phone</string>
+    <string name="what_will_be_exported">What will be exported</string>
+    <string name="rules_summary">%1$s · %2$s</string>
+    <string name="rules_export_privacy">The file lists blocked numbers and phrases. Store it privately.</string>
+    <string name="export_block_list">Export block list</string>
+    <string name="have_a_block_list">Have a block list?</string>
+    <string name="have_a_block_list_text">Choose a file to merge rules with this device.</string>
+    <string name="block_rules_file_name" translatable="false">open-line-block-rules.json</string>
+    <string name="block_rules_exported">Block list exported</string>
+    <string name="block_rules_imported">Added %s</string>
 </resources>

@@ -2,22 +2,11 @@ package org.fossify.messages
 
 import android.content.Context
 import android.content.ContextWrapper
-import android.content.Intent
-import android.content.res.Configuration
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.Color
-import android.view.ContextThemeWrapper
-import android.view.LayoutInflater
-import android.view.View
-import android.view.View.MeasureSpec
 import androidx.room.Room
 import androidx.room.migration.Migration
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.fossify.messages.databases.MessagesDatabase
-import org.fossify.messages.activities.ThreadActivity
-import org.fossify.messages.databinding.ItemConversationBinding
 import org.fossify.messages.extensions.config
 import org.fossify.messages.extensions.extractOtpCode
 import org.fossify.messages.helpers.Config
@@ -38,6 +27,18 @@ import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.width
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.LayoutDirection
+import org.fossify.messages.ui.components.ConversationRow
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
@@ -54,8 +55,6 @@ import org.fossify.messages.ui.inbox.section
 import org.fossify.messages.ui.inbox.splitForBar
 import java.util.Calendar
 import org.junit.runner.RunWith
-import java.io.File
-import java.util.Locale
 
 /** Database fixtures are disposable. Activity checks open the inbox and a synthetic thread; no messages are sent. */
 @RunWith(AndroidJUnit4::class)
@@ -243,44 +242,39 @@ class InboxChecks {
         }
     }
 
+    /** At 1.3× text the name wraps, the preview stays one line, and nothing leaves the row (R2-15, D15). */
     @Test
-    fun conversationRowLayout() = instrumentation.runOnMainSync {
-        for (rtl in listOf(false, true)) {
-            val configuration = Configuration(targetContext.resources.configuration).apply {
-                fontScale = 1.3f
-                setLayoutDirection(Locale(if (rtl) "fa" else "en"))
+    fun conversationRowLayout() {
+        var rtl by mutableStateOf(false)
+        val row = row(1, "FILIMO subscription and account notices", read = false, pinned = true, muted = true, phone = "FILIMO")
+            .let { it.copy(conversation = it.conversation.copy(snippet = "برای ورود کد تایید را وارد کنید. Your verification code is 123456.", unreadCount = 120)) }
+        compose.setContent {
+            val density = LocalDensity.current
+            CompositionLocalProvider(
+                LocalDensity provides Density(density.density, fontScale = 1.3f),
+                LocalLayoutDirection provides if (rtl) LayoutDirection.Rtl else LayoutDirection.Ltr,
+            ) {
+                OpenLineTheme(dark = false) {
+                    Box(Modifier.width(360.dp)) {
+                        ConversationRow(row, selected = false, selecting = false, onClick = {}, onLongClick = {})
+                    }
+                }
             }
-            val themed = ContextThemeWrapper(targetContext.createConfigurationContext(configuration), R.style.AppTheme)
-            val binding = ItemConversationBinding.inflate(LayoutInflater.from(themed))
-            binding.root.layoutDirection = if (rtl) View.LAYOUT_DIRECTION_RTL else View.LAYOUT_DIRECTION_LTR
-            binding.conversationAddress.text = "FILIMO"
-            binding.conversationBodyShort.text = "برای ورود کد تایید را وارد کنید. Your verification code is 123456."
-            binding.conversationDate.text = "Sep 9"
-            binding.draftIndicator.visibility = View.GONE
-            binding.pinIndicator.visibility = View.VISIBLE
-            binding.mutedIndicator.visibility = View.VISIBLE
-            binding.unreadCountBadge.apply {
-                visibility = View.VISIBLE
-                text = "99+"
+        }
+        for (direction in listOf(false, true)) {
+            rtl = direction
+            compose.waitForIdle()
+            val rowBounds = compose.onNode(hasContentDescription("FILIMO", substring = true)).getUnclippedBoundsInRoot()
+            val preview = compose.onNodeWithText("Your verification code", substring = true, useUnmergedTree = true)
+            val previewLayout = mutableListOf<TextLayoutResult>()
+            preview.performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(previewLayout) }
+            check(previewLayout.single().lineCount == 1) { "Preview wraps (rtl=$direction)" }
+            val previewBounds = preview.getUnclippedBoundsInRoot()
+            check(previewBounds.bottom <= rowBounds.bottom && previewBounds.left >= rowBounds.left && previewBounds.right <= rowBounds.right) {
+                "Preview leaves the row (rtl=$direction): $previewBounds in $rowBounds"
             }
-            val width = (360 * themed.resources.displayMetrics.density).toInt()
-            binding.root.measure(
-                MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY),
-                MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED)
-            )
-            binding.root.layout(0, 0, width, binding.root.measuredHeight)
-            check(binding.conversationBodyShort.width > width / 3)
-            check(binding.conversationBodyShort.lineCount == 2)
-            check(binding.unreadCountBadge.width >= binding.unreadCountBadge.paint.measureText("99+"))
-            check(binding.conversationBodyShort.bottom <= binding.root.height)
-            val image = Bitmap.createBitmap(width, binding.root.height, Bitmap.Config.ARGB_8888)
-            val canvas = Canvas(image)
-            canvas.drawColor(Color.DKGRAY)
-            binding.root.draw(canvas)
-            File(targetContext.cacheDir, "inbox-row-${if (rtl) "rtl" else "ltr"}.png").outputStream().use {
-                image.compress(Bitmap.CompressFormat.PNG, 100, it)
-            }
-            image.recycle()
+            compose.onNodeWithText(String.format(compose.activity.resources.configuration.locales[0], "%d", 120), useUnmergedTree = true)
+                .assertExists()
         }
     }
 

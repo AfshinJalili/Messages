@@ -24,7 +24,10 @@ fun relativeDay(millis: Long, now: Calendar = Calendar.getInstance()): RelativeD
     }
 }
 
-/** "18 Sep", with the year when it is not this year. Android's DateFormat localizes the digits (۱۸ سپتامبر). */
+/**
+ * "18 Sep", with the year when it is not this year. Android's DateFormat localizes the digits
+ * (۱۸ سپتامبر).
+ */
 fun shortDate(millis: Long, now: Calendar = Calendar.getInstance()): String {
     val year = Calendar.getInstance().apply { timeInMillis = millis }.get(Calendar.YEAR)
     return DateFormat.format(if (year == now.get(Calendar.YEAR)) "d MMM" else "d MMM yyyy", millis).toString()

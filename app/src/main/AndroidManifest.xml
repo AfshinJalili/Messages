@@ -148,11 +148,33 @@
             tools:replace="android:label" />
 
         <activity
-            android:name=".activities.ManageBlockedKeywordsActivity"
+            android:name=".activities.BlockRulesActivity"
             android:configChanges="orientation"
             android:exported="false"
-            android:label="@string/blocked_keywords"
+            android:label="@string/block_rules"
             android:parentActivityName=".activities.SettingsActivity" />
+
+        <activity
+            android:name=".activities.BlockedNumbersActivity"
+            android:configChanges="orientation"
+            android:exported="false"
+            android:label="@string/blocked_numbers"
+            android:parentActivityName=".activities.BlockRulesActivity" />
+
+        <activity
+            android:name=".activities.AddBlockRuleActivity"
+            android:configChanges="orientation"
+            android:exported="false"
+            android:label="@string/block_a_phrase"
+            android:parentActivityName=".activities.BlockRulesActivity"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name=".activities.MoveBlockRulesActivity"
+            android:configChanges="orientation"
+            android:exported="false"
+            android:label="@string/move_block_rules"
+            android:parentActivityName=".activities.BlockRulesActivity" />
 
         <activity
             android:name=".activities.BlockedMessagesActivity"
