@@ -66,7 +66,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
-import org.fossify.commons.extensions.formatDateOrTime
+import org.fossify.commons.extensions.getTimeFormat
 import org.fossify.messages.R
 import org.fossify.messages.ui.Avatar
 import org.fossify.messages.ui.forContent
@@ -279,12 +279,18 @@ fun ConversationRow(
     }
 }
 
+/** The time today, Yesterday, then a short date ("21 Sep"): decision R9. */
 @Composable
 private fun rememberRowTime(seconds: Int): String {
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
     return remember(seconds, configuration) {
-        (seconds * 1000L).formatDateOrTime(context, hideTimeOnOtherDays = true, showCurrentYear = false)
+        val millis = seconds * 1000L
+        when (relativeDay(millis)) {
+            RelativeDay.TODAY -> android.text.format.DateFormat.format(context.getTimeFormat(), millis).toString()
+            RelativeDay.YESTERDAY -> context.getString(R.string.inbox_section_yesterday)
+            RelativeDay.EARLIER -> shortDate(millis)
+        }
     }
 }
 
