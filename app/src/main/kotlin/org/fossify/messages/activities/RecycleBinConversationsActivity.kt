@@ -1,163 +1,107 @@
 package org.fossify.messages.activities
 
-import org.fossify.messages.helpers.UndoDeletion
-import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
-import org.fossify.commons.dialogs.ConfirmationDialog
-import org.fossify.commons.extensions.areSystemAnimationsEnabled
-import org.fossify.commons.extensions.beGoneIf
-import org.fossify.commons.extensions.beVisibleIf
-import org.fossify.commons.extensions.hideKeyboard
-import org.fossify.commons.extensions.viewBinding
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import org.fossify.commons.helpers.ensureBackgroundThread
-import org.fossify.messages.R
-import org.fossify.messages.adapters.RecycleBinConversationsAdapter
-import org.fossify.messages.databinding.ActivityRecycleBinConversationsBinding
-import org.fossify.messages.extensions.config
-import org.fossify.messages.helpers.sortedForInbox
-import org.fossify.messages.extensions.setupSurfaceAppBar
 import org.fossify.messages.extensions.conversationsDB
 import org.fossify.messages.extensions.emptyMessagesRecycleBinForConversation
+import org.fossify.messages.extensions.messagesDB
+import org.fossify.commons.extensions.notificationManager
+import org.fossify.messages.extensions.restoreAllMessagesFromRecycleBinForConversation
 import org.fossify.messages.helpers.IS_RECYCLE_BIN
 import org.fossify.messages.helpers.THREAD_ID
 import org.fossify.messages.helpers.THREAD_TITLE
+import org.fossify.messages.helpers.UndoDeletion
+import org.fossify.messages.helpers.refreshConversations
 import org.fossify.messages.models.Conversation
 import org.fossify.messages.models.Events
+import org.fossify.messages.ui.library.RecycleBinEvent
+import org.fossify.messages.ui.library.RecycleBinScreen
+import org.fossify.messages.ui.library.RecycleBinUiState
+import org.fossify.messages.ui.library.RecycledConversation
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
 
-class RecycleBinConversationsActivity : SimpleActivity() {
-    private var bus: EventBus? = null
-    private val binding by viewBinding(ActivityRecycleBinConversationsBinding::inflate)
+/**
+ * 22 · Recycle bin. Restore is immediate. Delete forever and Empty recycle bin are confirmed on
+ * the page and then still go through [UndoDeletion] before anything is erased.
+ */
+class RecycleBinConversationsActivity : ComposePageActivity() {
+    private var state by mutableStateOf(RecycleBinUiState())
 
-    @SuppressLint("InlinedApi")
+    @Composable
+    override fun Page() {
+        RecycleBinScreen(state, libraryNavigation(), snackbarHost, ::onEvent)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(binding.root)
-        setupOptionsMenu()
-
-        setupEdgeToEdge(padBottomImeAndSystem = listOf(binding.conversationsList))
-        setupMaterialScrollListener(
-            scrollingView = binding.conversationsList,
-            topAppBar = binding.recycleBinAppbar
-        )
-
-        loadRecycleBinConversations()
+        EventBus.getDefault().register(this)
     }
 
     override fun onResume() {
         super.onResume()
-        setupSurfaceAppBar(binding.recycleBinAppbar)
-        loadRecycleBinConversations()
+        reload()
     }
 
     override fun onDestroy() {
+        EventBus.getDefault().unregister(this)
         super.onDestroy()
-        bus?.unregister(this)
     }
 
-    private fun setupOptionsMenu() {
-        binding.recycleBinToolbar.inflateMenu(R.menu.recycle_bin_menu)
-        binding.recycleBinToolbar.setOnMenuItemClickListener { menuItem ->
-            when (menuItem.itemId) {
-                R.id.empty_recycle_bin -> removeAll()
-                else -> return@setOnMenuItemClickListener false
-            }
-            return@setOnMenuItemClickListener true
-        }
-    }
-
-    private fun updateOptionsMenu(conversations: ArrayList<Conversation>) {
-        binding.recycleBinToolbar.menu.apply {
-            findItem(R.id.empty_recycle_bin).isVisible = conversations.isNotEmpty()
-        }
-    }
-
-    private fun loadRecycleBinConversations() {
+    override fun reload() {
         ensureBackgroundThread {
-            val conversations = try {
+            val recycled = runCatching {
+                val summaries = messagesDB.getRecycleBinSummaries().associateBy { it.threadId }
                 conversationsDB.getAllWithMessagesInRecycleBin()
-                    .toMutableList() as ArrayList<Conversation>
-            } catch (e: Exception) {
-                ArrayList()
-            }
+                    .filter { it.threadId !in UndoDeletion.threads }
+                    .mapNotNull { conversation ->
+                        summaries[conversation.threadId]?.let {
+                            RecycledConversation(conversation, it.messageCount, it.deletedTs)
+                        }
+                    }
+                    .sortedByDescending { it.deletedMillis }
+            }.getOrDefault(emptyList())
+            runOnUiThread { state = RecycleBinUiState(loading = false, conversations = recycled) }
+        }
+    }
 
+    private fun onEvent(event: RecycleBinEvent) {
+        when (event) {
+            RecycleBinEvent.Back -> finish()
+            is RecycleBinEvent.Open -> openConversation(event.conversation)
+            is RecycleBinEvent.Restore -> restore(event.conversation)
+            is RecycleBinEvent.DeleteForever -> erase(listOf(event.conversation.threadId))
+            RecycleBinEvent.EmptyBin -> erase(state.conversations.map { it.conversation.threadId })
+        }
+    }
+
+    private fun restore(conversation: Conversation) {
+        val remaining = state.conversations.filter { it.conversation.threadId != conversation.threadId }
+        state = state.copy(conversations = remaining)
+        ensureBackgroundThread {
+            restoreAllMessagesFromRecycleBinForConversation(conversation.threadId)
             runOnUiThread {
-                setupConversations(conversations)
-            }
-        }
-
-        bus = EventBus.getDefault()
-        try {
-            bus!!.register(this)
-        } catch (ignored: Exception) {
-        }
-    }
-
-    private fun removeAll() {
-        ConfirmationDialog(
-            activity = this,
-            message = "",
-            messageId = R.string.empty_recycle_bin_messages_confirmation,
-            positive = org.fossify.commons.R.string.yes,
-            negative = org.fossify.commons.R.string.no
-        ) {
-            val adapter = getOrCreateConversationsAdapter()
-            adapter.deleteWithUndo(adapter.currentList.toList()) { id ->
-                emptyMessagesRecycleBinForConversation(id)
+                reload()
+                refreshConversations()
             }
         }
     }
 
-    private fun getOrCreateConversationsAdapter(): RecycleBinConversationsAdapter {
-        var currAdapter = binding.conversationsList.adapter
-        if (currAdapter == null) {
-            hideKeyboard()
-            currAdapter = RecycleBinConversationsAdapter(
-                activity = this,
-                recyclerView = binding.conversationsList,
-                onRefresh = { notifyDatasetChanged() },
-                itemClick = { handleConversationClick(it) }
-            )
-
-            binding.conversationsList.adapter = currAdapter
-            if (areSystemAnimationsEnabled) {
-                binding.conversationsList.scheduleLayoutAnimation()
-            }
-        }
-        return currAdapter as RecycleBinConversationsAdapter
-    }
-
-    private fun setupConversations(conversations: ArrayList<Conversation>) {
-        val sortedConversations = ArrayList(conversations.filter { it.threadId !in UndoDeletion.threads }).sortedForInbox(config.pinnedConversations)
-
-        showOrHidePlaceholder(sortedConversations.isEmpty())
-        updateOptionsMenu(sortedConversations)
-
-        try {
-            getOrCreateConversationsAdapter().apply {
-                updateConversations(sortedConversations)
-            }
-        } catch (ignored: Exception) {
+    private fun erase(threadIds: List<Long>) {
+        deleteConversationsWithUndo(threadIds) { threadId ->
+            emptyMessagesRecycleBinForConversation(threadId)
+            notificationManager.cancel(threadId.hashCode())
         }
     }
 
-    private fun showOrHidePlaceholder(show: Boolean) {
-        binding.conversationsFastscroller.beGoneIf(show)
-        binding.noConversationsPlaceholder.beVisibleIf(show)
-        binding.noConversationsPlaceholder.text = getString(R.string.no_recycle_bin_conversations)
-    }
-
-    @SuppressLint("NotifyDataSetChanged")
-    private fun notifyDatasetChanged() {
-        getOrCreateConversationsAdapter().notifyDataSetChanged()
-    }
-
-    private fun handleConversationClick(any: Any) {
+    private fun openConversation(conversation: Conversation) {
         Intent(this, ThreadActivity::class.java).apply {
-            val conversation = any as Conversation
             putExtra(THREAD_ID, conversation.threadId)
             putExtra(THREAD_TITLE, conversation.title)
             putExtra(IS_RECYCLE_BIN, true)
@@ -166,7 +110,5 @@ class RecycleBinConversationsActivity : SimpleActivity() {
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
-    fun refreshConversations(@Suppress("unused") event: Events.RefreshConversations) {
-        loadRecycleBinConversations()
-    }
+    fun onConversationsChanged(@Suppress("unused") event: Events.RefreshConversations) = reload()
 }

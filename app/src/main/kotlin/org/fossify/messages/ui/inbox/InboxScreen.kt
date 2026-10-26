@@ -17,46 +17,26 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.ui.semantics.CustomAccessibilityAction
-import androidx.compose.ui.semantics.customActions
-import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.material3.SwipeToDismissBoxState
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalHapticFeedback
-import kotlin.math.abs
 import androidx.compose.foundation.layout.consumeWindowInsets
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.only
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -82,25 +62,19 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
-import androidx.compose.material3.SwipeToDismissBox
-import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -109,37 +83,27 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.launch
-import org.fossify.commons.extensions.formatDateOrTime
 import org.fossify.messages.R
+import org.fossify.messages.ui.components.ConversationRow
+import org.fossify.messages.ui.components.ConversationRowMaxWidth
 import org.fossify.messages.ui.components.PrimaryNavigation
+import org.fossify.messages.ui.components.SwipeGesture
+import org.fossify.messages.ui.components.SwipeTone
+import org.fossify.messages.ui.components.SwipeableRow
 import org.fossify.messages.ui.components.TopDestination
 import org.fossify.messages.ui.library.LibraryScreen
 import org.fossify.messages.helpers.InboxFilter
 import org.fossify.messages.helpers.SwipeAction
 import org.fossify.messages.models.Conversation
-import org.fossify.messages.ui.Avatar
 import org.fossify.messages.ui.OpenLine
 import org.fossify.messages.ui.OpenLineTheme
-import org.fossify.messages.ui.forContent
-import org.fossify.messages.ui.withContentFonts
 import java.util.Calendar
 
-// A deliberate half-row drag commits. Flicks do not: the default fling velocity made a short flick
-// delete or archive a conversation.
-private const val SWIPE_COMMIT_FRACTION = 0.5f
-private val AvatarSize = 50.dp
 private val TargetSize = 48.dp
 private const val COMPACT_HEIGHT_DP = 480
 private const val EXPANDED_WIDTH_DP = 600
@@ -281,11 +245,11 @@ private fun InboxList(
                 items(rows, key = { it.threadId }, contentType = { "row" }) { row ->
                     val selected = row.threadId in state.selected
                     SwipeableRow(
-                        swipeLeft = state.swipeLeft,
-                        swipeRight = state.swipeRight,
+                        left = state.swipeLeft.gesture(),
+                        right = state.swipeRight.gesture(),
                         enabled = !state.selecting,
-                        onSwipe = { onSwipe(row, it) },
-                        modifier = Modifier.widthIn(max = 640.dp).fillMaxWidth().animateItem(),
+                        onSwipe = { towardsRight -> onSwipe(row, if (towardsRight) state.swipeRight else state.swipeLeft) },
+                        modifier = Modifier.widthIn(max = ConversationRowMaxWidth).fillMaxWidth().animateItem(),
                     ) {
                         ConversationRow(
                             row = row,
@@ -293,8 +257,7 @@ private fun InboxList(
                             selecting = state.selecting,
                             onClick = { if (state.selecting) onToggleSelection(row) else onOpen(row) },
                             onLongClick = { onToggleSelection(row) },
-                            archiveAvailable = state.archiveAvailable,
-                            onAccessibleAction = { onSwipe(row, it) },
+                            actions = rowActions(row, state.archiveAvailable) { onSwipe(row, it) },
                         )
                     }
                 }
@@ -507,244 +470,25 @@ private fun SectionHeader(section: InboxSection, modifier: Modifier = Modifier) 
     )
 }
 
-/**
- * SwipeToDismissBox works in layout direction, but the swipe settings are physical, so the mapping
- * flips under RTL.
- */
+/** The panel a configured swipe reveals; [SwipeAction.NONE] reveals nothing. */
+private fun SwipeAction.gesture(): SwipeGesture? = when (this) {
+    SwipeAction.NONE -> null
+    SwipeAction.DELETE -> SwipeGesture(label, icon, SwipeTone.DESTRUCTIVE)
+    SwipeAction.MUTE -> SwipeGesture(label, icon, SwipeTone.QUIET)
+    SwipeAction.ARCHIVE -> SwipeGesture(label, icon, SwipeTone.PRIMARY)
+}
+
+/** TalkBack equivalents of the swipe actions, available whatever the swipe settings are. */
 @Composable
-private fun SwipeableRow(
-    swipeLeft: SwipeAction,
-    swipeRight: SwipeAction,
-    enabled: Boolean,
-    onSwipe: (SwipeAction) -> Unit,
-    modifier: Modifier = Modifier,
-    content: @Composable RowScope.() -> Unit,
-) {
-    val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
-    val startToEnd = if (rtl) swipeLeft else swipeRight
-    val endToStart = if (rtl) swipeRight else swipeLeft
-    var widthPx by remember { mutableFloatStateOf(0f) }
-    val stateRef = remember { arrayOfNulls<SwipeToDismissBoxState>(1) }
-    // The deprecated overload is the only one that can veto a dismiss; used here to ignore flicks
-    // that were released short of the commit distance.
-    @Suppress("DEPRECATION")
-    val state = rememberSwipeToDismissBoxState(
-        confirmValueChange = { value ->
-            val released = runCatching { stateRef[0]?.requireOffset() }.getOrNull() ?: 0f
-            value == SwipeToDismissBoxValue.Settled || abs(released) >= widthPx * SWIPE_COMMIT_FRACTION
-        },
-        positionalThreshold = { it * SWIPE_COMMIT_FRACTION },
-    ).also { stateRef[0] = it }
-    val armed by remember {
-        derivedStateOf {
-            val offset = runCatching { state.requireOffset() }.getOrNull() ?: 0f
-            widthPx > 0f && abs(offset) >= widthPx * SWIPE_COMMIT_FRACTION
-        }
-    }
-    val haptics = LocalHapticFeedback.current
-    LaunchedEffect(armed) {
-        if (armed) haptics.performHapticFeedback(HapticFeedbackType.GestureThresholdActivate)
-    }
-    val scope = rememberCoroutineScope()
-    SwipeToDismissBox(
-        state = state,
-        modifier = modifier.onSizeChanged { widthPx = it.width.toFloat() },
-        enableDismissFromStartToEnd = enabled && startToEnd != SwipeAction.NONE,
-        enableDismissFromEndToStart = enabled && endToStart != SwipeAction.NONE,
-        onDismiss = { value ->
-            onSwipe(if (value == SwipeToDismissBoxValue.StartToEnd) startToEnd else endToStart)
-            // Mute keeps the row; archive and delete remove it, and Undo must bring it back settled.
-            scope.launch { state.reset() }
-        },
-        backgroundContent = {
-            val direction = state.dismissDirection
-            val action = when (direction) {
-                SwipeToDismissBoxValue.StartToEnd -> startToEnd
-                SwipeToDismissBoxValue.EndToStart -> endToStart
-                SwipeToDismissBoxValue.Settled -> SwipeAction.NONE
-            }
-            if (action != SwipeAction.NONE) {
-                SwipeBackground(action, armed, alignStart = direction == SwipeToDismissBoxValue.StartToEnd)
-            }
-        },
-        content = content,
+private fun rowActions(row: InboxRow, archiveAvailable: Boolean, onAction: (SwipeAction) -> Unit): List<CustomAccessibilityAction> {
+    val archive = stringResource(R.string.archive)
+    val delete = stringResource(org.fossify.commons.R.string.delete)
+    val mute = stringResource(if (row.muted) R.string.unmute_conversation else R.string.mute_conversation)
+    return listOfNotNull(
+        CustomAccessibilityAction(archive) { onAction(SwipeAction.ARCHIVE); true }.takeIf { archiveAvailable },
+        CustomAccessibilityAction(delete) { onAction(SwipeAction.DELETE); true },
+        CustomAccessibilityAction(mute) { onAction(SwipeAction.MUTE); true },
     )
-}
-
-/** The tonal panel reveals its label only once releasing would commit the action. */
-@Composable
-private fun SwipeBackground(action: SwipeAction, armed: Boolean, alignStart: Boolean) {
-    val colors = MaterialTheme.colorScheme
-    val (actionColor, onAction) = when (action) {
-        SwipeAction.DELETE -> colors.errorContainer to colors.error
-        SwipeAction.MUTE -> colors.surfaceContainerHigh to colors.onSurfaceVariant
-        else -> colors.primaryContainer to colors.onPrimaryContainer
-    }
-    val background by animateColorAsState(actionColor, label = "swipe background")
-    val tint by animateColorAsState(onAction, label = "swipe icon")
-    val scale by animateFloatAsState(if (armed) 1.25f else 1f, spring(dampingRatio = Spring.DampingRatioMediumBouncy), label = "swipe icon scale")
-    Box(
-        Modifier
-            .fillMaxSize()
-            .background(background)
-            .padding(horizontal = 24.dp),
-        contentAlignment = if (alignStart) Alignment.CenterStart else Alignment.CenterEnd,
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Icon(painterResource(action.icon), contentDescription = stringResource(action.label), tint = tint,
-                modifier = Modifier.graphicsLayer { scaleX = scale; scaleY = scale })
-            if (armed) Text(stringResource(action.label), color = tint, style = MaterialTheme.typography.labelMedium)
-        }
-    }
-}
-
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-private fun ConversationRow(
-    row: InboxRow,
-    selected: Boolean,
-    selecting: Boolean,
-    onClick: () -> Unit,
-    onLongClick: () -> Unit,
-    archiveAvailable: Boolean,
-    onAccessibleAction: (SwipeAction) -> Unit,
-) {
-    val colors = MaterialTheme.colorScheme
-    val conversation = row.conversation
-    val unread = !conversation.read
-    val fontScale = LocalDensity.current.fontScale
-    val archiveLabel = stringResource(R.string.archive)
-    val deleteLabel = stringResource(org.fossify.commons.R.string.delete)
-    val muteLabel = stringResource(if (row.muted) R.string.unmute_conversation else R.string.mute_conversation)
-    val unreadLabel = if (unread) pluralStringResource(R.plurals.inbox_row_unread, conversation.unreadCount.coerceAtLeast(1), conversation.unreadCount.coerceAtLeast(1)) else null
-    val mutedLabel = stringResource(R.string.muted)
-    val pinnedLabel = stringResource(R.string.inbox_section_pinned)
-    val context = LocalContext.current
-    val configuration = LocalConfiguration.current
-    val time = remember(conversation.date, configuration) {
-        (conversation.date * 1000L).formatDateOrTime(context, hideTimeOnOtherDays = true, showCurrentYear = false)
-    }
-    val description = listOfNotNull(conversation.title, unreadLabel, row.draft ?: conversation.snippet, time,
-        mutedLabel.takeIf { row.muted }, pinnedLabel.takeIf { row.pinned }).joinToString(", ")
-    Row(
-        Modifier
-            .widthIn(max = 640.dp)
-            .fillMaxWidth()
-            .clip(MaterialTheme.shapes.medium)
-            .background(if (selected) colors.secondaryContainer else colors.surface)
-            .combinedClickable(
-                onClick = onClick,
-                onLongClick = onLongClick,
-                onLongClickLabel = stringResource(R.string.inbox_select),
-            )
-            .semantics(mergeDescendants = true) {
-                if (selecting) this.selected = selected
-                contentDescription = description
-                if (!selecting) customActions = listOfNotNull(
-                    CustomAccessibilityAction(archiveLabel) { onAccessibleAction(SwipeAction.ARCHIVE); true }.takeIf { archiveAvailable },
-                    CustomAccessibilityAction(deleteLabel) { onAccessibleAction(SwipeAction.DELETE); true },
-                    CustomAccessibilityAction(muteLabel) { onAccessibleAction(SwipeAction.MUTE); true },
-                )
-            }
-            .padding(horizontal = 24.dp, vertical = 16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Box(Modifier.size(AvatarSize), contentAlignment = Alignment.Center) {
-            if (selected) {
-                Box(Modifier.size(AvatarSize).clip(CircleShape).background(colors.primary), contentAlignment = Alignment.Center) {
-                    Icon(painterResource(org.fossify.commons.R.drawable.ic_check_vector), null, tint = colors.onPrimary)
-                }
-            } else {
-                Avatar(conversation.title, conversation.photoUri, conversation.isGroupConversation, AvatarSize)
-            }
-        }
-        Column(Modifier.weight(1f).clearAndSetSemantics { }, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(
-                remember(conversation.title) { AnnotatedString(conversation.title).withContentFonts() },
-                style = MaterialTheme.typography.titleMedium.forContent(conversation.title),
-                color = colors.onSurface,
-                maxLines = if (fontScale >= 1.3f) 2 else 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            if (fontScale >= 1.5f) Metadata(row, unread, inline = true)
-            SnippetText(row, unread)
-        }
-        if (fontScale < 1.5f) Box(Modifier.clearAndSetSemantics { }) { Metadata(row, unread) }
-    }
-}
-
-@Composable
-internal fun SnippetText(row: InboxRow, unread: Boolean) {
-    val colors = MaterialTheme.colorScheme
-    val draft = row.draft
-    if (!draft.isNullOrEmpty()) {
-        val label = stringResource(R.string.inbox_draft_label)
-        Text(
-            buildAnnotatedString {
-                withStyle(SpanStyle(color = colors.error, fontWeight = FontWeight.Bold)) { append(label) }
-                append(' ')
-                append(draft)
-            }.withContentFonts(),
-            style = MaterialTheme.typography.bodyMedium.forContent(draft),
-            color = colors.onSurfaceVariant,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-    } else if (row.conversation.isScheduled) {
-        val time = android.text.format.DateFormat.format("EEE HH:mm", row.conversation.date * 1000L).toString()
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            Icon(painterResource(org.fossify.commons.R.drawable.ic_clock_vector), null, tint = colors.primary, modifier = Modifier.size(16.dp))
-            Text(stringResource(R.string.inbox_scheduled_at, time), style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Bold, color = colors.primary, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        }
-    } else {
-        Text(
-            remember(row.conversation.snippet) { AnnotatedString(row.conversation.snippet).withContentFonts() },
-            style = MaterialTheme.typography.bodyMedium.forContent(row.conversation.snippet),
-            fontStyle = if (row.conversation.isScheduled) FontStyle.Italic else FontStyle.Normal,
-            color = if (unread) colors.onSurface else colors.onSurfaceVariant,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-    }
-}
-
-@Composable
-private fun Metadata(row: InboxRow, unread: Boolean, inline: Boolean = false) {
-    val colors = MaterialTheme.colorScheme
-    val context = LocalContext.current
-    val date = row.conversation.date
-    val time = remember(date) {
-        (date * 1000L).formatDateOrTime(context, hideTimeOnOtherDays = true, showCurrentYear = false)
-    }
-    val signals: @Composable () -> Unit = {
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-            if (row.pinned) Icon(painterResource(org.fossify.commons.R.drawable.ic_pin_vector), null, tint = colors.onSurfaceVariant, modifier = Modifier.size(16.dp))
-            if (row.muted) Icon(painterResource(R.drawable.ic_bell_off_vector), null, tint = colors.onSurfaceVariant, modifier = Modifier.size(16.dp))
-            if (unread) {
-                if (row.conversation.unreadCount > 1) {
-                    Box(Modifier.heightIn(min = 22.dp).clip(CircleShape).background(colors.primaryContainer).padding(horizontal = 6.dp), contentAlignment = Alignment.Center) {
-                        Text(String.format(LocalConfiguration.current.locales[0], "%d", row.conversation.unreadCount),
-                            color = colors.onPrimaryContainer, style = MaterialTheme.typography.labelSmall)
-                    }
-                } else {
-                    Box(Modifier.size(10.dp).clip(CircleShape).background(colors.primary))
-                }
-            }
-        }
-    }
-    if (inline) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(time, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant, maxLines = 1)
-            signals()
-        }
-    } else {
-        Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(time, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant, maxLines = 1)
-            signals()
-        }
-    }
 }
 
 @Composable

@@ -38,7 +38,6 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import org.fossify.messages.R
 
 private val NavIconSize = 21.dp
 private val NavItemHeight = 64.dp
