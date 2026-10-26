@@ -123,11 +123,11 @@ fun InboxFilter.emptyTitle() = when (this) {
 }
 
 // Child activities return to the Library tab retained by the inbox composition.
-enum class LibraryDestination(@StringRes val label: Int, @DrawableRes val icon: Int) {
-    STARRED(R.string.starred_messages, org.fossify.commons.R.drawable.ic_star_vector),
-    ARCHIVE(R.string.archived_conversations, R.drawable.ic_archive_vector),
-    SPAM(R.string.inbox_spam, org.fossify.commons.R.drawable.ic_block_vector),
-    RECYCLE_BIN(org.fossify.commons.R.string.recycle_bin, org.fossify.commons.R.drawable.ic_delete_vector);
+enum class LibraryDestination(@StringRes val label: Int, @StringRes val description: Int, @DrawableRes val icon: Int) {
+    STARRED(R.string.starred_messages, R.string.library_starred_description, R.drawable.ic_lucide_star),
+    ARCHIVE(R.string.archived_conversations, R.string.library_archive_description, R.drawable.ic_lucide_archive),
+    SPAM(R.string.inbox_spam, R.string.library_spam_description, R.drawable.ic_lucide_shield_ban),
+    RECYCLE_BIN(org.fossify.commons.R.string.recycle_bin, R.string.library_recycle_description, R.drawable.ic_lucide_trash_2);
 
     fun isAvailable(state: InboxUiState) = when (this) {
         ARCHIVE -> state.archiveAvailable
