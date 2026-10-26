@@ -2,14 +2,17 @@ package org.fossify.messages
 
 import android.content.Intent
 import android.os.SystemClock
+import android.provider.Telephony
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.fossify.messages.activities.MainActivity
 import org.fossify.messages.extensions.conversationsDB
+import org.fossify.messages.extensions.messagesDB
 import org.fossify.messages.helpers.refreshConversations
 import org.fossify.messages.helpers.UndoDeletion
 import org.fossify.messages.models.Conversation
+import org.fossify.messages.models.Message
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.util.concurrent.CountDownLatch
@@ -23,9 +26,19 @@ class DeletionChecks {
     @Test
     fun conversationStaysHiddenAcrossRefreshAndUndoSurvivesRecreation() {
         val context = instrumentation.targetContext
-        // Scheduled with a number no provider thread uses, so reconciliation keeps this Room-only row.
+        // A scheduled thread with a number no provider thread uses, so reconciliation keeps this Room-only
+        // row. It needs a pending scheduled message too: reconciliation deletes temporary threads that
+        // have none, which on a fresh emulator happens before the inbox ever shows the row.
         val fixture = Conversation(
             Long.MAX_VALUE - 123, "Fixture", 1, true, "Fixture", "", false, "5550100987654", isScheduled = true,
+        )
+        val pending = Message(
+            id = Long.MAX_VALUE - 124, body = "Fixture", type = Telephony.Sms.MESSAGE_TYPE_OUTBOX, status = 0,
+            participants = ArrayList(),
+            date = (TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()) + TimeUnit.DAYS.toSeconds(1)).toInt(),
+            read = true, threadId = fixture.threadId, isMMS = false, attachment = null,
+            senderPhoneNumber = fixture.phoneNumber, senderName = "", senderPhotoUri = "", subscriptionId = -1,
+            isScheduled = true,
         )
         fun MainActivity.shows() = inboxRows.any { it.threadId == fixture.threadId }
         fun ActivityScenario<MainActivity>.await(message: String, timeoutMs: Long = 5000, condition: (MainActivity) -> Boolean) {
@@ -37,6 +50,7 @@ class DeletionChecks {
             }
             check(met) { message }
         }
+        context.messagesDB.insertOrUpdate(pending)
         context.conversationsDB.insertOrUpdate(fixture)
         try {
             ActivityScenario.launch<MainActivity>(Intent(context, MainActivity::class.java)).use { scenario ->
@@ -62,6 +76,7 @@ class DeletionChecks {
                 check(context.conversationsDB.getConversationWithThreadId(fixture.threadId) != null) { "Undo must prevent the delete" }
             }
         } finally {
+            context.messagesDB.delete(pending.id)
             context.conversationsDB.deleteThreadId(fixture.threadId)
         }
     }
