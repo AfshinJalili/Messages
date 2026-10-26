@@ -32,6 +32,7 @@ import org.fossify.messages.ui.components.SelectionBar
 import org.fossify.messages.ui.components.SwipeGesture
 import org.fossify.messages.ui.components.SwipeTone
 import org.fossify.messages.ui.components.SwipeableRow
+import org.fossify.messages.ui.components.UpAction
 import org.fossify.messages.ui.inbox.InboxRow
 
 private val SideMargin = 20.dp
@@ -71,6 +72,7 @@ fun ArchiveScreen(
         modifier = modifier,
         subtitle = stringResource(R.string.archive_subtitle).takeUnless { state.selecting },
         onBack = { onEvent(if (state.selecting) ArchiveEvent.ClearSelection else ArchiveEvent.Back) },
+        upAction = if (state.selecting) UpAction.CLOSE else UpAction.BACK,
         navigation = navigation,
         snackbarHostState = snackbarHostState,
         actions = {

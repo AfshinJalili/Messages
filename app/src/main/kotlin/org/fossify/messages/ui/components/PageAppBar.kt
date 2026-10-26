@@ -1,5 +1,7 @@
 package org.fossify.messages.ui.components
 
+import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -29,9 +31,15 @@ import androidx.compose.ui.unit.dp
 import org.fossify.messages.R
 import org.fossify.messages.ui.OpenLine
 
+/** The leading control of [PageAppBar]: back on a sub-page, ✕ to leave selection (R1-01). */
+enum class UpAction(@DrawableRes val icon: Int, @StringRes val label: Int) {
+    BACK(R.drawable.ic_lucide_arrow_left, org.fossify.commons.R.string.back),
+    CLOSE(R.drawable.ic_lucide_x, org.fossify.commons.R.string.close),
+}
+
 /**
  * Component / page app bar: the pine band that opens every secondary page. [onBack] adds the
- * 48dp Navigate up target; [actions] sit after the title.
+ * 48dp leading target, drawn as [upAction]; [actions] sit after the title.
  */
 @Composable
 fun PageAppBar(
@@ -39,6 +47,7 @@ fun PageAppBar(
     modifier: Modifier = Modifier,
     subtitle: String? = null,
     onBack: (() -> Unit)? = null,
+    upAction: UpAction = UpAction.BACK,
     actions: @Composable RowScope.() -> Unit = {},
 ) {
     val colors = MaterialTheme.colorScheme
@@ -62,8 +71,8 @@ fun PageAppBar(
                         colors = IconButtonDefaults.iconButtonColors(contentColor = colors.onPrimaryContainer),
                     ) {
                         Icon(
-                            painterResource(R.drawable.ic_lucide_arrow_left),
-                            contentDescription = stringResource(org.fossify.commons.R.string.back),
+                            painterResource(upAction.icon),
+                            contentDescription = stringResource(upAction.label),
                             modifier = Modifier.size(24.dp),
                         )
                     }
