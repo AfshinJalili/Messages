@@ -1,8 +1,8 @@
 name: Testing build
 
 on:
+  # Any base, so every PR in a stack gets its own emulator run.
   pull_request:
-    branches: [main]
   push:
     branches: [main]
 

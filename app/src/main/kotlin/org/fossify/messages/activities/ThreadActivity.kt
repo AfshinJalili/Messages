@@ -222,9 +222,9 @@ import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
 import org.joda.time.DateTime
 import java.io.File
+import android.graphics.Color as AndroidColor
 import android.graphics.drawable.ColorDrawable
-import androidx.compose.ui.graphics.toArgb
-import org.fossify.messages.ui.thread.LiftScrim
+import androidx.core.graphics.ColorUtils
 import kotlin.math.roundToInt
 
 class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
@@ -513,10 +513,13 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
 
     // The header is its own ComposeView, outside the timeline's lift scrim.
     // setAlpha replaces the colour's own alpha, so the drawable is opaque and the scrim's 40% is applied here.
-    private val headerScrim by lazy { ColorDrawable(LiftScrim.copy(alpha = 1f).toArgb()).also { binding.threadHeader.foreground = it } }
+    private val liftScrim by lazy { getColor(R.color.open_line_lift_scrim) }
+    private val headerScrim by lazy {
+        ColorDrawable(ColorUtils.setAlphaComponent(liftScrim, OPAQUE)).also { binding.threadHeader.foreground = it }
+    }
 
     private fun dimHeader(progress: Float) {
-        headerScrim.alpha = (progress * LiftScrim.alpha * 255).roundToInt()
+        headerScrim.alpha = (progress * AndroidColor.alpha(liftScrim)).roundToInt()
     }
 
     private fun refreshOpenLineTheme() {
@@ -2308,6 +2311,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         private const val NO_JUMP = -1L
         // SmsMessage code units left in the current part before the counter appears.
         private const val SMS_COUNTER_THRESHOLD = 20
+        private const val OPAQUE = 255
         private const val SAVED_COMPOSER_TEXT = "composer_text"
         private const val SAVED_COMPOSER_ATTACHMENTS = "composer_attachments"
     }
