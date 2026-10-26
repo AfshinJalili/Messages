@@ -7,6 +7,7 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.fossify.messages.activities.MainActivity
+import org.fossify.messages.extensions.clearAllMessagesIfNeeded
 import org.fossify.messages.extensions.conversationsDB
 import org.fossify.messages.extensions.messagesDB
 import org.fossify.messages.helpers.refreshConversations
@@ -28,7 +29,7 @@ class DeletionChecks {
         val context = instrumentation.targetContext
         // A scheduled thread with a number no provider thread uses, so reconciliation keeps this Room-only
         // row. It needs a pending scheduled message too: reconciliation deletes temporary threads that
-        // have none, which on a fresh emulator happens before the inbox ever shows the row.
+        // have none.
         val fixture = Conversation(
             Long.MAX_VALUE - 123, "Fixture", 1, true, "Fixture", "", false, "5550100987654", isScheduled = true,
         )
@@ -50,6 +51,11 @@ class DeletionChecks {
             }
             check(met) { message }
         }
+        // A fresh install empties the messages table on its first launch; let that happen before the
+        // fixture exists, or it takes the pending message with it.
+        val cleared = CountDownLatch(1)
+        context.clearAllMessagesIfNeeded { cleared.countDown() }
+        check(cleared.await(5, TimeUnit.SECONDS)) { "First-run message cleanup finishes" }
         context.messagesDB.insertOrUpdate(pending)
         context.conversationsDB.insertOrUpdate(fixture)
         try {
