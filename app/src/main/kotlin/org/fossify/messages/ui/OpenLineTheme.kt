@@ -50,6 +50,10 @@ data class OpenLineColors(
     val onBandVariant: Color,
     val avatars: List<Color>,
     val onAvatar: Color,
+    /** Secondary text on lilac panels (`on-secondary-container-variant`). */
+    val onSecondaryContainerVariant: Color = Color.Unspecified,
+    /** Actions on inverse surfaces such as the snackbar (`inverse-accent`). */
+    val inverseAccent: Color = Color.Unspecified,
 )
 
 val LocalOpenLineColors = staticCompositionLocalOf {
@@ -95,6 +99,8 @@ private fun typography(rtl: Boolean): Typography {
         TextStyle(fontFamily = family, fontSize = size.sp, fontWeight = weight, lineHeight = leading)
     return Typography(
         headlineMedium = style(displayFamily, 31, FontWeight.ExtraBold).copy(lineHeight = 1.25.em),
+        // Dialog titles (text-title-lg).
+        headlineSmall = style(displayFamily, 25, FontWeight.Normal).copy(lineHeight = 1.3.em),
         titleLarge = style(bodyFamily, 20, FontWeight.Bold),
         titleMedium = style(bodyFamily, 18, FontWeight.Bold),
         bodyLarge = style(bodyFamily, 18, FontWeight.Normal),
@@ -177,6 +183,10 @@ fun OpenLineTheme(dark: Boolean, textScale: Float = 1f, content: @Composable () 
         onBandVariant = colorResource(R.color.open_line_band_variant),
         avatars = listOf(colorResource(R.color.open_line_lilac), colorResource(R.color.open_line_lime)),
         onAvatar = colorResource(R.color.open_line_pine),
+        onSecondaryContainerVariant = colorResource(
+            if (dark) R.color.open_line_on_lilac_variant_dark else R.color.open_line_on_lilac_variant,
+        ),
+        inverseAccent = colorResource(if (dark) R.color.open_line_pine else R.color.open_line_lime),
     )
     MaterialTheme(
         colorScheme = colorScheme(dark),

@@ -2,6 +2,7 @@ package org.fossify.messages.activities
 
 import android.annotation.SuppressLint
 import android.app.role.RoleManager
+import android.content.Context
 import android.content.Intent
 import android.content.pm.ShortcutInfo
 import android.content.pm.ShortcutManager
@@ -91,6 +92,7 @@ import org.fossify.messages.ui.inbox.InboxAction
 import org.fossify.messages.ui.inbox.InboxRow
 import org.fossify.messages.ui.inbox.InboxScreen
 import org.fossify.messages.ui.inbox.InboxUiState
+import org.fossify.messages.ui.components.TopDestination
 import org.fossify.messages.ui.inbox.LibraryDestination
 
 class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
@@ -128,7 +130,7 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
         inboxFilter = InboxFilter.entries.getOrNull(savedInstanceState?.getInt(INBOX_FILTER) ?: 0) ?: InboxFilter.ALL
         savedInstanceState?.getLongArray(INBOX_SELECTION)?.let { inbox = inbox.copy(selected = it.toSet()) }
         appLaunched(BuildConfig.APPLICATION_ID)
-        libraryOpen = savedInstanceState?.getBoolean("library_open") ?: false
+        libraryOpen = savedInstanceState?.getBoolean(LIBRARY_OPEN) ?: (intent.topDestination() == TopDestination.LIBRARY)
         search = SearchUiState(
             open = savedInstanceState?.getBoolean(SEARCH_OPEN) ?: false,
             query = savedInstanceState?.getString(SEARCH_QUERY).orEmpty(),
@@ -194,7 +196,7 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
         outState.putBoolean(SEARCH_OPEN, search.open)
         outState.putString(SEARCH_QUERY, search.query)
         outState.putInt(SEARCH_FILTER, search.filter.ordinal)
-        outState.putBoolean("library_open", libraryOpen)
+        outState.putBoolean(LIBRARY_OPEN, libraryOpen)
         outState.putInt(INBOX_FILTER, inboxFilter.ordinal)
         outState.putLongArray(INBOX_SELECTION, inbox.selected.toLongArray())
         super.onSaveInstanceState(outState)
@@ -213,6 +215,16 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
         InboxRepository.setReconcileListener(null)
         searchJob?.cancel()
         super.onDestroy()
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        intent.topDestination()?.let { destination ->
+            closeSearch()
+            libraryOpen = destination == TopDestination.LIBRARY
+            applySystemBars()
+        }
     }
 
     override fun onBackPressedCompat(): Boolean {
@@ -248,9 +260,9 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
     private fun applySystemBars() {
         // The bottom bar paints its own surface; a system scrim on top would double it.
         if (isQPlus()) window.isNavigationBarContrastEnforced = false
-        // Inbox uses the pine band; Library uses the theme surface.
+        // Inbox and Library both open with the pine band.
         WindowCompat.getInsetsController(window, window.decorView).apply {
-            isAppearanceLightStatusBars = libraryOpen && !darkTheme
+            isAppearanceLightStatusBars = false
             isAppearanceLightNavigationBars = !darkTheme
         }
     }
@@ -757,9 +769,21 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
     }
 
     companion object {
+        private const val TOP_DESTINATION = "top_destination"
+        private const val LIBRARY_OPEN = "library_open"
         private const val SEARCH_OPEN = "search_open"
         private const val SEARCH_QUERY = "search_query"
         private const val SEARCH_FILTER = "search_filter"
         private const val INBOX_SELECTION = "inbox_selection"
+
+        /** Brings the existing inbox task forward on [destination] instead of stacking another one. */
+        fun topLevelIntent(context: Context, destination: TopDestination): Intent =
+            Intent(context, MainActivity::class.java)
+                .putExtra(TOP_DESTINATION, destination.name)
+                .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+
+        private fun Intent.topDestination() = getStringExtra(TOP_DESTINATION)?.let { name ->
+            TopDestination.entries.firstOrNull { it.name == name }
+        }
     }
 }

@@ -37,11 +37,8 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalHapticFeedback
 import kotlin.math.abs
-import android.graphics.Bitmap
 import androidx.compose.foundation.layout.consumeWindowInsets
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -53,10 +50,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.WindowInsetsSides
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.only
-import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -71,18 +65,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Badge
-import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -100,7 +90,6 @@ import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.rememberCoroutineScope
@@ -109,10 +98,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -135,13 +120,12 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.bumptech.glide.Glide
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.fossify.commons.extensions.formatDateOrTime
 import org.fossify.messages.R
+import org.fossify.messages.ui.components.PrimaryNavigation
+import org.fossify.messages.ui.components.TopDestination
+import org.fossify.messages.ui.library.LibraryScreen
 import org.fossify.messages.helpers.InboxFilter
 import org.fossify.messages.helpers.SwipeAction
 import org.fossify.messages.models.Conversation
@@ -190,6 +174,13 @@ fun InboxScreen(
     onLibraryTab: (Boolean) -> Unit = {},
 ) {
     val listState = rememberLazyListState()
+    val onDestination: (TopDestination) -> Unit = { destination ->
+        when (destination) {
+            TopDestination.INBOX -> onLibraryTab(false)
+            TopDestination.LIBRARY -> onLibraryTab(true)
+            TopDestination.SETTINGS -> onSettings()
+        }
+    }
     var scrolledDown by rememberSaveable { mutableStateOf(false) }
     val searchOpen by rememberUpdatedState(search.open)
     val scrollConnection = remember {
@@ -221,7 +212,7 @@ fun InboxScreen(
             if (state.selecting) {
                 SelectionBar(state, onAction)
             } else if (!showRail) {
-                InboxNavigation(state.unreadSpam, onLibrary = { onLibraryTab(true) }, onSettings = onSettings, librarySelected = libraryOpen, onInbox = { onLibraryTab(false) })
+                PrimaryNavigation(if (libraryOpen) TopDestination.LIBRARY else TopDestination.INBOX, onDestination, unreadSpam = state.unreadSpam)
             }
         },
     ) { padding ->
@@ -231,17 +222,20 @@ fun InboxScreen(
                 .consumeWindowInsets(padding)
         ) {
             if (showRail) {
-                InboxNavigation(
-                    state.unreadSpam,
-                    onLibrary = { onLibraryTab(true) },
-                    onSettings = onSettings,
+                PrimaryNavigation(
+                    if (libraryOpen) TopDestination.LIBRARY else TopDestination.INBOX,
+                    onDestination,
+                    unreadSpam = state.unreadSpam,
                     vertical = true,
-                    librarySelected = libraryOpen,
-                    onInbox = { onLibraryTab(false) },
                 )
             }
             if (libraryOpen) {
-                LibraryPage(state, onLibrary, Modifier.weight(1f))
+                LibraryScreen(
+                    destinations = LibraryDestination.entries.filter { it.isAvailable(state) },
+                    unreadSpam = state.unreadSpam,
+                    onOpen = onLibrary,
+                    modifier = Modifier.weight(1f),
+                )
             } else {
                 Column(Modifier.weight(1f).nestedScroll(scrollConnection)) {
                     IdentityBand(
@@ -813,96 +807,6 @@ private fun NewMessageButton(expanded: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
-private fun InboxNavigation(
-    unreadSpam: Int,
-    onLibrary: () -> Unit,
-    onSettings: () -> Unit,
-    vertical: Boolean = false,
-    librarySelected: Boolean = false,
-    onInbox: () -> Unit = {},
-) {
-    @Composable
-    fun Items(itemModifier: Modifier) {
-        NavItem(R.drawable.ic_message_bubble, stringResource(R.string.inbox_nav_inbox), !librarySelected, onInbox, itemModifier)
-        NavItem(R.drawable.ic_library_vector, stringResource(R.string.inbox_nav_library), librarySelected, onLibrary, itemModifier, unreadSpam)
-        NavItem(
-            org.fossify.commons.R.drawable.ic_settings_cog_vector,
-            stringResource(org.fossify.commons.R.string.settings),
-            false,
-            onSettings,
-            itemModifier,
-        )
-    }
-    Surface(color = MaterialTheme.colorScheme.surfaceContainer) {
-        if (vertical) {
-            Column(
-                Modifier
-                    .fillMaxHeight()
-                    // Insets before the width: a landscape cutout must widen the rail, not squeeze its labels.
-                    .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Start + WindowInsetsSides.Vertical))
-                    .width(96.dp)
-                    .verticalScroll(rememberScrollState())
-                    .padding(8.dp)
-                    .selectableGroup(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically),
-            ) {
-                Items(Modifier.fillMaxWidth())
-            }
-        } else {
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .windowInsetsPadding(WindowInsets.navigationBars)
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
-                    .selectableGroup(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Items(Modifier.weight(1f))
-            }
-        }
-    }
-}
-
-@Composable
-private fun NavItem(
-    icon: Int,
-    label: String,
-    selected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    badge: Int = 0,
-) {
-    val colors = MaterialTheme.colorScheme
-    val tint = if (selected) colors.primary else colors.onSurfaceVariant
-    Column(
-        modifier
-            .heightIn(min = 64.dp)
-            .clip(MaterialTheme.shapes.small)
-            .background(if (selected) colors.secondaryContainer else Color.Transparent)
-            .selectable(selected = selected, role = Role.Tab, onClick = onClick)
-            .padding(4.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
-    ) {
-        BadgedBox(badge = {
-            if (badge > 0) {
-                CountBadge(badge)
-            }
-        }) {
-            Icon(painterResource(icon), contentDescription = null, tint = tint, modifier = Modifier.size(22.dp))
-        }
-        Text(
-            label,
-            style = if (selected) MaterialTheme.typography.labelMedium else MaterialTheme.typography.labelSmall,
-            color = tint,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-    }
-}
-
-@Composable
 private fun SelectionBar(state: InboxUiState, onAction: (InboxAction) -> Unit) {
     val (bar, overflow) = remember(state.selected, state.rows, state.archiveAvailable) {
         availableActions(state.selectedRows, state.archiveAvailable).splitForBar()
@@ -969,59 +873,6 @@ private fun ActionItem(icon: Int, label: String, onClick: () -> Unit, modifier: 
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
         )
-    }
-}
-
-/**
- * Badge text keeps its own compact line height; the Persian 1.7 leading would otherwise push the
- * badge past the nav item's clip. Digits are localized (۸۴ in Persian).
- */
-@Composable
-private fun CountBadge(count: Int) {
-    Badge(containerColor = MaterialTheme.colorScheme.error, contentColor = MaterialTheme.colorScheme.onError) {
-        Text((String.format(LocalConfiguration.current.locales[0], "%d", count.coerceAtMost(99)) + if (count > 99) "+" else ""), style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp, lineHeight = 14.sp))
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun LibraryPage(state: InboxUiState, onOpen: (LibraryDestination) -> Unit, modifier: Modifier = Modifier) {
-    val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
-    val colors = MaterialTheme.colorScheme
-    Column(modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars).verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text(stringResource(R.string.inbox_nav_library), style = MaterialTheme.typography.headlineMedium,
-            color = colors.onSurface, modifier = Modifier.semantics { heading() })
-        Text(stringResource(R.string.library_subtitle), style = MaterialTheme.typography.bodyMedium,
-            color = colors.onSurfaceVariant, modifier = Modifier.padding(bottom = 8.dp))
-        LibraryDestination.entries.filter { it.isAvailable(state) }.forEach { destination ->
-            val count = if (destination == LibraryDestination.SPAM) state.unreadSpam else 0
-            val description = when (destination) {
-                LibraryDestination.STARRED -> R.string.library_starred_description
-                LibraryDestination.ARCHIVE -> R.string.library_archive_description
-                LibraryDestination.SPAM -> R.string.library_spam_description
-                LibraryDestination.RECYCLE_BIN -> R.string.library_recycle_description
-            }
-            Row(Modifier.fillMaxWidth().heightIn(min = 75.dp).clip(MaterialTheme.shapes.medium)
-                .background(colors.surfaceContainer).clickable { onOpen(destination) }.padding(8.dp),
-                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Box(Modifier.size(46.dp).clip(MaterialTheme.shapes.medium).background(colors.secondaryContainer), contentAlignment = Alignment.Center) {
-                    Icon(painterResource(destination.icon), null, tint = colors.primary, modifier = Modifier.size(21.dp))
-                }
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(stringResource(destination.label), style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
-                    Text(stringResource(description), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
-                }
-                if (count > 0) CountBadge(count)
-                Icon(painterResource(org.fossify.commons.R.drawable.ic_chevron_right_vector), null,
-                    tint = colors.onSurfaceVariant, modifier = Modifier.size(18.dp).graphicsLayer {
-                        scaleX = if (rtl) -1f else 1f
-                    })
-            }
-        }
-        Column(Modifier.fillMaxWidth().clip(MaterialTheme.shapes.small).background(colors.secondaryContainer).padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(stringResource(R.string.library_principle_title), style = MaterialTheme.typography.labelMedium, color = colors.onSecondaryContainer)
-            Text(stringResource(R.string.library_principle_body), style = MaterialTheme.typography.bodySmall, color = colors.onSecondaryContainer)
-        }
     }
 }
 
