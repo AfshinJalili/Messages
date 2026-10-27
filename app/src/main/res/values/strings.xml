@@ -621,4 +621,21 @@
         <item quantity="one">%d number</item>
         <item quantity="other">%d numbers</item>
     </plurals>
+
+    <!-- First run (32, 33; Persian 55, 56) -->
+    <string name="welcome_title">Welcome to Messages</string>
+    <string name="welcome_subtitle">A clearer place for conversations</string>
+    <string name="welcome_statement">Every message has a person at the other end.</string>
+    <string name="welcome_text">Read, reply, search, and keep control of what reaches you.</string>
+    <string name="set_as_default_sms_app">Set as default SMS app</string>
+    <string name="why_default_sms_app">Android needs one default SMS app to send and receive messages.</string>
+    <string name="make_it_work">Make it work</string>
+    <string name="make_it_work_subtitle">Two permissions make the experience complete</string>
+    <string name="contacts_permission_text">Show names instead of numbers</string>
+    <string name="notifications_permission_text">Tell you when a new message arrives</string>
+    <string name="continue_action">Continue</string>
+    <string name="permissions_later">You can change these choices later in Android settings.</string>
+    <string name="notifications_off_title">Notifications are off</string>
+    <string name="notifications_off_text">Without them, new messages arrive silently and you only see them here.</string>
+    <string name="open_settings">Open settings</string>
 </resources>

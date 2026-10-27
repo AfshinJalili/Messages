@@ -32,7 +32,6 @@ import org.fossify.messages.ui.search.SEARCH_DEBOUNCE_MS
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
-import org.fossify.commons.dialogs.PermissionRequiredDialog
 import org.fossify.commons.extensions.applyColorFilter
 import org.fossify.commons.extensions.appLaunched
 import org.fossify.commons.extensions.appLockManager
@@ -45,6 +44,7 @@ import org.fossify.commons.extensions.openNotificationSettings
 import org.fossify.commons.extensions.toast
 import org.fossify.commons.extensions.viewBinding
 import org.fossify.commons.helpers.KEY_PHONE
+import org.fossify.commons.extensions.hasPermission
 import org.fossify.commons.helpers.PERMISSION_READ_CONTACTS
 import org.fossify.commons.helpers.PERMISSION_READ_SMS
 import org.fossify.commons.helpers.PERMISSION_SEND_SMS
@@ -89,6 +89,9 @@ import org.fossify.messages.ui.openLineDark
 import org.fossify.messages.ui.openLineTextScale
 import org.fossify.messages.ui.inbox.InboxAction
 import org.fossify.messages.ui.inbox.InboxRow
+import org.fossify.messages.ui.firstrun.FirstRunEvent
+import org.fossify.messages.ui.firstrun.FirstRunScreen
+import org.fossify.messages.ui.firstrun.FirstRunStep
 import org.fossify.messages.ui.inbox.InboxScreen
 import org.fossify.messages.ui.inbox.InboxUiState
 import org.fossify.messages.ui.components.TopDestination
@@ -114,6 +117,8 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
     private var darkTheme by mutableStateOf(false)
     private var textScale by mutableFloatStateOf(1f)
     private var libraryOpen by mutableStateOf(false)
+    // 32 or 33 while the app cannot work yet; null once the inbox can load.
+    private var firstRun by mutableStateOf<FirstRunStep?>(null)
     @VisibleForTesting
     internal val snackbarHost = SnackbarHostState()
 
@@ -140,7 +145,8 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
         refreshInboxTheme()
         binding.inboxCompose.setContent {
             OpenLineTheme(dark = darkTheme, textScale = textScale) {
-                InboxScreen(
+                val step = firstRun
+                if (step != null) FirstRunScreen(step, ::onFirstRun) else InboxScreen(
                     state = inbox,
                     snackbarHostState = snackbarHost,
                     onOpen = { openConversation(it.conversation) },
@@ -268,38 +274,50 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, resultData: Intent?) {
         super.onActivityResult(requestCode, resultCode, resultData)
-        if (requestCode == MAKE_DEFAULT_APP_REQUEST) {
-            if (resultCode == RESULT_OK) {
-                askPermissions()
+        // Declining Android's prompt leaves 32 up, so the person can read why and try again.
+        if (requestCode == MAKE_DEFAULT_APP_REQUEST && isDefaultSmsApp()) firstRun = FirstRunStep.PERMISSIONS
+    }
+
+    /** 32 until the app is the SMS app; 33 while SMS access is missing; otherwise straight to the inbox. */
+    private fun loadMessages() {
+        if (isQPlus() && getSystemService(RoleManager::class.java)?.isRoleAvailable(RoleManager.ROLE_SMS) != true) {
+            toast(org.fossify.commons.R.string.unknown_error_occurred)
+            finish()
+            return
+        }
+        firstRun = when {
+            !isDefaultSmsApp() -> FirstRunStep.DEFAULT_APP
+            !hasPermission(PERMISSION_READ_SMS) || !hasPermission(PERMISSION_SEND_SMS) -> FirstRunStep.PERMISSIONS
+            else -> null
+        }
+        if (firstRun == null) askPermissions()
+    }
+
+    private fun isDefaultSmsApp(): Boolean = if (isQPlus()) {
+        getSystemService(RoleManager::class.java)?.isRoleHeld(RoleManager.ROLE_SMS) == true
+    } else {
+        Telephony.Sms.getDefaultSmsPackage(this) == packageName
+    }
+
+    private fun onFirstRun(event: FirstRunEvent) {
+        when (event) {
+            FirstRunEvent.BecomeDefault -> requestDefaultSmsApp()
+            FirstRunEvent.Continue -> askPermissions()
+            FirstRunEvent.Back -> if (firstRun == FirstRunStep.PERMISSIONS && !isDefaultSmsApp()) {
+                firstRun = FirstRunStep.DEFAULT_APP
             } else {
                 finish()
             }
         }
     }
 
-    private fun loadMessages() {
-        if (isQPlus()) {
-            val roleManager = getSystemService(RoleManager::class.java)
-            if (roleManager!!.isRoleAvailable(RoleManager.ROLE_SMS)) {
-                if (roleManager.isRoleHeld(RoleManager.ROLE_SMS)) {
-                    askPermissions()
-                } else {
-                    val intent = roleManager.createRequestRoleIntent(RoleManager.ROLE_SMS)
-                    startActivityForResult(intent, MAKE_DEFAULT_APP_REQUEST)
-                }
-            } else {
-                toast(org.fossify.commons.R.string.unknown_error_occurred)
-                finish()
-            }
+    private fun requestDefaultSmsApp() {
+        val intent = if (isQPlus()) {
+            getSystemService(RoleManager::class.java)!!.createRequestRoleIntent(RoleManager.ROLE_SMS)
         } else {
-            if (Telephony.Sms.getDefaultSmsPackage(this) == packageName) {
-                askPermissions()
-            } else {
-                val intent = Intent(Telephony.Sms.Intents.ACTION_CHANGE_DEFAULT)
-                intent.putExtra(Telephony.Sms.Intents.EXTRA_PACKAGE_NAME, packageName)
-                startActivityForResult(intent, MAKE_DEFAULT_APP_REQUEST)
-            }
+            Intent(Telephony.Sms.Intents.ACTION_CHANGE_DEFAULT).putExtra(Telephony.Sms.Intents.EXTRA_PACKAGE_NAME, packageName)
         }
+        startActivityForResult(intent, MAKE_DEFAULT_APP_REQUEST)
     }
 
     // while SEND_SMS and READ_SMS permissions are mandatory, READ_CONTACTS is optional.
@@ -312,13 +330,15 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
                         handlePermission(PERMISSION_READ_CONTACTS) {
                             handleNotificationPermission { granted ->
                                 if (!granted) {
-                                    PermissionRequiredDialog(
-                                        activity = this,
-                                        textId = org.fossify.commons.R.string.allow_notifications_incoming_messages,
-                                        positiveActionCallback = { openNotificationSettings() })
+                                    confirm(
+                                        title = getString(R.string.notifications_off_title),
+                                        explanation = getString(R.string.notifications_off_text),
+                                        confirmLabel = getString(R.string.open_settings),
+                                    ) { openNotificationSettings() }
                                 }
                             }
 
+                            firstRun = null
                             initMessenger()
                         }
                     } else {

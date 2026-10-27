@@ -595,4 +595,21 @@
         <item quantity="one">%d شماره</item>
         <item quantity="other">%d شماره</item>
     </plurals>
+
+    <!-- First run (32, 33; Persian 55, 56) -->
+    <string name="welcome_title">به پیام‌ها خوش آمدید</string>
+    <string name="welcome_subtitle">پیام‌هایتان را راحت‌تر بخوانید</string>
+    <string name="welcome_statement">ارتباط با کسانی که برایتان مهم‌اند</string>
+    <string name="welcome_text">پیام بخوانید، پاسخ دهید و پیام‌های ناخواسته را مدیریت کنید.</string>
+    <string name="set_as_default_sms_app">انتخاب به‌عنوان برنامهٔ پیامک</string>
+    <string name="why_default_sms_app">برای فرستادن و دریافت پیامک، این برنامه را در اندروید به‌عنوان برنامهٔ پیش‌فرض انتخاب کنید.</string>
+    <string name="make_it_work">اجازه‌های برنامه</string>
+    <string name="make_it_work_subtitle">انتخاب کنید چه دسترسی‌هایی بدهید</string>
+    <string name="contacts_permission_text">نمایش نام مخاطبین به‌جای شماره</string>
+    <string name="notifications_permission_text">باخبر شدن از پیام‌های تازه</string>
+    <string name="continue_action">ادامه</string>
+    <string name="permissions_later">بعداً می‌توانید این دسترسی‌ها را در تنظیمات اندروید تغییر دهید.</string>
+    <string name="notifications_off_title">اعلان‌ها خاموش‌اند</string>
+    <string name="notifications_off_text">بدون اعلان، پیام‌های تازه بی‌صدا می‌رسند و فقط اینجا دیده می‌شوند.</string>
+    <string name="open_settings">باز کردن تنظیمات</string>
 </resources>
