@@ -30,13 +30,13 @@ data class Choice<T>(val value: T, val label: String, val detail: String? = null
 
 /**
  * A single choice in the confirmation dialog's frame: the title, the options as radio rows
- * (choosing one closes the dialog), and Cancel.
+ * (choosing one closes the dialog), and Cancel. [selected] may be null when nothing is chosen yet.
  */
 @Composable
 fun <T> ChoiceDialog(
     title: String,
     choices: List<Choice<T>>,
-    selected: T,
+    selected: T?,
     dismissLabel: String,
     onChoose: (T) -> Unit,
     onDismiss: () -> Unit,

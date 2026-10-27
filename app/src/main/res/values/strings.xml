@@ -589,4 +589,36 @@
         <item quantity="one">It goes back to its conversation.</item>
         <item quantity="other">They go back to their conversation.</item>
     </plurals>
+
+    <!-- New message, new group and invalid number (05, 16, 42) -->
+    <string name="new_message_subtitle">Choose one person or make a group</string>
+    <string name="name_or_phone_number">Name or phone number</string>
+    <string name="write_to">Write to %s</string>
+    <string name="suggested">Suggested</string>
+    <string name="start_a_group">Start a group</string>
+    <string name="contacts">Contacts</string>
+    <string name="no_contacts_match">No contacts match</string>
+    <string name="contacts_access_title">Contacts are off</string>
+    <string name="contacts_access_text">Allow access to find people by name. You can still type a number.</string>
+    <string name="allow_contacts">Allow access to contacts</string>
+    <string name="new_group">New group</string>
+    <string name="new_group_subtitle">Add people, then start talking</string>
+    <string name="add_someone_else">Add someone else</string>
+    <string name="add_number">Add %s</string>
+    <string name="remove_person">Remove %s</string>
+    <string name="check_the_number">Check the number</string>
+    <string name="check_the_number_subtitle">This recipient cannot receive a message yet</string>
+    <string name="enter_a_valid_number">Enter a valid phone number</string>
+    <string name="enter_a_valid_number_text">Check the country code and digits, then try again.</string>
+    <string name="edit_number">Edit number</string>
+    <string name="choose_recipient_first">Choose a recipient to write a message</string>
+    <string name="cannot_reply_title">Replies aren’t possible</string>
+    <plurals name="continue_with_people">
+        <item quantity="one">Continue with %d person</item>
+        <item quantity="other">Continue with %d people</item>
+    </plurals>
+    <plurals name="phone_numbers_count">
+        <item quantity="one">%d number</item>
+        <item quantity="other">%d numbers</item>
+    </plurals>
 </resources>
