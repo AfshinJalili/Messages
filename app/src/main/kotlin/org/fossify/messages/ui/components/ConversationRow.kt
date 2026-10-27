@@ -68,6 +68,8 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import org.fossify.commons.extensions.getTimeFormat
 import org.fossify.messages.R
+import androidx.compose.ui.text.style.TextDirection
+import androidx.compose.ui.text.style.TextAlign
 import org.fossify.messages.ui.Avatar
 import org.fossify.messages.ui.forContent
 import org.fossify.messages.ui.inbox.InboxRow
@@ -297,6 +299,9 @@ private fun rememberRowTime(seconds: Int): String {
 @Composable
 internal fun SnippetText(row: InboxRow, unread: Boolean) {
     val colors = MaterialTheme.colorScheme
+    // What people wrote keeps its own direction (an English full stop stays at the end in the
+    // Persian interface), while the line still starts at the row's start edge.
+    val rowStart = if (LocalLayoutDirection.current == LayoutDirection.Rtl) TextAlign.Right else TextAlign.Left
     val draft = row.draft
     val conversation = row.conversation
     when {
@@ -308,8 +313,9 @@ internal fun SnippetText(row: InboxRow, unread: Boolean) {
                     append(' ')
                     append(draft)
                 }.withContentFonts(),
-                style = MaterialTheme.typography.bodyMedium.forContent(draft),
+                style = MaterialTheme.typography.bodyMedium.forContent(draft).copy(textDirection = TextDirection.ContentOrLtr),
                 color = colors.onSurfaceVariant,
+                textAlign = rowStart,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -337,8 +343,9 @@ internal fun SnippetText(row: InboxRow, unread: Boolean) {
 
         else -> Text(
             remember(conversation.snippet) { AnnotatedString(conversation.snippet).withContentFonts() },
-            style = MaterialTheme.typography.bodyMedium.forContent(conversation.snippet),
+            style = MaterialTheme.typography.bodyMedium.forContent(conversation.snippet).copy(textDirection = TextDirection.ContentOrLtr),
             color = if (unread) colors.onSurface else colors.onSurfaceVariant,
+            textAlign = rowStart,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
