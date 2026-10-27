@@ -305,4 +305,32 @@
     <string name="search_nothing_yet">Nothing here yet</string>
     <string name="search_nothing_for">Nothing for “%1$s”</string>
     <string name="search_empty_hint">Try a person’s name or a different word from the message.</string>
+
+    <!-- Library pages (design 18, 19, 22) -->
+    <string name="day_and_time">%1$s · %2$s</string>
+    <string name="starred_subtitle">Little things worth finding again</string>
+    <string name="starred_empty_text">Star a message to keep it here.</string>
+    <string name="archive_subtitle">Quieted, never gone</string>
+    <string name="archive_hint">Archived threads leave the inbox and remain searchable.</string>
+    <string name="archive_action_title">Need it in your inbox?</string>
+    <string name="archive_action_text">Swipe a thread or open it and choose Unarchive.</string>
+    <plurals name="conversations_unarchived">
+        <item quantity="one">Conversation unarchived</item>
+        <item quantity="other">%d conversations unarchived</item>
+    </plurals>
+    <string name="recycle_bin_subtitle">Recover or erase recently deleted threads</string>
+    <string name="recycle_bin_note">Items stay here for 30 days, then are removed for good.</string>
+    <string name="recycle_bin_detail">%1$s · %2$s</string>
+    <plurals name="recycle_bin_messages">
+        <item quantity="one">%d message</item>
+        <item quantity="other">%d messages</item>
+    </plurals>
+    <string name="recycle_bin_deleted_today">deleted today</string>
+    <string name="recycle_bin_deleted_yesterday">deleted yesterday</string>
+    <string name="recycle_bin_deleted_on">deleted %s</string>
+    <string name="recycle_bin_empty">Empty recycle bin</string>
+    <string name="empty_bin_title">Empty the recycle bin?</string>
+    <string name="delete_forever">Delete forever</string>
+    <string name="delete_forever_title">Delete forever?</string>
+    <string name="delete_forever_conversation_text">This conversation cannot be restored after permanent deletion.</string>
 </resources>

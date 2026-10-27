@@ -1,75 +1,71 @@
 package org.fossify.messages.activities
 
 import android.content.Intent
-import android.os.Bundle
-import org.fossify.commons.extensions.beVisibleIf
-import org.fossify.commons.extensions.viewBinding
+import android.text.TextUtils
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import org.fossify.commons.helpers.ensureBackgroundThread
-import org.fossify.messages.adapters.SearchResultsAdapter
-import org.fossify.messages.databinding.ActivityStarredMessagesBinding
 import org.fossify.messages.extensions.config
-import org.fossify.messages.extensions.messageSearchResult
 import org.fossify.messages.extensions.messagesDB
-import org.fossify.messages.extensions.setupSurfaceAppBar
 import org.fossify.messages.helpers.SEARCHED_MESSAGE_ID
 import org.fossify.messages.helpers.SEARCHED_MESSAGE_IS_MMS
 import org.fossify.messages.helpers.THREAD_ID
 import org.fossify.messages.helpers.THREAD_TITLE
-import org.fossify.messages.models.SearchResult
+import org.fossify.messages.models.Message
+import org.fossify.messages.ui.library.StarredMessage
+import org.fossify.messages.ui.library.StarredScreen
+import org.fossify.messages.ui.library.StarredUiState
 
-class StarredMessagesActivity : SimpleActivity() {
-    private val binding by viewBinding(ActivityStarredMessagesBinding::inflate)
+/** 18 · Starred: every starred message, newest first, each opening at its place in the thread. */
+class StarredMessagesActivity : ComposePageActivity() {
+    private var state by mutableStateOf(StarredUiState())
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(binding.root)
-        setupEdgeToEdge(padBottomSystem = listOf(binding.starredList))
-        setupMaterialScrollListener(scrollingView = binding.starredList, topAppBar = binding.starredAppbar)
+    @Composable
+    override fun Page() {
+        StarredScreen(state, libraryNavigation(), onBack = ::finish, onOpen = ::openMessage)
     }
 
     override fun onResume() {
         super.onResume()
-        setupSurfaceAppBar(binding.starredAppbar)
         loadStarredMessages()
     }
 
     private fun loadStarredMessages() {
         ensureBackgroundThread {
-            val results = config.starredMessages.mapNotNull { it.removePrefix("mms:").toLongOrNull() }
+            val messages = config.starredMessages.mapNotNull { it.removePrefix("mms:").toLongOrNull() }
                 .distinct()
                 .chunked(ROOM_MAX_BIND_ARGS)
                 .flatMap { messagesDB.getMessagesWithIds(it) }
                 .filter { config.isMessageStarred(it.id, it.isMMS) }
                 .sortedByDescending { it.date }
-                .mapTo(ArrayList()) { messageSearchResult(it) }
-            runOnUiThread { showResults(results) }
+                .map { it.toStarred() }
+            runOnUiThread { state = StarredUiState(loading = false, messages = messages) }
         }
     }
 
-    private fun showResults(results: ArrayList<SearchResult>) {
-        binding.noStarredPlaceholder.beVisibleIf(results.isEmpty())
-        val adapter = binding.starredList.adapter as? SearchResultsAdapter
-        if (adapter == null) {
-            binding.starredList.adapter = SearchResultsAdapter(this, results, binding.starredList, "") {
-                openMessage(it as SearchResult)
-            }
-        } else {
-            adapter.updateItems(results, "")
-        }
-    }
+    private fun Message.toStarred() = StarredMessage(
+        messageId = id,
+        isMms = isMMS,
+        threadId = threadId,
+        sender = senderName.ifEmpty { TextUtils.join(", ", participants.map { it.name }) },
+        body = body,
+        millis = millis(),
+    )
 
-    private fun openMessage(result: SearchResult) {
+    private fun openMessage(message: StarredMessage) {
         Intent(this, ThreadActivity::class.java).apply {
-            putExtra(THREAD_ID, result.threadId)
-            putExtra(THREAD_TITLE, result.title)
-            putExtra(SEARCHED_MESSAGE_ID, result.messageId)
-            putExtra(SEARCHED_MESSAGE_IS_MMS, result.isMms)
+            putExtra(THREAD_ID, message.threadId)
+            putExtra(THREAD_TITLE, message.sender)
+            putExtra(SEARCHED_MESSAGE_ID, message.messageId)
+            putExtra(SEARCHED_MESSAGE_IS_MMS, message.isMms)
             startActivity(this)
         }
     }
 
-    companion object {
-        // SQLite caps bound parameters at 999
-        private const val ROOM_MAX_BIND_ARGS = 900
+    private companion object {
+        // SQLite caps bound parameters at 999.
+        const val ROOM_MAX_BIND_ARGS = 900
     }
 }

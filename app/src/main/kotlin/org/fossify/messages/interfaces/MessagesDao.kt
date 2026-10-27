@@ -8,6 +8,7 @@ import androidx.room.Query
 import androidx.room.Transaction
 import org.fossify.messages.models.Message
 import org.fossify.messages.models.RecycleBinMessage
+import org.fossify.messages.models.RecycleBinSummary
 import org.fossify.messages.models.SpamMessage
 
 @Dao
@@ -71,6 +72,10 @@ interface MessagesDao {
 
     @Query("SELECT * FROM messages WHERE thread_id = :threadId AND id = :messageId AND is_scheduled = 1")
     fun getScheduledMessageWithId(threadId: Long, messageId: Long): Message
+
+    /** One row per conversation in the recycle bin: how many of its messages it holds and the latest deletion. */
+    @Query("SELECT messages.thread_id AS thread_id, COUNT(*) AS message_count, MAX(recycle_bin_messages.deleted_ts) AS deleted_ts FROM messages INNER JOIN recycle_bin_messages ON messages.id = recycle_bin_messages.id GROUP BY messages.thread_id")
+    fun getRecycleBinSummaries(): List<RecycleBinSummary>
 
     @Query("SELECT COUNT(*) FROM recycle_bin_messages")
     fun getArchivedCount(): Int

@@ -74,6 +74,14 @@ for method, params in [("getMessagesWithIds", {"ids": 30000}), ("getMessagesWith
     assert len(db.execute(query, active).fetchall()) == 1, f"{method} hides active messages"
 print("PASS: starred and search results exclude recycled messages")
 
+# The Recycle bin cards count each conversation's recycled messages and date the latest deletion.
+summaries = re.search(r'@Query\("([^"\n]+)"\)\s+fun getRecycleBinSummaries\(', dao)[1]
+db.execute("INSERT INTO recycle_bin_messages (id, deleted_ts) VALUES (28500, 5)")
+rows = {thread: (count, deleted) for thread, count, deleted in db.execute(summaries).fetchall()}
+assert rows == {(30000 - 1) % 1500 + 1: (2, 5)}, rows
+db.execute("DELETE FROM recycle_bin_messages WHERE id = 28500")
+print("PASS: recycle bin summaries group by conversation")
+
 # Partial reads preserve unseen rows and do not alias SMS/MMS IDs.
 read_query = re.search(r'@Query\("(UPDATE messages SET read = 1 WHERE id = :id AND is_mms = :isMMS)"\)', dao)[1]
 db.execute("UPDATE messages SET read = 0, is_mms = 0 WHERE id IN (1, 2)")

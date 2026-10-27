@@ -281,4 +281,32 @@
     <string name="search_nothing_yet">هنوز چیزی اینجا نیست</string>
     <string name="search_nothing_for">نتیجه‌ای برای «%1$s» نیست</string>
     <string name="search_empty_hint">نام یک فرد یا کلمهٔ دیگری از پیام را امتحان کنید.</string>
+
+    <!-- Library pages (design 18, 19, 22) -->
+    <string name="day_and_time">%1$s · %2$s</string>
+    <string name="starred_subtitle">چیزهای کوچکی که ارزش دوباره پیدا کردن دارند</string>
+    <string name="starred_empty_text">به پیامی ستاره بدهید تا اینجا بماند.</string>
+    <string name="archive_subtitle">بی‌صدا، اما هرگز گم نمی‌شود</string>
+    <string name="archive_hint">گفت‌وگوهای بایگانی‌شده از صندوق بیرون می‌روند و همچنان در جست‌وجو پیدا می‌شوند.</string>
+    <string name="archive_action_title">لازمش دارید در صندوق؟</string>
+    <string name="archive_action_text">گفت‌وگو را بکشید، یا بازش کنید و «درآوردن از بایگانی» را بزنید.</string>
+    <plurals name="conversations_unarchived">
+        <item quantity="one">گفت‌وگو از بایگانی درآمد</item>
+        <item quantity="other">%d گفت‌وگو از بایگانی درآمد</item>
+    </plurals>
+    <string name="recycle_bin_subtitle">گفت‌وگوهای تازه حذف‌شده را بازگردانید یا پاک کنید</string>
+    <string name="recycle_bin_note">موارد ۳۰ روز اینجا می‌مانند و بعد برای همیشه حذف می‌شوند.</string>
+    <string name="recycle_bin_detail">%1$s · %2$s</string>
+    <plurals name="recycle_bin_messages">
+        <item quantity="one">%d پیام</item>
+        <item quantity="other">%d پیام</item>
+    </plurals>
+    <string name="recycle_bin_deleted_today">امروز حذف شد</string>
+    <string name="recycle_bin_deleted_yesterday">دیروز حذف شد</string>
+    <string name="recycle_bin_deleted_on">%s حذف شد</string>
+    <string name="recycle_bin_empty">خالی کردن زباله‌دان</string>
+    <string name="empty_bin_title">زباله‌دان خالی شود؟</string>
+    <string name="delete_forever">حذف برای همیشه</string>
+    <string name="delete_forever_title">برای همیشه حذف شود؟</string>
+    <string name="delete_forever_conversation_text">این گفت‌وگو پس از حذف همیشگی قابل بازگرداندن نیست.</string>
 </resources>

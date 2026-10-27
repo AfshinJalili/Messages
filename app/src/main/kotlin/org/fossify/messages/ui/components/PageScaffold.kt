@@ -50,6 +50,7 @@ fun PageScaffold(
     modifier: Modifier = Modifier,
     subtitle: String? = null,
     onBack: (() -> Unit)? = null,
+    upAction: UpAction = UpAction.BACK,
     navigation: PageNavigation? = null,
     snackbarHostState: SnackbarHostState? = null,
     actions: @Composable RowScope.() -> Unit = {},
@@ -83,7 +84,7 @@ fun PageScaffold(
                 PrimaryNavigation(navigation, vertical = true)
             }
             Column(Modifier.weight(1f)) {
-                PageAppBar(title, subtitle = subtitle, onBack = onBack, actions = actions)
+                PageAppBar(title, subtitle = subtitle, onBack = onBack, upAction = upAction, actions = actions)
                 Box(Modifier.weight(1f)) { content() }
             }
         }

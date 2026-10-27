@@ -18,6 +18,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import org.fossify.commons.helpers.isQPlus
 import org.fossify.messages.helpers.UndoDeletion
+import org.fossify.messages.helpers.refreshConversations
 import org.fossify.messages.ui.OpenLineTheme
 import org.fossify.messages.ui.components.PageNavigation
 import org.fossify.messages.ui.components.TopDestination
@@ -26,17 +27,24 @@ import org.fossify.messages.ui.openLineTextScale
 
 /**
  * Hosts one Compose page in the Open Line theme. Pages share the pine app bar, so the status bar
- * keeps light icons; the theme and text size follow the app settings on every resume. Deletion
- * Undo from [UndoDeletion] shows on the page's own snackbar host.
+ * keeps light icons; the theme and text size follow the app settings on every resume.
+ *
+ * Every Undo on the page, including deletion Undo from [UndoDeletion], shares [snackbarHost]. A new
+ * offer settles the one it replaces, so an action is never left pending without its Undo.
  */
 abstract class ComposePageActivity : SimpleActivity(), UndoDeletion.UndoHost {
     protected val snackbarHost = SnackbarHostState()
     private var darkTheme by mutableStateOf(false)
     private var textScale by mutableFloatStateOf(1f)
     private var undoJob: Job? = null
+    private var undoSettle: (() -> Unit)? = null
+    private var undoIsDeletion = false
 
     @Composable
     protected abstract fun Page()
+
+    /** Reloads the page after a deletion commits or is undone. */
+    protected open fun reload() {}
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -61,6 +69,18 @@ abstract class ComposePageActivity : SimpleActivity(), UndoDeletion.UndoHost {
         }
     }
 
+    override fun onStop() {
+        super.onStop()
+        // Leaving the page commits a pending page action rather than dropping it, and its Undo goes
+        // too. A pending deletion stays with UndoDeletion, which offers it again on the next screen.
+        val settle = undoSettle.takeUnless { undoIsDeletion }
+        undoJob?.cancel()
+        undoSettle = null
+        settle?.invoke()
+    }
+
+    override fun refreshAfterDeletion() = reload()
+
     private fun refreshTheme() {
         darkTheme = openLineDark()
         textScale = openLineTextScale()
@@ -77,19 +97,78 @@ abstract class ComposePageActivity : SimpleActivity(), UndoDeletion.UndoHost {
         }
     }
 
+    /**
+     * Hides [threadIds] at once and deletes them with [delete] once the Undo window closes. The
+     * page must leave [UndoDeletion.threads] out of what it shows.
+     */
+    protected fun deleteConversationsWithUndo(threadIds: Collection<Long>, delete: (Long) -> Unit) {
+        val ids = threadIds.toSet() - UndoDeletion.threads
+        if (ids.isEmpty()) return
+        UndoDeletion.threads.addAll(ids)
+        reload()
+        refreshConversations()
+        UndoDeletion.offer(
+            this,
+            undo = {
+                UndoDeletion.threads.removeAll(ids)
+                reload()
+            },
+            commit = { ids.forEach(delete) },
+            completed = {
+                UndoDeletion.threads.removeAll(ids)
+                reload()
+            },
+        )
+    }
+
+    /** Offers Undo for a reversible action that runs [onTimeout] when the offer ends without Undo. */
+    protected fun offerUndo(message: String, onUndo: () -> Unit, onTimeout: () -> Unit) {
+        launchUndo(message, UNDO_DURATION_MS, onUndo, onTimeout, deletion = false)
+    }
+
     override fun showUndo(message: Int, durationMs: Int, onUndo: () -> Unit): () -> Unit {
+        val job = launchUndo(
+            getString(message),
+            durationMs.toLong(),
+            onUndo,
+            onTimeout = { UndoDeletion.commitNow(this) },
+            deletion = true,
+        )
+        val settle = undoSettle
+        // UndoDeletion dismisses its own snackbar when batches merge, time out or re-show; that is
+        // not a replacement by another action, so the deletion must not commit early.
+        return {
+            job.cancel()
+            if (undoSettle === settle) undoSettle = null
+        }
+    }
+
+    private fun launchUndo(
+        message: String,
+        durationMs: Long,
+        onUndo: () -> Unit,
+        onTimeout: () -> Unit,
+        deletion: Boolean,
+    ): Job {
         undoJob?.cancel()
-        val job = lifecycleScope.launch {
-            val result = withTimeoutOrNull(durationMs.toLong()) {
+        undoSettle?.invoke()
+        undoSettle = onTimeout
+        undoIsDeletion = deletion
+        return lifecycleScope.launch {
+            val result = withTimeoutOrNull(durationMs) {
                 snackbarHost.showSnackbar(
-                    message = getString(message),
+                    message = message,
                     actionLabel = getString(org.fossify.commons.R.string.undo),
                     duration = SnackbarDuration.Indefinite,
                 )
             }
-            if (result == SnackbarResult.ActionPerformed) onUndo()
-        }
-        undoJob = job
-        return { job.cancel() }
+            undoSettle = null
+            if (result == SnackbarResult.ActionPerformed) onUndo() else onTimeout()
+        }.also { undoJob = it }
+    }
+
+    private companion object {
+        // The same window UndoDeletion gives a deletion.
+        const val UNDO_DURATION_MS = 5000L
     }
 }
