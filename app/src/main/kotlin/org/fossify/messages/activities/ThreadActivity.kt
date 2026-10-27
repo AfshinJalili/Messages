@@ -89,7 +89,6 @@ import org.fossify.messages.R
 import org.fossify.messages.adapters.AutoCompleteTextViewAdapter
 import org.fossify.messages.databinding.ActivityThreadBinding
 import org.fossify.messages.databinding.ItemSelectedContactBinding
-import org.fossify.messages.dialogs.InvalidNumberDialog
 import org.fossify.messages.extensions.clearExpiredScheduledMessages
 import org.fossify.messages.extensions.config
 import org.fossify.messages.extensions.conversationsDB
@@ -192,6 +191,8 @@ import org.fossify.messages.helpers.EXTRA_VCARD_URI
 import org.fossify.commons.extensions.formatTime
 import org.fossify.commons.extensions.getTimeFormatWithSeconds
 import org.fossify.messages.ui.components.dayLabel
+import org.fossify.messages.ui.components.MessageDialog
+import org.fossify.messages.ui.components.showOpenLineDialog
 import org.fossify.messages.ui.components.showRenameDialog
 import org.fossify.messages.ui.message.DeliveryMark
 import org.fossify.messages.ui.message.MessageFacts
@@ -1364,7 +1365,14 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
                     launchViewIntent(it.uri, it.mimetype, it.filename)
                 }
             }
-            ComposerEvent.ReplyInfo -> InvalidNumberDialog(activity = this, text = getString(R.string.invalid_short_code_desc))
+            ComposerEvent.ReplyInfo -> showOpenLineDialog { dismiss ->
+                MessageDialog(
+                    title = getString(R.string.cannot_reply_title),
+                    text = getString(R.string.invalid_short_code_desc),
+                    dismissLabel = getString(org.fossify.commons.R.string.ok),
+                    onDismiss = dismiss,
+                )
+            }
         }
     }
 

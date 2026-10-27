@@ -36,7 +36,8 @@ private val FocusRingWidth = 2.dp
  * Component / text field: a white slab with the value in title type. [label] sits inside the slab
  * as the design's uppercase caption; leave it null when the page labels the field itself. The
  * focus ring is the design's `focus-ring` (pine, lime in dark). Inside a dialog, which is itself
- * surfaceContainer, pass [containerColor] = surface so the field stays visible.
+ * surfaceContainer, pass [containerColor] = surface so the field stays visible. [isError] outlines it
+ * in the error colour (42).
  */
 @Composable
 fun TextFieldSlab(
@@ -51,6 +52,7 @@ fun TextFieldSlab(
     singleLine: Boolean = true,
     textStyle: TextStyle = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
     containerColor: Color = MaterialTheme.colorScheme.surfaceContainer,
+    isError: Boolean = false,
 ) {
     val colors = MaterialTheme.colorScheme
     val interaction = remember { MutableInteractionSource() }
@@ -64,7 +66,11 @@ fun TextFieldSlab(
             .background(containerColor)
             .border(
                 FocusRingWidth,
-                if (focused) OpenLine.colors.focusRing else containerColor,
+                when {
+                    isError -> colors.error
+                    focused -> OpenLine.colors.focusRing
+                    else -> containerColor
+                },
                 MaterialTheme.shapes.medium,
             )
             .padding(horizontal = 16.dp, vertical = 12.dp),
