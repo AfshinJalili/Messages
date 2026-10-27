@@ -54,6 +54,7 @@ import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import org.fossify.commons.extensions.getTimeFormat
@@ -257,12 +258,15 @@ private fun SpamMessage(line: SpamLine.Item, hidden: Boolean, onOpen: () -> Unit
 
 @Composable
 private fun SenderLabel(sender: String, color: Color) {
-    Text(
-        remember(sender) { AnnotatedString(sender).withContentFonts() },
-        style = MaterialTheme.typography.bodySmall.forContent(sender).copy(fontWeight = FontWeight.ExtraBold),
-        color = color,
-    )
+    Text(senderText(sender), style = senderStyle(sender), color = color)
 }
+
+@Composable
+private fun senderText(sender: String) = remember(sender) { AnnotatedString(sender).withContentFonts() }
+
+@Composable
+private fun senderStyle(sender: String) =
+    MaterialTheme.typography.bodySmall.forContent(sender).copy(fontWeight = FontWeight.ExtraBold)
 
 @Composable
 private fun Bubble(message: SpamReviewMessage, held: Boolean, modifier: Modifier = Modifier) {
@@ -304,6 +308,12 @@ private fun HeldMessage(held: Held, onDismiss: () -> Unit, onNotSpam: () -> Unit
     var groupHeight by remember { mutableIntStateOf(0) }
     var root by remember { mutableStateOf(Rect.Zero) }
     val title = stringResource(R.string.spam_hold_label)
+    // The label sits above the bubble, so the group starts that much higher. Its line height is
+    // in em, so it is measured rather than converted.
+    val textMeasurer = rememberTextMeasurer()
+    val senderText = senderText(held.message.sender)
+    val senderStyle = senderStyle(held.message.sender)
+    val labelHeight = remember(senderText, senderStyle) { textMeasurer.measure(senderText, senderStyle).size.height }
     BoxWithConstraints(
         Modifier
             .fillMaxSize()
@@ -317,7 +327,7 @@ private fun HeldMessage(held: Held, onDismiss: () -> Unit, onNotSpam: () -> Unit
             .semantics { paneTitle = title },
     ) {
         val margin = with(density) { ScreenMargin.roundToPx() }
-        val labelSpace = with(density) { (HeldGap + MaterialTheme.typography.bodySmall.lineHeight.toDp()).roundToPx() }
+        val labelSpace = with(density) { HeldGap.roundToPx() } + labelHeight
         val wanted = held.bounds.top.roundToInt() - root.top.roundToInt() - if (held.showSender) labelSpace else 0
         val maxTop = with(density) { maxHeight.roundToPx() } - groupHeight - margin
         val top = wanted.coerceAtMost(maxTop).coerceAtLeast(margin)
