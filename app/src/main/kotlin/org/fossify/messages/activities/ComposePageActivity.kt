@@ -81,7 +81,8 @@ abstract class ComposePageActivity : SimpleActivity(), UndoDeletion.UndoHost {
 
     override fun refreshAfterDeletion() = reload()
 
-    private fun refreshTheme() {
+    /** Applies the app's light/dark and text size settings to the page; call after changing them. */
+    protected fun refreshTheme() {
         darkTheme = openLineDark()
         textScale = openLineTextScale()
     }
@@ -93,7 +94,7 @@ abstract class ComposePageActivity : SimpleActivity(), UndoDeletion.UndoHost {
     /** Settings sub-pages keep the navigation with Settings active (R5-34). */
     protected fun settingsNavigation() = PageNavigation(TopDestination.SETTINGS, ::navigateTo)
 
-    protected fun navigateTo(destination: TopDestination) {
+    protected open fun navigateTo(destination: TopDestination) {
         when (destination) {
             TopDestination.SETTINGS -> startActivity(Intent(this, SettingsActivity::class.java))
             else -> startActivity(MainActivity.topLevelIntent(this, destination))
