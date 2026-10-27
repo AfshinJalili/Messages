@@ -18,7 +18,7 @@ object InboxRepository {
     private var appContext: Context? = null
     private var reconciling = false
     private var reconcilePending = false
-    private var reconcileListener: ((Boolean) -> Unit)? = null
+    private var reconcileListener: ((ReconcileStatus) -> Unit)? = null
 
     private val reconcileRunnable = Runnable {
         val context = appContext ?: return@Runnable
@@ -29,9 +29,12 @@ object InboxRepository {
         appContext = context.applicationContext
     }
 
-    fun setReconcileListener(listener: ((Boolean) -> Unit)?) {
+    fun setReconcileListener(listener: ((ReconcileStatus) -> Unit)?) {
         reconcileListener = listener
     }
+
+    /** 73's Retry: reconcile with the provider now rather than after the debounce. */
+    fun retry(context: Context) = scheduleProviderReconcile(context, immediate = true)
 
     /** Lightweight inbox refresh: sync unread badges from Telephony, then debounce a full reconcile. */
     fun refreshInbox(context: Context? = null, reconcile: Boolean = true) {
@@ -93,13 +96,13 @@ object InboxRepository {
             return
         }
         reconciling = true
-        reconcileListener?.invoke(true)
+        reconcileListener?.invoke(ReconcileStatus.RUNNING)
         InboxReconciler.reconcile(
             context = context,
             onFinished = {
                 refreshUnreadCounts(context)
                 reconciling = false
-                reconcileListener?.invoke(false)
+                reconcileListener?.invoke(ReconcileStatus.DONE)
                 if (reconcilePending) {
                     reconcilePending = false
                     scheduleProviderReconcile(context, immediate = true)
@@ -107,7 +110,7 @@ object InboxRepository {
             },
             onFailed = {
                 reconciling = false
-                reconcileListener?.invoke(false)
+                reconcileListener?.invoke(ReconcileStatus.FAILED)
                 if (reconcilePending) {
                     reconcilePending = false
                     scheduleProviderReconcile(context, immediate = true)
@@ -122,3 +125,6 @@ object InboxRepository {
 
     private const val RECONCILE_DEBOUNCE_MS = 400L
 }
+
+/** Where a provider reconcile is; the inbox shows 73's notice after FAILED until a later DONE. */
+enum class ReconcileStatus { RUNNING, DONE, FAILED }

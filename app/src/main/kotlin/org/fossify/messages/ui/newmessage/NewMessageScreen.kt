@@ -66,6 +66,7 @@ import org.fossify.messages.ui.Avatar
 import org.fossify.messages.ui.ltr
 import org.fossify.messages.ui.components.AttentionNotice
 import org.fossify.messages.ui.components.Choice
+import org.fossify.messages.ui.components.DisabledComposer
 import org.fossify.messages.ui.components.ChoiceDialog
 import org.fossify.messages.ui.components.InfoPanel
 import org.fossify.messages.ui.components.OpenLineButton
@@ -77,8 +78,6 @@ import org.fossify.messages.ui.components.UpAction
 
 private val RowAvatarSize = 44.dp
 private val ChipRemoveSize = 15.dp
-private val ComposerIconSize = 24.dp
-private val SendSlabWidth = 64.dp
 private const val MIN_TYPED_LENGTH = 3
 private const val NUMBER_SEPARATORS = "+-(). "
 
@@ -462,42 +461,12 @@ private fun ChosenChip(recipient: Recipient, onRemove: () -> Unit) {
 
 /** 05's composer before there is anyone to write to: there, but switched off. */
 @Composable
-private fun WaitingComposer() {
-    val colors = MaterialTheme.colorScheme
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .background(colors.surfaceContainer)
-            .windowInsetsPadding(WindowInsets.navigationBars.union(WindowInsets.ime))
-            .padding(horizontal = 16.dp, vertical = 12.dp)
-            .semantics(mergeDescendants = true) {},
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
-            Icon(painterResource(R.drawable.ic_lucide_plus), contentDescription = null, tint = colors.onSurfaceVariant, modifier = Modifier.size(ComposerIconSize))
-        }
-        Text(
-            stringResource(R.string.choose_recipient_first),
-            style = MaterialTheme.typography.bodyLarge,
-            color = colors.onSurfaceVariant,
-            modifier = Modifier
-                .weight(1f)
-                .clip(MaterialTheme.shapes.medium)
-                .background(colors.surface)
-                .padding(12.dp),
-        )
-        Box(
-            Modifier
-                .size(SendSlabWidth, 48.dp)
-                .clip(MaterialTheme.shapes.medium)
-                .background(colors.surfaceContainerHigh),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(painterResource(R.drawable.ic_lucide_send), contentDescription = null, tint = colors.onSurfaceVariant, modifier = Modifier.size(ComposerIconSize))
-        }
-    }
-}
+private fun WaitingComposer() = DisabledComposer(
+    stringResource(R.string.choose_recipient_first),
+    Modifier
+        .background(MaterialTheme.colorScheme.surfaceContainer)
+        .windowInsetsPadding(WindowInsets.navigationBars.union(WindowInsets.ime)),
+)
 
 /** Typed text meant as an address rather than a name: it has digits or is an email. */
 private fun String.looksLikeAddress() = length >= MIN_TYPED_LENGTH && (any { it.isDigit() } || contains('@'))

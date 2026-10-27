@@ -612,4 +612,12 @@
     <string name="notifications_off_title">اعلان‌ها خاموش‌اند</string>
     <string name="notifications_off_text">بدون اعلان، پیام‌های تازه بی‌صدا می‌رسند و فقط اینجا دیده می‌شوند.</string>
     <string name="open_settings">باز کردن تنظیمات</string>
+
+    <!-- Inbox refresh failed (73) -->
+    <string name="refresh_failed_title">به‌روزرسانی نشد</string>
+    <string name="refresh_failed_text">پیام‌های ذخیره‌شده روی این گوشی نمایش داده می‌شوند</string>
+    <string name="retry">تلاش دوباره</string>
+
+    <!-- Conversation blocked (67) -->
+    <string name="unblock_to_reply">برای پاسخ، این فرستنده را از مسدودی دربیاورید.</string>
 </resources>

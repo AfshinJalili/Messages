@@ -92,6 +92,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.fossify.messages.R
+import org.fossify.messages.ui.components.DisabledComposer
 import org.fossify.messages.extensions.isImageMimeType
 import org.fossify.messages.extensions.isVCardMimeType
 import org.fossify.messages.extensions.isVideoMimeType
@@ -120,7 +121,8 @@ const val COMPOSER_SEND_TAG = "composer_send"
 
 /**
  * Design 81 and Round 6: attachment tray, then one row of 56 dp controls: + · SIM switcher (dual SIM, empty field only) ·
- * field · send, with the length pill above send. Design 78 when the sender cannot receive replies.
+ * field · send, with the length pill above send. Design 78 when the sender cannot receive replies, 67 when
+ * the sender is blocked.
  */
 @Composable
 fun ThreadComposer(
@@ -133,6 +135,19 @@ fun ThreadComposer(
 ) {
     val colors = MaterialTheme.colorScheme
     var attaching by rememberSaveable { mutableStateOf(false) }
+    // 67: a blocked sender keeps the composer's shape, switched off, until they are unblocked.
+    if (composer.blocked) {
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .background(colors.surfaceContainer)
+                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)),
+            contentAlignment = Alignment.Center,
+        ) {
+            DisabledComposer(stringResource(R.string.unblock_to_reply), Modifier.widthIn(max = 720.dp))
+        }
+        return
+    }
     Box(
         Modifier
             .fillMaxWidth()

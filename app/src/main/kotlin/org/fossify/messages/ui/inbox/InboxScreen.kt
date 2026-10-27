@@ -1,5 +1,6 @@
 package org.fossify.messages.ui.inbox
 
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
@@ -134,6 +135,7 @@ fun InboxScreen(
     onSearchResult: (SearchResult) -> Unit = {},
     onSearchBack: () -> Unit = {},
     onSearchRetry: () -> Unit = {},
+    onRetryRefresh: () -> Unit = {},
     libraryOpen: Boolean = false,
     onLibraryTab: (Boolean) -> Unit = {},
 ) {
@@ -209,7 +211,7 @@ fun InboxScreen(
                     if (search.open) {
                         SearchContent(search, onSearchQuery, onSearchFilter, onSearchResult, onSearchRetry)
                     } else {
-                        InboxList(state, listState, onOpen, onToggleSelection, onSwipe, onFilter)
+                        InboxList(state, listState, onOpen, onToggleSelection, onSwipe, onFilter, onRetryRefresh)
                     }
                 }
             }
@@ -225,6 +227,7 @@ private fun InboxList(
     onToggleSelection: (InboxRow) -> Unit,
     onSwipe: (InboxRow, SwipeAction) -> Unit,
     onFilter: (InboxFilter) -> Unit,
+    onRetryRefresh: () -> Unit,
 ) {
     val sections = remember(state.rows) {
         val now = Calendar.getInstance()
@@ -234,6 +237,11 @@ private fun InboxList(
     LazyColumn(state = listState, contentPadding = PaddingValues(bottom = 88.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         item(key = "filters", contentType = "filters") {
             FilterRow(state.filter, onFilter)
+        }
+        if (state.refreshFailed) {
+            item(key = "refresh-failed", contentType = "notice") {
+                RefreshFailedNotice(onRetryRefresh, Modifier.widthIn(max = 640.dp).fillMaxWidth().animateItem())
+            }
         }
         when {
             state.loading -> item(key = "loading") { LoadingState() }
@@ -489,6 +497,36 @@ private fun rowActions(row: InboxRow, archiveAvailable: Boolean, onAction: (Swip
         CustomAccessibilityAction(delete) { onAction(SwipeAction.DELETE); true },
         CustomAccessibilityAction(mute) { onAction(SwipeAction.MUTE); true },
     )
+}
+
+/** 73 · Inbox / refresh failed (L8): inline, with Retry; the cached list stays below. No toast. */
+@Composable
+private fun RefreshFailedNotice(onRetry: () -> Unit, modifier: Modifier = Modifier) {
+    val colors = MaterialTheme.colorScheme
+    Row(
+        modifier
+            .padding(horizontal = 20.dp, vertical = 8.dp)
+            .clip(MaterialTheme.shapes.medium)
+            .background(colors.errorContainer)
+            .padding(start = 16.dp, top = 8.dp, end = 8.dp, bottom = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Icon(painterResource(R.drawable.ic_lucide_cloud_off), contentDescription = null, tint = colors.error, modifier = Modifier.size(20.dp))
+        Column(Modifier.weight(1f).semantics(mergeDescendants = true) {}, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(stringResource(R.string.refresh_failed_title), style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold), color = colors.onErrorContainer)
+            Text(stringResource(R.string.refresh_failed_text), style = MaterialTheme.typography.bodySmall, color = colors.onErrorContainer)
+        }
+        TextButton(
+            onClick = onRetry,
+            modifier = Modifier.heightIn(min = 48.dp),
+            shape = CircleShape,
+            colors = ButtonDefaults.textButtonColors(containerColor = colors.surfaceContainer, contentColor = colors.primary),
+            contentPadding = PaddingValues(horizontal = 16.dp),
+        ) {
+            Text(stringResource(R.string.retry), style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+        }
+    }
 }
 
 @Composable
