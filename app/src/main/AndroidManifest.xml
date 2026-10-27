@@ -43,6 +43,11 @@
         android:roundIcon="@mipmap/ic_launcher"
         android:theme="@style/AppTheme">
 
+        <!-- 85: the inbox and a conversation side by side from 840 dp (helpers/ListDetail.kt). -->
+        <property
+            android:name="android.window.PROPERTY_ACTIVITY_EMBEDDING_SPLITS_ENABLED"
+            android:value="true" />
+
         <receiver
             android:name="org.fossify.commons.receivers.FossifyBroadcastReceiver"
             tools:node="remove" />

@@ -52,6 +52,11 @@ import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.commons.helpers.isQPlus
 import org.fossify.messages.BuildConfig
 import org.fossify.messages.R
+import org.fossify.messages.ui.components.LocalListPane
+import org.fossify.messages.helpers.ListDetail
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.CompositionLocalProvider
 import org.fossify.messages.databinding.ActivityMainBinding
 import org.fossify.messages.ui.components.confirm
 import org.fossify.messages.ui.components.showRenameDialog
@@ -147,36 +152,40 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
         if (search.open) loadSearchResults()
         refreshInboxTheme()
         binding.inboxCompose.setContent {
-            OpenLineTheme(dark = darkTheme, textScale = textScale) {
-                val step = firstRun
-                if (step != null) FirstRunScreen(step, ::onFirstRun) else InboxScreen(
-                    state = inbox,
-                    snackbarHostState = snackbarHost,
-                    onOpen = { openConversation(it.conversation) },
-                    onToggleSelection = ::toggleSelection,
-                    onSelectAll = { inbox = inbox.copy(selected = inbox.rows.map { it.threadId }.toSet()) },
-                    onClearSelection = ::clearSelection,
-                    onAction = ::handleAction,
-                    onSwipe = ::handleSwipe,
-                    onFilter = ::setFilter,
-                    onSearch = ::openSearch,
-                    onNewMessage = ::launchNewConversation,
-                    onLibrary = ::openLibrary,
-                    onSettings = ::launchSettings,
-                    search = search,
-                    onSearchQuery = ::searchTextChanged,
-                    onSearchFilter = ::setSearchFilter,
-                    onSearchResult = ::openSearchResult,
-                    onSearchBack = ::closeSearch,
-                    onSearchRetry = ::loadSearchResults,
-                    onRetryRefresh = { InboxRepository.retry(this) },
-                    libraryOpen = libraryOpen,
-                    onLibraryTab = {
-                        closeSearch()
-                        libraryOpen = it
-                        applySystemBars()
-                    },
-                )
+            // A split starts or ends with a configuration change, so this is read again then.
+            val listPane = remember(LocalConfiguration.current) { ListDetail.isPane(this) }
+            CompositionLocalProvider(LocalListPane provides listPane) {
+                OpenLineTheme(dark = darkTheme, textScale = textScale) {
+                    val step = firstRun
+                    if (step != null) FirstRunScreen(step, ::onFirstRun) else InboxScreen(
+                        state = inbox,
+                        snackbarHostState = snackbarHost,
+                        onOpen = { openConversation(it.conversation) },
+                        onToggleSelection = ::toggleSelection,
+                        onSelectAll = { inbox = inbox.copy(selected = inbox.rows.map { it.threadId }.toSet()) },
+                        onClearSelection = ::clearSelection,
+                        onAction = ::handleAction,
+                        onSwipe = ::handleSwipe,
+                        onFilter = ::setFilter,
+                        onSearch = ::openSearch,
+                        onNewMessage = ::launchNewConversation,
+                        onLibrary = ::openLibrary,
+                        onSettings = ::launchSettings,
+                        search = search,
+                        onSearchQuery = ::searchTextChanged,
+                        onSearchFilter = ::setSearchFilter,
+                        onSearchResult = ::openSearchResult,
+                        onSearchBack = ::closeSearch,
+                        onSearchRetry = ::loadSearchResults,
+                        onRetryRefresh = { InboxRepository.retry(this) },
+                        libraryOpen = libraryOpen,
+                        onLibraryTab = {
+                            closeSearch()
+                            libraryOpen = it
+                            applySystemBars()
+                        },
+                    )
+                }
             }
         }
 

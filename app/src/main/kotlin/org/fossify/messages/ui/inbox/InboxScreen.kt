@@ -90,6 +90,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import org.fossify.messages.R
+import org.fossify.messages.ui.components.LocalListPane
 import org.fossify.messages.ui.components.ConversationRow
 import org.fossify.messages.ui.components.ConversationRowMaxWidth
 import org.fossify.messages.ui.components.PrimaryNavigation
@@ -162,7 +163,7 @@ fun InboxScreen(
     val configuration = LocalConfiguration.current
     val compactHeight = configuration.screenHeightDp < COMPACT_HEIGHT_DP
     val collapsed = scrolledDown || configuration.screenHeightDp < 320 || LocalDensity.current.fontScale >= 1.5f
-    val showRail = (compactHeight || configuration.screenWidthDp >= EXPANDED_WIDTH_DP) && !state.selecting
+    val showRail = (compactHeight || configuration.screenWidthDp >= EXPANDED_WIDTH_DP || LocalListPane.current) && !state.selecting
     Scaffold(
         modifier = modifier.imePadding(),
         containerColor = MaterialTheme.colorScheme.surface,
