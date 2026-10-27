@@ -10,7 +10,6 @@ import android.graphics.drawable.Icon
 import android.graphics.drawable.LayerDrawable
 import android.os.Bundle
 import android.provider.Telephony
-import android.text.TextUtils
 import android.view.HapticFeedbackConstants
 import android.view.accessibility.AccessibilityManager
 import androidx.annotation.VisibleForTesting
@@ -33,7 +32,6 @@ import org.fossify.messages.ui.search.SEARCH_DEBOUNCE_MS
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
-import org.fossify.commons.dialogs.ConfirmationDialog
 import org.fossify.commons.dialogs.PermissionRequiredDialog
 import org.fossify.commons.extensions.applyColorFilter
 import org.fossify.commons.extensions.appLaunched
@@ -55,7 +53,8 @@ import org.fossify.commons.helpers.isQPlus
 import org.fossify.messages.BuildConfig
 import org.fossify.messages.R
 import org.fossify.messages.databinding.ActivityMainBinding
-import org.fossify.messages.dialogs.RenameConversationDialog
+import org.fossify.messages.ui.components.confirm
+import org.fossify.messages.ui.components.showRenameDialog
 import org.fossify.messages.extensions.checkAndDeleteOldRecycleBinMessages
 import org.fossify.messages.extensions.clearAllMessagesIfNeeded
 import org.fossify.messages.extensions.config
@@ -551,10 +550,13 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
         val selected = inbox.selectedRows.map { it.conversation }
         val first = selected.firstOrNull() ?: return
         when (action) {
-            InboxAction.ARCHIVE -> confirm(R.string.archive_confirmation, selected.size) { archive(selected) }
-            InboxAction.DELETE -> confirm(org.fossify.commons.R.string.deletion_confirmation, selected.size) {
-                deleteWithUndo(selected)
-            }
+            InboxAction.ARCHIVE -> confirm(
+                title = resources.getQuantityString(R.plurals.archive_conversations_title, selected.size, selected.size),
+                explanation = getString(R.string.archive_conversations_text),
+                confirmLabel = getString(R.string.archive),
+            ) { archive(selected) }
+
+            InboxAction.DELETE -> confirmDelete(selected)
 
             InboxAction.MARK_READ -> updateInBackground { selected.filter { !it.read }.forEach { markThreadMessagesRead(it.threadId) } }
             InboxAction.MARK_UNREAD -> updateInBackground { selected.filter { it.read }.forEach { markThreadMessagesUnread(it.threadId) } }
@@ -582,14 +584,19 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
                 clearSelection()
             }
 
-            InboxAction.RENAME -> RenameConversationDialog(this, first) { title ->
+            InboxAction.RENAME -> showRenameDialog(first) { title ->
                 updateInBackground { renameConversation(first, newTitle = title) }
             }
 
             InboxAction.DETAILS -> launchConversationDetails(first.threadId)
             InboxAction.BLOCK -> {
-                val numbers = TextUtils.join(", ", selected.map { it.phoneNumber }.distinct())
-                ConfirmationDialog(this, getString(org.fossify.commons.R.string.block_confirmation, numbers)) {
+                val names = selected.joinToString(", ") { it.title }
+                confirm(
+                    title = getString(R.string.block_sender_title, names),
+                    explanation = getString(R.string.block_sender_text),
+                    confirmLabel = getString(R.string.block_sender),
+                    destructive = true,
+                ) {
                     // App-level block: new SMS from these numbers are stored and go to Spam. Existing messages stay where they are.
                     selected.forEach { config.addSpamNumber(it.phoneNumber) }
                     clearSelection()
@@ -598,9 +605,19 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
         }
     }
 
-    private fun confirm(question: Int, count: Int, onConfirm: () -> Unit) {
-        val items = resources.getQuantityString(R.plurals.delete_conversations, count, count)
-        ConfirmationDialog(this, getString(question, items)) { onConfirm() }
+    /** 82: into the recycle bin when it is on, otherwise for good; either way with Undo after. */
+    private fun confirmDelete(conversations: List<Conversation>) {
+        val count = conversations.size
+        val toRecycleBin = config.useRecycleBin
+        confirm(
+            title = resources.getQuantityString(R.plurals.delete_conversations_title, count, count),
+            explanation = resources.getQuantityString(
+                if (toRecycleBin) R.plurals.delete_conversations_to_bin_text else R.plurals.delete_conversations_forever_text,
+                count,
+            ),
+            confirmLabel = getString(if (toRecycleBin) org.fossify.commons.R.string.delete else R.string.delete_forever),
+            destructive = !toRecycleBin,
+        ) { deleteWithUndo(conversations) }
     }
 
     private fun archive(conversations: List<Conversation>) = updateInBackground {

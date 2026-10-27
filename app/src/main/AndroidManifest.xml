@@ -194,7 +194,7 @@
             android:name=".activities.VCardViewerActivity"
             android:configChanges="orientation"
             android:exported="false"
-            android:label="@string/contact_details"
+            android:label="@string/contact_card"
             android:parentActivityName=".activities.ThreadActivity" />
 
         <activity
@@ -202,6 +202,34 @@
             android:configChanges="orientation"
             android:exported="false"
             android:label="@string/conversation_details"
+            android:parentActivityName=".activities.ThreadActivity" />
+
+        <activity
+            android:name=".activities.MessageDetailsActivity"
+            android:configChanges="orientation"
+            android:exported="false"
+            android:label="@string/message_details"
+            android:parentActivityName=".activities.ThreadActivity" />
+
+        <activity
+            android:name=".activities.SelectTextActivity"
+            android:configChanges="orientation"
+            android:exported="false"
+            android:label="@string/select_text"
+            android:parentActivityName=".activities.ThreadActivity" />
+
+        <activity
+            android:name=".activities.SendLaterActivity"
+            android:configChanges="orientation"
+            android:exported="false"
+            android:label="@string/send_later"
+            android:parentActivityName=".activities.ThreadActivity" />
+
+        <activity
+            android:name=".activities.ScheduledMessageActivity"
+            android:configChanges="orientation"
+            android:exported="false"
+            android:label="@string/scheduled_message"
             android:parentActivityName=".activities.ThreadActivity" />
 
         <service

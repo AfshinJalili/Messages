@@ -178,11 +178,15 @@ enum class MessageAction(@StringRes val label: Int, @DrawableRes val icon: Int) 
     DELETE(org.fossify.commons.R.string.delete, R.drawable.ic_lucide_trash),
     SHARE(org.fossify.commons.R.string.share, R.drawable.ic_lucide_share),
     SELECT_TEXT(org.fossify.commons.R.string.select_text, R.drawable.ic_lucide_text_cursor),
-    DETAILS(org.fossify.commons.R.string.properties, R.drawable.ic_lucide_info),
+    DETAILS(R.string.message_details, R.drawable.ic_lucide_info),
     SAVE_AS(org.fossify.commons.R.string.save_as, org.fossify.commons.R.drawable.ic_save_vector),
     NOT_SPAM(R.string.not_spam, org.fossify.commons.R.drawable.ic_check_circle_vector),
     RESTORE(R.string.restore, org.fossify.commons.R.drawable.ic_restart_alt_vector),
     SELECT_ALL(org.fossify.commons.R.string.select_all, org.fossify.commons.R.drawable.ic_select_all_vector),
+
+    // Only in a scheduled message's sheet (84).
+    EDIT_SCHEDULED(R.string.edit_message_and_time, R.drawable.ic_lucide_pencil),
+    SEND_NOW(R.string.send_now, R.drawable.ic_lucide_send),
 }
 
 /** Same rules as the old contextual action bar. */
@@ -195,7 +199,10 @@ fun selectionActions(state: ThreadUiState): List<MessageAction> {
     return MessageAction.entries.filter { action ->
         when (action) {
             MessageAction.COPY -> hasText
-            MessageAction.FORWARD, MessageAction.DETAILS -> single
+            MessageAction.FORWARD -> single
+            // 13 is for messages that exist; a scheduled one is edited from its sheet (84).
+            MessageAction.DETAILS -> single && !selected.first().isScheduled
+            MessageAction.EDIT_SCHEDULED, MessageAction.SEND_NOW -> false
             MessageAction.STAR -> !state.isRecycleBin && !allStarred
             MessageAction.UNSTAR -> !state.isRecycleBin && allStarred
             MessageAction.SHARE, MessageAction.SELECT_TEXT -> single && hasText
@@ -207,12 +214,16 @@ fun selectionActions(state: ThreadUiState): List<MessageAction> {
     }
 }
 
-/** The sheet a tap on one message opens (R6-48), in sheet order. Details only for scheduled messages, where it offers edit and send now. */
+/**
+ * The sheet a tap on one message opens (R6-48), in sheet order. A scheduled message offers Edit,
+ * Send now and Delete instead (84, D05).
+ */
 fun tapActions(message: Message, state: ThreadUiState): List<MessageAction> {
+    if (message.isScheduled) return listOf(MessageAction.EDIT_SCHEDULED, MessageAction.SEND_NOW, MessageAction.DELETE)
     val failed = message.type == android.provider.Telephony.Sms.MESSAGE_TYPE_FAILED
     return listOf(
         MessageAction.COPY, MessageAction.FORWARD, MessageAction.STAR, MessageAction.UNSTAR, MessageAction.SHARE,
-        MessageAction.SELECT_TEXT, MessageAction.DETAILS, MessageAction.DELETE,
+        MessageAction.SELECT_TEXT, MessageAction.DELETE,
     ).filter { action ->
         when (action) {
             MessageAction.COPY -> message.body.isNotEmpty()
@@ -220,7 +231,6 @@ fun tapActions(message: Message, state: ThreadUiState): List<MessageAction> {
             MessageAction.SELECT_TEXT -> message.body.isNotBlank()
             MessageAction.STAR -> !failed && !state.isRecycleBin && !state.isStarred(message)
             MessageAction.UNSTAR -> !failed && !state.isRecycleBin && state.isStarred(message)
-            MessageAction.DETAILS -> message.isScheduled
             else -> true
         }
     }

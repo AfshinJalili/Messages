@@ -15,7 +15,7 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 ICONS = [
-    "archive", "arrow-left", "arrow-right", "ban", "bell", "bell-off", "calendar", "check", "check-check",
+    "archive", "arrow-left", "arrow-right", "ban", "bell", "bell-off", "calendar", "card-sim", "check", "check-check",
     "chevron-down", "chevron-right", "circle-dot", "corner-down-left", "circle-help", "clock", "cloud-off", "contact", "copy",
     "database-backup", "download", "ellipsis-vertical", "eye", "eye-off", "file-text", "hand", "hard-drive",
     "hash", "image", "inbox", "info", "languages", "layers", "list-checks", "lock-keyhole", "mail", "message-circle",

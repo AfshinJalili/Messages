@@ -51,3 +51,21 @@ fun rememberDayAndTime(millis: Long): String {
         context.getString(R.string.day_and_time, dayLabel(context, millis), time)
     }
 }
+
+/** For send times: Today, Tomorrow, or "Fri 25 Sep" (with the year when it is not this year). */
+fun upcomingDayLabel(context: Context, millis: Long, now: Calendar = Calendar.getInstance()): String {
+    val day = Calendar.getInstance().apply { timeInMillis = millis }
+    val tomorrow = (now.clone() as Calendar).apply { add(Calendar.DAY_OF_YEAR, 1) }
+    fun Calendar.sameDay(other: Calendar) =
+        get(Calendar.YEAR) == other.get(Calendar.YEAR) && get(Calendar.DAY_OF_YEAR) == other.get(Calendar.DAY_OF_YEAR)
+    return when {
+        day.sameDay(now) -> context.getString(R.string.inbox_section_today)
+        day.sameDay(tomorrow) -> context.getString(R.string.day_tomorrow)
+        day.get(Calendar.YEAR) == now.get(Calendar.YEAR) -> DateFormat.format("EEE d MMM", millis).toString()
+        else -> DateFormat.format("EEE d MMM yyyy", millis).toString()
+    }
+}
+
+/** "Tomorrow · 09:00": a send time in the app's 12 or 24 hour setting. */
+fun upcomingDayAndTime(context: Context, millis: Long): String =
+    context.getString(R.string.day_and_time, upcomingDayLabel(context, millis), DateFormat.format(context.getTimeFormat(), millis).toString())

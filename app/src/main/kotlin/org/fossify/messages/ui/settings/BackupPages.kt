@@ -135,7 +135,7 @@ internal fun ImportReviewPage(state: SettingsUiState, onEvent: (SettingsEvent) -
         Text(review.fileName, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold), color = colors.onSurface)
         Text(
             stringResource(
-                R.string.rules_summary,
+                R.string.detail_pair,
                 pluralStringResource(R.plurals.backup_conversations, review.conversations, String.format(locale, "%,d", review.conversations)),
                 pluralStringResource(R.plurals.backup_messages, review.messages, String.format(locale, "%,d", review.messages)),
             ),
