@@ -620,4 +620,13 @@
 
     <!-- Conversation blocked (67) -->
     <string name="unblock_to_reply">برای پاسخ، این فرستنده را از مسدودی دربیاورید.</string>
+
+    <!-- Media viewer (45) -->
+    <string name="media_viewer">رسانه</string>
+    <string name="media_position">%1$d از %2$d</string>
+    <string name="save">ذخیره</string>
+    <string name="media_details">جزئیات</string>
+    <string name="open_in_another_app">باز کردن در برنامهٔ دیگر</string>
+    <string name="play_video">پخش ویدیو</string>
+    <string name="media_saved">ذخیره شد</string>
 </resources>

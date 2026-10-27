@@ -232,6 +232,13 @@
             android:label="@string/scheduled_message"
             android:parentActivityName=".activities.ThreadActivity" />
 
+        <activity
+            android:name=".activities.MediaViewerActivity"
+            android:configChanges="orientation"
+            android:exported="false"
+            android:label="@string/media_viewer"
+            android:parentActivityName=".activities.ThreadActivity" />
+
         <service
             android:name=".services.HeadlessSmsSendService"
             android:exported="true"

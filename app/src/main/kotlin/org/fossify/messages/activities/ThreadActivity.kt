@@ -187,6 +187,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import org.fossify.commons.extensions.shareTextIntent
 import org.fossify.messages.extensions.isVCardMimeType
 import org.fossify.messages.extensions.launchViewIntent
+import org.fossify.messages.extensions.isVideoMimeType
 import org.fossify.messages.helpers.EXTRA_VCARD_URI
 import org.fossify.commons.extensions.formatTime
 import org.fossify.commons.extensions.getTimeFormatWithSeconds
@@ -195,6 +196,7 @@ import org.fossify.messages.ui.components.MessageDialog
 import org.fossify.messages.ui.components.showOpenLineDialog
 import org.fossify.messages.ui.components.showRenameDialog
 import org.fossify.messages.ui.message.DeliveryMark
+import org.fossify.messages.ui.media.MediaItem
 import org.fossify.messages.ui.message.MessageFacts
 import org.fossify.messages.ui.schedule.ScheduleTarget
 import org.fossify.messages.ui.OpenLineTheme
@@ -665,8 +667,37 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
                     .putExtra(EXTRA_VCARD_URI, uri)
                     .putExtra(VCardViewerActivity.EXTRA_VCARD_SOURCE, cardSource(message)),
             )
+        } else if (attachment.mimetype.isImageMimeType() || attachment.mimetype.isVideoMimeType()) {
+            openMediaViewer(message, attachment)
         } else {
             launchViewIntent(uri, attachment.mimetype, attachment.filename)
+        }
+    }
+
+    /** 45: every photo and video loaded in this conversation, oldest first, opened at [attachment]. */
+    private fun openMediaViewer(message: Message, attachment: Attachment) {
+        val media = messages.filterNot { it.isScheduled }.flatMap { owner ->
+            owner.attachment?.attachments.orEmpty()
+                .filter { it.mimetype.isImageMimeType() || it.mimetype.isVideoMimeType() }
+                .map { owner to it }
+        }
+        val items = media.map { (owner, item) ->
+            val millis = owner.millis()
+            MediaItem(
+                uri = item.uriString,
+                mimetype = item.mimetype,
+                filename = item.filename,
+                sender = if (owner.isReceivedMessage()) owner.senderName.ifEmpty { ltr(owner.senderPhoneNumber) } else getString(R.string.you),
+                time = getString(R.string.day_and_time, dayLabel(this, millis), millis.formatTime(this)),
+                caption = owner.body,
+                facts = messageFacts(owner),
+            )
+        }
+        val initial = media.indexOfFirst { (owner, item) -> owner.id == message.id && item.uriString == attachment.uriString }
+        if (initial < 0) {
+            launchViewIntent(attachment.getUri(), attachment.mimetype, attachment.filename)
+        } else {
+            startActivity(MediaViewerActivity.intent(this, items, initial))
         }
     }
 
