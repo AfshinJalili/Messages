@@ -77,3 +77,33 @@ fun ConfirmationDialog(
         }
     }
 }
+
+/** The dialog frame with a title, text and one way out: for information, not decisions. */
+@Composable
+fun MessageDialog(title: String, text: String, dismissLabel: String, onDismiss: () -> Unit) {
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            Modifier
+                .widthIn(max = DialogMaxWidth)
+                .semantics { paneTitle = title },
+            shape = DialogShape,
+            color = MaterialTheme.colorScheme.surfaceContainer,
+        ) {
+            Column(
+                Modifier
+                    .verticalScroll(rememberScrollState())
+                    .padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                Text(
+                    title,
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.semantics { heading() },
+                )
+                Text(text, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface)
+                OpenLineButton(dismissLabel, onClick = onDismiss, modifier = Modifier.fillMaxWidth(), kind = ButtonKind.QUIET)
+            }
+        }
+    }
+}
