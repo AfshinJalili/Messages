@@ -493,7 +493,11 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
             // A number or a letter short code is not a name to greet.
             firstName = if (participants.size == 1 && title != firstPhoneNumber && !specialNumber && title.any { it.isLetter() }) title.substringBefore(' ') else "",
         )
-        composer = composer.copy(visible = !isRecycleBin && threadId !in UndoDeletion.threads, canReply = !specialNumber)
+        composer = composer.copy(
+            visible = !isRecycleBin && threadId !in UndoDeletion.threads,
+            canReply = !specialNumber,
+            blocked = senderBlocked,
+        )
     }
 
     // The selection bar takes the composer's place (design view 10). Gone, not empty, so its insets padding goes too.

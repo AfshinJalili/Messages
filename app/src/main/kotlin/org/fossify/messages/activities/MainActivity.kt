@@ -71,6 +71,7 @@ import org.fossify.messages.extensions.updateConversationArchivedStatus
 import org.fossify.messages.helpers.INBOX_FILTER
 import org.fossify.messages.helpers.InboxFilter
 import org.fossify.messages.helpers.InboxRepository
+import org.fossify.messages.helpers.ReconcileStatus
 import org.fossify.messages.helpers.SEARCHED_MESSAGE_ID
 import org.fossify.messages.helpers.SEARCHED_MESSAGE_IS_MMS
 import org.fossify.messages.helpers.SWIPE_UNDO_DURATION_MS
@@ -105,6 +106,8 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
     private val searchRepository by lazy { SearchRepository(this) }
     private var inboxConversations = listOf<Conversation>()
     private var providerReconcileActive = false
+    // 73: the last provider refresh failed; cleared by the next one that succeeds.
+    private var refreshFailed = false
     private var inboxFilter = InboxFilter.ALL
     private var drafts: Map<Long, String> = emptyMap()
     private val pendingSwipes = mutableListOf<PendingSwipe>()
@@ -166,6 +169,7 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
                     onSearchResult = ::openSearchResult,
                     onSearchBack = ::closeSearch,
                     onSearchRetry = ::loadSearchResults,
+                    onRetryRefresh = { InboxRepository.retry(this) },
                     libraryOpen = libraryOpen,
                     onLibraryTab = {
                         closeSearch()
@@ -352,8 +356,13 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
     }
 
     private fun initMessenger() {
-        InboxRepository.setReconcileListener { active ->
-            providerReconcileActive = active
+        InboxRepository.setReconcileListener { status ->
+            providerReconcileActive = status == ReconcileStatus.RUNNING
+            when (status) {
+                ReconcileStatus.FAILED -> refreshFailed = true
+                ReconcileStatus.DONE -> refreshFailed = false
+                ReconcileStatus.RUNNING -> Unit
+            }
             if (!isDestroyed && !isFinishing) {
                 publish()
             }
@@ -392,6 +401,7 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
             filter = inboxFilter,
             unreadMessages = present.filter { !it.read }.sumOf { it.unreadCount.coerceAtLeast(1) },
             loading = providerReconcileActive && inboxConversations.isEmpty(),
+            refreshFailed = refreshFailed,
             // A selection must not act on rows the current filter or an undo window hides. Before the
             // first snapshot arrives, keep a selection restored from saved state.
             selected = if (inboxConversations.isEmpty()) inbox.selected else inbox.selected intersect visibleIds,

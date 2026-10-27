@@ -56,6 +56,8 @@ data class ComposerState(
     val visible: Boolean = true,
     /** False for letter short codes, which cannot receive replies (design 78). */
     val canReply: Boolean = true,
+    /** The sender is blocked: the composer stays, switched off, until they are unblocked (67). */
+    val blocked: Boolean = false,
     val attachments: List<AttachmentSelection> = emptyList(),
     /** Empty unless the phone has two or more SIMs. */
     val sims: List<SimOption> = emptyList(),

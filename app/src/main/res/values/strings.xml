@@ -638,4 +638,12 @@
     <string name="notifications_off_title">Notifications are off</string>
     <string name="notifications_off_text">Without them, new messages arrive silently and you only see them here.</string>
     <string name="open_settings">Open settings</string>
+
+    <!-- Inbox refresh failed (73) -->
+    <string name="refresh_failed_title">Couldn’t refresh</string>
+    <string name="refresh_failed_text">Showing messages saved on this phone</string>
+    <string name="retry">Retry</string>
+
+    <!-- Conversation blocked (67) -->
+    <string name="unblock_to_reply">Unblock this sender to reply.</string>
 </resources>

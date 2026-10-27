@@ -26,6 +26,7 @@ data class InboxUiState(
     val filter: InboxFilter = InboxFilter.ALL,
     val unreadMessages: Int = 0,
     val loading: Boolean = false,
+    val refreshFailed: Boolean = false,
     val selected: Set<Long> = emptySet(),
     val unreadSpam: Int = 0,
     val archiveAvailable: Boolean = true,
