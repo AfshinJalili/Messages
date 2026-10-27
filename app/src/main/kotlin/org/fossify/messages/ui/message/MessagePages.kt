@@ -1,5 +1,7 @@
 package org.fossify.messages.ui.message
 
+import androidx.compose.ui.text.style.TextDirection
+import org.fossify.messages.ui.forUserText
 import android.os.Bundle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -100,7 +102,7 @@ fun MessageDetailsScreen(facts: MessageFacts, onBack: () -> Unit, modifier: Modi
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 if (facts.body.isNotEmpty()) {
-                    Text(facts.body, style = MaterialTheme.typography.bodyLarge, color = colors.onPrimaryContainer)
+                    Text(facts.body, style = MaterialTheme.typography.bodyLarge.forUserText(facts.body), color = colors.onPrimaryContainer)
                 }
                 DeliveryLine(facts.time, facts.mark)
             }
@@ -160,7 +162,7 @@ fun SelectTextScreen(sender: String, body: String, onBack: () -> Unit, onCopy: (
                     .padding(horizontal = 16.dp, vertical = 20.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Text(sender, style = MaterialTheme.typography.labelMedium, color = colors.onSurfaceVariant)
+                Text(sender, style = MaterialTheme.typography.labelMedium.copy(textDirection = TextDirection.Content), color = colors.onSurfaceVariant)
                 CompositionLocalProvider(
                     LocalTextSelectionColors provides TextSelectionColors(colors.primary, colors.secondaryContainer),
                 ) {
@@ -169,7 +171,7 @@ fun SelectTextScreen(sender: String, body: String, onBack: () -> Unit, onCopy: (
                         // Read-only: only the selection may change, never the text.
                         onValueChange = { value = it.copy(text = body, selection = it.selection.coerceIn(body.length)) },
                         readOnly = true,
-                        textStyle = MaterialTheme.typography.bodyLarge.copy(color = colors.onSurface),
+                        textStyle = MaterialTheme.typography.bodyLarge.forUserText(body).copy(color = colors.onSurface),
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }

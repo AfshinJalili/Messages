@@ -1,5 +1,6 @@
 package org.fossify.messages.ui.schedule
 
+import org.fossify.messages.ui.forUserText
 import android.text.format.DateFormat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -143,7 +144,7 @@ private fun MessagePreview(target: ScheduleTarget) {
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Text(target.text, style = MaterialTheme.typography.bodyLarge, color = colors.onSurface)
+        Text(target.text, style = MaterialTheme.typography.bodyLarge.forUserText(target.text), color = colors.onSurface)
         Text(target.recipient, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
     }
 }
@@ -361,7 +362,7 @@ fun ScheduledMessageScreen(
                 onValueChange = { text = it },
                 label = stringResource(R.string.message_label),
                 singleLine = false,
-                textStyle = MaterialTheme.typography.bodyLarge,
+                textStyle = MaterialTheme.typography.bodyLarge.forUserText(text),
             )
             OpenLineButton(
                 stringResource(R.string.save_changes),

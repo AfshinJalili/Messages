@@ -1,5 +1,6 @@
 package org.fossify.messages.ui.details
 
+import org.fossify.messages.ui.ltr
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -116,7 +117,7 @@ fun ConversationDetailsScreen(state: ConversationDetailsUiState, onEvent: (Detai
                 name = state.title,
                 detail = when {
                     state.isGroup -> pluralStringResource(R.plurals.people_count, state.members.size, state.members.size)
-                    single != null && single.number != state.title -> single.number
+                    single != null && single.number != state.title -> ltr(single.number)
                     else -> ""
                 },
                 photoUri = state.photoUri,
@@ -257,7 +258,7 @@ private fun MemberRow(member: Member, onClick: () -> Unit) {
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(member.name, style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
             if (member.number != member.name) {
-                Text(member.number, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+                Text(ltr(member.number), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
             }
         }
     }

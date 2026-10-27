@@ -1,5 +1,6 @@
 package org.fossify.messages.ui.components
 
+import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -54,6 +55,7 @@ fun IdentityCard(
             style = MaterialTheme.typography.titleLarge.copy(
                 fontSize = MaterialTheme.typography.headlineSmall.fontSize,
                 fontWeight = FontWeight.ExtraBold,
+                textDirection = TextDirection.Content,
             ),
             color = colors.onSurface,
             modifier = Modifier.semantics { heading() },
@@ -97,7 +99,8 @@ fun DetailRow(label: String, value: String, modifier: Modifier = Modifier) {
         Text(label, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
         Text(
             value,
-            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+            // Names and numbers keep their own order; the column still ends at the row's end.
+            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold, textDirection = TextDirection.Content),
             color = colors.onSurface,
             textAlign = TextAlign.End,
             modifier = Modifier.weight(1f),
@@ -119,6 +122,6 @@ fun LabeledField(label: String, value: String, modifier: Modifier = Modifier, on
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Text(label.uppercase(), style = MaterialTheme.typography.labelMedium, color = colors.onSurfaceVariant)
-        Text(value, style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+        Text(value, style = MaterialTheme.typography.titleMedium.copy(textDirection = TextDirection.Content), color = colors.onSurface)
     }
 }
