@@ -12,6 +12,7 @@ import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.messages.extensions.rescheduleAllScheduledMessages
 import org.fossify.messages.extensions.config
 import org.fossify.messages.helpers.InboxRepository
+import org.fossify.messages.helpers.ListDetail
 import org.fossify.messages.helpers.MessagingCache
 
 class App : FossifyApp() {
@@ -20,6 +21,7 @@ class App : FossifyApp() {
     override fun onCreate() {
         super.onCreate()
         InboxRepository.init(this)
+        ListDetail.install(this)
         config.applyCobaltDefaults()
         if (hasPermission(PERMISSION_READ_CONTACTS)) {
             listOf(

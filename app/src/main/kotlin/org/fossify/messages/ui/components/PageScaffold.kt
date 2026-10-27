@@ -15,6 +15,7 @@ import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
@@ -37,8 +38,14 @@ class PageNavigation(
 @Composable
 fun usesNavigationRail(): Boolean {
     val configuration = LocalConfiguration.current
-    return configuration.screenHeightDp < COMPACT_HEIGHT_DP || configuration.screenWidthDp >= EXPANDED_WIDTH_DP
+    return LocalListPane.current || configuration.screenHeightDp < COMPACT_HEIGHT_DP || configuration.screenWidthDp >= EXPANDED_WIDTH_DP
 }
+
+/**
+ * True when the page is the list pane of 85's list-detail split: narrow, but the window is wide,
+ * so the navigation is the rail, never a bottom bar under one pane.
+ */
+val LocalListPane = staticCompositionLocalOf { false }
 
 /**
  * A secondary page: [PageAppBar], the page body and the primary navigation, with one snackbar
