@@ -23,16 +23,20 @@ class ReadStateChecks {
     fun completedReadUpdatesInboxFromRoom() {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val context = instrumentation.targetContext
-        val fixture = Conversation(Long.MAX_VALUE - 1, "Read-state fixture", 1, false,
-            "Read-state fixture", "", false, "5550100999", isScheduled = true, unreadCount = 3)
+        val room = RoomOnlyThread(
+            context,
+            Conversation(Long.MAX_VALUE - 1, "Read-state fixture", 1, false,
+                "Read-state fixture", "", false, "5550100999", isScheduled = true, unreadCount = 3),
+        )
+        val fixture = room.conversation
         try {
             ActivityScenario.launch<MainActivity>(Intent(context, MainActivity::class.java)).use { scenario ->
-                context.conversationsDB.insertOrUpdate(fixture)
+                room.insert()
                 context.markThreadMessagesRead(fixture.threadId)
                 check(context.conversationsDB.getConversationWithThreadId(fixture.threadId)?.read == true)
                 fun awaitRead() {
                     var read = false
-                    val readDeadline = SystemClock.elapsedRealtime() + 2000
+                    val readDeadline = SystemClock.elapsedRealtime() + READ_TIMEOUT_MS
                     while (!read && SystemClock.elapsedRealtime() < readDeadline) {
                         scenario.onActivity { activity ->
                             val row = activity.inboxRows.singleOrNull { it.threadId == fixture.threadId }?.conversation
@@ -46,7 +50,7 @@ class ReadStateChecks {
                 check(context.conversationsDB.getConversationWithThreadId(fixture.threadId)?.unreadCount == 0)
             }
         } finally {
-            context.conversationsDB.deleteThreadId(fixture.threadId)
+            room.delete()
         }
     }
 
@@ -69,5 +73,10 @@ class ReadStateChecks {
         } finally {
             context.conversationsDB.deleteThreadId(fixture.threadId)
         }
+    }
+
+    private companion object {
+        // The emulator in CI is slow to refresh the inbox after a write.
+        const val READ_TIMEOUT_MS = 10_000L
     }
 }
