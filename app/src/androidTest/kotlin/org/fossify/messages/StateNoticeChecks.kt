@@ -51,7 +51,8 @@ class StateNoticeChecks {
         var state by mutableStateOf(InboxUiState(rows = rows, refreshFailed = true))
         compose.setContent { DesignVariantContent(DesignVariant.LIGHT) { Inbox(state) { retried++ } } }
         compose.onNodeWithText(text(R.string.refresh_failed_title)).assertExists()
-        compose.onNodeWithText("Mina Farahani").assertExists()
+        // A row merges its text into one node for TalkBack.
+        compose.onNodeWithText("Mina Farahani", useUnmergedTree = true).assertExists()
         compose.onNodeWithText(text(R.string.retry)).performClick()
         check(retried == 1) { "Retry ran $retried times" }
         state = state.copy(refreshFailed = false)
