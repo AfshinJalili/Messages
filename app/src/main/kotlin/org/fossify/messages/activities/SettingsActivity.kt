@@ -3,7 +3,6 @@ package org.fossify.messages.activities
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.result.contract.ActivityResultContracts
-import org.fossify.commons.activities.ManageBlockedNumbersActivity
 import org.fossify.commons.dialogs.ChangeDateTimeFormatDialog
 import org.fossify.commons.dialogs.ConfirmationDialog
 import org.fossify.commons.dialogs.RadioGroupDialog
@@ -206,7 +205,7 @@ class SettingsActivity : SimpleActivity() {
             getString(org.fossify.commons.R.string.manage_blocked_numbers)
         settingsManageBlockedNumbersHolder.beVisible()
         settingsManageBlockedNumbersHolder.setOnClickListener {
-            startActivity(Intent(this@SettingsActivity, ManageBlockedNumbersActivity::class.java))
+            startActivity(Intent(this@SettingsActivity, BlockedNumbersActivity::class.java))
         }
     }
 
@@ -215,7 +214,7 @@ class SettingsActivity : SimpleActivity() {
             getString(R.string.manage_blocked_keywords)
 
         settingsManageBlockedKeywordsHolder.setOnClickListener {
-            startActivity(Intent(this@SettingsActivity, ManageBlockedKeywordsActivity::class.java))
+            startActivity(Intent(this@SettingsActivity, BlockRulesActivity::class.java))
         }
     }
 

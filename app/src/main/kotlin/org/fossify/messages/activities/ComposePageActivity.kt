@@ -90,6 +90,9 @@ abstract class ComposePageActivity : SimpleActivity(), UndoDeletion.UndoHost {
     protected fun libraryNavigation(unreadSpam: Int = 0) =
         PageNavigation(TopDestination.LIBRARY, ::navigateTo, unreadSpam)
 
+    /** Settings sub-pages keep the navigation with Settings active (R5-34). */
+    protected fun settingsNavigation() = PageNavigation(TopDestination.SETTINGS, ::navigateTo)
+
     protected fun navigateTo(destination: TopDestination) {
         when (destination) {
             TopDestination.SETTINGS -> startActivity(Intent(this, SettingsActivity::class.java))

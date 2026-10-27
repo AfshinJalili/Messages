@@ -53,6 +53,9 @@
     <color name="open_line_surface_high_dark">#24403A</color>
     <color name="open_line_on_lilac_variant">#4E5B57</color>
     <color name="open_line_on_lilac_variant_dark">#B9BEE3</color>
+    <!-- The design's scrim token: ink at 60%, black at 70% in dark. -->
+    <color name="open_line_scrim">#99152621</color>
+    <color name="open_line_scrim_dark">#B3000000</color>
     <!-- Design screen 97: ink at 40% behind a lifted message. -->
     <color name="open_line_lift_scrim">#66152621</color>
 

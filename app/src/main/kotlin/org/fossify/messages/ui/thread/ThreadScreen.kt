@@ -86,7 +86,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.customActions
@@ -164,6 +163,8 @@ import org.fossify.commons.extensions.formatSize
 import org.fossify.commons.extensions.formatTime
 import org.fossify.commons.models.SimpleContact
 import org.fossify.messages.R
+import org.fossify.messages.ui.components.DatePill
+import org.fossify.messages.ui.components.messageBubbleShape
 import org.fossify.messages.extensions.getFileSizeFromUri
 import org.fossify.messages.extensions.isVCardMimeType
 import org.fossify.messages.extensions.isVideoMimeType
@@ -205,8 +206,6 @@ private val LiftFade = 32.dp
 private val TargetSize = 48.dp
 // Keeps lines readable in landscape and on wide windows.
 private val MaxBubbleWidth = 520.dp
-private val BubbleCorner = 16.dp
-private val BubbleTail = 4.dp
 
 const val THREAD_LIST_TAG = "thread_list"
 const val THREAD_JUMP_TAG = "thread_jump_to_latest"
@@ -499,7 +498,7 @@ private fun LiftOverlay(lift: LiftedBubble, up: Boolean, sheetTop: Float, state:
             Box(
                 Modifier
                     .wrapContentHeight(Alignment.Top, unbounded = true)
-                    .shadow(LiftElevation * progress.value, bubbleShape(incoming, lift.groupedBelow), clip = false),
+                    .shadow(LiftElevation * progress.value, messageBubbleShape(incoming, lift.groupedBelow), clip = false),
             ) {
                 Bubble(lift.message, state, onEvent = {}, groupedBelow = lift.groupedBelow)
             }
@@ -759,7 +758,7 @@ private fun Bubble(
         incoming -> colors.surfaceContainer to colors.onSurface
         else -> colors.primaryContainer to colors.onPrimaryContainer
     }
-    val shape = bubbleShape(incoming, groupedBelow)
+    val shape = messageBubbleShape(incoming, groupedBelow)
     val attachments = message.attachment?.attachments.orEmpty()
     val coordinates = remember { arrayOfNulls<LayoutCoordinates>(1) }
     val selectLabel = stringResource(R.string.inbox_select)
@@ -830,15 +829,6 @@ private fun Bubble(
 }
 
 // The tail corner marks the last bubble of a run, on the sender's side.
-private fun bubbleShape(incoming: Boolean, groupedBelow: Boolean): RoundedCornerShape {
-    val tail = if (groupedBelow) BubbleCorner else BubbleTail
-    return if (incoming) {
-        RoundedCornerShape(BubbleCorner, BubbleCorner, BubbleCorner, tail)
-    } else {
-        RoundedCornerShape(BubbleCorner, BubbleCorner, tail, BubbleCorner)
-    }
-}
-
 /**
  * Long press anywhere on a bubble selects it, including over a link, whose own handler would
  * otherwise take the gesture. Watches the Initial pass so it sees the press before the text does,
@@ -1105,21 +1095,8 @@ private fun AttachmentTile(icon: Int, title: String, subtitle: String, clickable
 private fun DatePill(seconds: Int, modifier: Modifier = Modifier) {
     val label = remember(seconds) { ThreadDates.label(seconds) }
     Box(modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-        DatePillText(label)
+        DatePill(label)
     }
-}
-
-@Composable
-private fun DatePillText(label: String, modifier: Modifier = Modifier) {
-    Text(
-        label,
-        style = MaterialTheme.typography.labelSmall,
-        color = MaterialTheme.colorScheme.onSurface,
-        modifier = modifier
-            .clip(CircleShape)
-            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-            .padding(horizontal = 12.dp, vertical = 4.dp),
-    )
 }
 
 @Composable
@@ -1223,7 +1200,7 @@ private fun StickyDate(newestFirst: List<ThreadItem>, listState: LazyListState, 
         modifier = modifier,
     ) {
         val (date, _, push) = lastShown[0] ?: return@AnimatedVisibility
-        DatePillText(
+        DatePill(
             remember(date) { ThreadDates.label(date) },
             Modifier
                 .padding(top = 8.dp)

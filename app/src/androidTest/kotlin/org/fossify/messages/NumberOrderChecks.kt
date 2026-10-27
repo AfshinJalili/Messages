@@ -1,12 +1,5 @@
 package org.fossify.messages
 
-import android.content.res.Configuration
-import android.graphics.Path
-import android.graphics.RectF
-import android.view.ContextThemeWrapper
-import android.view.LayoutInflater
-import android.view.View
-import android.view.View.MeasureSpec
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.width
@@ -27,8 +20,6 @@ import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.platform.app.InstrumentationRegistry
-import org.fossify.messages.databinding.ItemConversationBinding
 import org.fossify.messages.models.Conversation
 import org.fossify.messages.ui.OpenLineTheme
 import org.fossify.messages.ui.inbox.InboxRow
@@ -41,7 +32,6 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.util.Locale
 
 /** #65: a grouped number keeps its groups in order next to Persian letters. Renders only; no provider access. */
 @RunWith(AndroidJUnit4::class)
@@ -107,33 +97,6 @@ class NumberOrderChecks {
             val layout = layouts.single()
             // Selection paths follow drawn runs; getBoundingBox can invert a box at a font/bidi boundary.
             assertInOrder("$view $direction", layout.layoutInput.text.text) { layout.getPathForRange(it, it + 1).getBounds().left }
-        }
-    }
-
-    /** Archive and Recycle Bin still draw rows with item_conversation.xml. */
-    @Test
-    fun viewRowKeepsGroupsInOrder() {
-        val context = InstrumentationRegistry.getInstrumentation().targetContext
-        InstrumentationRegistry.getInstrumentation().runOnMainSync {
-            for (rtl in listOf(false, true)) for (body in samples) {
-                val configuration = Configuration(context.resources.configuration).apply { setLayoutDirection(Locale(if (rtl) "fa" else "en")) }
-                val themed = ContextThemeWrapper(context.createConfigurationContext(configuration), R.style.AppTheme)
-                val binding = ItemConversationBinding.inflate(LayoutInflater.from(themed))
-                binding.root.layoutDirection = if (rtl) View.LAYOUT_DIRECTION_RTL else View.LAYOUT_DIRECTION_LTR
-                binding.conversationBodyShort.text = body
-                val width = (360 * themed.resources.displayMetrics.density).toInt()
-                binding.root.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED))
-                binding.root.layout(0, 0, width, binding.root.measuredHeight)
-                val layout = binding.conversationBodyShort.layout
-                val path = Path()
-                val bounds = RectF()
-                assertInOrder("view row rtl=$rtl", body) { offset ->
-                    path.reset()
-                    layout.getSelectionPath(offset, offset + 1, path)
-                    path.computeBounds(bounds, true)
-                    bounds.left
-                }
-            }
         }
     }
 

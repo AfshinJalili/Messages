@@ -158,6 +158,7 @@ dependencies {
     implementation(libs.bundles.room)
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.material3)
+    implementation(libs.androidx.activity.compose)
     implementation(libs.compose.ui.tooling.preview)
     debugImplementation(libs.compose.ui.tooling)
     debugImplementation(libs.compose.ui.test.manifest)

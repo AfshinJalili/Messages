@@ -212,6 +212,11 @@ class Config(context: Context) : BaseConfig(context) {
         spamNumbers = spamNumbers.plus(number)
     }
 
+    /** Unblocks every stored form of [number], so "+1 555 0183" also clears "5550183". */
+    fun removeSpamNumber(number: String) {
+        spamNumbers = spamNumbers.filterNot { setOf(it).containsNumber(number) }.toSet()
+    }
+
     var swipeLeftAction: SwipeAction
         get() = SwipeAction.fromId(prefs.getInt(SWIPE_LEFT_ACTION, SwipeAction.ARCHIVE.id))
         set(swipeLeftAction) = prefs.edit().putInt(SWIPE_LEFT_ACTION, swipeLeftAction.id).apply()
