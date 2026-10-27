@@ -1,5 +1,6 @@
 package org.fossify.messages.ui
 
+import androidx.compose.ui.text.style.TextDirection
 import android.content.Context
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.core.graphics.ColorUtils
@@ -94,6 +95,15 @@ internal fun AnnotatedString.withContentFonts(): AnnotatedString = buildAnnotate
 
 internal fun TextStyle.forContent(text: CharSequence): TextStyle =
     copy(fontFamily = body, lineHeight = if (persianRun.containsMatchIn(text)) 1.7.em else 1.45.em)
+
+/**
+ * What people wrote (a message, a name) reads in its own direction, not the interface's: English
+ * text in the Persian interface keeps its full stop at the end.
+ */
+internal fun TextStyle.forUserText(text: CharSequence): TextStyle = forContent(text).copy(textDirection = TextDirection.ContentOrLtr)
+
+/** A phone number or address isolated left to right, so "555 0142" never reads "0142 555" in Persian. */
+fun ltr(text: String): String = if (text.isEmpty()) text else "\u2066$text\u2069"
 
 private fun typography(rtl: Boolean): Typography {
     val displayFamily = if (rtl) persian else display

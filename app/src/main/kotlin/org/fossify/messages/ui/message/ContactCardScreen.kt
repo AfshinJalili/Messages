@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import org.fossify.messages.R
+import org.fossify.messages.ui.ltr
 import org.fossify.messages.ui.components.EmptyState
 import org.fossify.messages.ui.components.IdentityCard
 import org.fossify.messages.ui.components.LabeledField
@@ -76,7 +77,9 @@ fun ContactCardScreen(
                     )
                     Column {
                         card.fields.forEach { field ->
-                            LabeledField(field.label, field.value, onClick = field.action?.let { { onField(field) } })
+                            // Numbers and addresses keep their order in Persian; the raw value still dials.
+                            val shown = if (field.action != null) ltr(field.value) else field.value
+                            LabeledField(field.label, shown, onClick = field.action?.let { { onField(field) } })
                         }
                     }
                 }
