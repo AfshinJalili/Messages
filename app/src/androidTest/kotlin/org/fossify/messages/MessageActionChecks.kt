@@ -155,8 +155,14 @@ class MessageActionChecks {
         val recycled = both.copy(isRecycleBin = true)
         assertTrue(MessageAction.RESTORE in selectionActions(recycled) && MessageAction.STAR !in selectionActions(recycled))
 
-        assertTrue("Scheduled messages offer edit and send now", MessageAction.DETAILS in tapActions(message(3, "Later", scheduled = true), selectedOne))
-        assertFalse(MessageAction.DETAILS in tapActions(one, selectedOne))
+        // 84: a scheduled message's sheet is Edit, Send now, Delete; others never offer those.
+        assertEquals(
+            listOf(MessageAction.EDIT_SCHEDULED, MessageAction.SEND_NOW, MessageAction.DELETE),
+            tapActions(message(3, "Later", scheduled = true), selectedOne),
+        )
+        assertFalse(MessageAction.EDIT_SCHEDULED in tapActions(one, selectedOne) || MessageAction.SEND_NOW in selectionActions(selectedOne))
+        val scheduledSelected = ThreadUiState(items = listOf(message(3, "Later", scheduled = true)), selected = setOf(message(3, "Later", scheduled = true).getStableId()))
+        assertFalse("13 is for messages that exist", MessageAction.DETAILS in selectionActions(scheduledSelected))
 
         val mms = one.copy(isMMS = true)
         val collided = ThreadUiState(items = listOf(one, mms), selected = setOf(one.getStableId()))

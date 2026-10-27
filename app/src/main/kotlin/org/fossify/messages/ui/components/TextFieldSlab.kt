@@ -20,9 +20,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import org.fossify.messages.ui.OpenLine
@@ -33,7 +35,8 @@ private val FocusRingWidth = 2.dp
 /**
  * Component / text field: a white slab with the value in title type. [label] sits inside the slab
  * as the design's uppercase caption; leave it null when the page labels the field itself. The
- * focus ring is the design's `focus-ring` (pine, lime in dark).
+ * focus ring is the design's `focus-ring` (pine, lime in dark). Inside a dialog, which is itself
+ * surfaceContainer, pass [containerColor] = surface so the field stays visible.
  */
 @Composable
 fun TextFieldSlab(
@@ -45,20 +48,23 @@ fun TextFieldSlab(
     accessibilityLabel: String? = label ?: placeholder,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     keyboardActions: KeyboardActions = KeyboardActions.Default,
+    singleLine: Boolean = true,
+    textStyle: TextStyle = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+    containerColor: Color = MaterialTheme.colorScheme.surfaceContainer,
 ) {
     val colors = MaterialTheme.colorScheme
     val interaction = remember { MutableInteractionSource() }
     val focused by interaction.collectIsFocusedAsState()
-    val style = MaterialTheme.typography.titleLarge.copy(color = colors.onSurface, fontWeight = FontWeight.Bold)
+    val style = textStyle.copy(color = colors.onSurface)
     Column(
         modifier
             .fillMaxWidth()
             .heightIn(min = FieldMinHeight)
             .clip(MaterialTheme.shapes.medium)
-            .background(colors.surfaceContainer)
+            .background(containerColor)
             .border(
                 FocusRingWidth,
-                if (focused) OpenLine.colors.focusRing else colors.surfaceContainer,
+                if (focused) OpenLine.colors.focusRing else containerColor,
                 MaterialTheme.shapes.medium,
             )
             .padding(horizontal = 16.dp, vertical = 12.dp),
@@ -71,7 +77,7 @@ fun TextFieldSlab(
             value = value,
             onValueChange = onValueChange,
             textStyle = style,
-            singleLine = true,
+            singleLine = singleLine,
             cursorBrush = SolidColor(colors.primary),
             keyboardOptions = keyboardOptions,
             keyboardActions = keyboardActions,

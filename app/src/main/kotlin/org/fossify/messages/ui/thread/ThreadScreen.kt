@@ -177,6 +177,7 @@ import org.fossify.messages.helpers.generateStableId
 import org.fossify.messages.helpers.getIconResourceForMimeType
 import org.fossify.messages.helpers.parseNameFromVCard
 import org.fossify.messages.helpers.parseVCardFromUri
+import org.fossify.messages.ui.components.upcomingDayAndTime
 import org.fossify.messages.models.Attachment
 import org.fossify.messages.models.Message
 import org.fossify.messages.models.MessageAttachment
@@ -515,9 +516,14 @@ private fun MessageSheet(message: Message, state: ThreadUiState, onTop: (Float) 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
     val sim = state.simLabels[message.subscriptionId]?.let { stringResource(R.string.message_sim_label, it) }
-    val info = remember(message.date, sim) {
+    val info = remember(message.date, message.isScheduled, sim) {
         val millis = message.date * 1000L
-        listOfNotNull(DateFormat.format("EEE d MMM yyyy", millis).toString(), millis.formatTime(context), sim).joinToString(" · ")
+        if (message.isScheduled) {
+            // 84: when it goes, rather than when it was written.
+            context.getString(R.string.scheduled_for, listOfNotNull(upcomingDayAndTime(context, millis), sim).joinToString(" · "))
+        } else {
+            listOfNotNull(DateFormat.format("EEE d MMM yyyy", millis).toString(), millis.formatTime(context), sim).joinToString(" · ")
+        }
     }
     ModalBottomSheet(
         onDismissRequest = onDismiss,

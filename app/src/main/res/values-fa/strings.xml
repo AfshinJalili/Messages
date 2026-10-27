@@ -473,4 +473,94 @@
         <item quantity="one">%d جست‌وجوی اخیر</item>
         <item quantity="other">%d جست‌وجوی اخیر</item>
     </plurals>
+
+    <!-- Conversation details, message pages, scheduling and dialogs (09, 12–14, 39, 43, 44, 47, 82, 84) -->
+    <string name="you">شما</string>
+    <string name="day_tomorrow">فردا</string>
+    <string name="phone_number">تلفن</string>
+    <string name="company">شرکت</string>
+    <string name="call">تماس</string>
+    <string name="mute">بی‌صدا</string>
+    <string name="unmute">باصدا</string>
+    <string name="open_contact">باز کردن مخاطب</string>
+    <string name="people">افراد</string>
+    <string name="sim">سیم‌کارت</string>
+    <string name="sim_default">پیش‌فرض گوشی</string>
+    <string name="custom_notifications">اعلان سفارشی</string>
+    <string name="custom_notifications_on">روشن · این گفت‌وگو صدای خودش را دارد</string>
+    <string name="custom_notifications_off">خاموش · از اعلان‌های برنامه پیروی می‌کند</string>
+    <string name="rename_explanation">این نام را فقط شما می‌بینید. به دیگران خبر داده نمی‌شود.</string>
+    <string name="save_name">ذخیرهٔ نام</string>
+    <string name="contact_card">کارت مخاطب</string>
+    <string name="contact_card_subtitle">کسی که در پیام به اشتراک گذاشته شده</string>
+    <string name="contact_card_unreadable">این کارت مخاطب خوانده نمی‌شود</string>
+    <string name="shared_by">از طرف %s</string>
+    <string name="save_to_contacts">ذخیره در مخاطبان</string>
+    <string name="message_details_subtitle">اطلاعات تحویل و جزئیات پیام</string>
+    <string name="message_type">نوع</string>
+    <string name="message_from">از</string>
+    <string name="message_to">به</string>
+    <string name="message_sent_at">ارسال</string>
+    <string name="message_received_at">دریافت</string>
+    <string name="message_status">وضعیت</string>
+    <string name="select_text_subtitle">فقط بخشی را که لازم دارید کپی کنید</string>
+    <string name="copy_selection">کپی بخش انتخاب‌شده</string>
+    <string name="copy_whole_message">کپی کل پیام</string>
+    <string name="send_later">ارسال بعداً</string>
+    <string name="send_later_subtitle">زمان ارسال روشن، با راهی آسان برای تغییرش</string>
+    <string name="message_label">پیام</string>
+    <string name="date_label">تاریخ</string>
+    <string name="time_label">ساعت</string>
+    <string name="other_date">تاریخ دیگر</string>
+    <string name="change_time">تغییر زمان</string>
+    <string name="use_this_time">همین زمان</string>
+    <string name="scheduled_to">به %s</string>
+    <string name="scheduled_for">زمان‌بندی‌شده برای %s</string>
+    <string name="scheduled_message_subtitle">ویرایش، ارسال فوری یا لغو</string>
+    <string name="save_changes">ذخیرهٔ تغییرات</string>
+    <string name="edit_message_and_time">ویرایش پیام و زمان</string>
+    <string name="cancel_scheduled_message">لغو پیام زمان‌بندی‌شده</string>
+    <string name="cancel_scheduled_message_title">این پیام لغو شود؟</string>
+    <string name="cancel_scheduled_message_text">ارسال نمی‌شود و متنش نگه داشته نمی‌شود.</string>
+    <string name="archive_conversations_text">از صندوق بیرون می‌روند. پیام تازه گفت‌وگو را برمی‌گرداند.</string>
+    <plurals name="people_count">
+        <item quantity="one">%d نفر</item>
+        <item quantity="other">%d نفر</item>
+    </plurals>
+    <plurals name="archive_conversations_title">
+        <item quantity="one">%d گفت‌وگو بایگانی شود؟</item>
+        <item quantity="other">%d گفت‌وگو بایگانی شوند؟</item>
+    </plurals>
+    <plurals name="delete_conversations_title">
+        <item quantity="one">%d گفت‌وگو حذف شود؟</item>
+        <item quantity="other">%d گفت‌وگو حذف شوند؟</item>
+    </plurals>
+    <plurals name="delete_conversations_to_bin_text">
+        <item quantity="one">به سطل بازیافت می‌رود و تا ۳۰ روز قابل بازگردانی است.</item>
+        <item quantity="other">به سطل بازیافت می‌روند و تا ۳۰ روز قابل بازگردانی هستند.</item>
+    </plurals>
+    <plurals name="delete_conversations_forever_text">
+        <item quantity="one">دیگر قابل بازگردانی نیست.</item>
+        <item quantity="other">دیگر قابل بازگردانی نیستند.</item>
+    </plurals>
+    <plurals name="delete_messages_title">
+        <item quantity="one">%d پیام حذف شود؟</item>
+        <item quantity="other">%d پیام حذف شوند؟</item>
+    </plurals>
+    <plurals name="delete_messages_to_bin_text">
+        <item quantity="one">به سطل بازیافت می‌رود و تا ۳۰ روز قابل بازگردانی است.</item>
+        <item quantity="other">به سطل بازیافت می‌روند و تا ۳۰ روز قابل بازگردانی هستند.</item>
+    </plurals>
+    <plurals name="delete_messages_forever_text">
+        <item quantity="one">دیگر قابل بازگردانی نیست.</item>
+        <item quantity="other">دیگر قابل بازگردانی نیستند.</item>
+    </plurals>
+    <plurals name="restore_messages_title">
+        <item quantity="one">%d پیام بازگردانده شود؟</item>
+        <item quantity="other">%d پیام بازگردانده شوند؟</item>
+    </plurals>
+    <plurals name="restore_messages_text">
+        <item quantity="one">به گفت‌وگوی خودش برمی‌گردد.</item>
+        <item quantity="other">به گفت‌وگوی خودشان برمی‌گردند.</item>
+    </plurals>
 </resources>

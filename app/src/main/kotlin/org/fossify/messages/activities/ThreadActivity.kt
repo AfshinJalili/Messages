@@ -43,7 +43,6 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import org.fossify.commons.dialogs.ConfirmationDialog
 import org.fossify.commons.dialogs.PermissionRequiredDialog
-import org.fossify.commons.dialogs.RadioGroupDialog
 import org.fossify.commons.extensions.applyColorFilter
 import org.fossify.commons.extensions.beGone
 import org.fossify.commons.extensions.beVisible
@@ -59,7 +58,6 @@ import org.fossify.commons.extensions.getMyFileUri
 import org.fossify.commons.extensions.getProperPrimaryColor
 import org.fossify.commons.extensions.getProperTextColor
 import org.fossify.commons.extensions.hideKeyboard
-import org.fossify.commons.extensions.insetsController
 import org.fossify.commons.extensions.isDynamicTheme
 import org.fossify.commons.extensions.isVisible
 import org.fossify.commons.extensions.launchActivityIntent
@@ -85,7 +83,6 @@ import org.fossify.commons.helpers.VcfExporter
 import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.commons.helpers.isSPlus
 import org.fossify.commons.models.PhoneNumber
-import org.fossify.commons.models.RadioItem
 import org.fossify.commons.models.SimpleContact
 import org.fossify.messages.BuildConfig
 import org.fossify.messages.R
@@ -93,8 +90,6 @@ import org.fossify.messages.adapters.AutoCompleteTextViewAdapter
 import org.fossify.messages.databinding.ActivityThreadBinding
 import org.fossify.messages.databinding.ItemSelectedContactBinding
 import org.fossify.messages.dialogs.InvalidNumberDialog
-import org.fossify.messages.dialogs.RenameConversationDialog
-import org.fossify.messages.dialogs.ScheduleMessageDialog
 import org.fossify.messages.extensions.clearExpiredScheduledMessages
 import org.fossify.messages.extensions.config
 import org.fossify.messages.extensions.conversationsDB
@@ -191,11 +186,16 @@ import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import org.fossify.commons.extensions.shareTextIntent
-import org.fossify.messages.dialogs.MessageDetailsDialog
-import org.fossify.messages.dialogs.SelectTextDialog
 import org.fossify.messages.extensions.isVCardMimeType
 import org.fossify.messages.extensions.launchViewIntent
 import org.fossify.messages.helpers.EXTRA_VCARD_URI
+import org.fossify.commons.extensions.formatTime
+import org.fossify.commons.extensions.getTimeFormatWithSeconds
+import org.fossify.messages.ui.components.dayLabel
+import org.fossify.messages.ui.components.showRenameDialog
+import org.fossify.messages.ui.message.DeliveryMark
+import org.fossify.messages.ui.message.MessageFacts
+import org.fossify.messages.ui.schedule.ScheduleTarget
 import org.fossify.messages.ui.OpenLineTheme
 import org.fossify.messages.ui.openLineDark
 import org.fossify.messages.ui.openLineTextScale
@@ -311,8 +311,14 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
 
     private var isScheduledMessage: Boolean = false
     private var lastSearchMatchKey: Long? = null
-    private var scheduledMessage: Message? = null
     private lateinit var scheduledDateTime: DateTime
+
+    private val sendLater = registerForActivityResult(SendLaterActivity.Contract()) { millis ->
+        if (millis != null) onSendTimeChosen(millis)
+    }
+    private val editScheduled = registerForActivityResult(ScheduledMessageActivity.Contract()) { result ->
+        result?.let { (messageId, decision) -> onScheduledDecision(messageId, decision) }
+    }
 
     private val binding by viewBinding(ActivityThreadBinding::inflate)
 
@@ -629,8 +635,12 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
                 deleteMessages(toDelete, toRecycleBin, false)
             }
             MessageAction.SHARE -> shareTextIntent(first.body)
-            MessageAction.SELECT_TEXT -> if (first.body.isNotBlank()) SelectTextDialog(this, first.body)
-            MessageAction.DETAILS -> if (first.isScheduled) showScheduledMessageInfo(first) else MessageDetailsDialog(this, first)
+            MessageAction.SELECT_TEXT -> if (first.body.isNotBlank()) startActivity(SelectTextActivity.intent(this, senderLine(first), first.body))
+            MessageAction.DETAILS -> startActivity(MessageDetailsActivity.intent(this, messageFacts(first)))
+            MessageAction.EDIT_SCHEDULED -> editScheduled.launch(
+                ScheduledMessageActivity.Request(first.id, ScheduleTarget(first.body, scheduleRecipient(first.subscriptionId)), first.millis()),
+            )
+            MessageAction.SEND_NOW -> sendScheduledNow(first)
             MessageAction.SAVE_AS -> selected.flatMap { it.attachment?.attachments.orEmpty() }.takeIf { it.isNotEmpty() }?.let { saveMMS(it) }
             MessageAction.NOT_SPAM -> {
                 clearSelection()
@@ -644,13 +654,66 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
     private fun openAttachment(message: Message, attachment: Attachment) {
         val uri = attachment.getUri()
         if (attachment.mimetype.isVCardMimeType()) {
-            startActivity(Intent(this, VCardViewerActivity::class.java).putExtra(EXTRA_VCARD_URI, uri))
+            startActivity(
+                Intent(this, VCardViewerActivity::class.java)
+                    .putExtra(EXTRA_VCARD_URI, uri)
+                    .putExtra(VCardViewerActivity.EXTRA_VCARD_SOURCE, cardSource(message)),
+            )
         } else {
             launchViewIntent(uri, attachment.mimetype, attachment.filename)
         }
     }
 
     private val simLabels: Map<Int, String> by lazy { loadSimLabels() }
+
+    /** "Mina Farahani · 12:41" or "You · 12:41": who wrote [message], and when. */
+    private fun senderLine(message: Message): String {
+        val who = if (message.isReceivedMessage()) message.senderName.ifEmpty { message.senderPhoneNumber } else getString(R.string.you)
+        return getString(R.string.detail_pair, who, message.millis().formatTime(this))
+    }
+
+    /** "To Mina Farahani", with "· SIM 1" when the phone has two SIMs. */
+    private fun scheduleRecipient(subscriptionId: Int): String {
+        val name = conversation?.title?.takeIf { it.isNotEmpty() }
+            ?: participants.joinToString { it.name.ifEmpty { it.phoneNumbers.firstOrNull()?.value.orEmpty() } }
+        val to = getString(R.string.scheduled_to, name)
+        return simLabels[subscriptionId]?.let { getString(R.string.detail_pair, to, getString(R.string.message_sim_label, it)) } ?: to
+    }
+
+    /** "Shared by Mina · Today" under a contact card. */
+    private fun cardSource(message: Message): String {
+        val by = if (message.isReceivedMessage()) message.senderName.ifEmpty { message.senderPhoneNumber } else getString(R.string.you)
+        return getString(R.string.detail_pair, getString(R.string.shared_by, by), dayLabel(this, message.millis()))
+    }
+
+    /** 13's facts: type, from, to, when, and how far it got. */
+    private fun messageFacts(message: Message): MessageFacts {
+        val received = message.isReceivedMessage()
+        val sim = simLabels[message.subscriptionId]?.let { getString(R.string.message_sim_label, it) }
+        fun person(name: String, number: String) = if (name.isEmpty() || name == number) number else getString(R.string.detail_pair, name, number)
+        val others = message.participants.joinToString(", ") { person(it.name, it.phoneNumbers.firstOrNull()?.value.orEmpty()) }
+        val you = listOfNotNull(getString(R.string.you), sim).joinToString(" · ")
+        val time = DateTime(message.millis()).toString("${config.dateFormat} ${getTimeFormatWithSeconds()}")
+        val sent = message.type == Telephony.Sms.MESSAGE_TYPE_SENT
+        val delivered = sent && message.status == Telephony.Sms.STATUS_COMPLETE
+        val rows = buildList {
+            add(getString(R.string.message_type) to getString(if (message.isMMS) R.string.mms else R.string.sms))
+            add(getString(R.string.message_from) to if (received) person(message.senderName, message.senderPhoneNumber) else you)
+            add(getString(R.string.message_to) to if (received) you else others)
+            add(getString(if (received) R.string.message_received_at else R.string.message_sent_at) to time)
+            when {
+                message.type == Telephony.Sms.MESSAGE_TYPE_FAILED -> add(getString(R.string.message_status) to getString(R.string.message_not_sent_short))
+                delivered -> add(getString(R.string.message_status) to getString(R.string.message_delivered))
+                sent -> add(getString(R.string.message_status) to getString(R.string.message_sent))
+            }
+        }
+        val mark = when {
+            delivered -> DeliveryMark.DELIVERED
+            sent -> DeliveryMark.SENT
+            else -> DeliveryMark.NONE
+        }
+        return MessageFacts(message.body, message.millis().formatTime(this), mark, rows)
+    }
 
     @SuppressLint("MissingPermission")
     private fun loadSimLabels(): Map<Int, String> {
@@ -1291,11 +1354,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
             ComposerEvent.Dictate -> launchDictation()
             is ComposerEvent.Attach -> attach(event.option)
             ComposerEvent.Schedule -> launchScheduleSendDialog(if (isScheduledMessage) scheduledDateTime else null)
-            ComposerEvent.CancelSchedule -> {
-                hideScheduleSendUi()
-                scheduledMessage?.let { cancelScheduledMessageAndRefresh(it.id) }
-                scheduledMessage = null
-            }
+            ComposerEvent.CancelSchedule -> hideScheduleSendUi()
             ComposerEvent.NextSim -> nextSim()
             is ComposerEvent.RemoveAttachment -> removeAttachment(event.attachment.id)
             is ComposerEvent.OpenAttachment -> event.attachment.let {
@@ -1630,7 +1689,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
     }
 
     private fun renameConversation() {
-        RenameConversationDialog(this, conversation!!) { title ->
+        showRenameDialog(conversation!!) { title ->
             ensureBackgroundThread {
                 conversation = renameConversation(conversation!!, newTitle = title)
                 runOnUiThread {
@@ -1898,7 +1957,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         refreshedSinceSent = false
         try {
             ensureBackgroundThread {
-                val messageId = scheduledMessage?.id ?: generateRandomId()
+                val messageId = generateRandomId()
                 val message = buildScheduledMessage(text, subscriptionId, messageId)
                 if (messages.isEmpty()) {
                     // create a temporary thread until a real message is sent
@@ -1921,7 +1980,6 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
                 runOnUiThread {
                     clearCurrentMessage()
                     hideScheduleSendUi()
-                    scheduledMessage = null
                 }
             }
         } catch (e: Exception) {
@@ -2192,30 +2250,6 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         return getAttachmentSelections().isNotEmpty() || isGroupMms || isLongMmsMessage
     }
 
-    private fun showScheduledMessageInfo(message: Message) {
-        val items = arrayListOf(
-            RadioItem(TYPE_EDIT, getString(R.string.update_message)),
-            RadioItem(TYPE_SEND, getString(R.string.send_now)),
-            RadioItem(TYPE_DELETE, getString(org.fossify.commons.R.string.delete))
-        )
-        RadioGroupDialog(
-            activity = this,
-            items = items,
-            titleId = R.string.scheduled_message
-        ) { any ->
-            when (any as Int) {
-                TYPE_DELETE -> deleteMessages(listOf(message), false, false)
-                TYPE_EDIT -> editScheduledMessage(message)
-                TYPE_SEND -> {
-                    messages.removeAll { message.id == it.id }
-                    extractAttachments(message)
-                    sendNormalMessage(message.body, message.subscriptionId)
-                    cancelScheduledMessageAndRefresh(message.id)
-                }
-            }
-        }
-    }
-
     private fun extractAttachments(message: Message) {
         val messageAttachment = message.attachment
         if (messageAttachment != null) {
@@ -2225,13 +2259,42 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         }
     }
 
-    private fun editScheduledMessage(message: Message) {
-        scheduledMessage = message
-        clearCurrentMessage()
-        setComposerText(message.body)
+    /** 84 · Send now: the scheduled message goes as a normal one, and its schedule is dropped. */
+    private fun sendScheduledNow(message: Message) {
+        messages.removeAll { message.id == it.id }
         extractAttachments(message)
-        scheduledDateTime = DateTime(message.millis())
-        showScheduleMessageDialog()
+        sendNormalMessage(message.body, message.subscriptionId)
+        cancelScheduledMessageAndRefresh(message.id)
+    }
+
+    /** 47 decided: save the new text and time, send now, or cancel. */
+    private fun onScheduledDecision(messageId: Long, decision: ScheduledMessageActivity.Decision) {
+        val message = messages.firstOrNull { it.id == messageId && it.isScheduled } ?: return
+        when (decision) {
+            is ScheduledMessageActivity.Decision.Save -> updateScheduledMessage(message, decision.text, decision.time)
+            ScheduledMessageActivity.Decision.SendNow -> sendScheduledNow(message)
+            ScheduledMessageActivity.Decision.Cancel -> deleteMessages(listOf(message), false, false)
+        }
+    }
+
+    private fun updateScheduledMessage(message: Message, text: String, millis: Long) {
+        if (millis <= System.currentTimeMillis()) {
+            toast(R.string.must_pick_time_in_the_future)
+            return
+        }
+        ensureBackgroundThread {
+            val updated = message.copy(
+                body = text,
+                date = (millis / 1000).toInt(),
+                attachment = message.attachment?.copy(text = text),
+            )
+            // The alarm is keyed by the message id, so this replaces the old one.
+            scheduleMessage(updated)
+            insertOrUpdateMessage(updated)
+            conversationsDB.getConversationWithThreadId(threadId)?.let { current ->
+                if (current.snippet == message.body) conversationsDB.insertOrUpdate(current.copy(snippet = text))
+            }
+        }
     }
 
     private fun cancelScheduledMessageAndRefresh(messageId: Long) {
@@ -2244,13 +2307,17 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
 
     private fun launchScheduleSendDialog(originalDateTime: DateTime? = null) {
         askForExactAlarmPermissionIfNeeded {
-            ScheduleMessageDialog(this, originalDateTime) { newDateTime ->
-                if (newDateTime != null) {
-                    scheduledDateTime = newDateTime
-                    showScheduleMessageDialog()
-                }
-            }
+            val subscriptionId = availableSIMCards.getOrNull(currentSIMCardIndex)?.subscriptionId ?: -1
+            val target = ScheduleTarget(getOutgoingText().trim(), scheduleRecipient(subscriptionId))
+            sendLater.launch(SendLaterActivity.Request(target, originalDateTime?.millis))
         }
+    }
+
+    /** 12 returned a time: with something written it is scheduled at once; otherwise the composer waits for it. */
+    private fun onSendTimeChosen(millis: Long) {
+        scheduledDateTime = DateTime(millis)
+        showScheduleMessageDialog()
+        if (composer.hasContent(getOutgoingText())) sendMessage()
     }
 
     private fun showScheduleMessageDialog() {
@@ -2303,9 +2370,6 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
     }
 
     companion object {
-        private const val TYPE_EDIT = 14
-        private const val TYPE_SEND = 15
-        private const val TYPE_DELETE = 16
         private const val JUMP_WAIT_MS = 50L
         private const val JUMP_WAIT_LIMIT = 100
         private const val NO_JUMP = -1L

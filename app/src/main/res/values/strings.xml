@@ -498,4 +498,95 @@
         <item quantity="one">%d recent search</item>
         <item quantity="other">%d recent searches</item>
     </plurals>
+
+    <!-- Conversation details, message pages, scheduling and dialogs (09, 12–14, 39, 43, 44, 47, 82, 84) -->
+    <string name="detail_pair" translatable="false">%1$s · %2$s</string>
+    <string name="you">You</string>
+    <string name="day_tomorrow">Tomorrow</string>
+    <string name="phone_number">Phone</string>
+    <string name="company">Company</string>
+    <string name="call">Call</string>
+    <string name="mute">Mute</string>
+    <string name="unmute">Unmute</string>
+    <string name="open_contact">Open contact</string>
+    <string name="people">People</string>
+    <string name="sim">SIM</string>
+    <string name="sim_default">Phone default</string>
+    <string name="custom_notifications">Custom notifications</string>
+    <string name="custom_notifications_on">On · this conversation has its own sound</string>
+    <string name="custom_notifications_off">Off · uses the app’s alerts</string>
+    <string name="rename_explanation">Only you see this name. Participants are not notified.</string>
+    <string name="save_name">Save name</string>
+    <string name="contact_card">Contact card</string>
+    <string name="contact_card_subtitle">A person shared in a message</string>
+    <string name="contact_card_unreadable">This contact card can’t be read</string>
+    <string name="shared_by">Shared by %s</string>
+    <string name="save_to_contacts">Save to contacts</string>
+    <string name="message_details_subtitle">Delivery information and message facts</string>
+    <string name="message_type">Type</string>
+    <string name="message_from">From</string>
+    <string name="message_to">To</string>
+    <string name="message_sent_at">Sent</string>
+    <string name="message_received_at">Received</string>
+    <string name="message_status">Status</string>
+    <string name="select_text_subtitle">Copy only the part you need</string>
+    <string name="copy_selection">Copy selection</string>
+    <string name="copy_whole_message">Copy whole message</string>
+    <string name="send_later">Send later</string>
+    <string name="send_later_subtitle">A clear send time, with an easy way to change it</string>
+    <string name="message_label">Message</string>
+    <string name="date_label">Date</string>
+    <string name="time_label">Time</string>
+    <string name="other_date">Other date</string>
+    <string name="change_time">Change time</string>
+    <string name="use_this_time">Use this time</string>
+    <string name="scheduled_to">To %s</string>
+    <string name="scheduled_for">Scheduled for %s</string>
+    <string name="scheduled_message_subtitle">Edit, send now, or cancel</string>
+    <string name="save_changes">Save changes</string>
+    <string name="edit_message_and_time">Edit message and time</string>
+    <string name="cancel_scheduled_message">Cancel scheduled message</string>
+    <string name="cancel_scheduled_message_title">Cancel this message?</string>
+    <string name="cancel_scheduled_message_text">It won’t be sent, and its text is not kept.</string>
+    <string name="archive_conversations_text">They leave the inbox. A new message brings a conversation back.</string>
+    <plurals name="people_count">
+        <item quantity="one">%d person</item>
+        <item quantity="other">%d people</item>
+    </plurals>
+    <plurals name="archive_conversations_title">
+        <item quantity="one">Archive %d conversation?</item>
+        <item quantity="other">Archive %d conversations?</item>
+    </plurals>
+    <plurals name="delete_conversations_title">
+        <item quantity="one">Delete %d conversation?</item>
+        <item quantity="other">Delete %d conversations?</item>
+    </plurals>
+    <plurals name="delete_conversations_to_bin_text">
+        <item quantity="one">It moves to the recycle bin and can be restored for 30 days.</item>
+        <item quantity="other">They move to the recycle bin and can be restored for 30 days.</item>
+    </plurals>
+    <plurals name="delete_conversations_forever_text">
+        <item quantity="one">It can’t be restored.</item>
+        <item quantity="other">They can’t be restored.</item>
+    </plurals>
+    <plurals name="delete_messages_title">
+        <item quantity="one">Delete %d message?</item>
+        <item quantity="other">Delete %d messages?</item>
+    </plurals>
+    <plurals name="delete_messages_to_bin_text">
+        <item quantity="one">It moves to the recycle bin and can be restored for 30 days.</item>
+        <item quantity="other">They move to the recycle bin and can be restored for 30 days.</item>
+    </plurals>
+    <plurals name="delete_messages_forever_text">
+        <item quantity="one">It can’t be restored.</item>
+        <item quantity="other">They can’t be restored.</item>
+    </plurals>
+    <plurals name="restore_messages_title">
+        <item quantity="one">Restore %d message?</item>
+        <item quantity="other">Restore %d messages?</item>
+    </plurals>
+    <plurals name="restore_messages_text">
+        <item quantity="one">It goes back to its conversation.</item>
+        <item quantity="other">They go back to their conversation.</item>
+    </plurals>
 </resources>

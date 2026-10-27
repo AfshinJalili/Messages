@@ -1,15 +1,13 @@
 package org.fossify.messages.activities
 
 import android.content.Intent
-import org.fossify.commons.dialogs.ConfirmationDialog
 import org.fossify.commons.extensions.copyToClipboard
 import org.fossify.commons.extensions.getTimeFormat
-import org.fossify.commons.extensions.showErrorToast
 import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.messages.R
-import org.fossify.messages.dialogs.DeleteConfirmationDialog
 import org.fossify.messages.extensions.config
 import org.fossify.messages.models.Message
+import org.fossify.messages.ui.components.confirm
 import org.joda.time.DateTime
 
 /** One message copies as-is; several copy as a dated transcript. */
@@ -26,38 +24,37 @@ internal fun SimpleActivity.copyMessages(messages: List<Message>) {
     if (text.isNotEmpty()) copyToClipboard(text)
 }
 
+/**
+ * Deleting messages confirms (D03), as 82 does for conversations: into the recycle bin when it is
+ * on, otherwise for good. Delete forever is in the recycle bin, not here.
+ */
 internal fun SimpleActivity.confirmDeleteMessages(
     messages: List<Message>,
     isRecycleBin: Boolean,
     delete: (messages: List<Message>, toRecycleBin: Boolean) -> Unit,
 ) {
-    // not sure how we can get UnknownFormatConversionException here, so show the error and hope that someone reports it
-    val items = try {
-        resources.getQuantityString(R.plurals.delete_messages, messages.size, messages.size)
-    } catch (e: Exception) {
-        showErrorToast(e)
-        return
-    }
-    val offerRecycleBin = config.useRecycleBin && !isRecycleBin
-    val question = String.format(
-        getString(if (offerRecycleBin) org.fossify.commons.R.string.move_to_recycle_bin_confirmation else org.fossify.commons.R.string.deletion_confirmation),
-        items,
-    )
-    DeleteConfirmationDialog(this, question, offerRecycleBin) { skipRecycleBin ->
-        ensureBackgroundThread {
-            if (messages.isNotEmpty()) delete(messages, !skipRecycleBin && offerRecycleBin)
-        }
+    val count = messages.size
+    val toRecycleBin = config.useRecycleBin && !isRecycleBin
+    confirm(
+        title = resources.getQuantityString(R.plurals.delete_messages_title, count, count),
+        explanation = resources.getQuantityString(
+            if (toRecycleBin) R.plurals.delete_messages_to_bin_text else R.plurals.delete_messages_forever_text,
+            count,
+        ),
+        confirmLabel = getString(if (toRecycleBin) org.fossify.commons.R.string.delete else R.string.delete_forever),
+        destructive = !toRecycleBin,
+    ) {
+        ensureBackgroundThread { delete(messages, toRecycleBin) }
     }
 }
 
 internal fun SimpleActivity.confirmRestoreMessages(messages: List<Message>, restore: (List<Message>) -> Unit) {
-    val items = try {
-        resources.getQuantityString(R.plurals.delete_messages, messages.size, messages.size)
-    } catch (e: Exception) {
-        showErrorToast(e)
-        return
-    }
-    ConfirmationDialog(this, String.format(getString(R.string.restore_confirmation), items)) {
+    val count = messages.size
+    confirm(
+        title = resources.getQuantityString(R.plurals.restore_messages_title, count, count),
+        explanation = resources.getQuantityString(R.plurals.restore_messages_text, count),
+        confirmLabel = getString(R.string.restore),
+    ) {
         ensureBackgroundThread { restore(messages) }
     }
 }

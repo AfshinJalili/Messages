@@ -3,86 +3,79 @@ package org.fossify.messages.activities
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import ezvcard.VCard
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.core.content.IntentCompat
 import ezvcard.property.Email
+import ezvcard.property.Organization
 import ezvcard.property.Telephone
+import org.fossify.commons.extensions.launchActivityIntent
 import org.fossify.commons.extensions.normalizePhoneNumber
-import org.fossify.commons.extensions.sendEmailIntent
-import org.fossify.commons.extensions.viewBinding
 import org.fossify.messages.R
-import org.fossify.messages.adapters.VCardViewerAdapter
-import org.fossify.messages.databinding.ActivityVcardViewerBinding
 import org.fossify.messages.extensions.dialNumber
-import org.fossify.messages.extensions.setupSurfaceAppBar
+import org.fossify.commons.extensions.sendEmailIntent
 import org.fossify.messages.helpers.EXTRA_VCARD_URI
 import org.fossify.messages.helpers.parseVCardFromUri
-import org.fossify.messages.models.VCardPropertyWrapper
 import org.fossify.messages.models.VCardWrapper
+import org.fossify.messages.ui.message.CardField
+import org.fossify.messages.ui.message.ContactCard
+import org.fossify.messages.ui.message.ContactCardScreen
+import org.fossify.messages.ui.message.ContactCardUiState
+import org.fossify.messages.ui.message.FieldAction
 
-class VCardViewerActivity : SimpleActivity() {
-
-    private val binding by viewBinding(ActivityVcardViewerBinding::inflate)
+/**
+ * 14 · Contact card / viewer for a vCard shared in a message. [EXTRA_VCARD_SOURCE] is the optional
+ * "Shared by Mina · today" line.
+ */
+class VCardViewerActivity : ComposePageActivity() {
+    private var state by mutableStateOf(ContactCardUiState())
+    private val uri by lazy { IntentCompat.getParcelableExtra(intent, EXTRA_VCARD_URI, Uri::class.java) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(binding.root)
+        state = state.copy(source = intent.getStringExtra(EXTRA_VCARD_SOURCE).orEmpty())
+        val uri = uri ?: return finish()
+        parseVCardFromUri(this, uri) { vCards ->
+            val cards = vCards.map { card(VCardWrapper.from(this, it)) }
+            runOnUiThread { state = state.copy(cards = cards) }
+        }
+    }
 
-        setupEdgeToEdge(padBottomSystem = listOf(binding.contactsList))
-        setupMaterialScrollListener(binding.contactsList, binding.vcardAppbar)
+    @Composable
+    override fun Page() = ContactCardScreen(state, onBack = ::finish, onField = ::open, onSave = ::save)
 
-        val vCardUri = intent.getParcelableExtra(EXTRA_VCARD_URI) as? Uri
-        if (vCardUri != null) {
-            setupOptionsMenu(vCardUri)
-            parseVCardFromUri(this, vCardUri) {
-                runOnUiThread {
-                    setupContactsList(it)
-                }
+    private fun card(wrapper: VCardWrapper) = ContactCard(
+        name = wrapper.fullName.orEmpty(),
+        fields = wrapper.properties.filter { it.value.isNotEmpty() }.map { property ->
+            when (property.property) {
+                is Telephone -> CardField(property.type.ifEmpty { getString(R.string.phone_number) }, property.value, FieldAction.DIAL)
+                is Email -> CardField(property.type.ifEmpty { getString(org.fossify.commons.R.string.email) }, property.value, FieldAction.EMAIL)
+                is Organization -> CardField(getString(R.string.company), property.value)
+                else -> CardField(property.type, property.value)
             }
+        },
+    )
+
+    private fun open(field: CardField) {
+        when (field.action) {
+            FieldAction.DIAL -> dialNumber(field.value.normalizePhoneNumber())
+            FieldAction.EMAIL -> sendEmailIntent(field.value)
+            null -> Unit
         }
     }
 
-    override fun onResume() {
-        super.onResume()
-        setupSurfaceAppBar(binding.vcardAppbar)
-    }
-
-    private fun setupOptionsMenu(vCardUri: Uri) {
-        binding.vcardToolbar.setOnMenuItemClickListener { menuItem ->
-            when (menuItem.itemId) {
-                R.id.add_contact -> {
-                    val intent = Intent(Intent.ACTION_VIEW).apply {
-                        val mimetype = contentResolver.getType(vCardUri)
-                        setDataAndType(vCardUri, mimetype?.lowercase())
-                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                    }
-                    startActivity(intent)
-                }
-
-                else -> return@setOnMenuItemClickListener false
-            }
-            return@setOnMenuItemClickListener true
+    private fun save() {
+        val uri = uri ?: return
+        Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, contentResolver.getType(uri)?.lowercase())
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            launchActivityIntent(this)
         }
     }
 
-    private fun setupContactsList(vCards: List<VCard>) {
-        val items = prepareData(vCards)
-        val adapter = VCardViewerAdapter(this, items.toMutableList()) { item ->
-            val property = item as? VCardPropertyWrapper
-            if (property != null) {
-                handleClick(item)
-            }
-        }
-        binding.contactsList.adapter = adapter
-    }
-
-    private fun handleClick(property: VCardPropertyWrapper) {
-        when (property.property) {
-            is Telephone -> dialNumber(property.value.normalizePhoneNumber())
-            is Email -> sendEmailIntent(property.value)
-        }
-    }
-
-    private fun prepareData(vCards: List<VCard>): List<VCardWrapper> {
-        return vCards.map { vCard -> VCardWrapper.from(this, vCard) }
+    companion object {
+        const val EXTRA_VCARD_SOURCE = "vcard_source"
     }
 }
