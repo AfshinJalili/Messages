@@ -58,10 +58,12 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.dp
 import org.fossify.commons.extensions.normalizeString
 import org.fossify.messages.R
 import org.fossify.messages.ui.Avatar
+import org.fossify.messages.ui.ltr
 import org.fossify.messages.ui.components.AttentionNotice
 import org.fossify.messages.ui.components.Choice
 import org.fossify.messages.ui.components.ChoiceDialog
@@ -346,7 +348,7 @@ private fun LazyListScope.typedNumberRow(query: String, label: Int, onSubmit: ()
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Icon(painterResource(R.drawable.ic_lucide_send), contentDescription = null, tint = colors.primary, modifier = Modifier.size(22.dp))
-            Text(stringResource(label, typed), style = MaterialTheme.typography.titleMedium, color = colors.primary)
+            Text(stringResource(label, ltr(typed)), style = MaterialTheme.typography.titleMedium, color = colors.primary)
         }
     }
 }
@@ -403,7 +405,7 @@ private fun PersonRow(person: Person, onClick: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     val detail = when (person.phones.size) {
         0 -> ""
-        1 -> person.phones.first().let { if (it.label.isEmpty()) it.number else stringResource(R.string.detail_pair, it.label, it.number) }
+        1 -> person.phones.first().let { if (it.label.isEmpty()) ltr(it.number) else stringResource(R.string.detail_pair, it.label, ltr(it.number)) }
         else -> pluralStringResource(R.plurals.phone_numbers_count, person.phones.size, person.phones.size)
     }
     Row(
@@ -417,7 +419,7 @@ private fun PersonRow(person: Person, onClick: () -> Unit) {
     ) {
         Avatar(person.name, person.photoUri, isGroup = false, size = RowAvatarSize)
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(person.name, style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+            Text(person.name, style = MaterialTheme.typography.titleMedium.copy(textDirection = TextDirection.Content), color = colors.onSurface)
             if (detail.isNotEmpty()) Text(detail, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
         }
     }
