@@ -51,6 +51,8 @@
     <color name="open_line_error_container_dark">#4A2420</color>
     <color name="open_line_surface_high">#E5EBE7</color>
     <color name="open_line_surface_high_dark">#24403A</color>
+    <!-- Design screen 97: ink at 40% behind a lifted message. -->
+    <color name="open_line_lift_scrim">#66152621</color>
 
     <color name="message_sim_one">#2463EB</color>
     <color name="message_sim_two">#128147</color>

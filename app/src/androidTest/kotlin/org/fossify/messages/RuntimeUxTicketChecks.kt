@@ -195,7 +195,7 @@ class RuntimeUxTicketChecks {
                 awaitCondition("Both test notifications are present") {
                     manager.activeNotifications.map { it.id }.containsAll(listOf(threadId.hashCode(), otherNotificationId))
                 }
-                scenario.onActivity { captureThread(it, "msg15-unread-fab.png") }
+                Screenshots.capture("msg15-unread-fab")
                 compose.onNodeWithTag(THREAD_JUMP_TAG).performClick()
                 awaitCondition("A single tap reaches bottom, reads the visible message and removes the divider") {
                     var reached = false
@@ -207,7 +207,7 @@ class RuntimeUxTicketChecks {
                 }
                 assertTrue(manager.activeNotifications.none { it.id == threadId.hashCode() })
                 assertTrue("Unrelated notification is preserved", manager.activeNotifications.any { it.id == otherNotificationId })
-                scenario.onActivity { captureThread(it, "msg15-at-bottom.png") }
+                Screenshots.capture("msg15-at-bottom")
             }
         } finally {
             manager.cancel(threadId.hashCode())
@@ -215,14 +215,6 @@ class RuntimeUxTicketChecks {
             manager.deleteNotificationChannel(channelId)
             cleanup(threadId)
         }
-    }
-
-    private fun captureThread(activity: ThreadActivity, name: String) {
-        val view = activity.window.decorView
-        val bitmap = android.graphics.Bitmap.createBitmap(view.width, view.height, android.graphics.Bitmap.Config.ARGB_8888)
-        view.draw(android.graphics.Canvas(bitmap))
-        java.io.File(context.cacheDir, name).outputStream().use { bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
-        bitmap.recycle()
     }
 
     @Test fun msg16_selectedSmsAndMmsReadPreservesUnseenRows() {

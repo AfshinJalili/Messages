@@ -23,10 +23,11 @@ class DeletionChecks {
     @Test
     fun conversationStaysHiddenAcrossRefreshAndUndoSurvivesRecreation() {
         val context = instrumentation.targetContext
-        // Scheduled with a number no provider thread uses, so reconciliation keeps this Room-only row.
-        val fixture = Conversation(
-            Long.MAX_VALUE - 123, "Fixture", 1, true, "Fixture", "", false, "5550100987654", isScheduled = true,
+        val room = RoomOnlyThread(
+            context,
+            Conversation(Long.MAX_VALUE - 123, "Fixture", 1, true, "Fixture", "", false, "5550100987654", isScheduled = true),
         )
+        val fixture = room.conversation
         fun MainActivity.shows() = inboxRows.any { it.threadId == fixture.threadId }
         fun ActivityScenario<MainActivity>.await(message: String, timeoutMs: Long = 5000, condition: (MainActivity) -> Boolean) {
             val deadline = SystemClock.elapsedRealtime() + timeoutMs
@@ -37,7 +38,7 @@ class DeletionChecks {
             }
             check(met) { message }
         }
-        context.conversationsDB.insertOrUpdate(fixture)
+        room.insert()
         try {
             ActivityScenario.launch<MainActivity>(Intent(context, MainActivity::class.java)).use { scenario ->
                 // A cold start loads the owner's whole inbox first, which can take longer than the undo window.
@@ -62,7 +63,7 @@ class DeletionChecks {
                 check(context.conversationsDB.getConversationWithThreadId(fixture.threadId) != null) { "Undo must prevent the delete" }
             }
         } finally {
-            context.conversationsDB.deleteThreadId(fixture.threadId)
+            room.delete()
         }
     }
 
