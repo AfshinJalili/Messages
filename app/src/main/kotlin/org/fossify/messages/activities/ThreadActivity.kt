@@ -198,6 +198,7 @@ import org.fossify.messages.ui.message.DeliveryMark
 import org.fossify.messages.ui.message.MessageFacts
 import org.fossify.messages.ui.schedule.ScheduleTarget
 import org.fossify.messages.ui.OpenLineTheme
+import org.fossify.messages.ui.ltr
 import org.fossify.messages.ui.openLineDark
 import org.fossify.messages.ui.openLineTextScale
 import org.fossify.messages.helpers.ImageCompressor
@@ -691,7 +692,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
     private fun messageFacts(message: Message): MessageFacts {
         val received = message.isReceivedMessage()
         val sim = simLabels[message.subscriptionId]?.let { getString(R.string.message_sim_label, it) }
-        fun person(name: String, number: String) = if (name.isEmpty() || name == number) number else getString(R.string.detail_pair, name, number)
+        fun person(name: String, number: String) = if (name.isEmpty() || name == number) ltr(number) else getString(R.string.detail_pair, name, ltr(number))
         val others = message.participants.joinToString(", ") { person(it.name, it.phoneNumbers.firstOrNull()?.value.orEmpty()) }
         val you = listOfNotNull(getString(R.string.you), sim).joinToString(" · ")
         val time = DateTime(message.millis()).toString("${config.dateFormat} ${getTimeFormatWithSeconds()}")
