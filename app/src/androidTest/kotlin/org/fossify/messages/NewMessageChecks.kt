@@ -102,10 +102,15 @@ class NewMessageChecks {
     fun newMessagePagesAreCapturedInEveryVariant() {
         var variant by mutableStateOf(DesignVariant.LIGHT)
         compose.setContent { DesignVariantContent(variant) { NewMessageScreen(state, {}) } }
-        fun captureAll(name: String) = DesignVariant.entries.forEach {
-            variant = it
+        // Ends back in light English, so the next step can find its labels.
+        fun captureAll(name: String) {
+            DesignVariant.entries.forEach {
+                variant = it
+                compose.waitForIdle()
+                Screenshots.capture(name + it.suffix)
+            }
+            variant = DesignVariant.LIGHT
             compose.waitForIdle()
-            Screenshots.capture(name + it.suffix)
         }
         captureAll("05-new-message")
         compose.onNodeWithText(text(R.string.start_a_group)).performClick()
