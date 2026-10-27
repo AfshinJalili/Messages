@@ -59,6 +59,10 @@ sdk=$(adb shell getprop ro.build.version.sdk | tr -d '\r')
 
 echo "== preparing $serial"
 for s in window_animation_scale transition_animation_scale animator_duration_scale; do adb shell settings put global $s 0; done
+# A slow software-rendered emulator often reports the launcher as not responding; that system
+# dialog would sit over every screenshot. Hide error dialogs and close any already shown.
+adb shell settings put global hide_error_dialogs 1
+adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS >/dev/null 2>&1 || true
 adb shell input keyevent KEYCODE_WAKEUP
 adb shell wm dismiss-keyguard >/dev/null 2>&1 || true
 adb install -r -g app/build/outputs/apk/core/debug/*.apk >/dev/null
