@@ -168,7 +168,7 @@ class SpamPageChecks {
                 SpamScreen(SpamUiState(loading = false, messages = many), library, remember { SnackbarHostState() }, {})
             }
         }
-        fun firstTop() = compose.onNodeWithText("Offer number 1", substring = true).getUnclippedBoundsInRoot().top
+        fun firstTop() = compose.onNodeWithText("Offer number 1", substring = false).getUnclippedBoundsInRoot().top
         fun dragAt(x: Float) = compose.onRoot().performTouchInput {
             swipe(Offset(x, centerY + 150f), Offset(x, centerY - 150f), durationMillis = 400)
         }
