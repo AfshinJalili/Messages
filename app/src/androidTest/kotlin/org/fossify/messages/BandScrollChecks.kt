@@ -62,7 +62,8 @@ class BandScrollChecks {
         compose.onRoot().performTouchInput { swipeUp() }
         compose.waitForIdle()
         Screenshots.capture("80-band-collapsed")
-        compose.onRoot().performTouchInput { swipeDown(endY = centerY + 60f) }
+        // On the list, not the band: a finger moving down there scrolls the list up.
+        compose.onRoot().performTouchInput { swipeDown(startY = centerY - 200f, endY = centerY + 600f) }
         compose.waitForIdle()
         check(kotlin.math.abs((fieldTop() - open).value) < 1f) { "Scrolling up brings the band back" }
     }

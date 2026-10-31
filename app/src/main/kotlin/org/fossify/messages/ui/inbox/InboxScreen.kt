@@ -347,9 +347,10 @@ private fun IdentityBand(
                     else -> SearchField(onSearch)
                 }
             }
+            // The wrapper stays when search hides the title, so the layout always finds it.
+            Box(Modifier.layoutId(BandTitle)) {
             AnimatedVisibility(
                 visible = !search.open,
-                modifier = Modifier.layoutId(BandTitle),
                 enter = fadeIn(tween(SEARCH_TRANSITION_MS)) + expandVertically(tween(SEARCH_TRANSITION_MS)),
                 exit = fadeOut(tween(SEARCH_TRANSITION_MS)) + shrinkVertically(tween(SEARCH_TRANSITION_MS)),
             ) {
@@ -390,6 +391,7 @@ private fun IdentityBand(
                         Icon(painterResource(R.drawable.ic_lucide_search), stringResource(R.string.inbox_search_hint), tint = colors.onPrimaryContainer)
                     }
                 }
+            }
             }
         },
     ) { measurables, constraints ->
