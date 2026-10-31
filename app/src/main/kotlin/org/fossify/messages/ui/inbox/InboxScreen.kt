@@ -349,49 +349,49 @@ private fun IdentityBand(
             }
             // The wrapper stays when search hides the title, so the layout always finds it.
             Box(Modifier.layoutId(BandTitle)) {
-            AnimatedVisibility(
-                visible = !search.open,
-                enter = fadeIn(tween(SEARCH_TRANSITION_MS)) + expandVertically(tween(SEARCH_TRANSITION_MS)),
-                exit = fadeOut(tween(SEARCH_TRANSITION_MS)) + shrinkVertically(tween(SEARCH_TRANSITION_MS)),
-            ) {
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .background(colors.primaryContainer)
-                        .heightIn(min = 64.dp)
-                        .padding(start = 20.dp, end = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+                AnimatedVisibility(
+                    visible = !search.open,
+                    enter = fadeIn(tween(SEARCH_TRANSITION_MS)) + expandVertically(tween(SEARCH_TRANSITION_MS)),
+                    exit = fadeOut(tween(SEARCH_TRANSITION_MS)) + shrinkVertically(tween(SEARCH_TRANSITION_MS)),
                 ) {
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = colors.onPrimaryContainer,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier
-                            .weight(1f)
-                            .graphicsLayer {
-                                // Draw-only shrink from headline (31) to title-lg (25): no text layout per frame.
-                                val titleScale = BandTitleCollapsedScale + (1f - BandTitleCollapsedScale) * (1f - band.fraction)
-                                scaleX = titleScale
-                                scaleY = titleScale
-                                transformOrigin = TransformOrigin(if (rtl) 1f else 0f, 0.5f)
-                            }
-                            .semantics { heading() },
-                    )
-                    // 80: the search button arrives as the field leaves, so search is always one tap away.
-                    IconButton(
-                        onClick = onSearch,
-                        enabled = searchShown && !state.selecting,
-                        modifier = Modifier
-                            .graphicsLayer { alpha = if (state.selecting) 0f else band.fraction }
-                            // Not announced while it isn't there to tap.
-                            .then(if (searchShown && !state.selecting) Modifier else Modifier.clearAndSetSemantics {}),
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .background(colors.primaryContainer)
+                            .heightIn(min = 64.dp)
+                            .padding(start = 20.dp, end = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Icon(painterResource(R.drawable.ic_lucide_search), stringResource(R.string.inbox_search_hint), tint = colors.onPrimaryContainer)
+                        Text(
+                            text = title,
+                            style = MaterialTheme.typography.headlineMedium,
+                            color = colors.onPrimaryContainer,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier
+                                .weight(1f)
+                                .graphicsLayer {
+                                    // Draw-only shrink from headline (31) to title-lg (25): no text layout per frame.
+                                    val titleScale = BandTitleCollapsedScale + (1f - BandTitleCollapsedScale) * (1f - band.fraction)
+                                    scaleX = titleScale
+                                    scaleY = titleScale
+                                    transformOrigin = TransformOrigin(if (rtl) 1f else 0f, 0.5f)
+                                }
+                                .semantics { heading() },
+                        )
+                        // 80: the search button arrives as the field leaves, so search is always one tap away.
+                        IconButton(
+                            onClick = onSearch,
+                            enabled = searchShown && !state.selecting,
+                            modifier = Modifier
+                                .graphicsLayer { alpha = if (state.selecting) 0f else band.fraction }
+                                // Not announced while it isn't there to tap.
+                                .then(if (searchShown && !state.selecting) Modifier else Modifier.clearAndSetSemantics {}),
+                        ) {
+                            Icon(painterResource(R.drawable.ic_lucide_search), stringResource(R.string.inbox_search_hint), tint = colors.onPrimaryContainer)
+                        }
                     }
                 }
-            }
             }
         },
     ) { measurables, constraints ->
