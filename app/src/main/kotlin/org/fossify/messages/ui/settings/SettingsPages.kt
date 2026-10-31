@@ -2,6 +2,10 @@ package org.fossify.messages.ui.settings
 
 import android.text.format.DateFormat
 import androidx.compose.foundation.background
+import androidx.compose.ui.res.colorResource
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -68,6 +72,7 @@ import org.fossify.messages.ui.components.SwitchSetting
 private val ThemeCardHeight = 98.dp
 private val PreviewLineWidth = 62.dp
 private val PreviewLineHeight = 8.dp
+private val SwatchHeight = 28.dp
 private val LockPreviewIconSize = 20.dp
 
 private val dateFormats = listOf(
@@ -132,12 +137,6 @@ internal fun AppearancePage(state: SettingsUiState, onEvent: (SettingsEvent) -> 
         onCheckedChange = { onEvent(SettingsEvent.SetUse24Hour(it)) },
         icon = R.drawable.ic_lucide_clock,
     )
-    NavigationSetting(
-        stringResource(R.string.color_accents),
-        onClick = { onEvent(SettingsEvent.CustomizeColors) },
-        icon = R.drawable.ic_lucide_palette,
-        value = state.accentSummary,
-    )
     when (picker) {
         Picker.FONT_SIZE -> ChoiceDialog(
             title = stringResource(R.string.text_size),
@@ -182,7 +181,6 @@ private fun fontSizeLabel(size: Int) = when (size) {
 @Composable
 private fun ThemeCard(theme: ThemeChoice, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val colors = MaterialTheme.colorScheme
-    val line: Color = if (theme == ThemeChoice.DARK) OpenLine.colors.accent else colors.primaryContainer
     Column(
         modifier
             .heightIn(min = ThemeCardHeight)
@@ -197,15 +195,50 @@ private fun ThemeCard(theme: ThemeChoice, selected: Boolean, onClick: () -> Unit
             style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
             color = if (selected) colors.onSecondaryContainer else colors.onSurface,
         )
-        Box(
-            Modifier
-                .width(PreviewLineWidth)
-                .heightIn(min = PreviewLineHeight)
-                .clip(MaterialTheme.shapes.extraSmall)
-                .background(line),
-        )
+        ThemeSwatch(theme)
         if (selected) {
             Icon(painterResource(R.drawable.ic_lucide_check), contentDescription = null, tint = colors.primary)
+        }
+    }
+}
+
+/**
+ * A small picture of the theme itself: a light page with a pine line, a dark page with a lime
+ * line, or the two side by side for System. Showing only the line colour read reversed, since the
+ * dark theme leads with the brighter colour.
+ */
+@Composable
+private fun ThemeSwatch(theme: ThemeChoice) {
+    @Composable
+    fun Page(dark: Boolean, modifier: Modifier) = Box(
+        modifier
+            .fillMaxHeight()
+            .background(colorResource(if (dark) R.color.surface_dark else R.color.surface_light))
+            .padding(horizontal = 6.dp),
+        contentAlignment = Alignment.CenterStart,
+    ) {
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .heightIn(min = PreviewLineHeight)
+                .clip(MaterialTheme.shapes.extraSmall)
+                .background(if (dark) OpenLine.colors.accent else colorResource(R.color.open_line_pine)),
+        )
+    }
+    Row(
+        Modifier
+            .width(PreviewLineWidth)
+            .height(SwatchHeight)
+            .clip(MaterialTheme.shapes.extraSmall)
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, MaterialTheme.shapes.extraSmall),
+    ) {
+        when (theme) {
+            ThemeChoice.LIGHT -> Page(dark = false, Modifier.weight(1f))
+            ThemeChoice.DARK -> Page(dark = true, Modifier.weight(1f))
+            ThemeChoice.SYSTEM -> {
+                Page(dark = false, Modifier.weight(1f))
+                Page(dark = true, Modifier.weight(1f))
+            }
         }
     }
 }

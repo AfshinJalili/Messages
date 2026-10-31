@@ -112,7 +112,6 @@ class SettingsActivity : ComposePageActivity() {
             ColorUtils.calculateLuminance(config.backgroundColor) < DARK_LUMINANCE -> ThemeChoice.DARK
             else -> ThemeChoice.LIGHT
         },
-        accentSummary = getString(R.string.color_accents_value),
         fontSize = config.fontSize,
         language = Locale.getDefault().displayLanguage,
         languagePicker = isTiramisuPlus(),
@@ -168,7 +167,6 @@ class SettingsActivity : ComposePageActivity() {
             is SettingsEvent.Open -> pages += event.page
             SettingsEvent.OpenBlockRules -> startActivity(Intent(this, BlockRulesActivity::class.java))
             is SettingsEvent.SetTheme -> setTheme(event.theme)
-            SettingsEvent.CustomizeColors -> startCustomizationActivity()
             is SettingsEvent.SetFontSize -> update { config.fontSize = event.size }.also { refreshTheme() }
             SettingsEvent.ChangeLanguage -> launchChangeAppLanguageIntent()
             is SettingsEvent.SetUseEnglish -> {

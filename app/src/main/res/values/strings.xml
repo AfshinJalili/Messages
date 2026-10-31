@@ -442,8 +442,6 @@
     <string name="text_size_value">%s · follows system size</string>
     <string name="date_and_time">Date &amp; time</string>
     <string name="use_24_hour_time">24-hour time</string>
-    <string name="color_accents">Color accents</string>
-    <string name="color_accents_value">For widgets and older screens · customize</string>
     <string name="settings_composer">Composer</string>
     <string name="setting_on">On</string>
     <string name="setting_off">Off</string>
