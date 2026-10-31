@@ -12,17 +12,11 @@ import org.fossify.messages.ui.search.SearchFilter
 import org.fossify.messages.ui.search.SEARCH_TRANSITION_MS
 import org.fossify.messages.models.SearchResult
 import android.content.res.Configuration
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.ui.semantics.CustomAccessibilityAction
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.background
@@ -70,7 +64,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -90,6 +83,17 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import org.fossify.messages.R
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.runtime.derivedStateOf
+import kotlin.math.roundToInt
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.layout.layoutId
+import androidx.compose.ui.layout.Layout
 import org.fossify.messages.ui.components.LocalListPane
 import org.fossify.messages.ui.components.ConversationRow
 import org.fossify.messages.ui.components.ConversationRowMaxWidth
@@ -112,7 +116,9 @@ private const val EXPANDED_WIDTH_DP = 600
 
 // Both controls share a minimum that grows with the text scale.
 private val BandControlHeight = 56.dp
-private enum class BandLayout { EXPANDED, COMPACT, COLLAPSED }
+private const val BandTitle = "band-title"
+private const val BandBody = "band-body"
+private const val BandTitleCollapsedScale = 25f / 31f
 
 @Composable
 fun InboxScreen(
@@ -148,21 +154,21 @@ fun InboxScreen(
             TopDestination.SETTINGS -> onSettings()
         }
     }
-    var scrolledDown by rememberSaveable { mutableStateOf(false) }
-    val searchOpen by rememberUpdatedState(search.open)
-    val scrollConnection = remember {
-        object : NestedScrollConnection {
-            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                if (!searchOpen && source == NestedScrollSource.UserInput && available.y != 0f) {
-                    scrolledDown = available.y < 0f
-                }
-                return Offset.Zero
-            }
-        }
-    }
     val configuration = LocalConfiguration.current
     val compactHeight = configuration.screenHeightDp < COMPACT_HEIGHT_DP
-    val collapsed = scrolledDown || configuration.screenHeightDp < 320 || LocalDensity.current.fontScale >= 1.5f
+    val forcedCollapsed = configuration.screenHeightDp < 320 || LocalDensity.current.fontScale >= 1.5f
+    // D01 / 80: the band follows the scroll; searching and selecting keep it open.
+    val band = rememberBandCollapse()
+    val linked by rememberUpdatedState(!search.open && !state.selecting && !forcedCollapsed && !compactHeight)
+    val scrollConnection = rememberBandScrollConnection(
+        band,
+        enabled = { linked },
+        canScroll = { listState.canScrollForward || listState.canScrollBackward },
+    )
+    LaunchedEffect(linked) { if (!linked) band.settle(open = true) }
+    // Derived, so the screen recomposes when the FAB should change, not on every scrolled pixel.
+    val bandCollapsed by remember(band) { derivedStateOf { band.fraction > BandCollapse.HALF } }
+    val collapsed = forcedCollapsed || bandCollapsed
     val showRail = (compactHeight || configuration.screenWidthDp >= EXPANDED_WIDTH_DP || LocalListPane.current) && !state.selecting
     Scaffold(
         modifier = modifier.imePadding(),
@@ -206,7 +212,7 @@ fun InboxScreen(
             } else {
                 Column(Modifier.weight(1f).nestedScroll(scrollConnection)) {
                     IdentityBand(
-                        state, compactHeight, collapsed, onSearch, onSelectAll, onClearSelection,
+                        state, compactHeight, forcedCollapsed, band, onSearch, onSelectAll, onClearSelection,
                         search, onSearchQuery, onSearchBack,
                     )
                     if (search.open) {
@@ -280,7 +286,8 @@ private fun InboxList(
 private fun IdentityBand(
     state: InboxUiState,
     compactHeight: Boolean,
-    collapsed: Boolean,
+    forcedCollapsed: Boolean,
+    band: BandCollapse,
     onSearch: () -> Unit,
     onSelectAll: () -> Unit,
     onClearSelection: () -> Unit,
@@ -300,87 +307,146 @@ private fun IdentityBand(
             pluralStringResource(R.plurals.inbox_new_messages, state.unreadMessages, state.unreadMessages)
         else -> stringResource(R.string.no_unread_conversations)
     }
-    val controls: @Composable () -> Unit = {
-        if (state.selecting) {
-            SelectionControls(onSelectAll, onClearSelection)
-        } else {
-            SearchField(onSearch)
-        }
-    }
     val bandModifier = Modifier
         .fillMaxWidth()
         .background(colors.primaryContainer)
         .windowInsetsPadding(WindowInsets.statusBars)
-
-    val layout = when {
-        search.open -> BandLayout.EXPANDED
-        collapsed -> BandLayout.COLLAPSED
-        compactHeight -> BandLayout.COMPACT
-        else -> BandLayout.EXPANDED
+    // Very short windows and very large text never have room for the full band.
+    if (!search.open && (forcedCollapsed || compactHeight)) {
+        StaticBar(state, title, if (forcedCollapsed) 64.dp else 104.dp, onSearch, onSelectAll, onClearSelection, bandModifier)
+        return
     }
-    AnimatedContent(
-        targetState = layout,
-        modifier = bandModifier,
-        transitionSpec = {
-            (fadeIn(tween(180)) togetherWith fadeOut(tween(120))) using SizeTransform(clip = true)
-        },
-        label = "inbox band",
-    ) { visibleLayout ->
-        if (visibleLayout != BandLayout.EXPANDED) {
-        Row(
-            Modifier.fillMaxWidth().heightIn(min = if (visibleLayout == BandLayout.COLLAPSED) 64.dp else 104.dp).padding(horizontal = 20.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(20.dp),
-        ) {
-            if (state.selecting) {
-                IconButton(onClick = onClearSelection) {
-                    Icon(painterResource(org.fossify.commons.R.drawable.ic_cross_vector), stringResource(org.fossify.commons.R.string.close), tint = colors.onPrimaryContainer)
+    val showSubtitle = !compactHeight && LocalConfiguration.current.screenWidthDp >= 360 && LocalDensity.current.fontScale < 1.5f
+    val searchShown by remember(band) { derivedStateOf { band.fraction > BandCollapse.HALF } }
+    val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+    Layout(
+        modifier = bandModifier.clipToBounds(),
+        content = {
+            // The collapsible part slides up under the title row, fading as it goes.
+            Column(
+                Modifier
+                    .layoutId(BandBody)
+                    .graphicsLayer { alpha = 1f - band.fraction }
+                    .padding(start = 20.dp, end = 20.dp, bottom = 20.dp),
+            ) {
+                AnimatedVisibility(
+                    visible = showSubtitle && !search.open,
+                    enter = fadeIn(tween(SEARCH_TRANSITION_MS)) + expandVertically(tween(SEARCH_TRANSITION_MS)),
+                    exit = fadeOut(tween(SEARCH_TRANSITION_MS)) + shrinkVertically(tween(SEARCH_TRANSITION_MS)),
+                ) {
+                    Text(
+                        subtitle,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = OpenLine.colors.onBandVariant,
+                        modifier = Modifier.padding(bottom = 12.dp),
+                    )
+                }
+                when {
+                    search.open -> SearchInput(search.query, onSearchQuery, onSearchBack)
+                    state.selecting -> SelectionControls(onSelectAll, onClearSelection)
+                    else -> SearchField(onSearch)
                 }
             }
-            Text(
-                text = title,
-                style = MaterialTheme.typography.headlineMedium,
-                color = colors.onPrimaryContainer,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier
-                    .weight(1f)
-                    .semantics { heading() },
-            )
-            if (state.selecting) {
-                TextButton(onClick = onSelectAll) {
-                    Text(stringResource(org.fossify.commons.R.string.select_all), style = MaterialTheme.typography.labelMedium, color = colors.onPrimaryContainer)
-                }
-            } else {
-                IconButton(onClick = onSearch) {
-                    Icon(painterResource(org.fossify.commons.R.drawable.ic_search_vector), stringResource(R.string.inbox_search_hint), tint = colors.onPrimaryContainer)
-                }
-            }
-        }
-        } else {
-        Column(
-            Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
             AnimatedVisibility(
                 visible = !search.open,
+                modifier = Modifier.layoutId(BandTitle),
                 enter = fadeIn(tween(SEARCH_TRANSITION_MS)) + expandVertically(tween(SEARCH_TRANSITION_MS)),
                 exit = fadeOut(tween(SEARCH_TRANSITION_MS)) + shrinkVertically(tween(SEARCH_TRANSITION_MS)),
             ) {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = colors.onPrimaryContainer,
-                    modifier = Modifier.semantics { heading() },
-                )
-                if (!compactHeight && LocalConfiguration.current.screenWidthDp >= 360 && LocalDensity.current.fontScale < 1.5f) {
-                    Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = OpenLine.colors.onBandVariant)
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .background(colors.primaryContainer)
+                        .heightIn(min = 64.dp)
+                        .padding(start = 20.dp, end = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = colors.onPrimaryContainer,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier
+                            .weight(1f)
+                            .graphicsLayer {
+                                // Draw-only shrink from headline (31) to title-lg (25): no text layout per frame.
+                                val titleScale = BandTitleCollapsedScale + (1f - BandTitleCollapsedScale) * (1f - band.fraction)
+                                scaleX = titleScale
+                                scaleY = titleScale
+                                transformOrigin = TransformOrigin(if (rtl) 1f else 0f, 0.5f)
+                            }
+                            .semantics { heading() },
+                    )
+                    // 80: the search button arrives as the field leaves, so search is always one tap away.
+                    IconButton(
+                        onClick = onSearch,
+                        enabled = searchShown && !state.selecting,
+                        modifier = Modifier
+                            .graphicsLayer { alpha = if (state.selecting) 0f else band.fraction }
+                            // Not announced while it isn't there to tap.
+                            .then(if (searchShown && !state.selecting) Modifier else Modifier.clearAndSetSemantics {}),
+                    ) {
+                        Icon(painterResource(R.drawable.ic_lucide_search), stringResource(R.string.inbox_search_hint), tint = colors.onPrimaryContainer)
+                    }
                 }
             }
-            }
-            if (search.open) SearchInput(search.query, onSearchQuery, onSearchBack) else controls()
+        },
+    ) { measurables, constraints ->
+        val loose = constraints.copy(minHeight = 0)
+        val titleRow = measurables.first { it.layoutId == BandTitle }.measure(loose)
+        val body = measurables.first { it.layoutId == BandBody }.measure(loose)
+        band.updateLimit(body.height.toFloat())
+        val offset = band.offsetPx.roundToInt()
+        val height = titleRow.height + (body.height + offset).coerceAtLeast(0)
+        layout(constraints.maxWidth, height) {
+            body.place(0, titleRow.height + offset)
+            // Placed second, so the body slides under it.
+            titleRow.place(0, 0)
         }
+    }
+}
+
+/** The fixed one-row bar for windows too short for the band (D09) and for text at 1.5×. */
+@Composable
+private fun StaticBar(
+    state: InboxUiState,
+    title: String,
+    minHeight: androidx.compose.ui.unit.Dp,
+    onSearch: () -> Unit,
+    onSelectAll: () -> Unit,
+    onClearSelection: () -> Unit,
+    modifier: Modifier,
+) {
+    val colors = MaterialTheme.colorScheme
+    Row(
+        modifier.heightIn(min = minHeight).padding(horizontal = 20.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(20.dp),
+    ) {
+        if (state.selecting) {
+            IconButton(onClick = onClearSelection) {
+                Icon(painterResource(org.fossify.commons.R.drawable.ic_cross_vector), stringResource(org.fossify.commons.R.string.close), tint = colors.onPrimaryContainer)
+            }
+        }
+        Text(
+            text = title,
+            style = MaterialTheme.typography.headlineMedium,
+            color = colors.onPrimaryContainer,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier
+                .weight(1f)
+                .semantics { heading() },
+        )
+        if (state.selecting) {
+            TextButton(onClick = onSelectAll) {
+                Text(stringResource(org.fossify.commons.R.string.select_all), style = MaterialTheme.typography.labelMedium, color = colors.onPrimaryContainer)
+            }
+        } else {
+            IconButton(onClick = onSearch) {
+                Icon(painterResource(org.fossify.commons.R.drawable.ic_search_vector), stringResource(R.string.inbox_search_hint), tint = colors.onPrimaryContainer)
+            }
         }
     }
 }
