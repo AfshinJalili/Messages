@@ -1,5 +1,14 @@
 package org.fossify.messages.ui.spam
 
+import org.fossify.messages.ui.components.UnreadDivider
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.distinctUntilChanged
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -87,35 +96,56 @@ sealed interface SpamEvent {
     data class NotSpam(val message: SpamReviewMessage) : SpamEvent
     data class BlockSender(val message: SpamReviewMessage) : SpamEvent
     data object DeleteAll : SpamEvent
+    /** These unread messages are on screen now; the activity marks them read. */
+    data class Seen(val ids: Set<Long>) : SpamEvent
 }
 
+/**
+ * [newIds] were unread when the page opened. They keep the "New messages" divider in place while
+ * they are read, as a conversation does.
+ */
 @Immutable
-data class SpamUiState(val loading: Boolean = true, val messages: List<SpamReviewMessage> = emptyList())
+data class SpamUiState(
+    val loading: Boolean = true,
+    val messages: List<SpamReviewMessage> = emptyList(),
+    val newIds: Set<Long> = emptySet(),
+)
 
 /** One line of the review timeline. */
 private sealed interface SpamLine {
     val key: String
 
     data class Day(val label: String, override val key: String) : SpamLine
+    data object NewDivider : SpamLine {
+        override val key get() = "new"
+    }
     data class Item(val message: SpamReviewMessage, val showSender: Boolean) : SpamLine {
         override val key get() = "m${message.id}"
     }
 }
 
-/** Days newest first; inside a day the messages read in order, the sender named once per run. */
-private fun timeline(messages: List<SpamReviewMessage>, dayOf: (Long) -> String): List<SpamLine> {
+/**
+ * Days newest first; inside a day the messages read in order, the sender named once per run. The
+ * "New messages" divider goes above the first message of [newIds] in that order.
+ */
+private fun timeline(messages: List<SpamReviewMessage>, newIds: Set<Long>, dayOf: (Long) -> String): List<SpamLine> {
     val calendar = Calendar.getInstance()
     fun dayKey(millis: Long) = calendar.run {
         timeInMillis = millis
         get(Calendar.YEAR) * 1000 + get(Calendar.DAY_OF_YEAR)
     }
-    return messages.groupBy { dayKey(it.date) }.toSortedMap(compareByDescending { it }).flatMap { (key, day) ->
+    val lines = messages.groupBy { dayKey(it.date) }.toSortedMap(compareByDescending { it }).flatMap { (key, day) ->
         val ordered = day.sortedBy { it.date }
         listOf<SpamLine>(SpamLine.Day(dayOf(ordered.first().date), "d$key")) +
             ordered.mapIndexed { index, message ->
                 SpamLine.Item(message, showSender = index == 0 || ordered[index - 1].threadId != message.threadId)
             }
     }
+    val first = lines.indexOfFirst { it is SpamLine.Item && it.message.id in newIds }
+    if (first < 0) return lines
+    // A divider straight after a day pill reads better above it.
+    val at = if (first > 0 && lines[first - 1] is SpamLine.Day) first - 1 else first
+    return lines.toMutableList().apply { add(at, SpamLine.NewDivider) }
 }
 
 /**
@@ -132,7 +162,9 @@ fun SpamScreen(
 ) {
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
-    val lines = remember(state.messages, configuration) { timeline(state.messages) { dayLabel(context, it) } }
+    val lines = remember(state.messages, state.newIds, configuration) { timeline(state.messages, state.newIds) { dayLabel(context, it) } }
+    val listState = rememberLazyListState()
+    SpamReadTracking(lines, state.newIds, listState, onEvent)
     var held by remember { mutableStateOf<Held?>(null) }
     var confirmBlock by remember { mutableStateOf<SpamReviewMessage?>(null) }
     var confirmDeleteAll by remember { mutableStateOf(false) }
@@ -155,6 +187,9 @@ fun SpamScreen(
             },
         ) {
             LazyColumn(
+                // The whole page scrolls; sized to its content, a drag beside the bubbles missed it.
+                modifier = Modifier.fillMaxSize(),
+                state = listState,
                 contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 20.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
@@ -173,6 +208,8 @@ fun SpamScreen(
                             is SpamLine.Day -> Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                                 DatePill(line.label)
                             }
+
+                            SpamLine.NewDivider -> UnreadDivider()
 
                             is SpamLine.Item -> SpamMessage(
                                 line,
@@ -227,6 +264,36 @@ fun SpamScreen(
             onDismiss = { confirmDeleteAll = false },
             destructive = true,
         )
+    }
+}
+
+/**
+ * As in a conversation: the page opens at the "New messages" divider, and unread spam counts as
+ * read once it has been on screen, which also clears the Spam badge.
+ */
+@Composable
+private fun SpamReadTracking(lines: List<SpamLine>, newIds: Set<Long>, listState: LazyListState, onEvent: (SpamEvent) -> Unit) {
+    val currentLines by rememberUpdatedState(lines)
+    val divider = lines.indexOf(SpamLine.NewDivider)
+    // Once per visit: each visit brings its own set of new messages.
+    var scrolledFor by rememberSaveable { mutableIntStateOf(0) }
+    LaunchedEffect(divider, newIds) {
+        val visit = newIds.hashCode()
+        if (divider >= 0 && newIds.isNotEmpty() && scrolledFor != visit) {
+            listState.scrollToItem(divider)
+            scrolledFor = visit
+        }
+    }
+    LaunchedEffect(listState) {
+        snapshotFlow {
+            val visible = listState.layoutInfo.visibleItemsInfo.map { it.index }.toSet()
+            currentLines.withIndex()
+                .filter { (index, line) -> index in visible && line is SpamLine.Item && !line.message.read }
+                .mapTo(HashSet()) { (it.value as SpamLine.Item).message.id }
+        }
+            .distinctUntilChanged()
+            .filter { it.isNotEmpty() }
+            .collect { onEvent(SpamEvent.Seen(it)) }
     }
 }
 

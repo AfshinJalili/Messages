@@ -1,5 +1,6 @@
 package org.fossify.messages.activities
 
+import org.fossify.messages.extensions.markMessageRead
 import android.content.Intent
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -27,6 +28,8 @@ import org.fossify.messages.ui.spam.SpamUiState
  */
 class BlockedMessagesActivity : ComposePageActivity() {
     private var state by mutableStateOf(SpamUiState())
+    // True from each visit until its first load, which fixes where "New messages" goes.
+    private var freshVisit = true
 
     @Composable
     override fun Page() {
@@ -35,15 +38,37 @@ class BlockedMessagesActivity : ComposePageActivity() {
 
     override fun onResume() {
         super.onResume()
+        freshVisit = true
         reload()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        freshVisit = true
     }
 
     override fun reload() {
         ensureBackgroundThread {
             val messages = runCatching { getSpamMessages() }.getOrDefault(emptyList())
                 .filter { it.id !in UndoDeletion.spam }
-            runOnUiThread { state = SpamUiState(loading = false, messages = messages) }
+            runOnUiThread {
+                val newIds = if (freshVisit) messages.filterNot { it.read }.mapTo(HashSet()) { it.id } else state.newIds
+                freshVisit = false
+                // Read on screen in this visit stays read even if Telephony hasn't caught up yet.
+                val seen = state.messages.filter { it.read }.mapTo(HashSet()) { it.id }
+                state = SpamUiState(
+                    loading = false,
+                    messages = messages.map { if (it.id in seen) it.copy(read = true) else it },
+                    newIds = newIds,
+                )
+            }
         }
+    }
+
+    private fun markSeen(ids: Set<Long>) {
+        state = state.copy(messages = state.messages.map { if (it.id in ids) it.copy(read = true) else it })
+        // Telephony is what the Spam badge counts, so this is what clears it.
+        ensureBackgroundThread { ids.forEach { markMessageRead(it, isMMS = false) } }
     }
 
     private fun onEvent(event: SpamEvent) {
@@ -54,6 +79,7 @@ class BlockedMessagesActivity : ComposePageActivity() {
             is SpamEvent.NotSpam -> restore(event.message)
             is SpamEvent.BlockSender -> ensureBackgroundThread { config.addSpamNumber(event.message.address) }
             SpamEvent.DeleteAll -> deleteWithUndo(state.messages)
+            is SpamEvent.Seen -> markSeen(event.ids)
         }
     }
 

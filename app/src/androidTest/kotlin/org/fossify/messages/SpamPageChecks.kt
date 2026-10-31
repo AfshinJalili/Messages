@@ -1,5 +1,7 @@
 package org.fossify.messages
 
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.test.onRoot
 import androidx.activity.ComponentActivity
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.getValue
@@ -140,6 +142,39 @@ class SpamPageChecks {
         page = 1
         compose.onNodeWithText(text(R.string.phrase_already_blocked)).assertExists()
         compose.onNodeWithText(text(R.string.no_current_match)).assertExists()
+    }
+
+    @Test
+    fun newSpamGetsTheDividerAndIsMarkedReadOnScreen() {
+        val unread = messages.map { if (it.id == 2L) it.copy(read = false) else it }
+        val events = mutableListOf<SpamEvent>()
+        compose.setContent {
+            OpenLineTheme(dark = false) {
+                SpamScreen(SpamUiState(loading = false, messages = unread, newIds = setOf(2L)), library, remember { SnackbarHostState() }, { events += it })
+            }
+        }
+        compose.onNodeWithText(text(R.string.new_messages)).assertExists()
+        compose.waitForIdle()
+        check(events.contains(SpamEvent.Seen(setOf(2L)))) { "Unread spam on screen must be reported seen: $events" }
+    }
+
+    @Test
+    fun aDragBesideTheBubblesScrolls() {
+        val many = (1L..40L).map { spam(100 + it, 9, "Sender $it", "Offer number $it", at(9, 0, daysAgo = 0) + it * 60_000) }
+        compose.setContent {
+            OpenLineTheme(dark = false) {
+                SpamScreen(SpamUiState(loading = false, messages = many), library, remember { SnackbarHostState() }, {})
+            }
+        }
+        compose.onNodeWithText("Offer number 1", substring = false).assertExists()
+        // Start at the far end edge, where no bubble reaches.
+        compose.onRoot().performTouchInput {
+            down(Offset(width - 8f, centerY + 200f))
+            moveBy(Offset(0f, -600f))
+            up()
+        }
+        compose.waitForIdle()
+        compose.onNodeWithText("Offer number 1", substring = false).assertDoesNotExist()
     }
 
     @Test
