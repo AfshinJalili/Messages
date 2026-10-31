@@ -43,7 +43,6 @@ data class ImportReview(
 @Immutable
 data class SettingsUiState(
     val theme: ThemeChoice = ThemeChoice.SYSTEM,
-    val accentSummary: String = "",
     val fontSize: Int = 1,
     val language: String = "",
     val languagePicker: Boolean = false,
@@ -80,7 +79,6 @@ sealed interface SettingsEvent {
     data class Open(val page: SettingsPage) : SettingsEvent
     data object OpenBlockRules : SettingsEvent
     data class SetTheme(val theme: ThemeChoice) : SettingsEvent
-    data object CustomizeColors : SettingsEvent
     data class SetFontSize(val size: Int) : SettingsEvent
     data object ChangeLanguage : SettingsEvent
     data class SetUseEnglish(val enabled: Boolean) : SettingsEvent
