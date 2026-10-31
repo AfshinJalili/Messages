@@ -1,5 +1,7 @@
 package org.fossify.messages
 
+import androidx.compose.ui.test.swipe
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.onRoot
 import androidx.activity.ComponentActivity
@@ -160,21 +162,27 @@ class SpamPageChecks {
 
     @Test
     fun aDragBesideTheBubblesScrolls() {
-        val many = (1L..40L).map { spam(100 + it, 9, "Sender $it", "Offer number $it", at(9, 0, daysAgo = 0) + it * 60_000) }
+        val many = (1L..40L).map { spam(100 + it, 9, "Sender", "Offer number $it", at(9, 0) + it * 60_000) }
         compose.setContent {
             OpenLineTheme(dark = false) {
                 SpamScreen(SpamUiState(loading = false, messages = many), library, remember { SnackbarHostState() }, {})
             }
         }
-        compose.onNodeWithText("Offer number 1", substring = false).assertExists()
-        // Start at the far end edge, where no bubble reaches.
-        compose.onRoot().performTouchInput {
-            down(Offset(width - 8f, centerY + 200f))
-            moveBy(Offset(0f, -600f))
-            up()
+        fun firstTop() = compose.onNodeWithText("Offer number 1", substring = true).getUnclippedBoundsInRoot().top
+        fun dragAt(x: Float) = compose.onRoot().performTouchInput {
+            swipe(Offset(x, centerY + 150f), Offset(x, centerY - 150f), durationMillis = 400)
         }
+        val start = firstTop()
+        // Control: on the bubbles the list scrolls.
+        dragAt(compose.onRoot().fetchSemanticsNode().size.width / 4f)
         compose.waitForIdle()
-        compose.onNodeWithText("Offer number 1", substring = false).assertDoesNotExist()
+        val afterBubbles = firstTop()
+        check(afterBubbles < start) { "A drag on the bubbles scrolls: $start → $afterBubbles" }
+        // Beside them, at the far end edge where no bubble reaches, it scrolls too.
+        dragAt(compose.onRoot().fetchSemanticsNode().size.width - 8f)
+        compose.waitForIdle()
+        val afterEdge = firstTop()
+        check(afterEdge < afterBubbles) { "A drag beside the bubbles scrolls: $afterBubbles → $afterEdge" }
     }
 
     @Test
