@@ -168,7 +168,8 @@ class SettingsActivity : ComposePageActivity() {
             SettingsEvent.OpenBlockRules -> startActivity(Intent(this, BlockRulesActivity::class.java))
             is SettingsEvent.SetTheme -> setTheme(event.theme)
             is SettingsEvent.SetFontSize -> update { config.fontSize = event.size }.also { refreshTheme() }
-            SettingsEvent.ChangeLanguage -> launchChangeAppLanguageIntent()
+            // The row only shows from Android 13, where per-app languages exist.
+            SettingsEvent.ChangeLanguage -> if (isTiramisuPlus()) launchChangeAppLanguageIntent()
             is SettingsEvent.SetUseEnglish -> {
                 config.useEnglish = event.enabled
                 // The language applies from the next start, as it always has here.

@@ -14,15 +14,6 @@ registries:
     url: "https://www.jitpack.io"
 
 updates:
-  - package-ecosystem: "bundler"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-    commit-message:
-      prefix: "chore"
-      prefix-development: "chore"
-      include: "scope"
-
   - package-ecosystem: "gradle"
     directory: "/"
     registries:

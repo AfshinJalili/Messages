@@ -45,10 +45,6 @@ data class Message(
         return generateStableId(type, key)
     }
 
-    fun getSelectionKey(): Int {
-        return (id xor (id ushr Int.SIZE_BITS)).toInt()
-    }
-
     companion object {
         fun areItemsTheSame(old: Message, new: Message): Boolean {
             return old.id == new.id && old.isMMS == new.isMMS

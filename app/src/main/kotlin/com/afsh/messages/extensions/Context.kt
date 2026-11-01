@@ -38,7 +38,6 @@ import org.fossify.commons.extensions.normalizeString
 import org.fossify.commons.extensions.notificationManager
 import org.fossify.commons.extensions.queryCursor
 import org.fossify.commons.extensions.showErrorToast
-import org.fossify.commons.extensions.toast
 import org.fossify.commons.extensions.trimToComparableNumber
 import org.fossify.commons.helpers.DAY_SECONDS
 import org.fossify.commons.helpers.MONTH_SECONDS
@@ -977,20 +976,6 @@ fun Context.insertNewSMS(
         newUri?.lastPathSegment?.toLong() ?: 0L
     } catch (_: Exception) {
         0L
-    }
-}
-
-fun Context.removeAllArchivedConversations(callback: (() -> Unit)? = null) {
-    ensureBackgroundThread {
-        try {
-            for (conversation in conversationsDB.getAllArchived()) {
-                deleteConversation(conversation.threadId)
-            }
-            toast(R.string.archive_emptied_successfully)
-            callback?.invoke()
-        } catch (_: Exception) {
-            toast(org.fossify.commons.R.string.unknown_error_occurred)
-        }
     }
 }
 

@@ -25,9 +25,10 @@ enum class DesignVariant(val suffix: String, val dark: Boolean, val locale: Loca
 @Composable
 fun DesignVariantContent(variant: DesignVariant, content: @Composable () -> Unit) {
     val base = LocalContext.current
-    val context = remember(variant) {
+    val baseConfiguration = LocalConfiguration.current
+    val context = remember(variant, baseConfiguration) {
         variant.locale?.let { locale ->
-            base.createConfigurationContext(Configuration(base.resources.configuration).apply { setLocale(locale) })
+            base.createConfigurationContext(Configuration(baseConfiguration).apply { setLocale(locale) })
         } ?: base
     }
     val direction = if (variant.locale != null) LayoutDirection.Rtl else LocalLayoutDirection.current
