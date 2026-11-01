@@ -19,7 +19,7 @@ A private, lightweight SMS/MMS client for Android.
 ## Build
 
 ```bash
-./gradlew :app:assembleCoreDebug
+./gradlew :app:assembleDebug
 ```
 
 How the project is run (workflow, roles, tests, the real-phone rules) is in [AGENTS.md](AGENTS.md).

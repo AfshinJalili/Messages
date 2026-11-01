@@ -1,8 +1,10 @@
 package com.afsh.messages.helpers
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.ComponentName
 import android.content.Context
+import androidx.window.WindowSdkExtensions
 import androidx.window.embedding.ActivityEmbeddingController
 import androidx.window.embedding.RuleController
 import androidx.window.embedding.SplitAttributes
@@ -41,8 +43,11 @@ object ListDetail {
             .build()
         RuleController.getInstance(context).addRule(rule)
         val density = context.resources.displayMetrics.density
-        try {
-            // A fixed-width list pane: the ratio follows the window.
+        // A fixed-width list pane: the ratio follows the window. Older window extensions keep the
+        // fallback ratio.
+        if (WindowSdkExtensions.getInstance().extensionVersion >= 2) {
+            // Lint does not see the version check above.
+            @SuppressLint("RequiresWindowSdk")
             SplitController.getInstance(context).setSplitAttributesCalculator { params ->
                 if (!params.areDefaultConstraintsSatisfied) return@setSplitAttributesCalculator params.defaultSplitAttributes
                 val widthDp = params.parentWindowMetrics.bounds.width() / density
@@ -50,8 +55,6 @@ object ListDetail {
                     .setSplitType(SplitAttributes.SplitType.ratio((LIST_PANE_DP / widthDp).coerceIn(0.1f, 0.9f)))
                     .build()
             }
-        } catch (_: UnsupportedOperationException) {
-            // Older window extensions: the fallback ratio applies.
         }
     }
 

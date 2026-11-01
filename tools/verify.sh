@@ -22,7 +22,7 @@ python3 tests/check_design_tokens.py > "$out/design-tokens.txt" 2>&1 || { failed
 python3 tests/check_inbox_database.py > "$out/inbox-database.txt" 2>&1 || { failed+=(inbox-database); tail -1 "$out/inbox-database.txt"; }
 
 echo "== build"
-./gradlew -q :app:assembleCoreDebug :app:assembleCoreDebugAndroidTest
+./gradlew -q :app:assembleDebug :app:assembleDebugAndroidTest
 
 emulators() { adb devices | awk '/^emulator-[0-9]+\tdevice/{print $1}'; }
 matching() { for e in $(emulators); do [ "$(adb -s "$e" emu avd name 2>/dev/null | head -n1 | tr -d '\r')" = "$AVD" ] && echo "$e"; done; true; }
@@ -65,8 +65,8 @@ adb shell settings put global hide_error_dialogs 1
 adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS >/dev/null 2>&1 || true
 adb shell input keyevent KEYCODE_WAKEUP
 adb shell wm dismiss-keyguard >/dev/null 2>&1 || true
-adb install -r -g app/build/outputs/apk/core/debug/*.apk >/dev/null
-adb install -r -g app/build/outputs/apk/androidTest/core/debug/*.apk >/dev/null
+adb install -r -g app/build/outputs/apk/debug/*.apk >/dev/null
+adb install -r -g app/build/outputs/apk/androidTest/debug/*.apk >/dev/null
 if [ "$sdk" -ge 29 ]; then adb shell cmd role add-role-holder android.app.role.SMS $APP 0
 else adb shell settings put secure sms_default_application $APP; adb shell appops set $APP WRITE_SMS allow; fi
 adb shell run-as $APP rm -rf files/screenshots

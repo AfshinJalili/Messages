@@ -57,12 +57,6 @@ interface ConversationsDao {
     @Query("SELECT * FROM conversations WHERE thread_id = :threadId")
     fun getConversationWithThreadId(threadId: Long): Conversation?
 
-    @Query("SELECT * FROM conversations WHERE read = 0")
-    fun getUnreadConversations(): List<Conversation>
-
-    @Query("SELECT * FROM conversations WHERE title LIKE :text")
-    fun getConversationsWithText(text: String): List<Conversation>
-
     @Query(
         """SELECT * FROM conversations WHERE $NOT_ALL_SPAM
         AND (title LIKE :pattern ESCAPE '\' OR phone_number LIKE :pattern ESCAPE '\')

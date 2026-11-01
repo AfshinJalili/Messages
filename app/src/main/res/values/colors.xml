@@ -10,7 +10,6 @@
     <color name="brand_on_container_dark">#DEE4FF</color>
     <color name="design_white">#FFFFFF</color>
     <color name="design_ink">#202124</color>
-    <color name="design_error">#B3261E</color>
 
     <!-- Commons configuration and XML widgets share these defaults. -->
     <color name="color_primary">@color/brand_cobalt</color>
@@ -25,9 +24,6 @@
     <color name="on_surface_light">@color/design_ink</color>
     <color name="surface_dark">@color/theme_dark_background_color</color>
     <color name="on_surface_dark">@color/theme_dark_text_color</color>
-    <color name="swipe_archive_background">@color/brand_cobalt</color>
-    <color name="swipe_delete_background">@color/design_error</color>
-    <color name="swipe_mute_background">@color/md_blue_grey_700</color>
 
     <!-- AFSH palette (design/afsh.pen). Compose screens map these to roles in AfshTheme. -->
     <color name="afsh_paper">#F1F5F1</color>
@@ -59,6 +55,4 @@
     <!-- Design screen 97: ink at 40% behind a lifted message. -->
     <color name="afsh_lift_scrim">#66152621</color>
 
-    <color name="message_sim_one">#2463EB</color>
-    <color name="message_sim_two">#128147</color>
 </resources>

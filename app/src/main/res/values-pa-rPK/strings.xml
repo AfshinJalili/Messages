@@ -1,18 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="type_a_message">سنہا لکھو…</string>
     <string name="message_not_sent_short">سنہا نہیں بھیجیا</string>
-    <string name="message_not_sent_touch_retry">نہیں بھیجیا۔ فیر کرن لئی چھوہوو۔</string>
     <string name="message_sending_error">«%s» نوں تہاڈے سنہا نہیں بھیجیا گیا اے</string>
     <string name="add_person">ویاکتی جوڑو</string>
     <string name="attachment">لگدا</string>
-    <string name="no_conversations_found">کوئی گل بات نہیں لبھی اے</string>
-    <string name="start_conversation">گل بات شروع کرو</string>
     <string name="reply">جواب دیو</string>
     <string name="show_character_counter">اکھراں دی گݨتی ویکھو</string>
     <string name="loading_messages">سنہے لوڈ کیتے جا رہے اے…</string>
-    <string name="no_reply_support">بھیجݨ والا جواب نہیں لیندے اے</string>
-    <string name="draft">کھرڑا</string>
     <string name="sending">بھیجیا جا رہا اے…</string>
     <string name="pin_conversation">سکھر تے لگو</string>
     <string name="unpin_conversation">لگݨ اُلٹاؤ</string>
@@ -24,13 +18,10 @@
     </plurals>
     <string name="new_conversation">گل بات کرو</string>
     <string name="add_contact_or_number">ویاکتی یا فون نمبر جوڑو…</string>
-    <string name="suggestions">سُجھے</string>
     <string name="scheduled_message">نیت سنہے</string>
     <string name="schedule_message">تالکا وچ سنیہا پایو</string>
-    <string name="schedule_send">بھیجݨ دی سمان سارݨی بݨاؤ</string>
     <string name="cancel_schedule_send">سماں دا بھیجݨ رد کرو</string>
     <string name="must_pick_time_in_the_future">بھوِکھ وچ سماں چݨیو</string>
-    <string name="update_message">سنیہا بدلو</string>
     <string name="send_now">ہݨے بھیجو</string>
     <string name="channel_received_sms">سنیہا لیا گیا</string>
     <string name="new_message">نواں سنیہا</string>
@@ -53,6 +44,4 @@
     <string name="import_messages">سنیہے ایمپورٹ کرو</string>
     <string name="import_sms">سنیہے ایمپورٹ کرو</string>
     <string name="import_mms">میڈیا دیاں سنیہے ایمپورٹ کرو</string>
-    <string name="no_option_selected">کجھ چیز چݨیو</string>
-    <string name="faq_3_title">ایس اَیپ وچ سنیہاں دا تالکا کیہ اے؟</string>
     </resources>

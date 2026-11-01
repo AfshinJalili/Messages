@@ -33,7 +33,7 @@ Also run the existing message-action and unread-navigation checks after changes 
 
 ### Results on 22 September 2026
 
-The app and test APK builds, `lintFossDebug`, design-token checks and diff checks passed. Lint retains 102 warnings with the existing baseline unchanged. The initial connected-device run passed eight tests: two date/footer checks, four message-action checks and two unaffected unread checks. The updated debug app is installed on the connected phone.
+The app and test APK builds, `lintDebug`, design-token checks and diff checks passed. Lint retains 102 warnings with the existing baseline unchanged. The initial connected-device run passed eight tests: two date/footer checks, four message-action checks and two unaffected unread checks. The updated debug app is installed on the connected phone.
 
 Native captures were inspected for message/footer placement. The tests also measure received, attachment-only and large RTL cards. A frame-by-frame comparison with Telegram and exhaustive photo/video, theme and SIM combinations were not performed.
 
