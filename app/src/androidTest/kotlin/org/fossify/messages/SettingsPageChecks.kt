@@ -41,7 +41,6 @@ class SettingsPageChecks {
 
     private val sample = SettingsUiState(
         theme = ThemeChoice.SYSTEM,
-        accentSummary = "",
         fontSize = 1,
         language = "English",
         languagePicker = true,

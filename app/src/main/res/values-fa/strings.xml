@@ -417,8 +417,6 @@
     <string name="text_size_value">%s · همراه با اندازهٔ نوشتهٔ گوشی</string>
     <string name="date_and_time">تاریخ و ساعت</string>
     <string name="use_24_hour_time">ساعت ۲۴ ساعته</string>
-    <string name="color_accents">رنگ برنامه</string>
-    <string name="color_accents_value">برای ابزارک‌ها و صفحه‌های قدیمی · قابل تغییر</string>
     <string name="settings_composer">نوار نوشتن</string>
     <string name="setting_on">روشن</string>
     <string name="setting_off">خاموش</string>
