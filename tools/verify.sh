@@ -8,7 +8,7 @@ SDK=${ANDROID_HOME:-${ANDROID_SDK_ROOT:-$HOME/Android/Sdk}}
 API=${API:-35}
 AVD=${AVD:-openline-api$API}
 IMAGE="system-images;android-$API;google_apis;x86_64"
-APP=org.fossify.messages.debug
+APP=com.afsh.messages.debug
 RUNNER=$APP.test/androidx.test.runner.AndroidJUnitRunner
 export PATH="$SDK/emulator:$SDK/platform-tools:$SDK/cmdline-tools/latest/bin:$PATH"
 
@@ -72,7 +72,7 @@ else adb shell settings put secure sms_default_application $APP; adb shell appop
 adb shell run-as $APP rm -rf files/screenshots
 
 classes=()
-for c in "$@"; do classes+=("org.fossify.messages.$c"); done
+for c in "$@"; do classes+=("com.afsh.messages.$c"); done
 args=()
 [ ${#classes[@]} -gt 0 ] && args=(-e class "$(IFS=,; echo "${classes[*]}")")
 

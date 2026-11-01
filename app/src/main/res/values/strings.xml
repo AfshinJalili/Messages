@@ -211,7 +211,7 @@
     <string name="message_sim_label">SIM %1$s</string>
     <string name="message_delivered">Delivered</string>
     <string name="message_sent">Sent</string>
-    <!-- Open Line inbox (Compose) -->
+    <!-- AFSH inbox (Compose) -->
     <string name="inbox_search_hint">Search messages</string>
     <string name="inbox_nav_inbox">Inbox</string>
     <string name="inbox_nav_library">Library</string>
@@ -233,7 +233,7 @@
         <item quantity="one">%d selected</item>
         <item quantity="other">%d selected</item>
     </plurals>
-    <!-- Open Line conversation (Compose) -->
+    <!-- AFSH conversation (Compose) -->
     <string name="thread_retry">Retry</string>
     <string name="thread_search_next">Next match</string>
     <plurals name="thread_new_count">
@@ -260,7 +260,7 @@
     <string name="library_recycle_description">Recently deleted, with a way back</string>
     <string name="library_principle_title">Your inbox stays personal.</string>
     <string name="library_principle_body">Nothing moves here without a clear action or rule.</string>
-    <!-- Open Line composer (Compose, design 11, 78, 79, 81) -->
+    <!-- AFSH composer (Compose, design 11, 78, 79, 81) -->
     <string name="composer_hint">Message</string>
     <string name="composer_hint_name">Message %s</string>
     <string name="composer_cant_reply">This sender can’t receive replies</string>
@@ -289,7 +289,7 @@
     <string name="attach_contact_text">Send a contact card</string>
     <string name="attach_send_later_text">Pick a time before sending</string>
 
-    <!-- Open Line global search, designs 03 / 04 / 53. -->
+    <!-- AFSH global search, designs 03 / 04 / 53. -->
     <string name="search_people">People</string>
     <string name="search_media">Media</string>
     <string name="search_photos">Photos</string>
@@ -392,7 +392,7 @@
     <string name="export_block_list">Export block list</string>
     <string name="have_a_block_list">Have a block list?</string>
     <string name="have_a_block_list_text">Choose a file to merge rules with this device.</string>
-    <string name="block_rules_file_name" translatable="false">open-line-block-rules.json</string>
+    <string name="block_rules_file_name" translatable="false">messages-block-rules.json</string>
     <string name="block_rules_exported">Block list exported</string>
     <string name="block_rules_imported">Added %s</string>
 
@@ -426,7 +426,7 @@
     <string name="privacy_information">Privacy information</string>
     <string name="privacy_information_text">Messages stay on this phone. The app needs no account and sends nothing anywhere but your carrier. Backups are files you create and keep yourself.</string>
     <string name="open_source_licenses">Open-source licenses</string>
-    <string name="open_source_licenses_text">Open Line is a fork of Fossify Messages (GPL-3.0). It uses Fossify Commons (GPL-3.0), Lucide icons (ISC), and the Funnel Sans, Atkinson Hyperlegible and Vazirmatn fonts (SIL Open Font License 1.1).</string>
+    <string name="open_source_licenses_text">AFSH Messages is a modified version of Fossify Messages (GPL-3.0). It uses Fossify Commons (GPL-3.0), Lucide icons (ISC), and the Funnel Sans, Atkinson Hyperlegible and Vazirmatn fonts (SIL Open Font License 1.1).</string>
     <string name="swipe_in_the_inbox">Swipe in the inbox</string>
     <string name="swipe_right">Swipe right</string>
     <string name="swipe_left">Swipe left</string>

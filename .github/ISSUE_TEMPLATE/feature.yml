@@ -13,7 +13,7 @@ body:
     id: design
     attributes:
       label: Design
-      description: Frames in design/open-line.pen, or "needs design" (then add the needs-design label)
+      description: Frames in design/afsh.pen, or "needs design" (then add the needs-design label)
   - type: textarea
     id: acceptance
     attributes:

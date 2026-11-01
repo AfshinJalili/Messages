@@ -6,9 +6,9 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-source = ROOT / "app/src/main/kotlin/org/fossify/messages"
+source = ROOT / "app/src/main/kotlin/com/afsh/messages"
 version = int(re.search(r"version = (\d+)", (source / "databases/MessagesDatabase.kt").read_text())[1])
-schema = json.loads((ROOT / f"app/schemas/org.fossify.messages.databases.MessagesDatabase/{version}.json").read_text())["database"]
+schema = json.loads((ROOT / f"app/schemas/com.afsh.messages.databases.MessagesDatabase/{version}.json").read_text())["database"]
 db = sqlite3.connect(":memory:")
 for entity in schema["entities"]:
     db.execute(entity["createSql"].replace("${TABLE_NAME}", entity["tableName"]))

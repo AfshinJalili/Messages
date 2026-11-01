@@ -1,10 +1,10 @@
-# Open Line design system
+# AFSH design system
 
 Personal messaging as a clear, living line between people. The inbox favors sender, latest meaning, and urgency over decorative conversation cards. Cool mineral paper, deep pine ink, sharp lime for new activity, lilac for media, coral for attention. A fine route line, round contact markers, flat slabs, and strong typography replace the current cobalt styling. No literal vintage hardware.
 
-The design source is `design/open-line.pen` (encrypted; edit only through the pen CLI or pencil MCP). PNG exports in `design/exports/` are previews only; the canvas is the truth. Screens are fixed 390 × 844 frames and the design decides open questions through issues labeled `design-gap`.
+The design source is `design/afsh.pen` (encrypted; edit only through the pen CLI or pencil MCP). PNG exports in `design/exports/` are previews only; the canvas is the truth. Screens are fixed 390 × 844 frames and the design decides open questions through issues labeled `design-gap`.
 
-Theme: `ui/OpenLineTheme.kt`. The palette lives in `res/values/colors.xml` (`open_line_*`) because `tests/check_design_tokens.py` rejects inline colors. Roles and type are in Kotlin. Light or dark follows the app's background setting. The Commons accent and custom colors do not apply to Compose screens. Fonts are bundled from google/fonts (OFL): Funnel Sans, Atkinson Hyperlegible, and Vazirmatn for RTL labels. Message content, previews, drafts, and search excerpts use Atkinson for Latin and Vazirmatn for Arabic-script runs regardless of app language, preserving weight and link styling. Content containing Arabic script uses 1.7em leading; other content uses 1.45em.
+Theme: `ui/AfshTheme.kt`. The palette lives in `res/values/colors.xml` (`afsh_*`) because `tests/check_design_tokens.py` rejects inline colors. Roles and type are in Kotlin. Light or dark follows the app's background setting. The Commons accent and custom colors do not apply to Compose screens. Fonts are bundled from google/fonts (OFL): Funnel Sans, Atkinson Hyperlegible, and Vazirmatn for RTL labels. Message content, previews, drafts, and search excerpts use Atkinson for Latin and Vazirmatn for Arabic-script runs regardless of app language, preserving weight and link styling. Content containing Arabic script uses 1.7em leading; other content uses 1.45em.
 
 ## Product idea
 
@@ -43,7 +43,7 @@ Every numbered phone frame is a fixed 390 × 844 design viewport. Long lists and
 
 ## Asset provenance
 
-`design/open-line.pen` contains fictional message content and names for visual demonstration.
+`design/afsh.pen` contains fictional message content and names for visual demonstration.
 
 The family-album image in the media message and full-screen viewer was generated in Pendev with this prompt:
 
@@ -58,7 +58,7 @@ The app bundles the design's fonts in `app/src/main/res/font/`, copied unmodifie
 
 ## Legacy XML screens
 
-Screens not yet moved to Compose still use the Fossify theme and this system. Android resources are the source of truth; this document does not keep a second palette or sizing table.
+Screens not yet moved to Compose still use the Fossify Commons theme and this system. Android resources are the source of truth; this document does not keep a second palette or sizing table.
 
 Android resources are the source of truth. This document describes how to use them; it does not maintain a second palette or a second sizing table.
 
@@ -70,7 +70,7 @@ Android resources are the source of truth. This document describes how to use th
 | Light and dark widget themes, shared component styles | `app/src/main/res/values/styles.xml` |
 | Component spacing, sizes and corner radii | `app/src/main/res/values/dimens.xml` |
 | Shared opacity and user-font-size multipliers | `app/src/main/res/values/design_values.xml` |
-| Runtime theme selection and API-compatible float resource access | `app/src/main/kotlin/org/fossify/messages/helpers/Design.kt` |
+| Runtime theme selection and API-compatible float resource access | `app/src/main/kotlin/com/afsh/messages/helpers/Design.kt` |
 | Launcher shape | `app/src/main/res/drawable/ic_launcher_foreground.xml` |
 
 ### Color

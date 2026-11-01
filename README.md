@@ -1,4 +1,4 @@
-# Open Line
+# AFSH Messages
 
 <img alt="Logo" src="graphics/icon.webp" width="120" />
 
@@ -14,7 +14,7 @@ A private, lightweight SMS/MMS client for Android.
 
 **Search and organization:** Archive conversations, star messages, use a recycle bin, and search across threads.
 
-**Modern UI:** The Open Line design: pine, lime and lilac on mineral paper, light and dark themes, Persian/RTL first-class, swipe actions. See [DESIGN.md](DESIGN.md).
+**Modern UI:** The AFSH design: pine, lime and lilac on mineral paper, light and dark themes, Persian/RTL first-class, swipe actions. See [DESIGN.md](DESIGN.md).
 
 ## Build
 

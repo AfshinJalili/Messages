@@ -26,7 +26,7 @@ This changes conversation presentation. It does not change SMS/MMS timestamps, s
 `ThreadDateChecks` covers calendar grouping, formatted labels, footer rendering, delivery changes and sticky date transitions with synthetic messages. Run with the debug app and test APK installed:
 
 ```sh
-adb shell am instrument --user 0 -w -e class org.fossify.messages.ThreadDateChecks org.fossify.messages.debug.test/androidx.test.runner.AndroidJUnitRunner
+adb shell am instrument --user 0 -w -e class com.afsh.messages.ThreadDateChecks com.afsh.messages.debug.test/androidx.test.runner.AndroidJUnitRunner
 ```
 
 Also run the existing message-action and unread-navigation checks after changes to the thread list. Device-rendered captures are useful for checking spacing, but do not by themselves prove Telegram pixel or motion parity.

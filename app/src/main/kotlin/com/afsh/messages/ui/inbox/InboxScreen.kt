@@ -1,0 +1,789 @@
+package com.afsh.messages.ui.inbox
+
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.layout.imePadding
+import com.afsh.messages.ui.search.SearchContent
+import com.afsh.messages.ui.search.SearchInput
+import com.afsh.messages.ui.search.SearchUiState
+import com.afsh.messages.ui.search.SearchFilter
+import com.afsh.messages.ui.search.SEARCH_TRANSITION_MS
+import com.afsh.messages.models.SearchResult
+import android.content.res.Configuration
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import com.afsh.messages.R
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.runtime.derivedStateOf
+import kotlin.math.roundToInt
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.layout.layoutId
+import androidx.compose.ui.layout.Layout
+import com.afsh.messages.ui.components.LocalListPane
+import com.afsh.messages.ui.components.ConversationRow
+import com.afsh.messages.ui.components.ConversationRowMaxWidth
+import com.afsh.messages.ui.components.PrimaryNavigation
+import com.afsh.messages.ui.components.SwipeGesture
+import com.afsh.messages.ui.components.SwipeTone
+import com.afsh.messages.ui.components.SwipeableRow
+import com.afsh.messages.ui.components.TopDestination
+import com.afsh.messages.ui.library.LibraryScreen
+import com.afsh.messages.helpers.InboxFilter
+import com.afsh.messages.helpers.SwipeAction
+import com.afsh.messages.models.Conversation
+import com.afsh.messages.ui.Afsh
+import com.afsh.messages.ui.AfshTheme
+import java.util.Calendar
+
+private val TargetSize = 48.dp
+private const val COMPACT_HEIGHT_DP = 480
+private const val EXPANDED_WIDTH_DP = 600
+
+// Both controls share a minimum that grows with the text scale.
+private val BandControlHeight = 56.dp
+private const val BandTitle = "band-title"
+private const val BandBody = "band-body"
+private const val BandTitleCollapsedScale = 25f / 31f
+
+@Composable
+fun InboxScreen(
+    state: InboxUiState,
+    snackbarHostState: SnackbarHostState,
+    onOpen: (InboxRow) -> Unit,
+    onToggleSelection: (InboxRow) -> Unit,
+    onSelectAll: () -> Unit,
+    onClearSelection: () -> Unit,
+    onAction: (InboxAction) -> Unit,
+    onSwipe: (InboxRow, SwipeAction) -> Unit,
+    onFilter: (InboxFilter) -> Unit,
+    onSearch: () -> Unit,
+    onNewMessage: () -> Unit,
+    onLibrary: (LibraryDestination) -> Unit,
+    onSettings: () -> Unit,
+    modifier: Modifier = Modifier,
+    search: SearchUiState = SearchUiState(),
+    onSearchQuery: (String) -> Unit = {},
+    onSearchFilter: (SearchFilter) -> Unit = {},
+    onSearchResult: (SearchResult) -> Unit = {},
+    onSearchBack: () -> Unit = {},
+    onSearchRetry: () -> Unit = {},
+    onRetryRefresh: () -> Unit = {},
+    libraryOpen: Boolean = false,
+    onLibraryTab: (Boolean) -> Unit = {},
+) {
+    val listState = rememberLazyListState()
+    val onDestination: (TopDestination) -> Unit = { destination ->
+        when (destination) {
+            TopDestination.INBOX -> onLibraryTab(false)
+            TopDestination.LIBRARY -> onLibraryTab(true)
+            TopDestination.SETTINGS -> onSettings()
+        }
+    }
+    val configuration = LocalConfiguration.current
+    val compactHeight = configuration.screenHeightDp < COMPACT_HEIGHT_DP
+    val forcedCollapsed = configuration.screenHeightDp < 320 || LocalDensity.current.fontScale >= 1.5f
+    // D01 / 80: the band follows the scroll; searching and selecting keep it open.
+    val band = rememberBandCollapse()
+    val linked by rememberUpdatedState(!search.open && !state.selecting && !forcedCollapsed && !compactHeight)
+    val scrollConnection = rememberBandScrollConnection(
+        band,
+        enabled = { linked },
+        canScroll = { listState.canScrollForward || listState.canScrollBackward },
+    )
+    LaunchedEffect(linked) { if (!linked) band.settle(open = true) }
+    // Derived, so the screen recomposes when the FAB should change, not on every scrolled pixel.
+    val bandCollapsed by remember(band) { derivedStateOf { band.fraction > BandCollapse.HALF } }
+    val collapsed = forcedCollapsed || bandCollapsed
+    val showRail = (compactHeight || configuration.screenWidthDp >= EXPANDED_WIDTH_DP || LocalListPane.current) && !state.selecting
+    Scaffold(
+        modifier = modifier.imePadding(),
+        containerColor = MaterialTheme.colorScheme.surface,
+        // With no bottom bar, the FAB, snackbar and list tail must clear the navigation bar themselves.
+        contentWindowInsets = if (showRail) WindowInsets.navigationBars else WindowInsets(0),
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        floatingActionButton = {
+            if (!state.selecting && !libraryOpen && !search.open) {
+                NewMessageButton(expanded = !collapsed, onClick = onNewMessage)
+            }
+        },
+        bottomBar = {
+            if (state.selecting) {
+                SelectionBar(state, onAction)
+            } else if (!showRail) {
+                PrimaryNavigation(if (libraryOpen) TopDestination.LIBRARY else TopDestination.INBOX, onDestination, unreadSpam = state.unreadSpam)
+            }
+        },
+    ) { padding ->
+        Row(
+            Modifier
+                .padding(padding)
+                .consumeWindowInsets(padding)
+        ) {
+            if (showRail) {
+                PrimaryNavigation(
+                    if (libraryOpen) TopDestination.LIBRARY else TopDestination.INBOX,
+                    onDestination,
+                    unreadSpam = state.unreadSpam,
+                    vertical = true,
+                )
+            }
+            if (libraryOpen) {
+                LibraryScreen(
+                    destinations = LibraryDestination.entries.filter { it.isAvailable(state) },
+                    unreadSpam = state.unreadSpam,
+                    onOpen = onLibrary,
+                    modifier = Modifier.weight(1f),
+                )
+            } else {
+                Column(Modifier.weight(1f).nestedScroll(scrollConnection)) {
+                    IdentityBand(
+                        state, compactHeight, forcedCollapsed, band, onSearch, onSelectAll, onClearSelection,
+                        search, onSearchQuery, onSearchBack,
+                    )
+                    if (search.open) {
+                        SearchContent(search, onSearchQuery, onSearchFilter, onSearchResult, onSearchRetry)
+                    } else {
+                        InboxList(state, listState, onOpen, onToggleSelection, onSwipe, onFilter, onRetryRefresh)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun InboxList(
+    state: InboxUiState,
+    listState: LazyListState,
+    onOpen: (InboxRow) -> Unit,
+    onToggleSelection: (InboxRow) -> Unit,
+    onSwipe: (InboxRow, SwipeAction) -> Unit,
+    onFilter: (InboxFilter) -> Unit,
+    onRetryRefresh: () -> Unit,
+) {
+    val sections = remember(state.rows) {
+        val now = Calendar.getInstance()
+        state.rows.groupBy { it.section(now) }
+    }
+    // Clears the extended FAB so the last row stays reachable.
+    LazyColumn(state = listState, contentPadding = PaddingValues(bottom = 88.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        item(key = "filters", contentType = "filters") {
+            FilterRow(state.filter, onFilter)
+        }
+        if (state.refreshFailed) {
+            item(key = "refresh-failed", contentType = "notice") {
+                RefreshFailedNotice(onRetryRefresh, Modifier.widthIn(max = 640.dp).fillMaxWidth().animateItem())
+            }
+        }
+        when {
+            state.loading -> item(key = "loading") { LoadingState() }
+            state.rows.isEmpty() -> item(key = "empty") { EmptyState(state.filter) }
+            else -> sections.forEach { (section, rows) ->
+                item(key = "section-${section.name}", contentType = "section") {
+                    SectionHeader(section, Modifier.widthIn(max = 640.dp).fillMaxWidth().animateItem())
+                }
+                items(rows, key = { it.threadId }, contentType = { "row" }) { row ->
+                    val selected = row.threadId in state.selected
+                    SwipeableRow(
+                        left = state.swipeLeft.gesture(),
+                        right = state.swipeRight.gesture(),
+                        enabled = !state.selecting,
+                        onSwipe = { towardsRight -> onSwipe(row, if (towardsRight) state.swipeRight else state.swipeLeft) },
+                        modifier = Modifier.widthIn(max = ConversationRowMaxWidth).fillMaxWidth().animateItem(),
+                    ) {
+                        ConversationRow(
+                            row = row,
+                            selected = selected,
+                            selecting = state.selecting,
+                            onClick = { if (state.selecting) onToggleSelection(row) else onOpen(row) },
+                            onLongClick = { onToggleSelection(row) },
+                            actions = rowActions(row, state.archiveAvailable) { onSwipe(row, it) },
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** Selection swaps the search field for same-height controls, so rows do not jump under the finger. */
+@Composable
+private fun IdentityBand(
+    state: InboxUiState,
+    compactHeight: Boolean,
+    forcedCollapsed: Boolean,
+    band: BandCollapse,
+    onSearch: () -> Unit,
+    onSelectAll: () -> Unit,
+    onClearSelection: () -> Unit,
+    search: SearchUiState,
+    onSearchQuery: (String) -> Unit,
+    onSearchBack: () -> Unit,
+) {
+    val colors = MaterialTheme.colorScheme
+    val title = if (state.selecting) {
+        pluralStringResource(R.plurals.inbox_selected, state.selected.size, state.selected.size)
+    } else {
+        stringResource(R.string.messages)
+    }
+    val subtitle = when {
+        state.selecting -> stringResource(R.string.inbox_selection_hint)
+        state.unreadMessages > 0 ->
+            pluralStringResource(R.plurals.inbox_new_messages, state.unreadMessages, state.unreadMessages)
+        else -> stringResource(R.string.no_unread_conversations)
+    }
+    val bandModifier = Modifier
+        .fillMaxWidth()
+        .background(colors.primaryContainer)
+        .windowInsetsPadding(WindowInsets.statusBars)
+    // Very short windows and very large text never have room for the full band.
+    if (!search.open && (forcedCollapsed || compactHeight)) {
+        StaticBar(state, title, if (forcedCollapsed) 64.dp else 104.dp, onSearch, onSelectAll, onClearSelection, bandModifier)
+        return
+    }
+    val showSubtitle = !compactHeight && LocalConfiguration.current.screenWidthDp >= 360 && LocalDensity.current.fontScale < 1.5f
+    val searchShown by remember(band) { derivedStateOf { band.fraction > BandCollapse.HALF } }
+    val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+    Layout(
+        modifier = bandModifier.clipToBounds(),
+        content = {
+            // The collapsible part slides up under the title row, fading as it goes.
+            Column(
+                Modifier
+                    .layoutId(BandBody)
+                    .graphicsLayer { alpha = 1f - band.fraction }
+                    .padding(start = 20.dp, end = 20.dp, bottom = 20.dp),
+            ) {
+                AnimatedVisibility(
+                    visible = showSubtitle && !search.open,
+                    enter = fadeIn(tween(SEARCH_TRANSITION_MS)) + expandVertically(tween(SEARCH_TRANSITION_MS)),
+                    exit = fadeOut(tween(SEARCH_TRANSITION_MS)) + shrinkVertically(tween(SEARCH_TRANSITION_MS)),
+                ) {
+                    Text(
+                        subtitle,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Afsh.colors.onBandVariant,
+                        modifier = Modifier.padding(bottom = 12.dp),
+                    )
+                }
+                when {
+                    search.open -> SearchInput(search.query, onSearchQuery, onSearchBack)
+                    state.selecting -> SelectionControls(onSelectAll, onClearSelection)
+                    else -> SearchField(onSearch)
+                }
+            }
+            // The wrapper stays when search hides the title, so the layout always finds it.
+            Box(Modifier.layoutId(BandTitle)) {
+                AnimatedVisibility(
+                    visible = !search.open,
+                    enter = fadeIn(tween(SEARCH_TRANSITION_MS)) + expandVertically(tween(SEARCH_TRANSITION_MS)),
+                    exit = fadeOut(tween(SEARCH_TRANSITION_MS)) + shrinkVertically(tween(SEARCH_TRANSITION_MS)),
+                ) {
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .background(colors.primaryContainer)
+                            .heightIn(min = 64.dp)
+                            .padding(start = 20.dp, end = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = title,
+                            style = MaterialTheme.typography.headlineMedium,
+                            color = colors.onPrimaryContainer,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier
+                                .weight(1f)
+                                .graphicsLayer {
+                                    // Draw-only shrink from headline (31) to title-lg (25): no text layout per frame.
+                                    val titleScale = BandTitleCollapsedScale + (1f - BandTitleCollapsedScale) * (1f - band.fraction)
+                                    scaleX = titleScale
+                                    scaleY = titleScale
+                                    transformOrigin = TransformOrigin(if (rtl) 1f else 0f, 0.5f)
+                                }
+                                .semantics { heading() },
+                        )
+                        // 80: the search button arrives as the field leaves, so search is always one tap away.
+                        IconButton(
+                            onClick = onSearch,
+                            enabled = searchShown && !state.selecting,
+                            modifier = Modifier
+                                .graphicsLayer { alpha = if (state.selecting) 0f else band.fraction }
+                                // Not announced while it isn't there to tap.
+                                .then(if (searchShown && !state.selecting) Modifier else Modifier.clearAndSetSemantics {}),
+                        ) {
+                            Icon(painterResource(R.drawable.ic_lucide_search), stringResource(R.string.inbox_search_hint), tint = colors.onPrimaryContainer)
+                        }
+                    }
+                }
+            }
+        },
+    ) { measurables, constraints ->
+        val loose = constraints.copy(minHeight = 0)
+        val titleRow = measurables.first { it.layoutId == BandTitle }.measure(loose)
+        val body = measurables.first { it.layoutId == BandBody }.measure(loose)
+        band.updateLimit(body.height.toFloat())
+        val offset = band.offsetPx.roundToInt()
+        val height = titleRow.height + (body.height + offset).coerceAtLeast(0)
+        layout(constraints.maxWidth, height) {
+            body.place(0, titleRow.height + offset)
+            // Placed second, so the body slides under it.
+            titleRow.place(0, 0)
+        }
+    }
+}
+
+/** The fixed one-row bar for windows too short for the band (D09) and for text at 1.5×. */
+@Composable
+private fun StaticBar(
+    state: InboxUiState,
+    title: String,
+    minHeight: androidx.compose.ui.unit.Dp,
+    onSearch: () -> Unit,
+    onSelectAll: () -> Unit,
+    onClearSelection: () -> Unit,
+    modifier: Modifier,
+) {
+    val colors = MaterialTheme.colorScheme
+    Row(
+        modifier.heightIn(min = minHeight).padding(horizontal = 20.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(20.dp),
+    ) {
+        if (state.selecting) {
+            IconButton(onClick = onClearSelection) {
+                Icon(painterResource(org.fossify.commons.R.drawable.ic_cross_vector), stringResource(org.fossify.commons.R.string.close), tint = colors.onPrimaryContainer)
+            }
+        }
+        Text(
+            text = title,
+            style = MaterialTheme.typography.headlineMedium,
+            color = colors.onPrimaryContainer,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier
+                .weight(1f)
+                .semantics { heading() },
+        )
+        if (state.selecting) {
+            TextButton(onClick = onSelectAll) {
+                Text(stringResource(org.fossify.commons.R.string.select_all), style = MaterialTheme.typography.labelMedium, color = colors.onPrimaryContainer)
+            }
+        } else {
+            IconButton(onClick = onSearch) {
+                Icon(painterResource(org.fossify.commons.R.drawable.ic_search_vector), stringResource(R.string.inbox_search_hint), tint = colors.onPrimaryContainer)
+            }
+        }
+    }
+}
+
+@Composable
+private fun SearchField(onClick: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    Surface(
+        onClick = onClick,
+        shape = MaterialTheme.shapes.medium,
+        color = colors.surfaceContainer,
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = BandControlHeight * LocalDensity.current.fontScale.coerceAtLeast(1f)),
+    ) {
+        Row(
+            Modifier.padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Icon(
+                painterResource(org.fossify.commons.R.drawable.ic_search_vector),
+                contentDescription = null,
+                tint = colors.onSurfaceVariant,
+                modifier = Modifier.size(24.dp),
+            )
+            Text(stringResource(R.string.inbox_search_hint), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+        }
+    }
+}
+
+@Composable
+private fun SelectionControls(onSelectAll: () -> Unit, onClearSelection: () -> Unit) {
+    val onBand = MaterialTheme.colorScheme.onPrimaryContainer
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .heightIn(min = BandControlHeight * LocalDensity.current.fontScale.coerceAtLeast(1f)),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        IconButton(onClick = onClearSelection) {
+            Icon(
+                painterResource(org.fossify.commons.R.drawable.ic_cross_vector),
+                contentDescription = stringResource(org.fossify.commons.R.string.close),
+                tint = onBand,
+            )
+        }
+        Box(Modifier.weight(1f))
+        TextButton(onClick = onSelectAll) {
+            Text(stringResource(org.fossify.commons.R.string.select_all), style = MaterialTheme.typography.labelMedium, color = onBand)
+        }
+    }
+}
+
+@Composable
+private fun FilterRow(current: InboxFilter, onFilter: (InboxFilter) -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
+            .padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 4.dp)
+            .selectableGroup(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        InboxFilter.entries.forEach { filter ->
+            val selected = filter == current
+            Box(
+                Modifier
+                    .heightIn(min = TargetSize)
+                    .clip(CircleShape)
+                    .background(if (selected) colors.primaryContainer else colors.surfaceContainer)
+                    .selectable(selected = selected, role = Role.Tab, onClick = { onFilter(filter) })
+                    .padding(horizontal = 16.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    stringResource(filter.label),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = if (selected) colors.onPrimaryContainer else colors.primary,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SectionHeader(section: InboxSection, modifier: Modifier = Modifier) {
+    Text(
+        text = stringResource(section.label).uppercase(),
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = modifier
+            .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 4.dp)
+            .semantics { heading() },
+    )
+}
+
+/** The panel a configured swipe reveals; [SwipeAction.NONE] reveals nothing. */
+private fun SwipeAction.gesture(): SwipeGesture? = when (this) {
+    SwipeAction.NONE -> null
+    SwipeAction.DELETE -> SwipeGesture(label, icon, SwipeTone.DESTRUCTIVE)
+    SwipeAction.MUTE -> SwipeGesture(label, icon, SwipeTone.QUIET)
+    SwipeAction.ARCHIVE -> SwipeGesture(label, icon, SwipeTone.PRIMARY)
+}
+
+/** TalkBack equivalents of the swipe actions, available whatever the swipe settings are. */
+@Composable
+private fun rowActions(row: InboxRow, archiveAvailable: Boolean, onAction: (SwipeAction) -> Unit): List<CustomAccessibilityAction> {
+    val archive = stringResource(R.string.archive)
+    val delete = stringResource(org.fossify.commons.R.string.delete)
+    val mute = stringResource(if (row.muted) R.string.unmute_conversation else R.string.mute_conversation)
+    return listOfNotNull(
+        CustomAccessibilityAction(archive) { onAction(SwipeAction.ARCHIVE); true }.takeIf { archiveAvailable },
+        CustomAccessibilityAction(delete) { onAction(SwipeAction.DELETE); true },
+        CustomAccessibilityAction(mute) { onAction(SwipeAction.MUTE); true },
+    )
+}
+
+/** 73 · Inbox / refresh failed (L8): inline, with Retry; the cached list stays below. No toast. */
+@Composable
+private fun RefreshFailedNotice(onRetry: () -> Unit, modifier: Modifier = Modifier) {
+    val colors = MaterialTheme.colorScheme
+    Row(
+        modifier
+            .padding(horizontal = 20.dp, vertical = 8.dp)
+            .clip(MaterialTheme.shapes.medium)
+            .background(colors.errorContainer)
+            .padding(start = 16.dp, top = 8.dp, end = 8.dp, bottom = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Icon(painterResource(R.drawable.ic_lucide_cloud_off), contentDescription = null, tint = colors.error, modifier = Modifier.size(20.dp))
+        Column(Modifier.weight(1f).semantics(mergeDescendants = true) {}, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(stringResource(R.string.refresh_failed_title), style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold), color = colors.onErrorContainer)
+            Text(stringResource(R.string.refresh_failed_text), style = MaterialTheme.typography.bodySmall, color = colors.onErrorContainer)
+        }
+        TextButton(
+            onClick = onRetry,
+            modifier = Modifier.heightIn(min = 48.dp),
+            shape = CircleShape,
+            colors = ButtonDefaults.textButtonColors(containerColor = colors.surfaceContainer, contentColor = colors.primary),
+            contentPadding = PaddingValues(horizontal = 16.dp),
+        ) {
+            Text(stringResource(R.string.retry), style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+        }
+    }
+}
+
+@Composable
+private fun LoadingState() {
+    Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        LinearProgressIndicator(
+            modifier = Modifier.fillMaxWidth(),
+            color = MaterialTheme.colorScheme.primary,
+            trackColor = MaterialTheme.colorScheme.outlineVariant,
+        )
+        Text(
+            stringResource(R.string.loading_messages),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun EmptyState(filter: InboxFilter) {
+    val colors = MaterialTheme.colorScheme
+    Column(
+        Modifier
+            .padding(20.dp)
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.medium)
+            .background(colors.secondaryContainer)
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Icon(
+            painterResource(if (filter == InboxFilter.UNREAD) R.drawable.ic_check_double_vector else R.drawable.ic_message_bubble),
+            contentDescription = null,
+            tint = colors.primary,
+            modifier = Modifier.size(34.dp),
+        )
+        Text(
+            stringResource(filter.emptyTitle()),
+            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
+            color = colors.onSecondaryContainer,
+        )
+        if (filter == InboxFilter.ALL) {
+            Text(stringResource(R.string.inbox_empty_text), style = MaterialTheme.typography.bodyMedium, color = colors.onSecondaryContainer)
+        }
+    }
+}
+
+@Composable
+private fun NewMessageButton(expanded: Boolean, onClick: () -> Unit) {
+    ExtendedFloatingActionButton(
+        onClick = onClick,
+        expanded = expanded,
+        containerColor = Afsh.colors.accent,
+        contentColor = Afsh.colors.onAccent,
+        shape = MaterialTheme.shapes.medium,
+        // Collapsed it shows only the icon, so the icon must carry the label for TalkBack.
+        icon = { Icon(painterResource(R.drawable.ic_message_bubble), contentDescription = if (expanded) null else stringResource(R.string.new_message)) },
+        text = { Text(stringResource(R.string.new_message), style = MaterialTheme.typography.labelLarge) },
+    )
+}
+
+@Composable
+private fun SelectionBar(state: InboxUiState, onAction: (InboxAction) -> Unit) {
+    val (bar, overflow) = remember(state.selected, state.rows, state.archiveAvailable) {
+        availableActions(state.selectedRows, state.archiveAvailable).splitForBar()
+    }
+    Surface(color = MaterialTheme.colorScheme.surfaceContainer) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .windowInsetsPadding(WindowInsets.navigationBars)
+                .padding(8.dp),
+        ) {
+            bar.forEach { action ->
+                ActionItem(action.icon, stringResource(action.label), { onAction(action) }, Modifier.weight(1f), destructive = action == InboxAction.DELETE)
+            }
+            if (overflow.isNotEmpty()) {
+                var open by remember { mutableStateOf(false) }
+                Box(Modifier.weight(1f)) {
+                    ActionItem(
+                        org.fossify.commons.R.drawable.ic_three_dots_vector,
+                        stringResource(org.fossify.commons.R.string.more_options),
+                        { open = true },
+                    )
+                    DropdownMenu(expanded = open, onDismissRequest = { open = false }, containerColor = MaterialTheme.colorScheme.surfaceContainer, shape = MaterialTheme.shapes.medium) {
+                        overflow.forEach { action ->
+                            DropdownMenuItem(
+                                text = { Text(stringResource(action.label)) },
+                                leadingIcon = { Icon(painterResource(action.icon), contentDescription = null, modifier = Modifier.size(20.dp)) },
+                                modifier = Modifier.heightIn(min = TargetSize),
+                                colors = androidx.compose.material3.MenuDefaults.itemColors(
+                                    textColor = if (action == InboxAction.BLOCK || action == InboxAction.DELETE) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+                                    leadingIconColor = if (action == InboxAction.BLOCK || action == InboxAction.DELETE) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                                ),
+                                onClick = {
+                                    open = false
+                                    onAction(action)
+                                },
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ActionItem(icon: Int, label: String, onClick: () -> Unit, modifier: Modifier = Modifier, destructive: Boolean = false) {
+    Column(
+        modifier
+            .fillMaxWidth()
+            .heightIn(min = 64.dp)
+            .clip(MaterialTheme.shapes.small)
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
+    ) {
+        Icon(painterResource(icon), contentDescription = null, tint = if (destructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
+        Text(
+            label,
+            style = MaterialTheme.typography.labelSmall,
+            color = if (destructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+            textAlign = TextAlign.Center,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+private fun previewRow(id: Long, title: String, snippet: String, minutesAgo: Int, read: Boolean, draft: String? = null, pinned: Boolean = false, muted: Boolean = false) =
+    InboxRow(
+        Conversation(
+            threadId = id,
+            snippet = snippet,
+            date = ((System.currentTimeMillis() / 1000) - minutesAgo * 60).toInt(),
+            read = read,
+            title = title,
+            photoUri = "",
+            isGroupConversation = false,
+            phoneNumber = "",
+        ),
+        draft = draft,
+        pinned = pinned,
+        muted = muted,
+    )
+
+private val previewState = InboxUiState(
+    rows = listOf(
+        previewRow(1, "Mina Farahani", "The train leaves at six.", 5, read = false, pinned = true),
+        previewRow(2, "Dad", "Photo • That’s the one!", 60, read = false),
+        previewRow(3, "Book club", "Thursday works for me", 60 * 24, read = true, draft = "Can you bring the tickets?", muted = true),
+        previewRow(4, "+98 912 555 0199", "Your verification code is 482913", 60 * 24 * 3, read = true),
+    ),
+    unreadMessages = 2,
+    unreadSpam = 3,
+    swipeLeft = SwipeAction.ARCHIVE,
+)
+
+@Composable
+private fun InboxPreviewContent(state: InboxUiState, dark: Boolean) {
+    AfshTheme(dark = dark) {
+        InboxScreen(
+            state = state,
+            snackbarHostState = remember { SnackbarHostState() },
+            onOpen = {}, onToggleSelection = {}, onSelectAll = {}, onClearSelection = {}, onAction = {},
+            onSwipe = { _, _ -> }, onFilter = {}, onSearch = {}, onNewMessage = {}, onLibrary = {}, onSettings = {},
+        )
+    }
+}
+
+@Preview(widthDp = 390, heightDp = 844)
+@Composable
+private fun InboxPreview() = InboxPreviewContent(previewState, dark = false)
+
+@Preview(widthDp = 390, heightDp = 844, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun InboxDarkPreview() = InboxPreviewContent(previewState, dark = true)
+
+@Preview(widthDp = 390, heightDp = 844, locale = "fa")
+@Composable
+private fun InboxRtlPreview() = InboxPreviewContent(previewState, dark = false)
+
+@Preview(widthDp = 390, heightDp = 844)
+@Composable
+private fun InboxSelectionPreview() = InboxPreviewContent(previewState.copy(selected = setOf(1, 2)), dark = false)
+
+@Preview(widthDp = 390, heightDp = 844)
+@Composable
+private fun InboxEmptyPreview() = InboxPreviewContent(InboxUiState(), dark = false)
