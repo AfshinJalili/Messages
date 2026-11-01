@@ -220,7 +220,7 @@ Add `SpamChecks.kt` next to `InboxChecks.kt`. Insert SMS through `insertNewSMS` 
 - Update `migration11to12`, which reads `BlockedMessagesDao`.
 
 ```sh
-adb shell am instrument --user 0 -w -e class org.fossify.messages.SpamChecks org.fossify.messages.debug.test/androidx.test.runner.AndroidJUnitRunner
+adb shell am instrument --user 0 -w -e class com.afsh.messages.SpamChecks com.afsh.messages.debug.test/androidx.test.runner.AndroidJUnitRunner
 ```
 
 Also run `InboxChecks`, `ReadStateChecks` and `DeletionChecks`. On a device, text the phone from a second phone using a blocked keyword and check that it gets no notification, does not appear in the inbox, appears on the Spam screen, and appears in Telephony (visible to another SMS app).

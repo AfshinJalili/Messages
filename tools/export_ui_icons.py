@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the Lucide interface icons used by design/open-line.pen as vector drawables.
+"""Generate the Lucide interface icons used by design/afsh.pen as vector drawables.
 
 Lucide (ISC) is not vendored. Point the script at an unpacked lucide-static package:
 

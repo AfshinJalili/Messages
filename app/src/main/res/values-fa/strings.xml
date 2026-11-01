@@ -116,7 +116,7 @@
     <string name="me">من</string>
     <string name="sender_only">فقط فرستنده</string>
     <string name="send_on_enter">ارسال پیام با کلید اینتر</string>
-    <!-- Fork additions and Open Line inbox -->
+    <!-- Fork additions and AFSH inbox -->
     <string name="spam_filters">فیلترهای هرزنامه</string>
     <string name="rule_filter_enable">هرزنامه‌های آشکار را بی‌صدا کن و به هرزنامه ببر (پیام‌ها نگه داشته می‌شوند، حذف نمی‌شوند)</string>
     <string name="spam_folder">هرزنامه</string>
@@ -265,7 +265,7 @@
     <string name="attach_contact_text">کارت مخاطب بفرستید</string>
     <string name="attach_send_later_text">پیش از ارسال، زمانی انتخاب کنید</string>
 
-    <!-- Open Line global search, designs 03 / 04 / 53. -->
+    <!-- AFSH global search, designs 03 / 04 / 53. -->
     <string name="search_people">افراد</string>
     <string name="search_media">رسانه</string>
     <string name="search_photos">عکس‌ها</string>
@@ -401,7 +401,7 @@
     <string name="privacy_information">اطلاعات حریم خصوصی</string>
     <string name="privacy_information_text">پیام‌ها روی همین گوشی می‌مانند. برنامه به حساب کاربری نیاز ندارد و جز به اپراتور شما چیزی نمی‌فرستد. پشتیبان‌ها فایل‌هایی هستند که خودتان می‌سازید و نگه می‌دارید.</string>
     <string name="open_source_licenses">مجوزهای متن‌باز</string>
-    <string name="open_source_licenses_text">Open Line انشعابی از Fossify Messages است (GPL-3.0). از Fossify Commons ‏(GPL-3.0)، آیکون‌های Lucide ‏(ISC) و قلم‌های Funnel Sans، Atkinson Hyperlegible و وزیرمتن (SIL Open Font License 1.1) استفاده می‌کند.</string>
+    <string name="open_source_licenses_text">پیام‌های AFSH نسخهٔ تغییریافتهٔ Fossify Messages است (GPL-3.0). از Fossify Commons ‏(GPL-3.0)، آیکون‌های Lucide ‏(ISC) و قلم‌های Funnel Sans، Atkinson Hyperlegible و وزیرمتن (SIL Open Font License 1.1) استفاده می‌کند.</string>
     <string name="swipe_in_the_inbox">کشیدن در صندوق</string>
     <string name="swipe_right">کشیدن به راست</string>
     <string name="swipe_left">کشیدن به چپ</string>

@@ -296,7 +296,7 @@
             android:enabled="true"
             android:exported="true">
             <intent-filter>
-                <action android:name="org.fossify.messages.action.mark_as_read" />
+                <action android:name="com.afsh.messages.action.mark_as_read" />
             </intent-filter>
         </receiver>
 
@@ -305,7 +305,7 @@
             android:enabled="true"
             android:exported="true">
             <intent-filter>
-                <action android:name="org.fossify.messages.action.reply" />
+                <action android:name="com.afsh.messages.action.reply" />
             </intent-filter>
         </receiver>
 
@@ -319,7 +319,7 @@
             android:enabled="true"
             android:exported="true">
             <intent-filter>
-                <action android:name="org.fossify.messages.action.delete" />
+                <action android:name="com.afsh.messages.action.delete" />
             </intent-filter>
         </receiver>
 
