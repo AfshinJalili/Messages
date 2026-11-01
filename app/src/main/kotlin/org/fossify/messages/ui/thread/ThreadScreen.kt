@@ -1,5 +1,6 @@
 package org.fossify.messages.ui.thread
 
+import org.fossify.messages.ui.components.UnreadDivider
 import android.content.res.Configuration
 import android.text.format.DateFormat
 import androidx.compose.animation.core.Animatable
@@ -1102,32 +1103,6 @@ private fun DatePill(seconds: Int, modifier: Modifier = Modifier) {
     val label = remember(seconds) { ThreadDates.label(seconds) }
     Box(modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
         DatePill(label)
-    }
-}
-
-@Composable
-private fun UnreadDivider() {
-    val colors = MaterialTheme.colorScheme
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Box(
-            Modifier
-                .weight(1f)
-                .height(1.dp)
-                .background(colors.outlineVariant)
-        )
-        Text(stringResource(R.string.new_messages), style = MaterialTheme.typography.labelMedium, color = colors.onSurfaceVariant)
-        Box(
-            Modifier
-                .weight(1f)
-                .height(1.dp)
-                .background(colors.outlineVariant)
-        )
     }
 }
 

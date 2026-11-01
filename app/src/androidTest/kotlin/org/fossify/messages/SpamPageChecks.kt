@@ -1,5 +1,9 @@
 package org.fossify.messages
 
+import androidx.compose.ui.test.swipe
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.test.onRoot
 import androidx.activity.ComponentActivity
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.getValue
@@ -140,6 +144,46 @@ class SpamPageChecks {
         page = 1
         compose.onNodeWithText(text(R.string.phrase_already_blocked)).assertExists()
         compose.onNodeWithText(text(R.string.no_current_match)).assertExists()
+    }
+
+    @Test
+    fun newSpamGetsTheDividerAndIsMarkedReadOnScreen() {
+        val unread = messages.map { if (it.id == 2L) it.copy(read = false) else it }
+        val events = mutableListOf<SpamEvent>()
+        compose.setContent {
+            OpenLineTheme(dark = false) {
+                SpamScreen(SpamUiState(loading = false, messages = unread, newIds = setOf(2L)), library, remember { SnackbarHostState() }, { events += it })
+            }
+        }
+        compose.onNodeWithText(text(R.string.new_messages)).assertExists()
+        compose.waitForIdle()
+        check(events.contains(SpamEvent.Seen(setOf(2L)))) { "Unread spam on screen must be reported seen: $events" }
+    }
+
+    @Test
+    fun aDragBesideTheBubblesScrolls() {
+        val many = (1L..40L).map { spam(100 + it, 9, "Sender", "Offer number $it", at(9, 0) + it * 60_000) }
+        compose.setContent {
+            OpenLineTheme(dark = false) {
+                SpamScreen(SpamUiState(loading = false, messages = many), library, remember { SnackbarHostState() }, {})
+            }
+        }
+        // A row from the middle, so it stays on screen through both short drags.
+        fun firstTop() = compose.onNodeWithText("Offer number 6", substring = false).getUnclippedBoundsInRoot().top
+        fun dragAt(x: Float) = compose.onRoot().performTouchInput {
+            swipe(Offset(x, centerY + 60f), Offset(x, centerY - 60f), durationMillis = 400)
+        }
+        val start = firstTop()
+        // Control: on the bubbles the list scrolls.
+        dragAt(compose.onRoot().fetchSemanticsNode().size.width / 4f)
+        compose.waitForIdle()
+        val afterBubbles = firstTop()
+        check(afterBubbles < start) { "A drag on the bubbles scrolls: $start → $afterBubbles" }
+        // Beside them, at the far end edge where no bubble reaches, it scrolls too.
+        dragAt(compose.onRoot().fetchSemanticsNode().size.width - 8f)
+        compose.waitForIdle()
+        val afterEdge = firstTop()
+        check(afterEdge < afterBubbles) { "A drag beside the bubbles scrolls: $afterBubbles → $afterEdge" }
     }
 
     @Test
