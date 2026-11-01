@@ -168,9 +168,10 @@ class SpamPageChecks {
                 SpamScreen(SpamUiState(loading = false, messages = many), library, remember { SnackbarHostState() }, {})
             }
         }
-        fun firstTop() = compose.onNodeWithText("Offer number 1", substring = false).getUnclippedBoundsInRoot().top
+        // A row from the middle, so it stays on screen through both short drags.
+        fun firstTop() = compose.onNodeWithText("Offer number 6", substring = false).getUnclippedBoundsInRoot().top
         fun dragAt(x: Float) = compose.onRoot().performTouchInput {
-            swipe(Offset(x, centerY + 150f), Offset(x, centerY - 150f), durationMillis = 400)
+            swipe(Offset(x, centerY + 60f), Offset(x, centerY - 60f), durationMillis = 400)
         }
         val start = firstTop()
         // Control: on the bubbles the list scrolls.
