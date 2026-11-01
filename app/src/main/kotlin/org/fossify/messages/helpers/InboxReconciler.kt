@@ -1,5 +1,6 @@
 package org.fossify.messages.helpers
 
+import org.fossify.messages.extensions.getMessagesDB
 import android.content.Context
 import org.fossify.commons.extensions.getMyContactsCursor
 import org.fossify.commons.extensions.showErrorToast
@@ -46,44 +47,48 @@ object InboxReconciler {
                 val conversationsById = conversations.associateBy { it.threadId }
                 val conversationsByNumber = conversations.asReversed().associateBy { it.phoneNumber }
 
-                conversations.forEach { clonedConversation ->
-                    if (cachedIds.add(clonedConversation.threadId)) {
-                        app.conversationsDB.insertOrUpdate(clonedConversation)
-                        if (!clonedConversation.isArchived) {
-                            cachedConversations.add(clonedConversation)
+                // One transaction for every write below, so the inbox re-queries once per reconcile
+                // instead of once per changed row.
+                app.getMessagesDB().runInTransaction {
+                    conversations.forEach { clonedConversation ->
+                        if (cachedIds.add(clonedConversation.threadId)) {
+                            app.conversationsDB.insertOrUpdate(clonedConversation)
+                            if (!clonedConversation.isArchived) {
+                                cachedConversations.add(clonedConversation)
+                            }
                         }
                     }
-                }
 
-                allCached.forEach { cachedConversation ->
-                    val threadId = cachedConversation.threadId
-                    val isTemporaryThread = cachedConversation.isScheduled
-                    val isConversationDeleted = !conversationsById.containsKey(threadId)
-                    if (isConversationDeleted && !isTemporaryThread) {
-                        app.conversationsDB.deleteThreadId(threadId)
-                    }
-
-                    val newConversation = conversationsByNumber[cachedConversation.phoneNumber]
-                    if (isTemporaryThread && newConversation != null) {
-                        app.conversationsDB.deleteThreadId(threadId)
-                        app.messagesDB.getScheduledThreadMessages(threadId).forEach { message ->
-                            app.messagesDB.insertOrUpdate(message.copy(threadId = newConversation.threadId))
+                    allCached.forEach { cachedConversation ->
+                        val threadId = cachedConversation.threadId
+                        val isTemporaryThread = cachedConversation.isScheduled
+                        val isConversationDeleted = !conversationsById.containsKey(threadId)
+                        if (isConversationDeleted && !isTemporaryThread) {
+                            app.conversationsDB.deleteThreadId(threadId)
                         }
-                        app.insertOrUpdateConversation(newConversation, cachedConversation)
-                    }
-                }
 
-                cachedConversations.forEach { cachedConv ->
-                    val conv = conversationsById[cachedConv.threadId]?.takeIf {
-                        !Conversation.areContentsTheSame(old = cachedConv, new = it)
+                        val newConversation = conversationsByNumber[cachedConversation.phoneNumber]
+                        if (isTemporaryThread && newConversation != null) {
+                            app.conversationsDB.deleteThreadId(threadId)
+                            app.messagesDB.getScheduledThreadMessages(threadId).forEach { message ->
+                                app.messagesDB.insertOrUpdate(message.copy(threadId = newConversation.threadId))
+                            }
+                            app.insertOrUpdateConversation(newConversation, cachedConversation)
+                        }
                     }
-                    if (conv != null) {
-                        app.insertOrUpdateConversation(conv, cachedConv)
-                    }
-                }
 
-                cachedConversations.forEach { conversation ->
-                    app.clearExpiredScheduledMessages(conversation.threadId)
+                    cachedConversations.forEach { cachedConv ->
+                        val conv = conversationsById[cachedConv.threadId]?.takeIf {
+                            !Conversation.areContentsTheSame(old = cachedConv, new = it)
+                        }
+                        if (conv != null) {
+                            app.insertOrUpdateConversation(conv, cachedConv)
+                        }
+                    }
+
+                    cachedConversations.forEach { conversation ->
+                        app.clearExpiredScheduledMessages(conversation.threadId)
+                    }
                 }
 
                 try {

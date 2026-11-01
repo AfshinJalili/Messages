@@ -1,5 +1,6 @@
 package org.fossify.messages.helpers
 
+import org.fossify.messages.extensions.getMessagesDB
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
@@ -59,14 +60,14 @@ object InboxRepository {
         val app = resolveContext(context) ?: return
         ensureBackgroundThread {
             val counts = app.getUnreadCountsByThread()
-            val targets = if (threadIds.isEmpty()) {
-                app.conversationsDB.getNonArchived().map { it.threadId }
-            } else {
-                threadIds
-            }
-            targets.forEach { threadId ->
-                val count = counts[threadId] ?: 0
-                app.conversationsDB.updateUnreadCount(threadId, count)
+            val stored = app.conversationsDB.getUnreadCounts()
+            val wanted = threadIds.toHashSet()
+            // Only counts that changed, in one transaction: every UPDATE fires Room's invalidation
+            // even with the same value, and each one re-ran the inbox query and rebuilt the list.
+            val changed = stored.filter { (wanted.isEmpty() || it.threadId in wanted) && (counts[it.threadId] ?: 0) != it.unreadCount }
+            if (changed.isEmpty()) return@ensureBackgroundThread
+            app.getMessagesDB().runInTransaction {
+                changed.forEach { app.conversationsDB.updateUnreadCount(it.threadId, counts[it.threadId] ?: 0) }
             }
         }
     }

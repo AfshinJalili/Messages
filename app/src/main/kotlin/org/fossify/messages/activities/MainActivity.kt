@@ -111,6 +111,7 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
     private val searchRepository by lazy { SearchRepository(this) }
     private var inboxConversations = listOf<Conversation>()
     private var providerReconcileActive = false
+    private var resumedBefore = false
     // 73: the last provider refresh failed; cleared by the next one that succeeds.
     private var refreshFailed = false
     private var inboxFilter = InboxFilter.ALL
@@ -206,8 +207,13 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
         refreshDrafts()
         publish()
         checkShortcut()
-        // Debounced: give ThreadActivity read flushes time to reach Room before reconciling.
-        InboxRepository.refreshInbox(this)
+        // The first resume follows onCreate, whose initMessenger already reconciles and then
+        // refreshes the counts; a second full run right behind it only delayed the first screen.
+        if (resumedBefore) {
+            // Debounced: give ThreadActivity read flushes time to reach Room before reconciling.
+            InboxRepository.refreshInbox(this)
+        }
+        resumedBefore = true
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -393,6 +399,7 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
         val hidden = pendingSwipes.map { it.conversation.threadId }.toSet() + UndoDeletion.threads + archiving
         val present = inboxConversations.filter { it.threadId !in hidden }
         val pinned = config.pinnedConversations
+        val muted = config.mutedConversations
         val rows = present
             .filter { inboxFilter.matches(it) }
             .sortedForInbox(pinned)
@@ -401,7 +408,7 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
                     conversation = it,
                     draft = drafts[it.threadId],
                     pinned = it.threadId.toString() in pinned,
-                    muted = config.isConversationMuted(it.threadId),
+                    muted = it.threadId.toString() in muted,
                 )
             }
         val visibleIds = rows.map { it.threadId }.toSet()

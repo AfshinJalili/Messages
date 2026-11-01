@@ -1,5 +1,6 @@
 package org.fossify.messages.interfaces
 
+import org.fossify.messages.models.ThreadUnreadCount
 import androidx.lifecycle.LiveData
 import androidx.room.Dao
 import androidx.room.Insert
@@ -75,6 +76,10 @@ interface ConversationsDao {
 
     @Query("UPDATE conversations SET read = (:count = 0), unread_count = :count WHERE thread_id = :threadId")
     fun updateUnreadCount(threadId: Long, count: Int)
+
+    /** Every thread's stored unread count, without the inbox's per-row subqueries. */
+    @Query("SELECT thread_id, unread_count FROM conversations WHERE archived = 0")
+    fun getUnreadCounts(): List<ThreadUnreadCount>
 
     @Query("UPDATE conversations SET read = 0 WHERE thread_id = :threadId")
     fun markUnread(threadId: Long)
