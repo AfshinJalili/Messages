@@ -125,8 +125,9 @@ private sealed interface SpamLine {
 }
 
 /**
- * Days newest first; inside a day the messages read in order, the sender named once per run. The
- * "New messages" divider goes above the first message of [newIds] in that order.
+ * Oldest at the top and newest at the bottom, as in a conversation: one day pill where the day
+ * changes, the sender named once per run. The "New messages" divider goes above the first message
+ * of [newIds].
  */
 private fun timeline(messages: List<SpamReviewMessage>, newIds: Set<Long>, dayOf: (Long) -> String): List<SpamLine> {
     val calendar = Calendar.getInstance()
@@ -134,18 +135,23 @@ private fun timeline(messages: List<SpamReviewMessage>, newIds: Set<Long>, dayOf
         timeInMillis = millis
         get(Calendar.YEAR) * 1000 + get(Calendar.DAY_OF_YEAR)
     }
-    val lines = messages.groupBy { dayKey(it.date) }.toSortedMap(compareByDescending { it }).flatMap { (key, day) ->
-        val ordered = day.sortedBy { it.date }
-        listOf<SpamLine>(SpamLine.Day(dayOf(ordered.first().date), "d$key")) +
-            ordered.mapIndexed { index, message ->
-                SpamLine.Item(message, showSender = index == 0 || ordered[index - 1].threadId != message.threadId)
-            }
+    val lines = ArrayList<SpamLine>(messages.size + 8)
+    var lastDay = -1
+    var lastThread = -1L
+    // The id breaks ties, so messages stored in the same millisecond keep their arrival order.
+    messages.sortedWith(compareBy({ it.date }, { it.id })).forEach { message ->
+        val day = dayKey(message.date)
+        val newDay = day != lastDay
+        if (newDay) lines += SpamLine.Day(dayOf(message.date), "d$day")
+        lines += SpamLine.Item(message, showSender = newDay || message.threadId != lastThread)
+        lastDay = day
+        lastThread = message.threadId
     }
     val first = lines.indexOfFirst { it is SpamLine.Item && it.message.id in newIds }
     if (first < 0) return lines
     // A divider straight after a day pill reads better above it.
     val at = if (first > 0 && lines[first - 1] is SpamLine.Day) first - 1 else first
-    return lines.toMutableList().apply { add(at, SpamLine.NewDivider) }
+    return lines.apply { add(at, SpamLine.NewDivider) }
 }
 
 /**
@@ -162,7 +168,9 @@ fun SpamScreen(
 ) {
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
-    val lines = remember(state.messages, state.newIds, configuration) { timeline(state.messages, state.newIds) { dayLabel(context, it) } }
+    val lines = remember(state.loading, state.messages, state.newIds, configuration) {
+        if (state.loading) emptyList() else timeline(state.messages, state.newIds) { dayLabel(context, it) }
+    }
     val listState = rememberLazyListState()
     SpamReadTracking(lines, state.newIds, listState, onEvent)
     var held by remember { mutableStateOf<Held?>(null) }
@@ -268,24 +276,34 @@ fun SpamScreen(
 }
 
 /**
- * As in a conversation: the page opens at the "New messages" divider, and unread spam counts as
- * read once it has been on screen, which also clears the Spam badge.
+ * As in a conversation: the page opens at the newest message, or at the "New messages" divider
+ * when there is unread spam. Unread spam counts as read once it has been on screen, which also
+ * clears the Spam badge. Nothing is counted before that first jump, so the rows the list starts
+ * on for a frame are not marked read.
  */
 @Composable
 private fun SpamReadTracking(lines: List<SpamLine>, newIds: Set<Long>, listState: LazyListState, onEvent: (SpamEvent) -> Unit) {
     val currentLines by rememberUpdatedState(lines)
     val divider = lines.indexOf(SpamLine.NewDivider)
     // Once per visit: each visit brings its own set of new messages.
-    var scrolledFor by rememberSaveable { mutableIntStateOf(0) }
-    LaunchedEffect(divider, newIds) {
+    var scrolledFor by rememberSaveable { mutableStateOf<Int?>(null) }
+    var positioned by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(lines.isEmpty(), divider, newIds) {
+        if (lines.isEmpty()) return@LaunchedEffect
         val visit = newIds.hashCode()
-        if (divider >= 0 && newIds.isNotEmpty() && scrolledFor != visit) {
-            listState.scrollToItem(divider)
-            scrolledFor = visit
+        when {
+            divider >= 0 && newIds.isNotEmpty() && scrolledFor != visit -> {
+                listState.scrollToItem(divider)
+                scrolledFor = visit
+            }
+            // The first time there is something to show, start at the newest.
+            !positioned -> listState.scrollToItem(lines.lastIndex)
         }
+        positioned = true
     }
     LaunchedEffect(listState) {
-        snapshotFlow {
+        snapshotFlow<Set<Long>> {
+            if (!positioned) return@snapshotFlow emptySet()
             val visible = listState.layoutInfo.visibleItemsInfo.map { it.index }.toSet()
             currentLines.withIndex()
                 .filter { (index, line) -> index in visible && line is SpamLine.Item && !line.message.read }

@@ -7,11 +7,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import org.fossify.commons.helpers.ensureBackgroundThread
+import com.afsh.messages.R
 import com.afsh.messages.extensions.config
 import com.afsh.messages.extensions.deleteMessage
 import com.afsh.messages.extensions.getSpamMessages
 import com.afsh.messages.extensions.messagesDB
 import com.afsh.messages.helpers.InboxRepository
+import com.afsh.messages.helpers.containsNumber
 import com.afsh.messages.helpers.OPEN_SPAM
 import com.afsh.messages.helpers.THREAD_ID
 import com.afsh.messages.helpers.THREAD_TITLE
@@ -30,6 +32,8 @@ class BlockedMessagesActivity : ComposePageActivity() {
     private var state by mutableStateOf(SpamUiState())
     // True from each visit until its first load, which fixes where "New messages" goes.
     private var freshVisit = true
+    // Threads whose Not spam is waiting out its Undo; their markers are still in place.
+    private val restoring = HashSet<Long>()
 
     @Composable
     override fun Page() {
@@ -48,9 +52,10 @@ class BlockedMessagesActivity : ComposePageActivity() {
     }
 
     override fun reload() {
+        val skip = restoring.toSet()
         ensureBackgroundThread {
             val messages = runCatching { getSpamMessages() }.getOrDefault(emptyList())
-                .filter { it.id !in UndoDeletion.spam }
+                .filter { it.id !in UndoDeletion.spam && it.threadId !in skip }
             runOnUiThread {
                 val newIds = if (freshVisit) messages.filterNot { it.read }.mapTo(HashSet()) { it.id } else state.newIds
                 freshVisit = false
@@ -92,13 +97,34 @@ class BlockedMessagesActivity : ComposePageActivity() {
         }
     }
 
+    /**
+     * Not spam moves the sender's spam back to their conversation, with Undo. A sender on the app's
+     * block list is unblocked too; otherwise their next message would land here again.
+     */
     private fun restore(message: SpamReviewMessage) {
-        state = state.copy(messages = state.messages.filter { it.threadId != message.threadId })
-        ensureBackgroundThread {
-            messagesDB.deleteThreadSpamMarkers(message.threadId)
-            InboxRepository.refreshUnreadCounts(this, listOf(message.threadId))
-            runOnUiThread { reload() }
-        }
+        val threadId = message.threadId
+        val moved = state.messages.filter { it.threadId == threadId }
+        restoring += threadId
+        state = state.copy(messages = state.messages - moved.toSet())
+        offerUndo(
+            resources.getQuantityString(R.plurals.spam_restored, moved.size, moved.size),
+            onUndo = {
+                restoring -= threadId
+                reload()
+            },
+            onTimeout = {
+                ensureBackgroundThread {
+                    messagesDB.deleteThreadSpamMarkers(threadId)
+                    moved.map { it.address }.filter { it.isNotEmpty() && config.spamNumbers.containsNumber(it) }
+                        .distinct().forEach { config.removeSpamNumber(it) }
+                    InboxRepository.refreshUnreadCounts(this, listOf(threadId))
+                    runOnUiThread {
+                        restoring -= threadId
+                        reload()
+                    }
+                }
+            },
+        )
     }
 
     /** Deletes only the spam SMS; real messages in the same threads stay. */

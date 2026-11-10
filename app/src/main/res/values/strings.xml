@@ -194,6 +194,10 @@
         <item quantity="one">%d unread</item>
         <item quantity="other">%d unread</item>
     </plurals>
+    <plurals name="spam_restored">
+        <item quantity="one">%d message moved to the inbox</item>
+        <item quantity="other">%d messages moved to the inbox</item>
+    </plurals>
     <plurals name="spam_group_hidden">
         <item quantity="one">%d spam message hidden</item>
         <item quantity="other">%d spam messages hidden</item>

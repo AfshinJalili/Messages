@@ -174,6 +174,10 @@
         <item quantity="one">%d خوانده‌نشده</item>
         <item quantity="other">%d خوانده‌نشده</item>
     </plurals>
+    <plurals name="spam_restored">
+        <item quantity="one">%d پیام به صندوق منتقل شد</item>
+        <item quantity="other">%d پیام به صندوق منتقل شد</item>
+    </plurals>
     <plurals name="spam_group_hidden">
         <item quantity="one">%d پیام هرزنامه پنهان شده</item>
         <item quantity="other">%d پیام هرزنامه پنهان شده</item>

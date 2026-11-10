@@ -88,6 +88,12 @@ All hiding is derived at read time. Nothing on the `conversations` row records t
 
 `BlockedMessagesThread` changes from grouping by address to grouping by `threadId`.
 
+### Spam review order (November 2026)
+
+The Spam page reads like one conversation: oldest at the top, newest at the bottom, one day pill where the day changes, ties broken by SMS id. It opens at the newest message, or at the "New messages" divider when spam is unread. Nothing is marked read until that first jump, so rows shown for one frame are not cleared.
+
+"Not spam" on the page moves the thread's spam back to its conversation with Undo, and unblocks the sender if they are on the app's block list, so their next message does not go straight back to Spam. "Not spam" on messages inside a conversation unblocks the sender the same way.
+
 ### Removed
 
 `BlockedMessagesThreadActivity`, the `BlockedMessage` entity and `BlockedMessagesDao`, `BlockedMessage.toMessage`, `restoreBlockedMessage`, and the `blocked_thread_menu` resource.

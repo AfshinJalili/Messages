@@ -12,6 +12,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -161,6 +162,22 @@ class SpamPageChecks {
     }
 
     @Test
+    fun spamReadsOldestToNewestAndOpensAtTheNewest() {
+        // Spread over three days and handed over newest first, as getSpamMessages returns them.
+        val many = (1L..30L).map { spam(200 + it, it % 3, "Sender ${it % 3}", "Deal number $it", at(8, 0, daysAgo = 2) + it * 3_600_000) }
+            .sortedByDescending { it.date }
+        compose.setContent {
+            OpenLineTheme(dark = false) {
+                SpamScreen(SpamUiState(loading = false, messages = many), library, remember { SnackbarHostState() }, {})
+            }
+        }
+        compose.waitForIdle()
+        compose.onNodeWithText("Deal number 30").assertIsDisplayed()
+        fun top(text: String) = compose.onNodeWithText(text).getUnclippedBoundsInRoot().top
+        check(top("Deal number 29") < top("Deal number 30")) { "Newer spam goes below older spam" }
+    }
+
+    @Test
     fun aDragBesideTheBubblesScrolls() {
         val many = (1L..40L).map { spam(100 + it, 9, "Sender", "Offer number $it", at(9, 0) + it * 60_000) }
         compose.setContent {
@@ -168,22 +185,24 @@ class SpamPageChecks {
                 SpamScreen(SpamUiState(loading = false, messages = many), library, remember { SnackbarHostState() }, {})
             }
         }
-        // A row from the middle, so it stays on screen through both short drags.
-        fun firstTop() = compose.onNodeWithText("Offer number 6", substring = false).getUnclippedBoundsInRoot().top
+        compose.waitForIdle()
+        // The page opens at the newest, so drags go back toward older spam. A row near the end
+        // stays on screen through both short drags.
+        fun rowTop() = compose.onNodeWithText("Offer number 36", substring = false).getUnclippedBoundsInRoot().top
         fun dragAt(x: Float) = compose.onRoot().performTouchInput {
-            swipe(Offset(x, centerY + 60f), Offset(x, centerY - 60f), durationMillis = 400)
+            swipe(Offset(x, centerY - 60f), Offset(x, centerY + 60f), durationMillis = 400)
         }
-        val start = firstTop()
+        val start = rowTop()
         // Control: on the bubbles the list scrolls.
         dragAt(compose.onRoot().fetchSemanticsNode().size.width / 4f)
         compose.waitForIdle()
-        val afterBubbles = firstTop()
-        check(afterBubbles < start) { "A drag on the bubbles scrolls: $start → $afterBubbles" }
+        val afterBubbles = rowTop()
+        check(afterBubbles > start) { "A drag on the bubbles scrolls: $start → $afterBubbles" }
         // Beside them, at the far end edge where no bubble reaches, it scrolls too.
         dragAt(compose.onRoot().fetchSemanticsNode().size.width - 8f)
         compose.waitForIdle()
-        val afterEdge = firstTop()
-        check(afterEdge < afterBubbles) { "A drag beside the bubbles scrolls: $afterBubbles → $afterEdge" }
+        val afterEdge = rowTop()
+        check(afterEdge > afterBubbles) { "A drag beside the bubbles scrolls: $afterBubbles → $afterEdge" }
     }
 
     @Test
