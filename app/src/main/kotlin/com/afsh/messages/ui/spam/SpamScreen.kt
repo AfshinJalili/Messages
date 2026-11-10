@@ -62,6 +62,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.IntOffset
@@ -69,6 +71,7 @@ import androidx.compose.ui.unit.dp
 import org.fossify.commons.extensions.getTimeFormat
 import com.afsh.messages.R
 import com.afsh.messages.models.SpamReviewMessage
+import com.afsh.messages.models.SpamWhy
 import com.afsh.messages.ui.Afsh
 import com.afsh.messages.ui.components.ConfirmationDialog
 import com.afsh.messages.ui.components.DatePill
@@ -369,17 +372,40 @@ private fun Bubble(message: SpamReviewMessage, held: Boolean, modifier: Modifier
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
+        val ranges = message.why?.ranges.orEmpty()
+        val highlight = SpanStyle(background = colors.errorContainer, color = colors.onErrorContainer)
         Text(
-            remember(message.body) { AnnotatedString(message.body).withContentFonts() },
+            remember(message.body, ranges, highlight) { highlighted(message.body, ranges, highlight).withContentFonts() },
             style = MaterialTheme.typography.bodyLarge.forContent(message.body),
             color = colors.onSurface,
         )
-        Text(
-            time,
-            style = MaterialTheme.typography.bodySmall,
-            color = if (held) Afsh.colors.onSecondaryContainerVariant else colors.onSurfaceVariant,
-        )
+        val meta = if (held) Afsh.colors.onSecondaryContainerVariant else colors.onSurfaceVariant
+        message.why?.let { WhyLine(message.body, it, meta) }
+        Text(time, style = MaterialTheme.typography.bodySmall, color = meta)
     }
+}
+
+/** [body] with each matched range marked, so the words that sent it here stand out. */
+private fun highlighted(body: String, ranges: List<IntRange>, style: SpanStyle) = buildAnnotatedString {
+    append(body)
+    ranges.filter { it.first >= 0 && it.last < body.length }.forEach { addStyle(style, it.first, it.last + 1) }
+}
+
+/** Why it is here: the rule, then the words it matched, or that today's rules no longer match. */
+@Composable
+private fun WhyLine(body: String, why: SpamWhy, color: Color) {
+    val rule = stringResource(why.label)
+    val words = remember(body, why) { why.matchedWords(body) }
+    val text = when {
+        why.stale -> stringResource(R.string.spam_why_stale, rule)
+        words.isEmpty() -> stringResource(R.string.spam_why, rule)
+        else -> stringResource(R.string.spam_why_words, rule, words.joinToString(stringResource(R.string.spam_why_separator)) { "«$it»" })
+    }
+    Text(
+        remember(text) { AnnotatedString(text).withContentFonts() },
+        style = MaterialTheme.typography.bodySmall.forContent(text).copy(fontWeight = FontWeight.Bold),
+        color = color,
+    )
 }
 
 /**

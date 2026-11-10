@@ -44,6 +44,7 @@ class BlockRulesActivity : ComposePageActivity() {
             BlockRulesEvent.Back -> finish()
             BlockRulesEvent.OpenNumbers -> startActivity(Intent(this, BlockedNumbersActivity::class.java))
             BlockRulesEvent.MoveRules -> startActivity(Intent(this, MoveBlockRulesActivity::class.java))
+            BlockRulesEvent.OpenPatterns -> startActivity(Intent(this, SpamPatternsActivity::class.java))
             BlockRulesEvent.AddPhrase -> startActivity(AddBlockRuleActivity.intent(this, RuleKind.PHRASE))
             BlockRulesEvent.AddNumber -> startActivity(AddBlockRuleActivity.intent(this, RuleKind.NUMBER))
             is BlockRulesEvent.EditPhrase ->

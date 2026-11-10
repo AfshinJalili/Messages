@@ -71,7 +71,7 @@ class ThreadDateChecks {
     }
 
     private fun state() = ThreadUiState(
-        items = buildThreadItems(fixture(), isSpam = { false }, isHidden = { false }, isExpanded = { false }),
+        items = buildThreadItems(fixture(), isSpam = { false }, isHidden = { false }),
         simLabels = mapOf(1 to "1", 2 to "2"),
     )
 
