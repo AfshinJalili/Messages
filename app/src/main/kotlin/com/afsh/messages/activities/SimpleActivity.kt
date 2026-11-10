@@ -8,28 +8,28 @@ import com.afsh.messages.helpers.ScreenMotion
 import com.afsh.messages.helpers.cobaltTheme
 
 open class SimpleActivity : BaseSimpleActivity() {
-    /** How this screen opens and closes; null keeps the system's (the inbox is the root). */
-    protected open val screenMotion: ScreenMotion? = ScreenMotion.PUSH
+    /** Whether this screen opens and closes with [ScreenMotion]; the inbox, the task root, keeps the system's. */
+    protected open val usesScreenMotion = true
 
     open fun refreshAfterDeletion() {}
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        screenMotion?.applyTo(this)
+        if (usesScreenMotion) ScreenMotion.applyTo(this)
     }
 
     // Before Android 14 a screen cannot set its own motion, so the screen that opens it does.
-    // Starts that pass options already chose theirs; other apps keep the system's.
+    // Starts that pass options chose their own; other apps keep the system's.
     @Deprecated("Deprecated in Java")
     @Suppress("DEPRECATION")
     override fun startActivityForResult(intent: Intent, requestCode: Int, options: Bundle?) {
         super.startActivityForResult(intent, requestCode, options)
-        if (options == null && intent.component?.packageName == packageName) ScreenMotion.PUSH.afterStart(this)
+        if (options == null && intent.component?.packageName == packageName) ScreenMotion.afterStart(this)
     }
 
     override fun finish() {
         super.finish()
-        screenMotion?.afterFinish(this)
+        if (usesScreenMotion) ScreenMotion.afterFinish(this)
     }
 
     override fun onPostResume() {

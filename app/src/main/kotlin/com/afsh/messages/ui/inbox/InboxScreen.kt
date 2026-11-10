@@ -93,7 +93,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.layout.Layout
-import com.afsh.messages.ui.components.TabSwitch
+import com.afsh.messages.ui.components.ScreenStack
 import com.afsh.messages.ui.components.LocalListPane
 import com.afsh.messages.ui.components.ConversationRow
 import com.afsh.messages.ui.components.ConversationRowMaxWidth
@@ -214,8 +214,8 @@ fun InboxScreen(
                     vertical = true,
                 )
             }
-            // Inbox and Library cross-fade, like switching to Settings and back (#176).
-            TabSwitch(libraryOpen, Modifier.weight(1f)) { library ->
+            // Inbox and Library change with the same zoom as every other screen (#176).
+            ScreenStack(libraryOpen, depth = if (libraryOpen) 1 else 0, Modifier.weight(1f)) { library ->
                 if (library) {
                     LibraryScreen(
                         destinations = LibraryDestination.entries.filter { it.isAvailable(state) },
