@@ -209,8 +209,8 @@
     <string name="create_shortcut_pro">ساخت میانبر (Pro)</string>
     <string name="add_number_to_contact">افزودن شماره به مخاطب</string>
     <string name="view_contact_details">نمایش جزئیات مخاطب</string>
-    <string name="call_from_sim_1">تماس با سیم‌کارت 1</string>
-    <string name="call_from_sim_2">تماس با سیم‌کارت 2</string>
+    <string name="call_from_sim_1">تماس با سیم 1</string>
+    <string name="call_from_sim_2">تماس با سیم 2</string>
     <string name="move_to_top">جابه‌جایی به بالا</string>
     <string name="move_to_bottom">جابه‌جایی به پایین</string>
     <string name="send_sms">ارسال پیامک</string>

@@ -122,11 +122,11 @@
     <string name="search_in_conversation">جست‌وجو در گفت‌وگو</string>
     <string name="no_matching_messages">پیامی پیدا نشد</string>
     <string name="contact">مخاطب</string>
-    <string name="sim_chip">سیم‌کارت %d</string>
+    <string name="sim_chip">سیم %d</string>
     <string name="items_deleted">حذف شد</string>
     <string name="scroll_to_latest_message">رفتن به آخرین پیام</string>
     <string name="scroll_to_unread_messages">رفتن به پیام‌های خوانده‌نشده، %1$d پیام</string>
-    <string name="message_sim_label">سیم‌کارت %1$s</string>
+    <string name="message_sim_label">سیم %1$s</string>
     <string name="message_delivered">تحویل شد</string>
     <string name="message_sent">ارسال شد</string>
     <string name="inbox_search_hint">جست‌وجوی پیام‌ها</string>
@@ -186,7 +186,7 @@
     <string name="composer_cant_reply">این فرستنده نمی‌تواند پاسخ دریافت کند</string>
     <string name="composer_send_mms">ارسال به‌صورت ام‌ام‌اس</string>
     <string name="composer_send_later">ارسال در زمانی دیگر</string>
-    <string name="composer_change_sim">تغییر سیم‌کارت</string>
+    <string name="composer_change_sim">تغییر سیم</string>
     <string name="composer_remove_attachment">حذف پیوست</string>
     <string name="composer_sms_counter">%1$d نویسه مانده · %2$d پیامک</string>
     <string name="thread_automated_sender">فرستندهٔ خودکار</string>
@@ -425,7 +425,7 @@
     <string name="unmute">باصدا</string>
     <string name="open_contact">باز کردن مخاطب</string>
     <string name="people">افراد</string>
-    <string name="sim">سیم‌کارت</string>
+    <string name="sim">سیم</string>
     <string name="sim_default">پیش‌فرض گوشی</string>
     <string name="custom_notifications">اعلان سفارشی</string>
     <string name="custom_notifications_on">روشن · این گفت‌وگو صدای خودش را دارد</string>
