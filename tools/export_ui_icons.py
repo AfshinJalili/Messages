@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the Lucide interface icons used by design/open-line.pen as vector drawables.
+"""Generate the Lucide interface icons used by design/afsh.pen as vector drawables.
 
 Lucide (ISC) is not vendored. Point the script at an unpacked lucide-static package:
 
@@ -16,12 +16,12 @@ from pathlib import Path
 
 ICONS = [
     "archive", "arrow-left", "arrow-right", "ban", "bell", "bell-off", "calendar", "card-sim", "check", "check-check",
-    "chevron-down", "chevron-right", "circle-dot", "corner-down-left", "circle-help", "clock", "cloud-off", "contact", "copy",
-    "database-backup", "download", "ellipsis-vertical", "eye", "eye-off", "file-text", "hand", "hard-drive",
-    "hash", "image", "inbox", "info", "languages", "layers", "list-checks", "lock-keyhole", "mail", "message-circle",
-    "message-square-text", "messages-square", "palette", "paperclip", "pencil", "phone", "pin", "plus", "search", "send",
-    "settings", "share-2", "shield-alert", "shield-ban", "smartphone", "square-check", "square-pen", "star",
-    "text-cursor-input", "trash-2", "triangle-alert", "type", "upload", "user", "user-plus", "users", "volume-2", "x",
+    "chevron-right", "corner-down-left", "circle-help", "clock", "cloud-off", "contact", "copy",
+    "database-backup", "download", "ellipsis-vertical", "eye", "eye-off", "file-text", "hand",
+    "hash", "image", "inbox", "info", "languages", "layers", "lock-keyhole", "message-circle",
+    "message-square-text", "messages-square", "paperclip", "pencil", "phone", "pin", "plus", "search", "send",
+    "settings", "share-2", "shield-ban", "star",
+    "trash-2", "triangle-alert", "type", "upload", "user", "users", "volume-2", "x",
 ]
 
 # Direction-bearing glyphs flip under RTL.

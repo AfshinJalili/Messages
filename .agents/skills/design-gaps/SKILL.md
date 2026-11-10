@@ -1,6 +1,6 @@
 ---
 name: design-gaps
-description: Close one design-gap issue in design/open-line.pen with the pen CLI and the pen-dev skill, comment the screens and components changed on the issue, then stop for review. Use when working an issue labeled design-gap or editing the .pen file.
+description: Close one design-gap issue in design/afsh.pen with the pen CLI and the pen-dev skill, comment the screens and components changed on the issue, then stop for review. Use when working an issue labeled design-gap or editing the .pen file.
 ---
 
 # Design gaps
@@ -10,24 +10,24 @@ Close one gap on the canvas. Record where to review. Stop.
 ## Files
 
 - Work item: one GitHub issue labeled `design-gap` (`gh issue view <n>`). Its body holds Built as and Design needs to decide.
-- Canvas: `design/open-line.pen`. Screen map and tokens: `DESIGN.md`.
+- Canvas: `design/afsh.pen`. Screen map and tokens: `DESIGN.md`.
 
-The `.pen` file is encrypted. Read and edit it only through pen.dev. A Read or Grep of `design/open-line.pen` is not a design.
+The `.pen` file is encrypted. Read and edit it only through pen.dev. A Read or Grep of `design/afsh.pen` is not a design.
 
 ## Canvas
 
 `pen` and `pencil` are the same CLI. Design in interactive mode. A one-shot `pen --prompt` starts a second agent and is the wrong tool for this workflow.
 
-Prefer the pencil MCP when it is connected. Pass `filePath` `design/open-line.pen` on `execute`. Otherwise connect to the running app:
+Prefer the pencil MCP when it is connected. Pass `filePath` `design/afsh.pen` on `execute`. Otherwise connect to the running app:
 
 ```
-pen interactive --app desktop --in design/open-line.pen
+pen interactive --app desktop --in design/afsh.pen
 ```
 
 With no app open, headless mode writes the same file:
 
 ```
-pen interactive --in design/open-line.pen --out design/open-line.pen
+pen interactive --in design/afsh.pen --out design/afsh.pen
 ```
 
 Before any insert, load the pen-dev skill and read the document:

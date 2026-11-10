@@ -10,7 +10,6 @@
     <color name="brand_on_container_dark">#DEE4FF</color>
     <color name="design_white">#FFFFFF</color>
     <color name="design_ink">#202124</color>
-    <color name="design_error">#B3261E</color>
 
     <!-- Commons configuration and XML widgets share these defaults. -->
     <color name="color_primary">@color/brand_cobalt</color>
@@ -18,47 +17,42 @@
     <color name="color_accent">@color/brand_cobalt</color>
     <color name="default_primary_color">@color/brand_cobalt_dark</color>
     <color name="default_accent_color">@color/brand_cobalt</color>
-    <color name="launcher_pine">@color/open_line_pine</color>
+    <color name="launcher_pine">@color/afsh_pine</color>
     <color name="icon_mask">@color/design_white</color>
     <color name="on_action">@color/design_white</color>
     <color name="surface_light">@color/design_white</color>
     <color name="on_surface_light">@color/design_ink</color>
     <color name="surface_dark">@color/theme_dark_background_color</color>
     <color name="on_surface_dark">@color/theme_dark_text_color</color>
-    <color name="swipe_archive_background">@color/brand_cobalt</color>
-    <color name="swipe_delete_background">@color/design_error</color>
-    <color name="swipe_mute_background">@color/md_blue_grey_700</color>
 
-    <!-- Open Line palette (design/open-line.pen). Compose screens map these to roles in OpenLineTheme. -->
-    <color name="open_line_paper">#F1F5F1</color>
-    <color name="open_line_ink">#152621</color>
-    <color name="open_line_pine">#194C43</color>
-    <color name="open_line_pine_2">#2C6258</color>
-    <color name="open_line_lime">#D9F46A</color>
-    <color name="open_line_lilac">#D5D9F5</color>
-    <color name="open_line_muted">#53665E</color>
-    <color name="open_line_line">#D7E1DA</color>
-    <color name="open_line_night">#101E1B</color>
-    <color name="open_line_night_surface">#1A302A</color>
-    <color name="open_line_primary_dark">#8FC9B8</color>
-    <color name="open_line_muted_dark">#9CB8AE</color>
-    <color name="open_line_line_dark">#2E4740</color>
-    <color name="open_line_band_variant">#CFE1D9</color>
-    <color name="open_line_lilac_dark">#2F3456</color>
-    <color name="open_line_error">#B23A2B</color>
-    <color name="open_line_coral">#ED7667</color>
-    <color name="open_line_error_container">#FBE2DC</color>
-    <color name="open_line_error_container_dark">#4A2420</color>
-    <color name="open_line_surface_high">#E5EBE7</color>
-    <color name="open_line_surface_high_dark">#24403A</color>
-    <color name="open_line_on_lilac_variant">#4E5B57</color>
-    <color name="open_line_on_lilac_variant_dark">#B9BEE3</color>
+    <!-- AFSH palette (design/afsh.pen). Compose screens map these to roles in AfshTheme. -->
+    <color name="afsh_paper">#F1F5F1</color>
+    <color name="afsh_ink">#152621</color>
+    <color name="afsh_pine">#194C43</color>
+    <color name="afsh_pine_2">#2C6258</color>
+    <color name="afsh_lime">#D9F46A</color>
+    <color name="afsh_lilac">#D5D9F5</color>
+    <color name="afsh_muted">#53665E</color>
+    <color name="afsh_line">#D7E1DA</color>
+    <color name="afsh_night">#101E1B</color>
+    <color name="afsh_night_surface">#1A302A</color>
+    <color name="afsh_primary_dark">#8FC9B8</color>
+    <color name="afsh_muted_dark">#9CB8AE</color>
+    <color name="afsh_line_dark">#2E4740</color>
+    <color name="afsh_band_variant">#CFE1D9</color>
+    <color name="afsh_lilac_dark">#2F3456</color>
+    <color name="afsh_error">#B23A2B</color>
+    <color name="afsh_coral">#ED7667</color>
+    <color name="afsh_error_container">#FBE2DC</color>
+    <color name="afsh_error_container_dark">#4A2420</color>
+    <color name="afsh_surface_high">#E5EBE7</color>
+    <color name="afsh_surface_high_dark">#24403A</color>
+    <color name="afsh_on_lilac_variant">#4E5B57</color>
+    <color name="afsh_on_lilac_variant_dark">#B9BEE3</color>
     <!-- The design's scrim token: ink at 60%, black at 70% in dark. -->
-    <color name="open_line_scrim">#99152621</color>
-    <color name="open_line_scrim_dark">#B3000000</color>
+    <color name="afsh_scrim">#99152621</color>
+    <color name="afsh_scrim_dark">#B3000000</color>
     <!-- Design screen 97: ink at 60% behind a lifted message, darker than the design file so the floating bubble stands out. -->
-    <color name="open_line_lift_scrim">#99152621</color>
+    <color name="afsh_lift_scrim">#99152621</color>
 
-    <color name="message_sim_one">#2463EB</color>
-    <color name="message_sim_two">#128147</color>
 </resources>
