@@ -23,6 +23,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import kotlinx.coroutines.runBlocking
 import com.afsh.messages.databases.MessagesDatabase
 import com.afsh.messages.helpers.BLOCK_REASON_KEYWORD
+import com.afsh.messages.helpers.ImportProgress
 import com.afsh.messages.helpers.SearchRepository
 import com.afsh.messages.models.Attachment
 import com.afsh.messages.models.Conversation
@@ -179,6 +180,44 @@ class SearchChecks {
         check(mediaEntry.map { it.result.messageId }.toSet() == setOf(81_051L, 81_061L)) {
             "Blank Photos search must return image attachments and exclude nonimages"
         }
+    }
+
+    @Test
+    fun peopleSearchFindsThreadsWhoseMessagesAreNotImportedYet() = withInMemorySearchDatabase { database ->
+        val notImported = 8_201L
+        val recycledOnly = 8_202L
+        val conversations = database.ConversationsDao()
+        conversations.insertOrUpdate(fixtureConversation(notImported, "Fixture unopened person"))
+        conversations.insertOrUpdate(fixtureConversation(recycledOnly, "Fixture unopened recycled"))
+        database.MessagesDao().insertOrUpdate(fixtureMessage(82_021, recycledOnly, "synthetic body"))
+        database.MessagesDao().insertRecycleBinEntry(RecycleBinMessage(82_021, deletedTS = 1))
+
+        val people = runBlocking { SearchRepository(targetContext, database.MessagesDao(), conversations).search("unopened") }
+            .filter { it.person }
+        check(people.map { it.result.threadId } == listOf(notImported)) {
+            "People search must find a thread with no cached messages and still hide one whose cached messages are all recycled"
+        }
+    }
+
+    @Test
+    fun importProgressShowsInSearch() {
+        compose.setContent {
+            AfshTheme {
+                SearchContent(
+                    state = SearchUiState(
+                        open = true,
+                        query = "fixture",
+                        importProgress = ImportProgress(ImportProgress.Phase.MESSAGES, 20, 80),
+                    ),
+                    onQuery = {},
+                    onFilter = {},
+                    onOpen = {},
+                    onRetry = {},
+                )
+            }
+        }
+        compose.onNodeWithText(text(R.string.import_title)).assertExists()
+        compose.onNodeWithText(compose.activity.getString(R.string.import_messages, 20, 80)).assertExists()
     }
 
     @Test

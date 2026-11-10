@@ -46,6 +46,9 @@ interface MessagesDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertMessages(vararg message: Message)
 
+    @Query("SELECT EXISTS(SELECT 1 FROM messages WHERE thread_id = :threadId AND is_scheduled = 0)")
+    fun hasThreadMessages(threadId: Long): Boolean
+
     @Query("SELECT * FROM messages")
     fun getAll(): List<Message>
 

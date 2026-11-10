@@ -102,6 +102,7 @@ object InboxRepository {
             context = context,
             onFinished = {
                 refreshUnreadCounts(context)
+                InboxImport.importMessagesIfNeeded(context)
                 reconciling = false
                 reconcileListener?.invoke(ReconcileStatus.DONE)
                 if (reconcilePending) {

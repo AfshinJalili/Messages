@@ -10,7 +10,6 @@ import com.afsh.messages.extensions.clearExpiredScheduledMessages
 import com.afsh.messages.extensions.config
 import com.afsh.messages.extensions.conversationsDB
 import com.afsh.messages.extensions.getConversations
-import com.afsh.messages.extensions.getMessages
 import com.afsh.messages.extensions.insertOrUpdateConversation
 import com.afsh.messages.extensions.messagesDB
 import com.afsh.messages.extensions.removeOrphanSpamMarkers
@@ -42,7 +41,17 @@ object InboxReconciler {
                 val privateContacts = app.getMyContactsCursor(favoritesOnly = false, withPhoneNumbersOnly = true).use { cursor ->
                     MyContactsContentProvider.getSimpleContacts(app, cursor)
                 }
-                val conversations = app.getConversations(privateContacts = privateContacts, failOnError = true)
+                // An empty cache means the first import: the inbox shows how far it has got.
+                val firstImport = allCached.isEmpty()
+                val conversations = try {
+                    app.getConversations(
+                        privateContacts = privateContacts,
+                        failOnError = true,
+                        onProgress = if (firstImport) InboxImport::reportConversations else null,
+                    )
+                } finally {
+                    if (firstImport) InboxImport.conversationsDone()
+                }
                 val cachedIds = allCached.mapTo(HashSet()) { it.threadId }
                 val conversationsById = conversations.associateBy { it.threadId }
                 val conversationsByNumber = conversations.asReversed().associateBy { it.phoneNumber }
@@ -95,15 +104,6 @@ object InboxReconciler {
                     app.removeOrphanSpamMarkers()
                 } catch (_: Exception) {
                     // Retried on the next reconcile, so it must not fail the rest of it.
-                }
-
-                if (app.config.appRunCount == 1) {
-                    conversations.map { it.threadId }.forEach { threadId ->
-                        val messages = app.getMessages(threadId, includeScheduledMessages = false)
-                        messages.chunked(30).forEach { currentMessages ->
-                            app.messagesDB.insertMessages(*currentMessages.toTypedArray())
-                        }
-                    }
                 }
 
                 onFinished()
