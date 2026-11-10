@@ -20,7 +20,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -50,6 +49,11 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.PlainTooltip
+import androidx.compose.material3.TooltipBox
+import androidx.compose.material3.TooltipDefaults
+import androidx.compose.material3.rememberTooltipState
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -78,7 +82,6 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -657,6 +660,7 @@ private fun NewMessageButton(expanded: Boolean, onClick: () -> Unit) {
     )
 }
 
+/** Icon-only, like the rest of the redesign: each action names itself to TalkBack and in a long-press tooltip. */
 @Composable
 private fun SelectionBar(state: InboxUiState, onAction: (InboxAction) -> Unit) {
     val (bar, overflow) = remember(state.selected, state.rows, state.archiveAvailable) {
@@ -667,28 +671,28 @@ private fun SelectionBar(state: InboxUiState, onAction: (InboxAction) -> Unit) {
             Modifier
                 .fillMaxWidth()
                 .windowInsetsPadding(WindowInsets.navigationBars)
-                .padding(8.dp),
+                .heightIn(min = 64.dp)
+                .padding(horizontal = 8.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             bar.forEach { action ->
-                ActionItem(action.icon, stringResource(action.label), { onAction(action) }, Modifier.weight(1f), destructive = action == InboxAction.DELETE)
+                SelectionIconAction(action.icon, stringResource(action.label), destructive = action == InboxAction.DELETE) { onAction(action) }
             }
             if (overflow.isNotEmpty()) {
                 var open by remember { mutableStateOf(false) }
-                Box(Modifier.weight(1f)) {
-                    ActionItem(
-                        org.fossify.commons.R.drawable.ic_three_dots_vector,
-                        stringResource(org.fossify.commons.R.string.more_options),
-                        { open = true },
-                    )
+                Box {
+                    SelectionIconAction(R.drawable.ic_lucide_ellipsis_vertical, stringResource(org.fossify.commons.R.string.more_options)) { open = true }
                     DropdownMenu(expanded = open, onDismissRequest = { open = false }, containerColor = MaterialTheme.colorScheme.surfaceContainer, shape = MaterialTheme.shapes.medium) {
                         overflow.forEach { action ->
+                            val danger = action == InboxAction.BLOCK || action == InboxAction.DELETE
                             DropdownMenuItem(
                                 text = { Text(stringResource(action.label)) },
                                 leadingIcon = { Icon(painterResource(action.icon), contentDescription = null, modifier = Modifier.size(20.dp)) },
                                 modifier = Modifier.heightIn(min = TargetSize),
                                 colors = androidx.compose.material3.MenuDefaults.itemColors(
-                                    textColor = if (action == InboxAction.BLOCK || action == InboxAction.DELETE) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
-                                    leadingIconColor = if (action == InboxAction.BLOCK || action == InboxAction.DELETE) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    textColor = if (danger) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+                                    leadingIconColor = if (danger) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
                                 ),
                                 onClick = {
                                     open = false
@@ -703,27 +707,21 @@ private fun SelectionBar(state: InboxUiState, onAction: (InboxAction) -> Unit) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ActionItem(icon: Int, label: String, onClick: () -> Unit, modifier: Modifier = Modifier, destructive: Boolean = false) {
-    Column(
-        modifier
-            .fillMaxWidth()
-            .heightIn(min = 64.dp)
-            .clip(MaterialTheme.shapes.small)
-            .clickable(role = Role.Button, onClick = onClick)
-            .padding(4.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
+private fun SelectionIconAction(icon: Int, label: String, destructive: Boolean = false, onClick: () -> Unit) {
+    TooltipBox(
+        positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
+        tooltip = { PlainTooltip { Text(label) } },
+        state = rememberTooltipState(),
     ) {
-        Icon(painterResource(icon), contentDescription = null, tint = if (destructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
-        Text(
-            label,
-            style = MaterialTheme.typography.labelSmall,
-            color = if (destructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
-            textAlign = TextAlign.Center,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-        )
+        IconButton(onClick = onClick, modifier = Modifier.size(TargetSize)) {
+            Icon(
+                painterResource(icon),
+                contentDescription = label,
+                tint = if (destructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
 

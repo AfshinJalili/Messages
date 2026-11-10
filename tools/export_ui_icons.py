@@ -18,10 +18,10 @@ ICONS = [
     "archive", "arrow-left", "arrow-right", "ban", "bell", "bell-off", "calendar", "card-sim", "check", "check-check",
     "chevron-right", "corner-down-left", "circle-help", "clock", "cloud-off", "contact", "copy",
     "database-backup", "download", "ellipsis-vertical", "eye", "eye-off", "file-text", "hand",
-    "hash", "image", "inbox", "info", "languages", "layers", "lock-keyhole", "message-circle",
-    "message-square-text", "messages-square", "paperclip", "pencil", "phone", "pin", "plus", "search", "send",
+    "hash", "image", "inbox", "info", "languages", "layers", "lock-keyhole", "mail", "mail-open", "message-circle",
+    "message-square-text", "messages-square", "paperclip", "pencil", "phone", "pin", "pin-off", "plus", "search", "send",
     "settings", "share-2", "shield-ban", "star",
-    "trash-2", "triangle-alert", "type", "upload", "user", "users", "volume-2", "x",
+    "trash-2", "triangle-alert", "type", "upload", "user", "user-plus", "users", "volume-2", "x",
 ]
 
 # Direction-bearing glyphs flip under RTL.

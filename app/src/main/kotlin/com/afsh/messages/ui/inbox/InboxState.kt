@@ -65,20 +65,20 @@ private fun Calendar.sameDayAs(other: Calendar) =
     get(Calendar.YEAR) == other.get(Calendar.YEAR) && get(Calendar.DAY_OF_YEAR) == other.get(Calendar.DAY_OF_YEAR)
 
 enum class InboxAction(@StringRes val label: Int, @DrawableRes val icon: Int) {
-    ARCHIVE(R.string.archive, R.drawable.ic_archive_vector),
-    MARK_UNREAD(R.string.mark_as_unread, org.fossify.commons.R.drawable.ic_mail_vector),
-    MARK_READ(R.string.mark_as_read, R.drawable.ic_check_double_vector),
-    MUTE(R.string.mute_conversation, R.drawable.ic_bell_off_vector),
-    UNMUTE(R.string.unmute_conversation, org.fossify.commons.R.drawable.ic_bell_vector),
-    PIN(R.string.pin_conversation, org.fossify.commons.R.drawable.ic_pin_vector),
-    UNPIN(R.string.unpin_conversation, R.drawable.ic_unpin_vector),
-    DELETE(org.fossify.commons.R.string.delete, org.fossify.commons.R.drawable.ic_delete_vector),
-    DIAL(org.fossify.commons.R.string.dial_number, org.fossify.commons.R.drawable.ic_phone_vector),
-    ADD_TO_CONTACT(org.fossify.commons.R.string.add_number_to_contact, org.fossify.commons.R.drawable.ic_add_person_vector),
-    COPY_NUMBER(org.fossify.commons.R.string.copy_number_to_clipboard, org.fossify.commons.R.drawable.ic_copy_vector),
-    RENAME(R.string.rename_conversation, org.fossify.commons.R.drawable.ic_edit_vector),
-    DETAILS(R.string.conversation_details, org.fossify.commons.R.drawable.ic_info_vector),
-    BLOCK(org.fossify.commons.R.string.block_number, org.fossify.commons.R.drawable.ic_block_vector),
+    ARCHIVE(R.string.archive, R.drawable.ic_lucide_archive),
+    MARK_UNREAD(R.string.mark_as_unread, R.drawable.ic_lucide_mail),
+    MARK_READ(R.string.mark_as_read, R.drawable.ic_lucide_mail_open),
+    MUTE(R.string.mute_conversation, R.drawable.ic_lucide_bell_off),
+    UNMUTE(R.string.unmute_conversation, R.drawable.ic_lucide_bell),
+    PIN(R.string.pin_conversation, R.drawable.ic_lucide_pin),
+    UNPIN(R.string.unpin_conversation, R.drawable.ic_lucide_pin_off),
+    DELETE(org.fossify.commons.R.string.delete, R.drawable.ic_lucide_trash_2),
+    DIAL(org.fossify.commons.R.string.dial_number, R.drawable.ic_lucide_phone),
+    ADD_TO_CONTACT(org.fossify.commons.R.string.add_number_to_contact, R.drawable.ic_lucide_user_plus),
+    COPY_NUMBER(org.fossify.commons.R.string.copy_number_to_clipboard, R.drawable.ic_lucide_copy),
+    RENAME(R.string.rename_conversation, R.drawable.ic_lucide_pencil),
+    DETAILS(R.string.conversation_details, R.drawable.ic_lucide_info),
+    BLOCK(org.fossify.commons.R.string.block_number, R.drawable.ic_lucide_ban),
 }
 
 /** Declaration order of [InboxAction] is the display order; the bar shows the first few, the rest overflow. */
