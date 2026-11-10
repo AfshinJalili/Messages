@@ -22,7 +22,7 @@ jobs:
           java-version: 17
 
       - name: Build debug APK
-        run: ./gradlew :app:assembleCoreDebug --stacktrace
+        run: ./gradlew :app:assembleDebug --stacktrace
 
   emulator:
     runs-on: ubuntu-latest
@@ -44,7 +44,7 @@ jobs:
           sudo udevadm trigger --name-match=kvm
 
       - name: Build app and tests
-        run: ./gradlew :app:assembleCoreDebug :app:assembleCoreDebugAndroidTest --stacktrace
+        run: ./gradlew :app:assembleDebug :app:assembleDebugAndroidTest --stacktrace
 
       - name: Host checks, emulator tests and screenshots
         uses: reactivecircus/android-emulator-runner@v2

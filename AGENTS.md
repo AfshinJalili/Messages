@@ -6,7 +6,7 @@ This file is the single source of truth for how the project is run. Update it in
 
 ## Run
 
-- Build: `./gradlew :app:assembleFossDebug :app:assembleFossDebugAndroidTest` (flavors: `core`, `foss`, `gplay`; CI builds `core`).
+- Build: `./gradlew :app:assembleDebug :app:assembleDebugAndroidTest` (one variant; no flavors).
 - Install: `adb install -r` both APKs from `app/build/outputs/apk`. The debug app is `com.afsh.messages.debug`.
 - Instrumented class: `adb shell am instrument --user 0 -w -e class com.afsh.messages.<Class> com.afsh.messages.debug.test/androidx.test.runner.AndroidJUnitRunner`. Read the `OK (n tests)` line; the exit code does not show failures. Wake and unlock the phone first.
 - Host checks: `python3 tests/check_design_tokens.py` (no inline colors or opacity), `python3 tests/check_inbox_database.py` (inbox SQL against the Room schema).

@@ -105,10 +105,6 @@ class Config(context: Context) : BaseConfig(context) {
         pinnedConversations = pinnedConversations.plus(conversations.map { it.threadId.toString() })
     }
 
-    fun removePinnedConversationByThreadId(threadId: Long) {
-        pinnedConversations = pinnedConversations.minus(threadId.toString())
-    }
-
     fun removePinnedConversations(conversations: List<Conversation>) {
         pinnedConversations =
             pinnedConversations.minus(conversations.map { it.threadId.toString() })
