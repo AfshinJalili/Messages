@@ -42,8 +42,9 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.expandHorizontally
-import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -57,6 +58,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -218,6 +220,9 @@ private const val STICKY_DATE_FADE_MS = 180
 private const val LIFT_STIFFNESS = 700f
 private val LiftSpring = spring<Float>(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = LIFT_STIFFNESS, visibilityThreshold = 0.001f)
 private val LiftGap = 12.dp
+// Room the selection check takes beside an incoming bubble: the 24 dp check and a 12 dp gap.
+private val CheckSlot = 36.dp
+private const val CHECK_START_SCALE = 0.6f
 private val LiftElevation = 6.dp
 private val LiftFade = 32.dp
 private val TargetSize = 48.dp
@@ -743,6 +748,12 @@ private fun MessageRow(
         groupedAbove -> 4.dp
         else -> 12.dp
     }
+    // A layout offset, not a narrower slot: the bubble moves as one piece.
+    val shift by animateDpAsState(
+        if (state.selecting && incoming) CheckSlot else 0.dp,
+        tween(if (state.selecting) SELECTION_ENTER_MS else SELECTION_EXIT_MS, easing = if (state.selecting) FastOutSlowInEasing else FastOutLinearInEasing),
+        label = "selection shift",
+    )
     Column(
         Modifier
             .fillMaxWidth()
@@ -756,12 +767,14 @@ private fun MessageRow(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(start = 4.dp, bottom = 4.dp),
+                modifier = Modifier.offset(x = shift).padding(start = 4.dp, bottom = 4.dp),
             )
         }
-        // While selecting, a check slides in at the start of every row and the bubbles make room for it.
+        // While selecting, a check fades in at the start of every row and incoming bubbles slide over to make room.
+        // Bubbles keep the width they had (it comes from the full row), so their text never reflows: they only move.
+        // Outgoing bubbles sit at the end, at most 80% wide, so the check fits beside them without moving them.
         // A tap anywhere on the row toggles it, so the target is not just the bubble.
-        Row(
+        BoxWithConstraints(
             Modifier
                 .fillMaxWidth()
                 .then(
@@ -771,22 +784,26 @@ private fun MessageRow(
                         Modifier
                     },
                 ),
-            verticalAlignment = Alignment.CenterVertically,
+            contentAlignment = if (incoming) Alignment.CenterStart else Alignment.CenterEnd,
         ) {
+            Column(
+                Modifier
+                    .offset(x = shift)
+                    .width(minOf(maxWidth * BUBBLE_WIDTH_FRACTION, MaxBubbleWidth)),
+                horizontalAlignment = if (incoming) Alignment.Start else Alignment.End,
+            ) {
+                val groupedBelow = groupedWith(message, newer)
+                Bubble(message, state, onEvent, groupedBelow, hidden = lifted == message.getStableId()) { onOpen(message, groupedBelow, it) }
+            }
             AnimatedVisibility(
                 state.selecting,
-                enter = expandHorizontally(tween(SELECTION_ENTER_MS, easing = FastOutSlowInEasing), expandFrom = Alignment.Start) +
-                    fadeIn(tween(SELECTION_ENTER_MS, easing = FastOutSlowInEasing)),
-                exit = shrinkHorizontally(tween(SELECTION_EXIT_MS, easing = FastOutLinearInEasing), shrinkTowards = Alignment.Start) +
-                    fadeOut(tween(SELECTION_EXIT_MS, easing = FastOutLinearInEasing)),
+                Modifier.align(Alignment.CenterStart),
+                enter = fadeIn(tween(SELECTION_ENTER_MS, easing = FastOutSlowInEasing)) +
+                    scaleIn(tween(SELECTION_ENTER_MS, easing = FastOutSlowInEasing), initialScale = CHECK_START_SCALE),
+                exit = fadeOut(tween(SELECTION_EXIT_MS, easing = FastOutLinearInEasing)) +
+                    scaleOut(tween(SELECTION_EXIT_MS, easing = FastOutLinearInEasing), targetScale = CHECK_START_SCALE),
             ) {
-                SelectionCheck(message.getStableId() in state.selected, Modifier.padding(end = 12.dp))
-            }
-            BoxWithConstraints(Modifier.weight(1f), contentAlignment = if (incoming) Alignment.CenterStart else Alignment.CenterEnd) {
-                Column(Modifier.width(minOf(maxWidth * BUBBLE_WIDTH_FRACTION, MaxBubbleWidth)), horizontalAlignment = if (incoming) Alignment.Start else Alignment.End) {
-                    val groupedBelow = groupedWith(message, newer)
-                    Bubble(message, state, onEvent, groupedBelow, hidden = lifted == message.getStableId()) { onOpen(message, groupedBelow, it) }
-                }
+                SelectionCheck(message.getStableId() in state.selected)
             }
         }
     }
