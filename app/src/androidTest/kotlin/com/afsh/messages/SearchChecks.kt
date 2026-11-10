@@ -216,8 +216,8 @@ class SearchChecks {
                 )
             }
         }
-        compose.onNodeWithText(text(R.string.import_title)).assertExists()
-        compose.onNodeWithText(compose.activity.getString(R.string.import_messages, 20, 80)).assertExists()
+        compose.onNodeWithText(text(R.string.import_progress_title)).assertExists()
+        compose.onNodeWithText(compose.activity.getString(R.string.import_progress_messages, 20, 80)).assertExists()
     }
 
     @Test

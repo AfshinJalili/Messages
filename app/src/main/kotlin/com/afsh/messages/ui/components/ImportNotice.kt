@@ -23,8 +23,8 @@ import com.afsh.messages.helpers.ImportProgress
 fun ImportNotice(progress: ImportProgress, modifier: Modifier = Modifier) {
     val colors = MaterialTheme.colorScheme
     val detail = when (progress.phase) {
-        ImportProgress.Phase.CONVERSATIONS -> R.string.import_conversations
-        ImportProgress.Phase.MESSAGES -> R.string.import_messages
+        ImportProgress.Phase.CONVERSATIONS -> R.string.import_progress_conversations
+        ImportProgress.Phase.MESSAGES -> R.string.import_progress_messages
     }
     Column(
         modifier
@@ -35,7 +35,7 @@ fun ImportNotice(progress: ImportProgress, modifier: Modifier = Modifier) {
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Text(
-            stringResource(R.string.import_title),
+            stringResource(R.string.import_progress_title),
             style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
             color = colors.onSecondaryContainer,
         )

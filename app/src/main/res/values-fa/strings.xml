@@ -552,9 +552,9 @@
     <!-- Inbox refresh failed (73) -->
     <string name="refresh_failed_title">به‌روزرسانی نشد</string>
     <string name="refresh_failed_text">پیام‌های ذخیره‌شده روی این گوشی نمایش داده می‌شوند</string>
-    <string name="import_title">در حال وارد کردن پیام‌ها</string>
-    <string name="import_conversations">خواندن گفتگوها: %1$d از %2$d</string>
-    <string name="import_messages">آماده‌سازی جستجو: %1$d از %2$d گفتگو</string>
+    <string name="import_progress_title">در حال وارد کردن پیام‌ها</string>
+    <string name="import_progress_conversations">خواندن گفتگوها: %1$d از %2$d</string>
+    <string name="import_progress_messages">آماده‌سازی جستجو: %1$d از %2$d گفتگو</string>
     <string name="retry">تلاش دوباره</string>
 
     <!-- Conversation blocked (67) -->
