@@ -26,14 +26,14 @@ This changes conversation presentation. It does not change SMS/MMS timestamps, s
 `ThreadDateChecks` covers calendar grouping, formatted labels, footer rendering, delivery changes and sticky date transitions with synthetic messages. Run with the debug app and test APK installed:
 
 ```sh
-adb shell am instrument --user 0 -w -e class org.fossify.messages.ThreadDateChecks org.fossify.messages.debug.test/androidx.test.runner.AndroidJUnitRunner
+adb shell am instrument --user 0 -w -e class com.afsh.messages.ThreadDateChecks com.afsh.messages.debug.test/androidx.test.runner.AndroidJUnitRunner
 ```
 
 Also run the existing message-action and unread-navigation checks after changes to the thread list. Device-rendered captures are useful for checking spacing, but do not by themselves prove Telegram pixel or motion parity.
 
 ### Results on 22 September 2026
 
-The app and test APK builds, `lintFossDebug`, design-token checks and diff checks passed. Lint retains 102 warnings with the existing baseline unchanged. The initial connected-device run passed eight tests: two date/footer checks, four message-action checks and two unaffected unread checks. The updated debug app is installed on the connected phone.
+The app and test APK builds, `lintDebug`, design-token checks and diff checks passed. Lint retains 102 warnings with the existing baseline unchanged. The initial connected-device run passed eight tests: two date/footer checks, four message-action checks and two unaffected unread checks. The updated debug app is installed on the connected phone.
 
 Native captures were inspected for message/footer placement. The tests also measure received, attachment-only and large RTL cards. A frame-by-frame comparison with Telegram and exhaustive photo/video, theme and SIM combinations were not performed.
 
