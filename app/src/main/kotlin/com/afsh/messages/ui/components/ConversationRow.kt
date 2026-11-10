@@ -228,7 +228,7 @@ fun ConversationRow(
         modifier
             .widthIn(max = ConversationRowMaxWidth)
             .fillMaxWidth()
-            .clip(MaterialTheme.shapes.medium)
+            // Square on purpose: the selection fill and the swiped row are full rectangles.
             .background(if (selected) colors.secondaryContainer else colors.surface)
             .combinedClickable(
                 onClick = onClick,

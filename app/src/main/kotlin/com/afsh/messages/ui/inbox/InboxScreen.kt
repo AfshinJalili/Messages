@@ -102,6 +102,7 @@ import com.afsh.messages.ui.components.SwipeGesture
 import com.afsh.messages.ui.components.SwipeTone
 import com.afsh.messages.ui.components.SwipeableRow
 import com.afsh.messages.ui.components.TopDestination
+import com.afsh.messages.ui.components.BottomBarHeight
 import com.afsh.messages.ui.components.BottomBarSwitch
 import com.afsh.messages.ui.components.SelectionIconAction
 import com.afsh.messages.ui.components.keptWhileLeaving
@@ -684,7 +685,7 @@ private fun SelectionBar(state: InboxUiState, onAction: (InboxAction) -> Unit) {
             Modifier
                 .fillMaxWidth()
                 .windowInsetsPadding(WindowInsets.navigationBars)
-                .heightIn(min = 64.dp)
+                .heightIn(min = BottomBarHeight)
                 .padding(horizontal = 8.dp),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically,

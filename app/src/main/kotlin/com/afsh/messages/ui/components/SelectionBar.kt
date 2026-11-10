@@ -164,6 +164,7 @@ fun SelectionBar(actions: List<BarAction>, modifier: Modifier = Modifier) {
             Modifier
                 .fillMaxWidth()
                 .windowInsetsPadding(WindowInsets.navigationBars)
+                .heightIn(min = BottomBarHeight)
                 .padding(8.dp),
         ) {
             actions.forEach { action -> SelectionAction(action, Modifier.weight(1f)) }
