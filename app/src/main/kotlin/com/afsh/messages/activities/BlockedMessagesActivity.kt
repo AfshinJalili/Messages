@@ -19,6 +19,7 @@ import com.afsh.messages.helpers.THREAD_ID
 import com.afsh.messages.helpers.THREAD_TITLE
 import com.afsh.messages.helpers.UndoDeletion
 import com.afsh.messages.models.SpamReviewMessage
+import com.afsh.messages.models.spamWhy
 import com.afsh.messages.ui.spam.SpamEvent
 import com.afsh.messages.ui.spam.SpamScreen
 import com.afsh.messages.ui.spam.SpamUiState
@@ -56,6 +57,7 @@ class BlockedMessagesActivity : ComposePageActivity() {
         ensureBackgroundThread {
             val messages = runCatching { getSpamMessages() }.getOrDefault(emptyList())
                 .filter { it.id !in UndoDeletion.spam && it.threadId !in skip }
+                .map { it.copy(why = spamWhy(it.reason, it.address, it.body)) }
             runOnUiThread {
                 val newIds = if (freshVisit) messages.filterNot { it.read }.mapTo(HashSet()) { it.id } else state.newIds
                 freshVisit = false

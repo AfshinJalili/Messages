@@ -13,6 +13,9 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTouchInput
@@ -173,7 +176,11 @@ class MessageActionChecks {
         assertTrue("Save as when any selected message has an attachment", MessageAction.SAVE_AS in selectionActions(mixed))
 
         show(selectedOne) {}
-        bar.forEach { compose.onNodeWithText(context.getString(it.label)).assertIsDisplayed() }
-        compose.onNodeWithText(context.getString(org.fossify.commons.R.string.more_options)).assertIsDisplayed()
+        // Icon-only: each action is found by its TalkBack label, and no label is drawn as text.
+        bar.forEach {
+            compose.onNodeWithContentDescription(context.getString(it.label)).assertIsDisplayed()
+            compose.onAllNodesWithText(context.getString(it.label)).assertCountEquals(0)
+        }
+        compose.onNodeWithContentDescription(context.getString(org.fossify.commons.R.string.more_options)).assertIsDisplayed()
     }
 }

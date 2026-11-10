@@ -188,6 +188,11 @@ class Config(context: Context) : BaseConfig(context) {
         get() = prefs.getBoolean(RULE_FILTER_ENABLED, false)
         set(ruleFilterEnabled) = prefs.edit().putBoolean(RULE_FILTER_ENABLED, ruleFilterEnabled).apply()
 
+    /** The local rule filter's patterns; see [SpamPatterns]. Unedited groups follow the defaults. */
+    var spamPatterns: SpamPatterns
+        get() = SpamPatterns.fromJson(prefs.getString(SPAM_PATTERNS, null))
+        set(spamPatterns) = prefs.edit().putString(SPAM_PATTERNS, spamPatterns.toJson()).apply()
+
     var allowedNumbers: Set<String>
         get() = prefs.getStringSet(ALLOWED_NUMBERS, HashSet<String>())!!
         set(allowedNumbers) = prefs.edit().putStringSet(ALLOWED_NUMBERS, allowedNumbers).apply()

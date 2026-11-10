@@ -17,6 +17,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import org.fossify.commons.helpers.isQPlus
+import com.afsh.messages.helpers.ScreenMotion
 import com.afsh.messages.helpers.UndoDeletion
 import com.afsh.messages.helpers.refreshConversations
 import com.afsh.messages.ui.AfshTheme
@@ -94,11 +95,13 @@ abstract class ComposePageActivity : SimpleActivity(), UndoDeletion.UndoHost {
     /** Settings sub-pages keep the navigation with Settings active (R5-34). */
     protected fun settingsNavigation() = PageNavigation(TopDestination.SETTINGS, ::navigateTo)
 
+    /** Switching destinations cross-fades, like Inbox and Library inside the inbox (#176). */
     protected open fun navigateTo(destination: TopDestination) {
-        when (destination) {
-            TopDestination.SETTINGS -> startActivity(Intent(this, SettingsActivity::class.java))
-            else -> startActivity(MainActivity.topLevelIntent(this, destination))
+        val intent = when (destination) {
+            TopDestination.SETTINGS -> Intent(this, SettingsActivity::class.java)
+            else -> MainActivity.topLevelIntent(this, destination)
         }
+        startActivity(intent, ScreenMotion.TAB.options(this))
     }
 
     /**

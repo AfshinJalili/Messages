@@ -83,6 +83,8 @@ adb logcat -d > "$out/logcat.txt"
 
 echo "== results in $out ($(ls "$out/screenshots" | wc -l) screenshots)"
 if grep -q "^OK (" "$out/instrument.txt"; then grep "^OK (" "$out/instrument.txt"; else
-  failed+=(instrumentation); grep -E "^(FAILURES|Tests run)" "$out/instrument.txt" || tail -20 "$out/instrument.txt"; fi
+  failed+=(instrumentation); grep -E "^(FAILURES|Tests run)" "$out/instrument.txt" || tail -20 "$out/instrument.txt"
+  # Each failure's test and the head of its trace, so CI logs say what broke.
+  awk '/^INSTRUMENTATION_STATUS: test=/ { test = $0 } /^INSTRUMENTATION_STATUS: stack=/ { print test; n = 8 } n > 0 { print; n-- }' "$out/instrument.txt"; fi
 [ ${#failed[@]} -eq 0 ] || { echo "FAILED: ${failed[*]}"; exit 1; }
 echo PASSED
