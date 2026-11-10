@@ -69,6 +69,9 @@ android {
             )
             if (hasReleaseSigning) {
                 signingConfig = signingConfigs.getByName("release")
+            } else if (signingValue("AFSH_SIGN_WITH_DEBUG_KEY") == "true") {
+                // CI fallback when no release key is set, so the APK still installs.
+                signingConfig = signingConfigs.getByName("debug")
             }
         }
     }
