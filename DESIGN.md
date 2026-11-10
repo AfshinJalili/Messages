@@ -23,7 +23,7 @@ The palette uses mineral paper (`$paper`), deep pine (`$pine`, `$ink`), lime for
 
 ## Behavior decisions
 
-- **Attention:** unread rows use a small pine signal and remain in the Unread filter until opened or explicitly marked read. The thread offers a new messages jump control when the reader is away from the latest message.
+- **Attention:** unread rows use a small pine signal and remain in the Unread filter until opened or explicitly marked read. Marking a conversation unread by hand marks only its newest received message, as Google Messages does: the row shows a dot, not a count, and the thread opens with no new messages divider. The thread offers a new messages jump control when the reader is away from the latest message.
 - **Drafts:** unfinished text stays in its conversation. View 54 shows the retained entry and a draft notice; the component board includes the compact draft treatment.
 - **Sending:** the composer distinguishes enabled and disabled states. Sending, sent/delivered, failed, and blocked each have visible text; sending and blocked also use distinct status lines. A failed message offers recovery through its attention state.
 - **Keep at top:** the current app's pin action remains as **Keep at top** in conversation actions (view 40). A future implementation should persist its order in the inbox; the concept does not show a special pinned section.

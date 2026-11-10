@@ -1149,6 +1149,7 @@ fun Context.markThreadMessagesRead(threadId: Long) {
 
     messagesDB.markThreadRead(threadId)
     conversationsDB.markRead(threadId)
+    config.clearManuallyUnread(threadId)
     EventBus.getDefault().post(Events.ConversationReadStateChanged(threadId, true))
 }
 
@@ -1158,20 +1159,55 @@ private fun Context.notSpamSelection(threadId: Long): String {
     return if (spamIds.isEmpty()) "" else " AND ${Sms._ID} NOT IN (${spamIds.joinToString()})"
 }
 
+/**
+ * Marks only the newest received message unread, as Google Messages does, so the inbox shows a dot
+ * rather than the size of the whole thread. The message is remembered as manually unread, so the
+ * thread opens without a "new messages" divider above it.
+ */
 fun Context.markThreadMessagesUnread(threadId: Long) {
-    val notSpam = notSpamSelection(threadId)
-    arrayOf(Sms.CONTENT_URI, Mms.CONTENT_URI).forEach { uri ->
-        val contentValues = ContentValues().apply {
+    val id = threadId.toString()
+    var newestSms: Pair<Long, Long>? = null // id to date in ms
+    queryCursor(
+        uri = Sms.CONTENT_URI,
+        projection = arrayOf(Sms._ID, Sms.DATE),
+        selection = "${Sms.THREAD_ID}=? AND ${Sms.TYPE}=${Sms.MESSAGE_TYPE_INBOX}${notSpamSelection(threadId)}",
+        selectionArgs = arrayOf(id),
+        sortOrder = "${Sms.DATE} DESC LIMIT 1",
+        showErrors = false,
+    ) { newestSms = it.getLongValue(Sms._ID) to it.getLongValue(Sms.DATE) }
+
+    var newestMms: Pair<Long, Long>? = null // id to date in ms
+    queryCursor(
+        uri = Mms.CONTENT_URI,
+        projection = arrayOf(Mms._ID, Mms.DATE),
+        selection = "${Mms.THREAD_ID}=? AND ${Mms.MESSAGE_BOX}=${Mms.MESSAGE_BOX_INBOX}",
+        selectionArgs = arrayOf(id),
+        sortOrder = "${Mms.DATE} DESC LIMIT 1",
+        showErrors = false,
+    ) { newestMms = it.getLongValue(Mms._ID) to it.getLongValue(Mms.DATE) * 1000 }
+
+    val sms = newestSms
+    val mms = newestMms
+    val target = if (mms != null && (sms == null || mms.second > sms.second)) {
+        mms.first to true
+    } else {
+        sms?.let { it.first to false }
+    }
+    if (target != null) {
+        val (messageId, isMms) = target
+        val uri = if (isMms) Mms.CONTENT_URI else Sms.CONTENT_URI
+        val values = ContentValues().apply {
             put(Sms.READ, 0)
             put(Sms.SEEN, 0)
         }
-        val selection = "${Sms.THREAD_ID} = ?" + if (uri == Sms.CONTENT_URI) notSpam else ""
-        val selectionArgs = arrayOf(threadId.toString())
-        contentResolver.update(uri, contentValues, selection, selectionArgs)
+        contentResolver.update(uri, values, "${Sms._ID}=?", arrayOf(messageId.toString()))
+        messagesDB.markUnread(messageId, isMms)
+        config.setManuallyUnread(threadId, messageId, isMms)
     }
-    conversationsDB.markUnread(threadId)
-    EventBus.getDefault().post(Events.ConversationReadStateChanged(threadId, false))
-} 
+    val count = getUnreadCountsByThread()[threadId] ?: 0
+    if (count > 0) conversationsDB.updateUnreadCount(threadId, count) else conversationsDB.markUnread(threadId)
+    EventBus.getDefault().post(Events.ConversationReadStateChanged(threadId, false, count.takeIf { it > 0 }))
+}
 
 @SuppressLint("NewApi")
 fun Context.getThreadId(address: String): Long {

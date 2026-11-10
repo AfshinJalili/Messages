@@ -242,6 +242,8 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
      */
     @Volatile
     private var newOnOpen: Set<Long>? = null
+    @Volatile
+    private var manuallyUnreadOnOpen: Set<Long>? = null
     private var pendingInitialScroll = true
     private var initialPositionSettled = false
     private val updateScrollPosition = Runnable {
@@ -1747,15 +1749,19 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         if (isFinishing) return ArrayList()
         messages.sortBy { it.date }
         // Taken from the first provider load, before this visit marks anything read.
+        // A message marked unread by hand counts as unread but gets no "new messages" divider.
+        val manual = manuallyUnreadOnOpen ?: messages.filter { config.isManuallyUnread(threadId, it.id, it.isMMS) }
+            .mapTo(HashSet()) { it.getStableId() }
+            .also { if (providerMessagesReady) manuallyUnreadOnOpen = it }
         if (newOnOpen == null && providerMessagesReady) {
-            newOnOpen = messages.filter { !it.read }.mapTo(HashSet()) { it.getStableId() }
+            newOnOpen = messages.filter { !it.read && it.getStableId() !in manual }.mapTo(HashSet()) { it.getStableId() }
         }
         val pinned = newOnOpen.orEmpty()
         return buildThreadItems(
             messages = messages,
             isSpam = ::isSpam,
             isHidden = { it.getStableId() in UndoDeletion.messages || threadId in UndoDeletion.threads },
-            isNew = { !it.read || it.getStableId() in pinned },
+            isNew = { (!it.read && it.getStableId() !in manual) || it.getStableId() in pinned },
         )
     }
 

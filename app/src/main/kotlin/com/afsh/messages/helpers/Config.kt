@@ -97,6 +97,32 @@ class Config(context: Context) : BaseConfig(context) {
             .putString(PINNED_CONVERSATIONS_ORDERED, pinnedConversations.joinToString(","))
             .putStringSet(PINNED_CONVERSATIONS, pinnedConversations).apply()
 
+    /**
+     * Messages the user marked unread by hand, as "threadId:s|m<id>". They count as unread, but the
+     * thread opens without a "new messages" divider for them.
+     */
+    private var manuallyUnreadMessages: Set<String>
+        get() = prefs.getStringSet(MANUALLY_UNREAD_MESSAGES, HashSet<String>())!!
+        set(value) = prefs.edit().putStringSet(MANUALLY_UNREAD_MESSAGES, value).apply()
+
+    fun setManuallyUnread(threadId: Long, messageId: Long, isMms: Boolean) {
+        manuallyUnreadMessages = manuallyUnreadMessages.filterNot { it.startsWith("$threadId:") }.toHashSet() +
+            manualUnreadKey(threadId, messageId, isMms)
+    }
+
+    fun clearManuallyUnread(threadId: Long) {
+        val current = manuallyUnreadMessages
+        if (current.any { it.startsWith("$threadId:") }) {
+            manuallyUnreadMessages = current.filterNot { it.startsWith("$threadId:") }.toHashSet()
+        }
+    }
+
+    fun isManuallyUnread(threadId: Long, messageId: Long, isMms: Boolean) =
+        manualUnreadKey(threadId, messageId, isMms) in manuallyUnreadMessages
+
+    private fun manualUnreadKey(threadId: Long, messageId: Long, isMms: Boolean) =
+        "$threadId:${if (isMms) "m" else "s"}$messageId"
+
     fun addPinnedConversationByThreadId(threadId: Long) {
         pinnedConversations = pinnedConversations.plus(threadId.toString())
     }
