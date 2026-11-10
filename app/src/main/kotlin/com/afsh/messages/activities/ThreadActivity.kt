@@ -1790,6 +1790,10 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
             if (allowSender) {
                 (selected.map { it.senderPhoneNumber } + participants.getAddresses())
                     .filter { it.isNotEmpty() }.distinct().forEach { config.addAllowedNumber(it) }
+            } else {
+                // Not spam from a blocked sender unblocks them, or their next message goes to Spam again.
+                selected.map { it.senderPhoneNumber }.filter { it.isNotEmpty() && config.spamNumbers.containsNumber(it) }
+                    .distinct().forEach { config.removeSpamNumber(it) }
             }
             selected.forEach { messagesDB.deleteSpamMarker(it.id) }
             InboxRepository.refreshUnreadCounts(applicationContext, listOf(threadId))
