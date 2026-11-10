@@ -1,7 +1,5 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-import org.jetbrains.kotlin.konan.properties.Properties
-import java.io.FileInputStream
 
 plugins {
     alias(libs.plugins.android)
@@ -11,18 +9,13 @@ plugins {
     alias(libs.plugins.detekt)
 }
 
-val keystorePropertiesFile: File = rootProject.file("keystore.properties")
-val keystoreProperties = Properties()
-if (keystorePropertiesFile.exists()) {
-    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
-}
+// Release signing comes from Gradle properties (~/.gradle/gradle.properties) or environment
+// variables, never from a file in this repo. See "Release signing" in AGENTS.md.
+fun signingValue(name: String): String? =
+    providers.gradleProperty(name).orElse(providers.environmentVariable(name)).orNull
 
-fun hasSigningVars(): Boolean {
-    return providers.environmentVariable("SIGNING_KEY_ALIAS").orNull != null
-            && providers.environmentVariable("SIGNING_KEY_PASSWORD").orNull != null
-            && providers.environmentVariable("SIGNING_STORE_FILE").orNull != null
-            && providers.environmentVariable("SIGNING_STORE_PASSWORD").orNull != null
-}
+val signingKeys = listOf("AFSH_STORE_FILE", "AFSH_STORE_PASSWORD", "AFSH_KEY_ALIAS", "AFSH_KEY_PASSWORD")
+val hasReleaseSigning = signingKeys.all { signingValue(it) != null }
 
 base {
     val versionCode = project.property("VERSION_CODE").toString().toInt()
@@ -45,22 +38,15 @@ android {
     }
 
     signingConfigs {
-        if (keystorePropertiesFile.exists()) {
+        if (hasReleaseSigning) {
             register("release") {
-                keyAlias = keystoreProperties.getProperty("keyAlias")
-                keyPassword = keystoreProperties.getProperty("keyPassword")
-                storeFile = file(keystoreProperties.getProperty("storeFile"))
-                storePassword = keystoreProperties.getProperty("storePassword")
-            }
-        } else if (hasSigningVars()) {
-            register("release") {
-                keyAlias = providers.environmentVariable("SIGNING_KEY_ALIAS").get()
-                keyPassword = providers.environmentVariable("SIGNING_KEY_PASSWORD").get()
-                storeFile = file(providers.environmentVariable("SIGNING_STORE_FILE").get())
-                storePassword = providers.environmentVariable("SIGNING_STORE_PASSWORD").get()
+                storeFile = file(signingValue("AFSH_STORE_FILE")!!)
+                storePassword = signingValue("AFSH_STORE_PASSWORD")
+                keyAlias = signingValue("AFSH_KEY_ALIAS")
+                keyPassword = signingValue("AFSH_KEY_PASSWORD")
             }
         } else {
-            logger.warn("Warning: No signing config found. Build will be unsigned.")
+            logger.warn("No release signing set (AFSH_* properties). Release builds will be unsigned.")
         }
     }
 
@@ -81,7 +67,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            if (keystorePropertiesFile.exists() || hasSigningVars()) {
+            if (hasReleaseSigning) {
                 signingConfig = signingConfigs.getByName("release")
             }
         }
@@ -138,7 +124,7 @@ detekt {
 }
 
 dependencies {
-    implementation(libs.fossify.commons)
+    implementation(project(":commons"))
     implementation(libs.eventbus)
     implementation(libs.indicator.fast.scroll)
     implementation(libs.mmslib)

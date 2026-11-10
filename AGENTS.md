@@ -1,6 +1,6 @@
 # AFSH Messages
 
-A private, independent SMS/MMS client for Android. Kotlin. The launcher name is just "Messages"; AFSH is the product and design-system name. Started as a modified version of Fossify Messages (GPL-3.0); the Fossify libraries (`org.fossify:commons`, `mmslib`, `IndicatorFastScroll`) remain dependencies, and the license and credit stay. The inbox, search and conversation are Jetpack Compose; everything else is still XML views. Package and app ID `com.afsh.messages`. GitHub: `AfshinJalili/Messages` (private). Push to remote `github`; `origin` is upstream Fossify and is read-only.
+A private, independent SMS/MMS client for Android. Kotlin. The launcher name is just "Messages"; AFSH is the product and design-system name. Started as a modified version of Fossify Messages (GPL-3.0); Fossify Commons is vendored as the `commons/` module and `mmslib` and `IndicatorFastScroll` remain dependencies, and the license and credit stay. The inbox, search and conversation are Jetpack Compose; everything else is still XML views. Package and app ID `com.afsh.messages`. GitHub: `AfshinJalili/Messages` (private). Push to remote `github`; `origin` is upstream Fossify and is read-only.
 
 This file is the single source of truth for how the project is run. Update it in the same PR that changes the process. Product intent is in `PRODUCT.md`; design system in `DESIGN.md`; behavior specs in `docs/`. Do not add other Markdown files.
 
@@ -11,6 +11,8 @@ This file is the single source of truth for how the project is run. Update it in
 - Instrumented class: `adb shell am instrument --user 0 -w -e class com.afsh.messages.<Class> com.afsh.messages.debug.test/androidx.test.runner.AndroidJUnitRunner`. Read the `OK (n tests)` line; the exit code does not show failures. Wake and unlock the phone first.
 - Host checks: `python3 tests/check_design_tokens.py` (no inline colors or opacity), `python3 tests/check_inbox_database.py` (inbox SQL against the Room schema).
 - Icons: `python3 tools/export_icon.py`.
+- Release signing: `./gradlew :app:assembleRelease` signs only when `AFSH_STORE_FILE`, `AFSH_STORE_PASSWORD`, `AFSH_KEY_ALIAS` and `AFSH_KEY_PASSWORD` are set in `~/.gradle/gradle.properties` or the environment. Make the key once with `keytool -genkeypair -v -keystore ~/keys/afsh.jks -alias afsh -keyalg RSA -keysize 4096 -validity 10000`, keep it and its passwords outside the repo and backed up, and never commit a keystore (`*.jks` and `*.keystore` are git-ignored). Losing the key means updates need an uninstall.
+- Commons: `commons/` is Fossify Commons 6.1.6 (GPL-3.0) with its package-name, signature, sideload and donation checks removed. Do not reintroduce them; they show a "fake version" dialog to any app id outside `org.fossify.*`.
 - Design file: `design/afsh.pen` is encrypted. Open it only through the pen CLI or pencil MCP, never with Read or Grep.
 
 ## Workflow
