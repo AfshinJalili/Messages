@@ -180,10 +180,10 @@ enum class MessageAction(@StringRes val label: Int, @DrawableRes val icon: Int) 
     SHARE(org.fossify.commons.R.string.share, R.drawable.ic_lucide_share),
     SELECT_TEXT(org.fossify.commons.R.string.select_text, R.drawable.ic_lucide_text_cursor),
     DETAILS(R.string.message_details, R.drawable.ic_lucide_info),
-    SAVE_AS(org.fossify.commons.R.string.save_as, org.fossify.commons.R.drawable.ic_save_vector),
-    NOT_SPAM(R.string.not_spam, org.fossify.commons.R.drawable.ic_check_circle_vector),
-    RESTORE(R.string.restore, org.fossify.commons.R.drawable.ic_restart_alt_vector),
-    SELECT_ALL(org.fossify.commons.R.string.select_all, org.fossify.commons.R.drawable.ic_select_all_vector),
+    SAVE_AS(org.fossify.commons.R.string.save_as, R.drawable.ic_lucide_download),
+    NOT_SPAM(R.string.not_spam, R.drawable.ic_lucide_circle_check),
+    RESTORE(R.string.restore, R.drawable.ic_lucide_rotate_ccw),
+    SELECT_ALL(org.fossify.commons.R.string.select_all, R.drawable.ic_lucide_list_checks),
 
     // Only in a scheduled message's sheet (84).
     EDIT_SCHEDULED(R.string.edit_message_and_time, R.drawable.ic_lucide_pencil),

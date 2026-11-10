@@ -50,11 +50,6 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.PlainTooltip
-import androidx.compose.material3.TooltipBox
-import androidx.compose.material3.TooltipDefaults
-import androidx.compose.material3.rememberTooltipState
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -107,6 +102,9 @@ import com.afsh.messages.ui.components.SwipeGesture
 import com.afsh.messages.ui.components.SwipeTone
 import com.afsh.messages.ui.components.SwipeableRow
 import com.afsh.messages.ui.components.TopDestination
+import com.afsh.messages.ui.components.BottomBarSwitch
+import com.afsh.messages.ui.components.SelectionIconAction
+import com.afsh.messages.ui.components.keptWhileLeaving
 import com.afsh.messages.ui.library.LibraryScreen
 import com.afsh.messages.helpers.InboxFilter
 import com.afsh.messages.helpers.SwipeAction
@@ -187,10 +185,19 @@ fun InboxScreen(
             }
         },
         bottomBar = {
-            if (state.selecting) {
-                SelectionBar(state, onAction)
-            } else if (!showRail) {
-                PrimaryNavigation(if (libraryOpen) TopDestination.LIBRARY else TopDestination.INBOX, onDestination, unreadSpam = state.unreadSpam)
+            // The selection bar rises over the navigation instead of snapping in.
+            val bar = when {
+                state.selecting -> InboxBottomBar.SELECTION
+                !showRail -> InboxBottomBar.NAVIGATION
+                else -> InboxBottomBar.NONE
+            }
+            BottomBarSwitch(bar) {
+                when (it) {
+                    InboxBottomBar.SELECTION -> SelectionBar(state, onAction)
+                    InboxBottomBar.NAVIGATION ->
+                        PrimaryNavigation(if (libraryOpen) TopDestination.LIBRARY else TopDestination.INBOX, onDestination, unreadSpam = state.unreadSpam)
+                    InboxBottomBar.NONE -> Unit
+                }
             }
         },
     ) { padding ->
@@ -668,9 +675,10 @@ private fun NewMessageButton(expanded: Boolean, onClick: () -> Unit) {
 /** Icon-only, like the rest of the redesign: each action names itself to TalkBack and in a long-press tooltip. */
 @Composable
 private fun SelectionBar(state: InboxUiState, onAction: (InboxAction) -> Unit) {
-    val (bar, overflow) = remember(state.selected, state.rows, state.archiveAvailable) {
+    val actions = remember(state.selected, state.rows, state.archiveAvailable) {
         availableActions(state.selectedRows, state.archiveAvailable).splitForBar()
     }
+    val (bar, overflow) = keptWhileLeaving(actions, empty = state.selected.isEmpty())
     Surface(color = MaterialTheme.colorScheme.surfaceContainer) {
         Row(
             Modifier
@@ -712,23 +720,7 @@ private fun SelectionBar(state: InboxUiState, onAction: (InboxAction) -> Unit) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun SelectionIconAction(icon: Int, label: String, destructive: Boolean = false, onClick: () -> Unit) {
-    TooltipBox(
-        positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
-        tooltip = { PlainTooltip { Text(label) } },
-        state = rememberTooltipState(),
-    ) {
-        IconButton(onClick = onClick, modifier = Modifier.size(TargetSize)) {
-            Icon(
-                painterResource(icon),
-                contentDescription = label,
-                tint = if (destructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
-}
+private enum class InboxBottomBar { SELECTION, NAVIGATION, NONE }
 
 private fun previewRow(id: Long, title: String, snippet: String, minutesAgo: Int, read: Boolean, draft: String? = null, pinned: Boolean = false, muted: Boolean = false) =
     InboxRow(
