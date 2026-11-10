@@ -6,9 +6,9 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-source = ROOT / "app/src/main/kotlin/org/fossify/messages"
+source = ROOT / "app/src/main/kotlin/com/afsh/messages"
 version = int(re.search(r"version = (\d+)", (source / "databases/MessagesDatabase.kt").read_text())[1])
-schema = json.loads((ROOT / f"app/schemas/org.fossify.messages.databases.MessagesDatabase/{version}.json").read_text())["database"]
+schema = json.loads((ROOT / f"app/schemas/com.afsh.messages.databases.MessagesDatabase/{version}.json").read_text())["database"]
 db = sqlite3.connect(":memory:")
 for entity in schema["entities"]:
     db.execute(entity["createSql"].replace("${TABLE_NAME}", entity["tableName"]))
@@ -73,6 +73,14 @@ for method, params in [("getMessagesWithIds", {"ids": 30000}), ("getMessagesWith
     active = {"ids": 29999} if method == "getMessagesWithIds" else {"text": "29999"}
     assert len(db.execute(query, active).fetchall()) == 1, f"{method} hides active messages"
 print("PASS: starred and search results exclude recycled messages")
+
+# The Recycle bin cards count each conversation's recycled messages and date the latest deletion.
+summaries = re.search(r'@Query\("([^"\n]+)"\)\s+fun getRecycleBinSummaries\(', dao)[1]
+db.execute("INSERT INTO recycle_bin_messages (id, deleted_ts) VALUES (28500, 5)")
+rows = {thread: (count, deleted) for thread, count, deleted in db.execute(summaries).fetchall()}
+assert rows == {(30000 - 1) % 1500 + 1: (2, 5)}, rows
+db.execute("DELETE FROM recycle_bin_messages WHERE id = 28500")
+print("PASS: recycle bin summaries group by conversation")
 
 # Partial reads preserve unseen rows and do not alias SMS/MMS IDs.
 read_query = re.search(r'@Query\("(UPDATE messages SET read = 1 WHERE id = :id AND is_mms = :isMMS)"\)', dao)[1]

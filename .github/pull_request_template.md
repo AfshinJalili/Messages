@@ -3,7 +3,7 @@ Closes #
 ## What changed
 
 ## Design
-<!-- Frames in design/open-line.pen, or "none" -->
+<!-- Frames in design/afsh.pen, or "none" -->
 
 ## Verification
 <!-- Build and test results from the test agent -->

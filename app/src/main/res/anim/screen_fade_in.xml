@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Switching between Inbox, Library and Settings: the new destination fades in. -->
+<alpha xmlns:android="http://schemas.android.com/apk/res/android"
+    android:duration="@integer/motion_tab_ms"
+    android:fromAlpha="0"
+    android:interpolator="@android:interpolator/linear_out_slow_in"
+    android:toAlpha="1" />

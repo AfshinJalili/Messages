@@ -1,43 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_launcher_name">Messages</string>
-    <string name="spam_filters">Spam filters</string>
-    <string name="rule_filter_enable">Silence obvious spam and file it in Spam (messages are kept, not deleted)</string>
     <string name="spam_folder">Spam</string>
     <string name="no_blocked_messages">No blocked messages</string>
     <string name="clear_spam">Clear all</string>
     <string name="clear_spam_confirmation">Permanently delete all blocked messages?</string>
-    <string name="delete_spam_confirmation">Permanently delete selected spam?</string>
     <string name="not_spam">Not spam (restore to inbox)</string>
     <string name="allow_sender">Always allow this sender</string>
     <string name="sender_allowed">Sender allowed and message restored</string>
     <string name="message_restored">Message restored to inbox</string>
-    <string name="label_with_count" translatable="false">%1$s · %2$d</string>
-    <string name="spam_footer" translatable="false">%1$s · %2$s · %3$s</string>
-    <plurals name="spam_group_count">
-        <item quantity="one">%d message marked as spam</item>
-        <item quantity="other">%d messages marked as spam</item>
-    </plurals>
     <string name="block_reason_ai">Legacy filter</string>
     <string name="block_reason_keyword">Keyword</string>
     <string name="block_reason_number">Blocked number</string>
     <string name="block_reason_rule">Rule</string>
-    <string name="type_a_message">Type a message…</string>
     <string name="message_not_sent_short">Message not sent</string>
-    <string name="message_not_sent_touch_retry">Not sent. Touch to retry.</string>
     <string name="message_sending_error">Your message to \'%s\' has not been sent</string>
     <string name="add_person">Add Person</string>
     <string name="attachment">Attachment</string>
-    <string name="no_conversations_found">No stored conversations have been found</string>
-    <string name="start_conversation">Start a conversation</string>
-    <string name="back_to_inbox">Back to inbox</string>
     <string name="send_message">Send</string>
     <string name="no_recycle_bin_conversations">No conversations in the recycle bin</string>
     <string name="reply">Reply</string>
     <string name="show_character_counter">Show a character counter at writing messages</string>
     <string name="loading_messages">Loading messages…</string>
-    <string name="no_reply_support">Sender doesn\'t support replies</string>
-    <string name="draft">Draft</string>
     <string name="sending">Sending…</string>
     <string name="pin_conversation">Pin to the top</string>
     <string name="unpin_conversation">Unpin</string>
@@ -53,54 +37,38 @@
     <!-- New conversation -->
     <string name="new_conversation">New conversation</string>
     <string name="add_contact_or_number">Add Contact or Number…</string>
-    <string name="suggestions">Suggestions</string>
     <!-- Group conversation -->
-    <string name="members">Members</string>
     <string name="conversation_name">Conversation name</string>
     <string name="conversation_details">Conversation details</string>
     <string name="rename_conversation">Rename conversation</string>
-    <string name="rename_conversation_warning">Only you can see this conversation name</string>
     <!-- Schedule send -->
     <string name="scheduled_message">Scheduled message</string>
     <string name="schedule_message">Schedule message</string>
-    <string name="schedule_send">Schedule send</string>
     <string name="cancel_schedule_send">Cancel schedule send</string>
     <string name="must_pick_time_in_the_future">You must pick a time in the future</string>
-    <string name="schedule_send_warning">Keep the phone on and make sure there is nothing killing the app while in background.</string>
-    <string name="update_message">Update message</string>
     <string name="send_now">Send now</string>
     <!-- Message details -->
     <string name="message_details">Message details</string>
-    <string name="message_details_sender">Sender</string>
-    <string name="message_details_receiver">Receiver</string>
-    <string name="message_details_sent_at">Sent at</string>
-    <string name="message_details_received_at">Received at</string>
     <!-- Notifications -->
     <string name="channel_received_sms">Received SMS</string>
     <string name="new_message">New message</string>
     <string name="mark_as_read">Mark as Read</string>
     <string name="mark_as_unread">Mark as Unread</string>
     <string name="me">Me</string>
-    <string name="enable_custom_notifications">Enable custom notifications</string>
     <!-- Archive -->
     <string name="unarchive">Unarchive</string>
     <string name="empty_archive">Delete all archived conversations</string>
     <string name="archived_conversations">Archive</string>
-    <string name="show_archived_conversations">Show archived conversations</string>
     <string name="archive">Archive</string>
     <string name="no_archived_conversations">No archived conversations have been found</string>
-    <string name="archive_emptied_successfully">The archive has been emptied successfully</string>
     <string name="empty_archive_confirmation">Are you sure you want to empty the archive? All archived conversations will be permanently lost.</string>
     <string name="keep_conversations_archived">Keep conversations archived</string>
     <!-- Recycle bin -->
     <string name="restore">Restore</string>
     <string name="restore_all_messages">Restore all messages</string>
     <string name="empty_recycle_bin_messages_confirmation">Are you sure you want to empty the Recycle Bin? The messages will be permanently lost.</string>
-    <string name="skip_the_recycle_bin_messages">Skip the Recycle Bin, delete messages directly</string>
     <!-- Confirmation dialog -->
     <string name="delete_whole_conversation_confirmation">Are you sure you want to delete all messages of this conversation?</string>
-    <string name="archive_confirmation">Are you sure you want to archive %s?</string>
-    <string name="restore_whole_conversation_confirmation">Are you sure you want to restore all messages of this conversation?</string>
     <string name="restore_confirmation">Are you sure you want to restore %s?</string>
     <!-- Are you sure you want to delete 5 conversations? -->
     <plurals name="delete_conversations">
@@ -113,11 +81,6 @@
         <item quantity="other">%d messages</item>
     </plurals>
     <!-- Settings -->
-    <string name="keyword">Keyword</string>
-    <string name="blocked_keywords">Blocked keywords</string>
-    <string name="manage_blocked_keywords">Manage blocked keywords</string>
-    <string name="not_blocking_keywords">You are not blocking any keywords. You may add keywords here to block all messages containing them.</string>
-    <string name="add_a_blocked_keyword">Add a blocked keyword</string>
     <string name="lock_screen_visibility">Lock screen notification visibility</string>
     <string name="sender_and_message">Sender and message</string>
     <string name="sender_only">Sender only</string>
@@ -126,21 +89,16 @@
     <string name="send_on_enter">Send message on pressing Enter</string>
     <string name="mms_file_size_limit">Resize sent MMS images</string>
     <string name="mms_file_size_limit_none">No limit</string>
-    <string name="outgoing_messages">Outgoing messages</string>
     <string name="group_message_mms">Send group messages as MMS</string>
     <string name="send_long_message_mms">Send long messages as MMS</string>
     <!-- Export / Import -->
     <string name="messages">Messages</string>
-    <string name="keywords">Keywords</string>
     <string name="export_messages">Export messages</string>
     <string name="export_sms">Export SMS</string>
     <string name="export_mms">Export MMS</string>
     <string name="import_messages">Import messages</string>
     <string name="import_sms">Import SMS</string>
     <string name="import_mms">Import MMS</string>
-    <string name="no_option_selected">You have to select at least one item</string>
-    <string name="export_blocked_keywords">Export blocked keywords</string>
-    <string name="import_blocked_keywords">Import blocked keywords</string>
     <!-- Errors -->
     <string name="empty_destination_address">Can\'t send message to an empty number</string>
     <string name="unable_to_save_message">Unable to save message to the telephony database</string>
@@ -148,21 +106,11 @@
     <string name="error_radio_turned_off">Couldn\'t send message, radio turned off</string>
     <string name="carrier_send_error">Couldn\'t send message, carrier error</string>
     <string name="unknown_error_occurred_sending_message">Couldn\'t send message, error code: %d</string>
-    <string name="invalid_short_code">Can\'t reply to short codes like this</string>
     <string name="invalid_short_code_desc">You can only reply to short codes with numbers like \"503501\" but not to codes containing letters and numbers like \"AB-CD0\".</string>
     <string name="attachment_sized_exceeds_max_limit">Attachment size exceeds max MMS limit</string>
     <string name="sim_card_not_available">SIM card not available</string>
     <string name="couldnt_download_mms">Couldn\'t download MMS</string>
     <!-- FAQ -->
-    <string name="faq_1_title">Why does the app require access to the internet?</string>
-    <string name="faq_1_text">Sadly it is needed for sending MMS attachments. Not being able to send MMS would be a really huge disadvantage compared to other apps, so we decided to go this way.
-    However, as usually, there are no ads, tracking or analytics whatsoever, the internet is used only for sending MMS.</string>
-    <string name="faq_2_title">The other end is not receiving my MMS, is there anything I can do about it?</string>
-    <string name="faq_2_text">MMS size is limited by carriers, you can try setting a smaller limit in the app settings.</string>
-    <string name="faq_3_title">Does the app support scheduled messages?</string>
-    <string name="faq_3_text">Yes, you can schedule messages to be sent in the future by long pressing the Send button and picking the desired date and time.</string>
-    <string name="faq_4_title">Why do my group message replies appear as individual texts to recipients?</string>
-    <string name="faq_4_text">You need to enable \"Send group messages as MMS\" in the app settings. This will ensure that group messages are sent as proper MMS, allowing all participants to see each other\'s replies.</string>
     <!--
         Haven't found some strings? There's more at
         the shared commons string resources
@@ -171,17 +119,13 @@
     <string name="inbox_unread">Unread</string>
     <string name="inbox_spam">Spam</string>
     <string name="no_unread_conversations">You’re all caught up</string>
-    <string name="inbox_refresh_failed">Couldn’t refresh messages. Reopen the app to try again.</string>
     <!-- Thread -->
     <string name="new_messages">New messages</string>
     <string name="copy_otp_code">Copy %s</string>
     <string name="speak_message">Dictate message</string>
     <!-- Inbox swipe actions -->
-    <string name="swipe_left_action">Swipe left action</string>
-    <string name="swipe_right_action">Swipe right action</string>
     <string name="swipe_action_none">Off</string>
     <string name="conversation_archived">Conversation archived</string>
-    <string name="conversation_deleted">Conversation deleted</string>
     <!-- Inbox filters -->
     <string name="inbox_personal">People</string>
     <string name="inbox_business">Services</string>
@@ -195,8 +139,6 @@
     <string name="conversation_unmuted">Conversation unmuted</string>
     <string name="muted">Muted</string>
     <!-- Message actions -->
-    <string name="react">React</string>
-    <string name="remove_reaction">Remove reaction</string>
     <string name="star_message">Star</string>
     <string name="unstar_message">Unstar</string>
     <string name="starred_messages">Starred</string>
@@ -211,12 +153,11 @@
     <string name="message_sim_label">SIM %1$s</string>
     <string name="message_delivered">Delivered</string>
     <string name="message_sent">Sent</string>
-    <!-- Open Line inbox (Compose) -->
+    <!-- AFSH inbox (Compose) -->
     <string name="inbox_search_hint">Search messages</string>
     <string name="inbox_nav_inbox">Inbox</string>
     <string name="inbox_nav_library">Library</string>
     <string name="inbox_section_pinned">Pinned</string>
-    <string name="inbox_section_upcoming">Scheduled</string>
     <string name="inbox_section_today">Today</string>
     <string name="inbox_section_yesterday">Yesterday</string>
     <string name="inbox_section_earlier">Earlier</string>
@@ -233,7 +174,7 @@
         <item quantity="one">%d selected</item>
         <item quantity="other">%d selected</item>
     </plurals>
-    <!-- Open Line conversation (Compose) -->
+    <!-- AFSH conversation (Compose) -->
     <string name="thread_retry">Retry</string>
     <string name="thread_search_next">Next match</string>
     <plurals name="thread_new_count">
@@ -249,9 +190,9 @@
         <item quantity="one">%d unread</item>
         <item quantity="other">%d unread</item>
     </plurals>
-    <plurals name="spam_group_hidden">
-        <item quantity="one">%d spam message hidden</item>
-        <item quantity="other">%d spam messages hidden</item>
+    <plurals name="spam_restored">
+        <item quantity="one">%d message moved to the inbox</item>
+        <item quantity="other">%d messages moved to the inbox</item>
     </plurals>
     <string name="library_subtitle">The things you want to keep, quiet, or recover</string>
     <string name="library_starred_description">Messages you marked to return to</string>
@@ -260,7 +201,7 @@
     <string name="library_recycle_description">Recently deleted, with a way back</string>
     <string name="library_principle_title">Your inbox stays personal.</string>
     <string name="library_principle_body">Nothing moves here without a clear action or rule.</string>
-    <!-- Open Line composer (Compose, design 11, 78, 79, 81) -->
+    <!-- AFSH composer (Compose, design 11, 78, 79, 81) -->
     <string name="composer_hint">Message</string>
     <string name="composer_hint_name">Message %s</string>
     <string name="composer_cant_reply">This sender can’t receive replies</string>
@@ -289,7 +230,7 @@
     <string name="attach_contact_text">Send a contact card</string>
     <string name="attach_send_later_text">Pick a time before sending</string>
 
-    <!-- Open Line global search, designs 03 / 04 / 53. -->
+    <!-- AFSH global search, designs 03 / 04 / 53. -->
     <string name="search_people">People</string>
     <string name="search_media">Media</string>
     <string name="search_photos">Photos</string>
@@ -305,4 +246,395 @@
     <string name="search_nothing_yet">Nothing here yet</string>
     <string name="search_nothing_for">Nothing for “%1$s”</string>
     <string name="search_empty_hint">Try a person’s name or a different word from the message.</string>
+
+    <!-- Library pages (design 18, 19, 22) -->
+    <string name="day_and_time">%1$s · %2$s</string>
+    <string name="starred_subtitle">Little things worth finding again</string>
+    <string name="starred_empty_text">Star a message to keep it here.</string>
+    <string name="archive_subtitle">Quieted, never gone</string>
+    <string name="archive_hint">Archived threads leave the inbox and remain searchable.</string>
+    <string name="archive_action_title">Need it in your inbox?</string>
+    <string name="archive_action_text">Swipe a thread or open it and choose Unarchive.</string>
+    <plurals name="conversations_unarchived">
+        <item quantity="one">Conversation unarchived</item>
+        <item quantity="other">%d conversations unarchived</item>
+    </plurals>
+    <string name="recycle_bin_subtitle">Recover or erase recently deleted threads</string>
+    <string name="recycle_bin_note">Items stay here for 30 days, then are removed for good.</string>
+    <string name="recycle_bin_detail">%1$s · %2$s</string>
+    <plurals name="recycle_bin_messages">
+        <item quantity="one">%d message</item>
+        <item quantity="other">%d messages</item>
+    </plurals>
+    <string name="recycle_bin_deleted_today">deleted today</string>
+    <string name="recycle_bin_deleted_yesterday">deleted yesterday</string>
+    <string name="recycle_bin_deleted_on">deleted %s</string>
+    <string name="recycle_bin_empty">Empty recycle bin</string>
+    <string name="empty_bin_title">Empty the recycle bin?</string>
+    <string name="delete_forever">Delete forever</string>
+    <string name="delete_forever_title">Delete forever?</string>
+    <string name="delete_forever_conversation_text">This conversation cannot be restored after permanent deletion.</string>
+
+    <!-- Spam and block rules (design 20, 21, 38, 50, 51) -->
+    <string name="spam_subtitle">Separate from the people you trust</string>
+    <string name="spam_empty_text">Blocked and suspicious messages stay here without an inbox alert.</string>
+    <string name="spam_hold_label">Message actions</string>
+    <string name="not_spam_short">Not spam</string>
+    <string name="block_sender">Block sender</string>
+    <string name="block_sender_title">Block %s?</string>
+    <string name="block_sender_text">Their new messages will go straight to Spam, without an alert. You can unblock them in Block rules.</string>
+    <string name="clear_spam_title">Delete all spam?</string>
+    <string name="block_rules">Block rules</string>
+    <string name="block_rules_subtitle">A short, understandable list of what gets filtered</string>
+    <plurals name="blocked_senders">
+        <item quantity="one">%d sender</item>
+        <item quantity="other">%d senders</item>
+    </plurals>
+    <string name="blocked_phrases">Blocked phrases</string>
+    <plurals name="blocked_phrase_count">
+        <item quantity="one">%d phrase</item>
+        <item quantity="other">%d phrases</item>
+    </plurals>
+    <plurals name="blocked_number_count">
+        <item quantity="one">%d number</item>
+        <item quantity="other">%d numbers</item>
+    </plurals>
+    <string name="filter_obvious_spam">Filter obvious spam</string>
+    <string name="filter_obvious_spam_on">On · Uses local rules</string>
+    <string name="filter_obvious_spam_off">Off</string>
+    <string name="edit_phrase">Edit phrase</string>
+    <string name="remove_phrase">Remove %s</string>
+    <string name="add_phrase_or_number">Add a phrase or number</string>
+    <string name="block_a_phrase">Block a phrase</string>
+    <string name="block_a_phrase_subtitle">Messages matching this phrase move to Spam</string>
+    <string name="block_a_number">Block a number</string>
+    <string name="block_a_number_subtitle">Messages from this sender move to Spam</string>
+    <string name="blocked_numbers_subtitle">These senders cannot reach your inbox</string>
+    <string name="no_blocked_numbers">No blocked numbers</string>
+    <string name="no_blocked_numbers_text">Block a sender from Spam or a conversation, or add a number here.</string>
+    <string name="phrase">Phrase</string>
+    <string name="phone_number_label">Phone number or sender name</string>
+    <string name="phrase_guidance">Matching is case-insensitive. Review filtered messages in Spam.</string>
+    <string name="number_guidance">Their messages are still kept. Review them in Spam.</string>
+    <string name="example_match">Example match</string>
+    <string name="quoted">“%s”</string>
+    <string name="no_current_match">No message on this phone matches yet.</string>
+    <string name="add_phrase">Add phrase</string>
+    <string name="save_phrase">Save phrase</string>
+    <string name="phrase_already_blocked">This phrase is already blocked</string>
+    <string name="phrase_error_detail">Edit the blocked phrase instead, or try different words.</string>
+    <string name="number_invalid">Enter a number or sender name</string>
+    <string name="number_error_detail">Use the digits or the name the messages come from.</string>
+    <string name="move_block_rules">Move block rules</string>
+    <string name="move_block_rules_subtitle">Keep your filtering choices on another phone</string>
+    <string name="what_will_be_exported">What will be exported</string>
+    <string name="rules_summary">%1$s · %2$s</string>
+    <string name="rules_export_privacy">The file lists blocked numbers and phrases. Store it privately.</string>
+    <string name="export_block_list">Export block list</string>
+    <string name="have_a_block_list">Have a block list?</string>
+    <string name="have_a_block_list_text">Choose a file to merge rules with this device.</string>
+    <string name="block_rules_file_name" translatable="false">messages-block-rules.json</string>
+    <string name="block_rules_exported">Block list exported</string>
+    <string name="block_rules_imported">Added %s</string>
+
+    <!-- Settings (design 24–31, 48, 49) -->
+    <string name="settings_subtitle">Make Messages feel right for you</string>
+    <string name="settings_your_experience">Your experience</string>
+    <string name="settings_control">Control</string>
+    <string name="settings_appearance">Appearance</string>
+    <string name="settings_appearance_subtitle">Comfortable reading in every light</string>
+    <string name="settings_appearance_summary">Theme, text size, language, dates</string>
+    <string name="settings_notifications_subtitle">Attention when it matters, privacy where it counts</string>
+    <string name="settings_notifications_summary">Alerts and lock screen</string>
+    <string name="settings_writing">Writing &amp; sending</string>
+    <string name="settings_writing_subtitle">Keep the composer predictable</string>
+    <string name="settings_writing_summary">Composer, MMS and delivery</string>
+    <string name="settings_interactions">Interactions</string>
+    <string name="settings_interactions_subtitle">Choose shortcuts that fit your hands</string>
+    <string name="settings_interactions_summary">Swipe actions and archive</string>
+    <string name="settings_block_rules_summary">Numbers, phrases, local filter</string>
+    <string name="settings_privacy">Privacy &amp; lock</string>
+    <string name="settings_privacy_subtitle">Control what others can see</string>
+    <string name="settings_privacy_summary">App lock and stored data</string>
+    <string name="settings_backup">Backup &amp; restore</string>
+    <string name="settings_backup_subtitle">Your message history, in your control</string>
+    <string name="settings_backup_summary">Move your messages safely</string>
+    <string name="about_app">About</string>
+    <string name="about_subtitle">A private place for your SMS and MMS</string>
+    <string name="about_summary">App information and help</string>
+    <string name="about_description">Built for readable, dependable conversations.</string>
+    <string name="help_and_support">Help &amp; support</string>
+    <string name="privacy_information">Privacy information</string>
+    <string name="privacy_information_text">Messages stay on this phone. The app needs no account and sends nothing anywhere but your carrier. Backups are files you create and keep yourself.</string>
+    <string name="open_source_licenses">Open-source licenses</string>
+    <string name="open_source_licenses_text">AFSH Messages is a modified version of Fossify Messages (GPL-3.0). It uses Fossify Commons (GPL-3.0), Lucide icons (ISC), and the Funnel Sans, Atkinson Hyperlegible and Vazirmatn fonts (SIL Open Font License 1.1).</string>
+    <string name="swipe_in_the_inbox">Swipe in the inbox</string>
+    <string name="swipe_right">Swipe right</string>
+    <string name="swipe_left">Swipe left</string>
+    <string name="archive_behavior">Archive behavior</string>
+    <string name="keep_archived_on">On · New messages stay in Archive until you move them.</string>
+    <string name="keep_archived_off">Off · A new message brings the conversation back to the inbox.</string>
+    <string name="settings_theme">Theme</string>
+    <string name="theme_system">System</string>
+    <string name="theme_dark">Dark</string>
+    <string name="theme_light">Light</string>
+    <string name="settings_reading">Reading</string>
+    <string name="text_size">Text size</string>
+    <string name="text_size_value">%s · follows system size</string>
+    <string name="date_and_time">Date &amp; time</string>
+    <string name="use_24_hour_time">24-hour time</string>
+    <string name="settings_composer">Composer</string>
+    <string name="setting_on">On</string>
+    <string name="setting_off">Off</string>
+    <string name="character_counter_on">On, near SMS limit</string>
+    <string name="settings_delivery">Delivery</string>
+    <string name="settings_alerts">Alerts</string>
+    <string name="new_message_alerts">New message alerts</string>
+    <string name="sound_and_vibration">Sound &amp; vibration</string>
+    <string name="sound_and_vibration_value">In Android notification settings</string>
+    <string name="settings_lock_screen">Lock screen</string>
+    <string name="per_conversation_alerts">Per-conversation alerts</string>
+    <string name="per_conversation_alerts_value">Set from conversation details</string>
+    <string name="lock_preview_sender">Mina Farahani</string>
+    <string name="lock_preview_app">Messages</string>
+    <string name="lock_preview_message">Morning! I’m at the station.</string>
+    <string name="lock_preview_hidden">New message · content hidden</string>
+    <string name="settings_app_access">App access</string>
+    <string name="app_lock">App lock</string>
+    <string name="app_lock_on">On · a password or fingerprint opens Messages</string>
+    <string name="app_lock_off">Off · use a password to open Messages</string>
+    <string name="settings_data">Data</string>
+    <string name="recycle_bin_setting_value">Deleted messages wait 30 days before they go</string>
+    <string name="clear_recent_searches">Clear recent searches</string>
+    <string name="clear_recent_searches_title">Clear recent searches?</string>
+    <string name="clear_recent_searches_text">The search page stops suggesting what you looked for before.</string>
+    <string name="no_account_required">No account required</string>
+    <string name="no_account_required_text">Core SMS/MMS works without signing in.</string>
+    <string name="export_subtitle">Choose exactly what goes into the file</string>
+    <string name="export_messages_detail">Create a JSON file for safe keeping or moving to another phone.</string>
+    <string name="import_messages_detail">Choose a supported backup and review it before restoring.</string>
+    <string name="keep_backup_private">Keep your backup private</string>
+    <string name="keep_backup_private_text">The exported file may contain message text and attachments.</string>
+    <string name="export_mms_detail">Includes their attachments</string>
+    <string name="file_name">File name</string>
+    <string name="export_destination">Next, choose a folder on this device.</string>
+    <string name="create_backup">Create backup</string>
+    <string name="restore_backup">Restore backup</string>
+    <string name="restore_backup_subtitle">Check the file before adding messages</string>
+    <string name="settings_review">Review</string>
+    <string name="nothing_is_removed">Nothing is removed</string>
+    <string name="nothing_is_removed_text">Existing messages remain in place.</string>
+    <string name="restore_messages">Restore messages</string>
+    <plurals name="backup_conversations">
+        <item quantity="one">%s conversation</item>
+        <item quantity="other">%s conversations</item>
+    </plurals>
+    <plurals name="backup_messages">
+        <item quantity="one">%s message</item>
+        <item quantity="other">%s messages</item>
+    </plurals>
+    <plurals name="recent_search_count">
+        <item quantity="one">%d recent search</item>
+        <item quantity="other">%d recent searches</item>
+    </plurals>
+
+    <!-- Conversation details, message pages, scheduling and dialogs (09, 12–14, 39, 43, 44, 47, 82, 84) -->
+    <string name="detail_pair" translatable="false">%1$s · %2$s</string>
+    <string name="you">You</string>
+    <string name="day_tomorrow">Tomorrow</string>
+    <string name="phone_number">Phone</string>
+    <string name="company">Company</string>
+    <string name="call">Call</string>
+    <string name="mute">Mute</string>
+    <string name="unmute">Unmute</string>
+    <string name="open_contact">Open contact</string>
+    <string name="people">People</string>
+    <string name="sim">SIM</string>
+    <string name="sim_default">Phone default</string>
+    <string name="custom_notifications">Custom notifications</string>
+    <string name="custom_notifications_on">On · this conversation has its own sound</string>
+    <string name="custom_notifications_off">Off · uses the app’s alerts</string>
+    <string name="rename_explanation">Only you see this name. Participants are not notified.</string>
+    <string name="save_name">Save name</string>
+    <string name="contact_card">Contact card</string>
+    <string name="contact_card_subtitle">A person shared in a message</string>
+    <string name="contact_card_unreadable">This contact card can’t be read</string>
+    <string name="shared_by">Shared by %s</string>
+    <string name="save_to_contacts">Save to contacts</string>
+    <string name="message_details_subtitle">Delivery information and message facts</string>
+    <string name="message_type">Type</string>
+    <string name="message_from">From</string>
+    <string name="message_to">To</string>
+    <string name="message_sent_at">Sent</string>
+    <string name="message_received_at">Received</string>
+    <string name="message_status">Status</string>
+    <string name="select_text_subtitle">Copy only the part you need</string>
+    <string name="copy_selection">Copy selection</string>
+    <string name="copy_whole_message">Copy whole message</string>
+    <string name="send_later">Send later</string>
+    <string name="send_later_subtitle">A clear send time, with an easy way to change it</string>
+    <string name="message_label">Message</string>
+    <string name="date_label">Date</string>
+    <string name="time_label">Time</string>
+    <string name="other_date">Other date</string>
+    <string name="change_time">Change time</string>
+    <string name="use_this_time">Use this time</string>
+    <string name="scheduled_to">To %s</string>
+    <string name="scheduled_for">Scheduled for %s</string>
+    <string name="scheduled_message_subtitle">Edit, send now, or cancel</string>
+    <string name="save_changes">Save changes</string>
+    <string name="edit_message_and_time">Edit message and time</string>
+    <string name="cancel_scheduled_message">Cancel scheduled message</string>
+    <string name="cancel_scheduled_message_title">Cancel this message?</string>
+    <string name="cancel_scheduled_message_text">It won’t be sent, and its text is not kept.</string>
+    <string name="archive_conversations_text">They leave the inbox. A new message brings a conversation back.</string>
+    <plurals name="people_count">
+        <item quantity="one">%d person</item>
+        <item quantity="other">%d people</item>
+    </plurals>
+    <plurals name="archive_conversations_title">
+        <item quantity="one">Archive %d conversation?</item>
+        <item quantity="other">Archive %d conversations?</item>
+    </plurals>
+    <plurals name="delete_conversations_title">
+        <item quantity="one">Delete %d conversation?</item>
+        <item quantity="other">Delete %d conversations?</item>
+    </plurals>
+    <plurals name="delete_conversations_to_bin_text">
+        <item quantity="one">It moves to the recycle bin and can be restored for 30 days.</item>
+        <item quantity="other">They move to the recycle bin and can be restored for 30 days.</item>
+    </plurals>
+    <plurals name="delete_conversations_forever_text">
+        <item quantity="one">It can’t be restored.</item>
+        <item quantity="other">They can’t be restored.</item>
+    </plurals>
+    <plurals name="delete_messages_title">
+        <item quantity="one">Delete %d message?</item>
+        <item quantity="other">Delete %d messages?</item>
+    </plurals>
+    <plurals name="delete_messages_to_bin_text">
+        <item quantity="one">It moves to the recycle bin and can be restored for 30 days.</item>
+        <item quantity="other">They move to the recycle bin and can be restored for 30 days.</item>
+    </plurals>
+    <plurals name="delete_messages_forever_text">
+        <item quantity="one">It can’t be restored.</item>
+        <item quantity="other">They can’t be restored.</item>
+    </plurals>
+    <plurals name="restore_messages_title">
+        <item quantity="one">Restore %d message?</item>
+        <item quantity="other">Restore %d messages?</item>
+    </plurals>
+    <plurals name="restore_messages_text">
+        <item quantity="one">It goes back to its conversation.</item>
+        <item quantity="other">They go back to their conversation.</item>
+    </plurals>
+
+    <!-- New message, new group and invalid number (05, 16, 42) -->
+    <string name="new_message_subtitle">Choose one person or make a group</string>
+    <string name="name_or_phone_number">Name or phone number</string>
+    <string name="write_to">Write to %s</string>
+    <string name="suggested">Suggested</string>
+    <string name="start_a_group">Start a group</string>
+    <string name="contacts">Contacts</string>
+    <string name="no_contacts_match">No contacts match</string>
+    <string name="contacts_access_title">Contacts are off</string>
+    <string name="contacts_access_text">Allow access to find people by name. You can still type a number.</string>
+    <string name="allow_contacts">Allow access to contacts</string>
+    <string name="new_group">New group</string>
+    <string name="new_group_subtitle">Add people, then start talking</string>
+    <string name="add_someone_else">Add someone else</string>
+    <string name="add_number">Add %s</string>
+    <string name="remove_person">Remove %s</string>
+    <string name="check_the_number">Check the number</string>
+    <string name="check_the_number_subtitle">This recipient cannot receive a message yet</string>
+    <string name="enter_a_valid_number">Enter a valid phone number</string>
+    <string name="enter_a_valid_number_text">Check the country code and digits, then try again.</string>
+    <string name="edit_number">Edit number</string>
+    <string name="choose_recipient_first">Choose a recipient to write a message</string>
+    <string name="cannot_reply_title">Replies aren’t possible</string>
+    <plurals name="continue_with_people">
+        <item quantity="one">Continue with %d person</item>
+        <item quantity="other">Continue with %d people</item>
+    </plurals>
+    <plurals name="phone_numbers_count">
+        <item quantity="one">%d number</item>
+        <item quantity="other">%d numbers</item>
+    </plurals>
+
+    <!-- First run (32, 33; Persian 55, 56) -->
+    <string name="welcome_title">Welcome to Messages</string>
+    <string name="welcome_subtitle">A clearer place for conversations</string>
+    <string name="welcome_statement">Every message has a person at the other end.</string>
+    <string name="welcome_text">Read, reply, search, and keep control of what reaches you.</string>
+    <string name="set_as_default_sms_app">Set as default SMS app</string>
+    <string name="why_default_sms_app">Android needs one default SMS app to send and receive messages.</string>
+    <string name="make_it_work">Make it work</string>
+    <string name="make_it_work_subtitle">Two permissions make the experience complete</string>
+    <string name="contacts_permission_text">Show names instead of numbers</string>
+    <string name="notifications_permission_text">Tell you when a new message arrives</string>
+    <string name="continue_action">Continue</string>
+    <string name="permissions_later">You can change these choices later in Android settings.</string>
+    <string name="notifications_off_title">Notifications are off</string>
+    <string name="notifications_off_text">Without them, new messages arrive silently and you only see them here.</string>
+    <string name="open_settings">Open settings</string>
+
+    <!-- Inbox refresh failed (73) -->
+    <string name="refresh_failed_title">Couldn’t refresh</string>
+    <string name="refresh_failed_text">Showing messages saved on this phone</string>
+    <string name="retry">Retry</string>
+
+    <!-- Conversation blocked (67) -->
+    <string name="unblock_to_reply">Unblock this sender to reply.</string>
+
+    <!-- Media viewer (45) -->
+    <string name="media_viewer">Media</string>
+    <string name="media_position">%1$d of %2$d</string>
+    <string name="save">Save</string>
+    <string name="media_details">Details</string>
+    <string name="open_in_another_app">Open in another app</string>
+    <string name="play_video">Play video</string>
+    <string name="media_saved">Saved</string>
+    <string name="spam_why">Why: %s</string>
+    <string name="spam_why_words">Why: %1$s · %2$s</string>
+    <string name="spam_why_stale">Why: %s · the current rules no longer catch it</string>
+    <string name="spam_why_phrase">Blocked phrase</string>
+    <string name="spam_why_unsubscribe">Unsubscribe line</string>
+    <string name="spam_why_marketing">Marketing words</string>
+    <string name="spam_patterns">Spam patterns</string>
+    <string name="spam_patterns_subtitle">What the local rules look for</string>
+    <string name="spam_patterns_card">See, test and edit the rule patterns</string>
+    <string name="spam_patterns_filter_off">Filter obvious spam is off</string>
+    <string name="spam_patterns_filter_off_text">The rules block nothing until it is on. One-time codes are still let past blocked phrases.</string>
+    <string name="spam_patterns_try">Try a message</string>
+    <string name="spam_patterns_try_message">Paste a message</string>
+    <string name="spam_patterns_try_sender">Sender (optional)</string>
+    <string name="spam_patterns_result_code">Allowed · one-time code</string>
+    <string name="spam_patterns_result_unsubscribe">Spam · unsubscribe line</string>
+    <string name="spam_patterns_result_marketing">Spam · marketing words with a link or a named sender</string>
+    <string name="spam_patterns_result_none">No rule matches · stays in the inbox</string>
+    <string name="spam_patterns_code_words">One-time code words</string>
+    <string name="spam_patterns_code_words_text">With a code, the message is always allowed, even with a link or an unsubscribe line.</string>
+    <string name="spam_patterns_code">Code</string>
+    <string name="spam_patterns_code_text">The code itself. Both a code word and a code must match.</string>
+    <string name="spam_patterns_unsubscribe">Unsubscribe line</string>
+    <string name="spam_patterns_unsubscribe_text">Any match sends the message to Spam.</string>
+    <string name="spam_patterns_links">Links</string>
+    <string name="spam_patterns_links_text">Marketing words with a link send the message to Spam.</string>
+    <string name="spam_patterns_marketing">Marketing words</string>
+    <string name="spam_patterns_marketing_text">Spam when there is a link or the sender is a name.</string>
+    <string name="spam_patterns_add">Add pattern</string>
+    <string name="spam_patterns_edit">Edit pattern</string>
+    <string name="spam_patterns_save">Save pattern</string>
+    <string name="spam_patterns_remove">Remove %s</string>
+    <string name="spam_patterns_regex_hint">A regular expression, matched ignoring case. Plain words work too.</string>
+    <string name="spam_patterns_reset">Reset to defaults</string>
+    <string name="spam_patterns_reset_text">Every group goes back to the built-in patterns. Your edits are lost.</string>
+    <string name="spam_patterns_recheck">Recheck Spam</string>
+    <string name="spam_patterns_rechecking">Rechecking…</string>
+    <string name="spam_patterns_recheck_text">One-time codes, and messages the rules no longer catch, go back to their conversations. Blocked senders stay in Spam.</string>
+    <plurals name="spam_patterns_rechecked">
+        <item quantity="one">%d message moved out of Spam</item>
+        <item quantity="other">%d messages moved out of Spam</item>
+    </plurals>
+    <string name="spam_why_separator">", "</string>
 </resources>

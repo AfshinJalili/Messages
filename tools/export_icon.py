@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Rasterize graphics/icon.svg into the store and README icon assets.
+"""Rasterize graphics/icon.svg into the launcher-store and README icon assets.
 
 Requires the system Python packages gi (Rsvg 2.0) and Pillow.
 """
@@ -24,7 +24,6 @@ def export():
     render(1024, ROOT / 'graphics/icon-1024.png')
     render(512, ROOT / 'graphics/icon-512.png')
     shutil.copy(ROOT / 'graphics/icon-512.png', ROOT / 'app/src/main/ic_launcher-playstore.png')
-    shutil.copy(ROOT / 'graphics/icon-512.png', ROOT / 'fastlane/metadata/android/en-US/images/icon.png')
     with Image.open(ROOT / 'graphics/icon-1024.png') as image:
         image.resize((192, 192), Image.Resampling.LANCZOS).save(ROOT / 'graphics/icon.webp', lossless=True)
 

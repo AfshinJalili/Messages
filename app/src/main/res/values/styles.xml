@@ -40,24 +40,5 @@
         <item name="windowActionModeOverlay">true</item>
     </style>
 
-    <style name="roundedImageView" parent="">
-        <item name="cornerFamily">rounded</item>
-        <item name="cornerSize">@dimen/normal_margin</item>
-    </style>
     <!-- Google Messages details pills: icon over a short verb, four across -->
-    <style name="ConversationActionButton" parent="Widget.Material3.Button.TonalButton">
-        <item name="android:layout_width">0dp</item>
-        <item name="android:layout_height">wrap_content</item>
-        <item name="android:layout_weight">1</item>
-        <item name="android:layout_marginHorizontal">@dimen/small_margin</item>
-        <item name="android:minHeight">@dimen/conversation_action_min_height</item>
-        <item name="android:paddingHorizontal">0dp</item>
-        <item name="android:textAllCaps">false</item>
-        <item name="iconGravity">top</item>
-        <item name="iconPadding">@dimen/small_margin</item>
-    </style>
-    <style name="InboxComposeShape">
-        <item name="cornerFamily">rounded</item>
-        <item name="cornerSize">50%</item>
-    </style>
 </resources>
