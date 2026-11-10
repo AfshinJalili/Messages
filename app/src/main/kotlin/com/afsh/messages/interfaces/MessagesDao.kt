@@ -106,6 +106,9 @@ interface MessagesDao {
     @Query("UPDATE messages SET read = 1 WHERE id = :id AND is_mms = :isMMS")
     fun markRead(id: Long, isMMS: Boolean)
 
+    @Query("UPDATE messages SET read = 0 WHERE id = :id AND is_mms = :isMMS")
+    fun markUnread(id: Long, isMMS: Boolean)
+
     @Query("UPDATE messages SET read = 1 WHERE thread_id = :threadId AND NOT (is_mms = 0 AND id IN (SELECT id FROM spam_messages))")
     fun markThreadRead(threadId: Long)
 
