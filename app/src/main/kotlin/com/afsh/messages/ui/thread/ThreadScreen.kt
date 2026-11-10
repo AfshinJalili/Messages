@@ -795,17 +795,23 @@ private fun MessageRow(
                 val groupedBelow = groupedWith(message, newer)
                 Bubble(message, state, onEvent, groupedBelow, hidden = lifted == message.getStableId()) { onOpen(message, groupedBelow, it) }
             }
-            AnimatedVisibility(
-                state.selecting,
-                Modifier.align(Alignment.CenterStart),
-                enter = fadeIn(tween(SELECTION_ENTER_MS, easing = FastOutSlowInEasing)) +
-                    scaleIn(tween(SELECTION_ENTER_MS, easing = FastOutSlowInEasing), initialScale = CHECK_START_SCALE),
-                exit = fadeOut(tween(SELECTION_EXIT_MS, easing = FastOutLinearInEasing)) +
-                    scaleOut(tween(SELECTION_EXIT_MS, easing = FastOutLinearInEasing), targetScale = CHECK_START_SCALE),
-            ) {
-                SelectionCheck(message.getStableId() in state.selected)
-            }
+            RowCheck(state.selecting, message.getStableId() in state.selected, Modifier.align(Alignment.CenterStart))
         }
+    }
+}
+
+/** The selection check at the start of a row; outside any Column or Row scope so it gets the plain AnimatedVisibility. */
+@Composable
+private fun RowCheck(visible: Boolean, checked: Boolean, modifier: Modifier = Modifier) {
+    AnimatedVisibility(
+        visible,
+        modifier,
+        enter = fadeIn(tween(SELECTION_ENTER_MS, easing = FastOutSlowInEasing)) +
+            scaleIn(tween(SELECTION_ENTER_MS, easing = FastOutSlowInEasing), initialScale = CHECK_START_SCALE),
+        exit = fadeOut(tween(SELECTION_EXIT_MS, easing = FastOutLinearInEasing)) +
+            scaleOut(tween(SELECTION_EXIT_MS, easing = FastOutLinearInEasing), targetScale = CHECK_START_SCALE),
+    ) {
+        SelectionCheck(checked)
     }
 }
 
