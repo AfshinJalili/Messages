@@ -278,7 +278,6 @@
     <!-- Spam and block rules (design 20, 21, 38, 50, 51) -->
     <string name="spam_subtitle">Separate from the people you trust</string>
     <string name="spam_empty_text">Blocked and suspicious messages stay here without an inbox alert.</string>
-    <string name="spam_hold_label">Message actions</string>
     <string name="not_spam_short">Not spam</string>
     <string name="block_sender">Block sender</string>
     <string name="block_sender_title">Block %s?</string>

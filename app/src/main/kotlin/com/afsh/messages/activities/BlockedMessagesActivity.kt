@@ -25,9 +25,9 @@ import com.afsh.messages.ui.spam.SpamScreen
 import com.afsh.messages.ui.spam.SpamUiState
 
 /**
- * 20 · Spam review. Not spam restores the sender's spam to their conversation; Block sender adds
- * them to the app's block list (their messages keep arriving here). Delete all is confirmed on
- * the page and still offers Undo.
+ * 20 · Spam review. Long-press selects messages. Not spam restores their senders' spam to their
+ * conversations; Block sender adds the senders to the app's block list (their messages keep arriving
+ * here). Delete and Delete all are confirmed on the page and still offer Undo.
  */
 class BlockedMessagesActivity : ComposePageActivity() {
     private var state by mutableStateOf(SpamUiState())
@@ -83,8 +83,12 @@ class BlockedMessagesActivity : ComposePageActivity() {
             SpamEvent.Back -> finish()
             SpamEvent.OpenRules -> startActivity(Intent(this, BlockRulesActivity::class.java))
             is SpamEvent.Open -> openThread(event.message)
-            is SpamEvent.NotSpam -> restore(event.message)
-            is SpamEvent.BlockSender -> ensureBackgroundThread { config.addSpamNumber(event.message.address) }
+            is SpamEvent.NotSpam -> restore(event.messages)
+            is SpamEvent.BlockSender -> {
+                val addresses = event.messages.map { it.address }.filter { it.isNotEmpty() }.distinct()
+                ensureBackgroundThread { addresses.forEach { config.addSpamNumber(it) } }
+            }
+            is SpamEvent.Delete -> deleteWithUndo(event.messages)
             SpamEvent.DeleteAll -> deleteWithUndo(state.messages)
             is SpamEvent.Seen -> markSeen(event.ids)
         }
@@ -100,28 +104,29 @@ class BlockedMessagesActivity : ComposePageActivity() {
     }
 
     /**
-     * Not spam moves the sender's spam back to their conversation, with Undo. A sender on the app's
-     * block list is unblocked too; otherwise their next message would land here again.
+     * Not spam moves each chosen sender's spam back to their conversation, with one Undo. A sender on
+     * the app's block list is unblocked too; otherwise their next message would land here again.
      */
-    private fun restore(message: SpamReviewMessage) {
-        val threadId = message.threadId
-        val moved = state.messages.filter { it.threadId == threadId }
-        restoring += threadId
+    private fun restore(messages: List<SpamReviewMessage>) {
+        val threadIds = messages.mapTo(HashSet()) { it.threadId }
+        if (threadIds.isEmpty()) return
+        val moved = state.messages.filter { it.threadId in threadIds }
+        restoring += threadIds
         state = state.copy(messages = state.messages - moved.toSet())
         offerUndo(
             resources.getQuantityString(R.plurals.spam_restored, moved.size, moved.size),
             onUndo = {
-                restoring -= threadId
+                restoring -= threadIds
                 reload()
             },
             onTimeout = {
                 ensureBackgroundThread {
-                    messagesDB.deleteThreadSpamMarkers(threadId)
+                    threadIds.forEach { messagesDB.deleteThreadSpamMarkers(it) }
                     moved.map { it.address }.filter { it.isNotEmpty() && config.spamNumbers.containsNumber(it) }
                         .distinct().forEach { config.removeSpamNumber(it) }
-                    InboxRepository.refreshUnreadCounts(this, listOf(threadId))
+                    InboxRepository.refreshUnreadCounts(this, threadIds.toList())
                     runOnUiThread {
-                        restoring -= threadId
+                        restoring -= threadIds
                         reload()
                     }
                 }

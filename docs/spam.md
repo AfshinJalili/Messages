@@ -91,6 +91,8 @@ All hiding is derived at read time. Nothing on the `conversations` row records t
 
 The Spam page reads like one conversation: oldest at the top, newest at the bottom, one day pill where the day changes, ties broken by SMS id. It opens at the newest message, or at the "New messages" divider when spam is unread. Nothing is marked read until that first jump, so rows shown for one frame are not cleared.
 
+Long-press on the page selects messages the same way a conversation does (one shared component, `SelectableBubbleRow`): checks fade in at the start, bubbles slide over without reflowing, and the bar offers Not spam, Block sender and Delete for the whole selection. Block and Delete ask first; Delete offers Undo. It replaced a floating copy of the held bubble with a menu, which overflowed the screen for long messages.
+
 "Not spam" on the page moves the thread's spam back to its conversation with Undo, and unblocks the sender if they are on the app's block list, so their next message does not go straight back to Spam. "Not spam" on messages inside a conversation unblocks the sender the same way.
 
 ### Removed

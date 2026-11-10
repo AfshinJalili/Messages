@@ -51,6 +51,7 @@ class SpamPageChecks {
     @get:Rule
     val compose = createAndroidComposeRule<ComponentActivity>()
     private fun text(id: Int, vararg args: Any) = compose.activity.getString(id, *args)
+    private fun quantity(id: Int, count: Int) = compose.activity.resources.getQuantityString(id, count, count)
     private val library = PageNavigation(TopDestination.LIBRARY, {})
     private val settings = PageNavigation(TopDestination.SETTINGS, {})
     /** A time on today (or [daysAgo] days back), so the day pills never depend on when the test runs. */
@@ -70,7 +71,7 @@ class SpamPageChecks {
     )
 
     @Test
-    fun timelineNamesEachSenderOnceAndHoldsAMessageForItsActions() {
+    fun timelineNamesEachSenderOnceAndSelectsMessagesForTheirActions() {
         val events = mutableListOf<SpamEvent>()
         compose.setContent {
             AfshTheme(dark = false) {
@@ -84,17 +85,30 @@ class SpamPageChecks {
         compose.onNodeWithText("Last chance", substring = true).performClick()
         check(events.last() == SpamEvent.Open(messages[1])) { "Events $events" }
 
+        // Long-press selects, as in a conversation; the bar acts on the selection and clears it.
         compose.onNodeWithText("Last chance", substring = true).performTouchInput { longClick() }
+        compose.onNodeWithText(quantity(R.plurals.inbox_selected, 1)).assertExists()
         compose.onNodeWithText(text(R.string.not_spam_short)).performClick()
-        check(events.last() == SpamEvent.NotSpam(messages[1])) { "Events $events" }
+        check(events.last() == SpamEvent.NotSpam(listOf(messages[1]))) { "Events $events" }
         compose.onNodeWithText(text(R.string.not_spam_short)).assertDoesNotExist()
 
+        // While selecting, a tap adds to the selection instead of opening.
         compose.onNodeWithText("50% extra data", substring = true).performTouchInput { longClick() }
+        compose.onNodeWithText("Last chance", substring = true).performClick()
+        check(events.last() !is SpamEvent.Open) { "A tap while selecting must not open: $events" }
+        compose.onNodeWithText(quantity(R.plurals.inbox_selected, 2)).assertExists()
         compose.onNodeWithText(text(R.string.block_sender)).performClick()
         check(events.last() !is SpamEvent.BlockSender) { "Block must ask first" }
-        compose.onNodeWithText(text(R.string.block_sender_title, "MCI offer")).assertExists()
+        compose.onNodeWithText(text(R.string.block_sender_title, "0912 418 6630, MCI offer")).assertExists()
         compose.onAllNodesWithText(text(R.string.block_sender)).let { it[it.fetchSemanticsNodes().size - 1].performClick() }
-        check(events.last() == SpamEvent.BlockSender(messages[2])) { "Events $events" }
+        check(events.last() == SpamEvent.BlockSender(listOf(messages[1], messages[2]))) { "Events $events" }
+
+        compose.onNodeWithText("Special offer", substring = true).performTouchInput { longClick() }
+        compose.onNodeWithText(text(org.fossify.commons.R.string.delete)).performClick()
+        check(events.last() !is SpamEvent.Delete) { "Delete must ask first" }
+        compose.onNodeWithText(text(R.string.delete_forever)).performClick()
+        check(events.last() == SpamEvent.Delete(listOf(messages[0]))) { "Events $events" }
+        compose.onNodeWithText(text(R.string.not_spam_short)).assertDoesNotExist()
     }
 
     @Test
@@ -236,11 +250,11 @@ class SpamPageChecks {
                 Screenshots.capture(name + it.suffix)
             }
         }
-        // 20 draft: the held message over the scrim.
+        // A selected message: checks beside the bubbles and the selection bar.
         page = 0
         variant = DesignVariant.LIGHT
         compose.onNodeWithText("50% extra data", substring = true).performTouchInput { longClick() }
         compose.waitForIdle()
-        Screenshots.capture("20-spam-held")
+        Screenshots.capture("20-spam-selected")
     }
 }

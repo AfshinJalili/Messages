@@ -256,7 +256,6 @@
     <!-- Spam and block rules (design 20, 21, 38, 50, 51) -->
     <string name="spam_subtitle">جدا از کسانی که به آن‌ها اعتماد دارید</string>
     <string name="spam_empty_text">پیام‌های مسدود و مشکوک بدون اعلان در صندوق، اینجا می‌مانند.</string>
-    <string name="spam_hold_label">کارهای پیام</string>
     <string name="not_spam_short">هرزنامه نیست</string>
     <string name="block_sender">مسدود کردن فرستنده</string>
     <string name="block_sender_title">%s مسدود شود؟</string>
