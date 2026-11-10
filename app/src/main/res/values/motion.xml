@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Screen motion (issue #176). Activity animations in res/anim and Compose stacks in Motion.kt read these. -->
+<resources>
+    <!-- A screen pushed on top rises from the bottom and fades in. -->
+    <integer name="motion_push_ms">300</integer>
+    <!-- Back reverses the push, a little faster. -->
+    <integer name="motion_pop_ms">250</integer>
+    <!-- Inbox, Library and Settings cross-fade into each other. -->
+    <integer name="motion_tab_ms">200</integer>
+</resources>

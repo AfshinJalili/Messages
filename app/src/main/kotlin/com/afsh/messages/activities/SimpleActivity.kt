@@ -1,11 +1,36 @@
 package com.afsh.messages.activities
 
+import android.content.Intent
+import android.os.Bundle
 import org.fossify.commons.activities.BaseSimpleActivity
 import com.afsh.messages.R
+import com.afsh.messages.helpers.ScreenMotion
 import com.afsh.messages.helpers.cobaltTheme
 
 open class SimpleActivity : BaseSimpleActivity() {
+    /** How this screen opens and closes; null keeps the system's (the inbox is the root). */
+    protected open val screenMotion: ScreenMotion? = ScreenMotion.PUSH
+
     open fun refreshAfterDeletion() {}
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        screenMotion?.applyTo(this)
+    }
+
+    // Before Android 14 a screen cannot set its own motion, so the screen that opens it does.
+    // Starts that pass options already chose theirs; other apps keep the system's.
+    @Deprecated("Deprecated in Java")
+    @Suppress("DEPRECATION")
+    override fun startActivityForResult(intent: Intent, requestCode: Int, options: Bundle?) {
+        super.startActivityForResult(intent, requestCode, options)
+        if (options == null && intent.component?.packageName == packageName) ScreenMotion.PUSH.afterStart(this)
+    }
+
+    override fun finish() {
+        super.finish()
+        screenMotion?.afterFinish(this)
+    }
 
     override fun onPostResume() {
         super.onPostResume()

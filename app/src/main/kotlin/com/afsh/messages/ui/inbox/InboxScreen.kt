@@ -31,6 +31,7 @@ import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -97,6 +98,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.layout.Layout
+import com.afsh.messages.ui.components.TabSwitch
 import com.afsh.messages.ui.components.LocalListPane
 import com.afsh.messages.ui.components.ConversationRow
 import com.afsh.messages.ui.components.ConversationRowMaxWidth
@@ -205,23 +207,26 @@ fun InboxScreen(
                     vertical = true,
                 )
             }
-            if (libraryOpen) {
-                LibraryScreen(
-                    destinations = LibraryDestination.entries.filter { it.isAvailable(state) },
-                    unreadSpam = state.unreadSpam,
-                    onOpen = onLibrary,
-                    modifier = Modifier.weight(1f),
-                )
-            } else {
-                Column(Modifier.weight(1f).nestedScroll(scrollConnection)) {
-                    IdentityBand(
-                        state, compactHeight, forcedCollapsed, band, onSearch, onSelectAll, onClearSelection,
-                        search, onSearchQuery, onSearchBack,
+            // Inbox and Library cross-fade, like switching to Settings and back (#176).
+            TabSwitch(libraryOpen, Modifier.weight(1f)) { library ->
+                if (library) {
+                    LibraryScreen(
+                        destinations = LibraryDestination.entries.filter { it.isAvailable(state) },
+                        unreadSpam = state.unreadSpam,
+                        onOpen = onLibrary,
+                        modifier = Modifier.fillMaxSize(),
                     )
-                    if (search.open) {
-                        SearchContent(search, onSearchQuery, onSearchFilter, onSearchResult, onSearchRetry)
-                    } else {
-                        InboxList(state, listState, onOpen, onToggleSelection, onSwipe, onFilter, onRetryRefresh)
+                } else {
+                    Column(Modifier.fillMaxSize().nestedScroll(scrollConnection)) {
+                        IdentityBand(
+                            state, compactHeight, forcedCollapsed, band, onSearch, onSelectAll, onClearSelection,
+                            search, onSearchQuery, onSearchBack,
+                        )
+                        if (search.open) {
+                            SearchContent(search, onSearchQuery, onSearchFilter, onSearchResult, onSearchRetry)
+                        } else {
+                            InboxList(state, listState, onOpen, onToggleSelection, onSwipe, onFilter, onRetryRefresh)
+                        }
                     }
                 }
             }
