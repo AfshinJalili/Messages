@@ -202,7 +202,7 @@ class SearchChecks {
     @Test
     fun importProgressShowsInSearch() {
         compose.setContent {
-            AfshTheme {
+            AfshTheme(dark = false) {
                 SearchContent(
                     state = SearchUiState(
                         open = true,
