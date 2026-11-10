@@ -167,7 +167,7 @@ class SpamPageChecks {
         val many = (1L..30L).map { spam(200 + it, it % 3, "Sender ${it % 3}", "Deal number $it", at(8, 0, daysAgo = 2) + it * 3_600_000) }
             .sortedByDescending { it.date }
         compose.setContent {
-            OpenLineTheme(dark = false) {
+            AfshTheme(dark = false) {
                 SpamScreen(SpamUiState(loading = false, messages = many), library, remember { SnackbarHostState() }, {})
             }
         }
