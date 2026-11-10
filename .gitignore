@@ -16,3 +16,5 @@ keystore.properties
 
 .scratch/
 .vscode/
+*.jks
+*.keystore
