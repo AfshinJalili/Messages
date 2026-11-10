@@ -56,7 +56,7 @@ All hiding is derived at read time. Nothing on the `conversations` row records t
 
 - **`ConversationsDao`** non-archived and archived queries: exclude spam in the `new_snippet` subquery, add a matching `new_date` subquery, and add the hidden-thread `WHERE` clause. `ConversationWithSnippetOverride` gains `new_date`.
 - **`getUnreadCountsByThread`**: project `Sms._ID` and skip spam IDs, loading the marker set once per call. Add `getUnreadSpamCounts(): Map<Long, Int>` for the Spam screen and its badge.
-- **`markThreadMessagesRead`**: exclude spam IDs, so marking an inbox thread read does not clear the Spam badge. `markVisibleMessagesRead` needs no change because collapsed spam is not a visible `Message` item.
+- **`markThreadMessagesRead`**: exclude spam IDs, so marking an inbox thread read does not clear the Spam badge.
 - **`MessagesDao`**: add a spam-marker join helper, following the existing recycle-bin join pattern.
 
 ### Classifier
@@ -68,11 +68,10 @@ All hiding is derived at read time. Nothing on the `conversations` row records t
 
 ### Normal thread (`ThreadActivity`)
 
-- `getThreadItems` merges each run of consecutive spam messages into a new `ThreadItem.ThreadSpamGroup(messages, expanded)`. When collapsed, the row reads "2 messages marked as spam" with a chevron, and tapping toggles it. The activity stores expanded state in a set keyed by the group's first message ID, so it survives reloads.
-- Expanded spam messages render as normal received bubbles with a "Spam · <reason>" label.
+- Spam messages show inline as normal received bubbles with a "Spam · <reason>" label. There is no collapsed spam group; it was removed in #167 because it hid messages and felt laggy.
 - Message action bar: a new "Not spam" action shows when every selected message is spam. Delete works as today, including the recycle bin.
 - Overflow menu: a new "Never spam from this sender" item shows when the thread contains spam and has one participant.
-- The new `OPEN_SPAM` intent extra, sent from the Spam screen, makes all groups start expanded and scrolls to the first unread spam message, or to the newest one if none are unread.
+- The new `OPEN_SPAM` intent extra, sent from the Spam screen, scrolls to the first unread spam message, or to the newest one if none are unread.
 
 ### Spam screen (rework `BlockedMessagesActivity`)
 
@@ -124,7 +123,7 @@ Each phase builds and can be checked on its own.
 1. **Data and hiding**: migration, entity and DAO, the `message_count` column, receiver write order, marker cleanup on delete, DAO hiding and snippet/date queries. After this phase, spam no longer appears in the inbox.
 2. **Unread**: spam excluded from thread counts, `getUnreadSpamCounts`, and `markThreadMessagesRead`.
 3. **Spam screen**: rework onto markers and add the badge. Temporarily open threads in plain `ThreadActivity`.
-4. **Thread UI**: `ThreadSpamGroup`, spam labels, "Not spam", "Never spam", and `OPEN_SPAM`.
+4. **Thread UI**: inline spam, spam labels, "Not spam", "Never spam", and `OPEN_SPAM`.
 5. **Backfill and cleanup**: migrate existing `blocked_messages` rows and delete the legacy code.
 6. **Classifier**: move the allowlist check first, and make block-number app-level.
 7. **Reconciler**: remove orphan markers.
@@ -167,14 +166,13 @@ Done. Differences from the design above:
 
 Done. Differences from the design above:
 
-- `ThreadSpamGroup` holds message ids rather than messages: `(key, messageIds, expanded)`. The key is the first message id. The list is built by `buildThreadItems` in `ThreadItems.kt`, which `ThreadActivity` calls, so the grouping can be tested without Telephony.
-- Opening a group marks its spam read. Thread-wide read state, the unread separator and the initial unread scroll all ignore spam. `OPEN_SPAM` marks all spam in the thread read after scrolling to it. In `OPEN_SPAM` mode the expanded-group set holds collapsed groups instead, so every group starts open and can still be collapsed.
-- Jumping to a search match inside a collapsed group opens the group first.
+- The list is built by `buildThreadItems` in `ThreadItems.kt`, which `ThreadActivity` calls, so it can be tested without Telephony.
+- Thread-wide read state, the unread separator and the initial unread scroll all ignore spam, so the Spam screen keeps its own unread count. `OPEN_SPAM` marks all spam in the thread read after scrolling to it.
+- Phase 4 first folded consecutive spam into a collapsible `ThreadSpamGroup` row. #167 removed it, with its strings, its view type and the jump-into-group logic.
 - The spam label goes in the message footer: "Spam · Keyword · 12:44".
 - "Never spam from this sender" uses the existing "Always allow this sender" string. It adds each spam sender address in the thread to the allowlist, then removes the thread's markers.
-- The view-type bits went from 3 to 4 for `THREAD_SPAM_GROUP = 8`.
 
-`ThreadSpamGroupChecks` (3 tests) covers grouping, expansion, the unread separator and hidden messages. On 24 September 2026, 29 of 30 passed across `ThreadSpamGroupChecks`, `SpamChecks`, `InboxChecks`, `ReadStateChecks`, `DeletionChecks` and `MessageActionChecks`, with the same `completedReadUpdatesInboxFromRoom` failure. The thread UI was not opened on the device, because opening a thread marks real messages read.
+`ThreadSpamChecks` (3 tests, `ThreadSpamGroupChecks` before #167) covers inline spam, the unread separator and hidden messages. On 24 September 2026, 29 of 30 passed across `ThreadSpamGroupChecks`, `SpamChecks`, `InboxChecks`, `ReadStateChecks`, `DeletionChecks` and `MessageActionChecks`, with the same `completedReadUpdatesInboxFromRoom` failure. The thread UI was not opened on the device, because opening a thread marks real messages read.
 
 ### Phase 5 status
 

@@ -37,7 +37,6 @@ import android.text.SpannableString
 import android.text.style.URLSpan
 import android.text.util.Linkify
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
@@ -174,7 +173,6 @@ import com.afsh.messages.extensions.isVCardMimeType
 import com.afsh.messages.extensions.isVideoMimeType
 import com.afsh.messages.extensions.isImageMimeType
 import com.afsh.messages.helpers.THREAD_DATE_TIME
-import com.afsh.messages.helpers.THREAD_SPAM_GROUP
 import com.afsh.messages.helpers.THREAD_UNREAD_SEPARATOR
 import com.afsh.messages.helpers.ThreadDates
 import com.afsh.messages.helpers.generateStableId
@@ -420,7 +418,6 @@ fun ThreadTimeline(
                         is Message -> MessageRow(item, older, newer, state, onEvent, lifted?.message?.getStableId(), openSheet)
                         is ThreadItem.ThreadDateTime -> DatePill(item.date, Modifier.padding(vertical = 12.dp))
                         is ThreadItem.ThreadUnreadSeparator -> UnreadDivider()
-                        is ThreadItem.ThreadSpamGroup -> SpamGroupRow(item) { onEvent(ThreadEvent.SpamGroup(item)) }
                         else -> Unit
                     }
                 }
@@ -704,7 +701,6 @@ private fun ThreadItem.key(): Long = when (this) {
     is Message -> getStableId()
     is ThreadItem.ThreadDateTime -> generateStableId(THREAD_DATE_TIME, date.toLong())
     is ThreadItem.ThreadUnreadSeparator -> generateStableId(THREAD_UNREAD_SEPARATOR, 0)
-    is ThreadItem.ThreadSpamGroup -> generateStableId(THREAD_SPAM_GROUP, key)
     // Filtered out before display.
     is ThreadItem.ThreadError, is ThreadItem.ThreadSending, is ThreadItem.ThreadSent -> 0L
 }
@@ -1115,38 +1111,6 @@ private fun DatePill(seconds: Int, modifier: Modifier = Modifier) {
     val label = remember(seconds) { ThreadDates.label(seconds) }
     Box(modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
         DatePill(label)
-    }
-}
-
-@Composable
-private fun SpamGroupRow(group: ThreadItem.ThreadSpamGroup, onClick: () -> Unit) {
-    val colors = MaterialTheme.colorScheme
-    val rotation by animateFloatAsState(if (group.expanded) 180f else 0f, label = "spam chevron")
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp)
-            .heightIn(min = TargetSize)
-            .clip(MaterialTheme.shapes.small)
-            .background(colors.surfaceContainerHigh)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
-    ) {
-        Icon(painterResource(R.drawable.ic_shield_vector), null, tint = colors.onSurfaceVariant, modifier = Modifier.size(20.dp))
-        Text(
-            pluralStringResource(if (group.expanded) R.plurals.spam_group_count else R.plurals.spam_group_hidden, group.messageIds.size, group.messageIds.size),
-            style = MaterialTheme.typography.labelMedium,
-            color = colors.onSurfaceVariant,
-            modifier = Modifier.weight(1f),
-        )
-        Icon(
-            painterResource(org.fossify.commons.R.drawable.ic_chevron_down_vector),
-            contentDescription = null,
-            tint = colors.onSurfaceVariant,
-            modifier = Modifier.graphicsLayer { rotationZ = rotation },
-        )
     }
 }
 
