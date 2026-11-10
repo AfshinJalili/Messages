@@ -31,13 +31,13 @@ body:
     id: screens
     attributes:
       label: Screens and components
-      description: Frames in design/open-line.pen to read or change. The design agent fills in what it changed.
+      description: Frames in design/afsh.pen to read or change. The design agent fills in what it changed.
   - type: textarea
     id: acceptance
     attributes:
       label: Acceptance
       value: |
-        - [ ] Designed in design/open-line.pen from existing components
+        - [ ] Designed in design/afsh.pen from existing components
         - [ ] Persian RTL variant
         - [ ] App matches the design
         - [ ] Owner reviewed the design before the app change

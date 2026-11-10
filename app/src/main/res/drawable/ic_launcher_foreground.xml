@@ -4,9 +4,9 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Open Line 4a "Corner" mark. Dots are cut out so every launcher background colour shows through. -->
+    <!-- AFSH 4a "Corner" mark. Dots are cut out so every launcher background colour shows through. -->
     <group android:translateX="21" android:translateY="24.3" android:scaleX="0.66" android:scaleY="0.66">
-        <path android:fillColor="@color/open_line_paper" android:fillType="evenOdd" android:pathData="M32 16 H68 A18 18 0 0 1 86 34 V56 A18 18 0 0 1 68 74 H18 A4 4 0 0 1 14 70 V34 A18 18 0 0 1 32 16 Z M25.5,45 a8.5,8.5 0 1,0 17,0 a8.5,8.5 0 1,0 -17,0 Z M43,45 a7,7 0 1,0 14,0 a7,7 0 1,0 -14,0 Z M59,45 a7,7 0 1,0 14,0 a7,7 0 1,0 -14,0 Z" />
-        <path android:fillColor="@color/open_line_lime" android:pathData="M28.5,45 a5.5,5.5 0 1,0 11,0 a5.5,5.5 0 1,0 -11,0 Z" />
+        <path android:fillColor="@color/afsh_paper" android:fillType="evenOdd" android:pathData="M32 16 H68 A18 18 0 0 1 86 34 V56 A18 18 0 0 1 68 74 H18 A4 4 0 0 1 14 70 V34 A18 18 0 0 1 32 16 Z M25.5,45 a8.5,8.5 0 1,0 17,0 a8.5,8.5 0 1,0 -17,0 Z M43,45 a7,7 0 1,0 14,0 a7,7 0 1,0 -14,0 Z M59,45 a7,7 0 1,0 14,0 a7,7 0 1,0 -14,0 Z" />
+        <path android:fillColor="@color/afsh_lime" android:pathData="M28.5,45 a5.5,5.5 0 1,0 11,0 a5.5,5.5 0 1,0 -11,0 Z" />
     </group>
 </vector>
