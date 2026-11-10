@@ -19,15 +19,13 @@
 
     <uses-permission android:name="android.permission.READ_CONTACTS" />
     <uses-permission
-        android:name="org.fossify.android.permission.WRITE_GLOBAL_SETTINGS"
-        tools:node="remove" />
-    <uses-permission
         android:name="android.permission.USE_BIOMETRIC"
         tools:node="remove" />
 
+    <!-- Commons asks for Fossify's companion apps; this app uses none of them. -->
     <queries>
-        <package android:name="org.fossify.contacts.debug" />
-        <package android:name="org.fossify.contacts" />
+        <package android:name="org.fossify.contacts" tools:node="remove" />
+        <package android:name="org.fossify.contacts.debug" tools:node="remove" />
         <package android:name="org.fossify.thankyou" tools:node="remove" />
         <package android:name="org.fossify.thankyou.debug" tools:node="remove" />
     </queries>
@@ -48,14 +46,16 @@
             android:name="android.window.PROPERTY_ACTIVITY_EMBEDDING_SPLITS_ENABLED"
             android:value="true" />
 
-        <receiver
-            android:name="org.fossify.commons.receivers.FossifyBroadcastReceiver"
-            tools:node="remove" />
-
         <activity
             android:name=".activities.SplashActivity"
-            android:exported="false"
-            android:theme="@style/SplashTheme" />
+            android:exported="true"
+            android:theme="@style/SplashTheme">
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
 
         <activity
             android:name=".activities.MainActivity"
@@ -296,7 +296,7 @@
             android:enabled="true"
             android:exported="true">
             <intent-filter>
-                <action android:name="org.fossify.messages.action.mark_as_read" />
+                <action android:name="com.afsh.messages.action.mark_as_read" />
             </intent-filter>
         </receiver>
 
@@ -305,7 +305,7 @@
             android:enabled="true"
             android:exported="true">
             <intent-filter>
-                <action android:name="org.fossify.messages.action.reply" />
+                <action android:name="com.afsh.messages.action.reply" />
             </intent-filter>
         </receiver>
 
@@ -319,7 +319,7 @@
             android:enabled="true"
             android:exported="true">
             <intent-filter>
-                <action android:name="org.fossify.messages.action.delete" />
+                <action android:name="com.afsh.messages.action.delete" />
             </intent-filter>
         </receiver>
 
@@ -349,269 +349,5 @@
                 android:resource="@xml/provider_paths" />
         </provider>
 
-        <activity-alias
-            android:name=".activities.SplashActivity.Red"
-            android:enabled="false"
-            android:exported="true"
-            android:icon="@mipmap/ic_launcher_red"
-            android:roundIcon="@mipmap/ic_launcher_red"
-            android:targetActivity=".activities.SplashActivity">
-
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity-alias>
-
-        <activity-alias
-            android:name=".activities.SplashActivity.Pink"
-            android:enabled="false"
-            android:exported="true"
-            android:icon="@mipmap/ic_launcher_pink"
-            android:roundIcon="@mipmap/ic_launcher_pink"
-            android:targetActivity=".activities.SplashActivity">
-
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity-alias>
-
-        <activity-alias
-            android:name=".activities.SplashActivity.Purple"
-            android:enabled="false"
-            android:exported="true"
-            android:icon="@mipmap/ic_launcher_purple"
-            android:roundIcon="@mipmap/ic_launcher_purple"
-            android:targetActivity=".activities.SplashActivity">
-
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity-alias>
-
-        <activity-alias
-            android:name=".activities.SplashActivity.Deep_purple"
-            android:enabled="false"
-            android:exported="true"
-            android:icon="@mipmap/ic_launcher_deep_purple"
-            android:roundIcon="@mipmap/ic_launcher_deep_purple"
-            android:targetActivity=".activities.SplashActivity">
-
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity-alias>
-
-        <activity-alias
-            android:name=".activities.SplashActivity.Indigo"
-            android:enabled="false"
-            android:exported="true"
-            android:icon="@mipmap/ic_launcher_indigo"
-            android:roundIcon="@mipmap/ic_launcher_indigo"
-            android:targetActivity=".activities.SplashActivity">
-
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity-alias>
-
-        <activity-alias
-            android:name=".activities.SplashActivity.Blue"
-            android:enabled="false"
-            android:exported="true"
-            android:icon="@mipmap/ic_launcher_blue"
-            android:roundIcon="@mipmap/ic_launcher_blue"
-            android:targetActivity=".activities.SplashActivity">
-
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity-alias>
-
-        <activity-alias
-            android:name=".activities.SplashActivity.Light_blue"
-            android:enabled="false"
-            android:exported="true"
-            android:icon="@mipmap/ic_launcher_light_blue"
-            android:roundIcon="@mipmap/ic_launcher_light_blue"
-            android:targetActivity=".activities.SplashActivity">
-
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity-alias>
-
-        <activity-alias
-            android:name=".activities.SplashActivity.Cyan"
-            android:enabled="false"
-            android:exported="true"
-            android:icon="@mipmap/ic_launcher_cyan"
-            android:roundIcon="@mipmap/ic_launcher_cyan"
-            android:targetActivity=".activities.SplashActivity">
-
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity-alias>
-
-        <activity-alias
-            android:name=".activities.SplashActivity.Teal"
-            android:enabled="false"
-            android:exported="true"
-            android:icon="@mipmap/ic_launcher_teal"
-            android:roundIcon="@mipmap/ic_launcher_teal"
-            android:targetActivity=".activities.SplashActivity">
-
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity-alias>
-
-        <activity-alias
-            android:name=".activities.SplashActivity.Green"
-            android:enabled="true"
-            android:exported="true"
-            android:icon="@mipmap/ic_launcher"
-            android:roundIcon="@mipmap/ic_launcher"
-            android:targetActivity=".activities.SplashActivity">
-
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity-alias>
-
-        <activity-alias
-            android:name=".activities.SplashActivity.Light_green"
-            android:enabled="false"
-            android:exported="true"
-            android:icon="@mipmap/ic_launcher_light_green"
-            android:roundIcon="@mipmap/ic_launcher_light_green"
-            android:targetActivity=".activities.SplashActivity">
-
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity-alias>
-
-        <activity-alias
-            android:name=".activities.SplashActivity.Lime"
-            android:enabled="false"
-            android:exported="true"
-            android:icon="@mipmap/ic_launcher_lime"
-            android:roundIcon="@mipmap/ic_launcher_lime"
-            android:targetActivity=".activities.SplashActivity">
-
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity-alias>
-
-        <activity-alias
-            android:name=".activities.SplashActivity.Yellow"
-            android:enabled="false"
-            android:exported="true"
-            android:icon="@mipmap/ic_launcher_yellow"
-            android:roundIcon="@mipmap/ic_launcher_yellow"
-            android:targetActivity=".activities.SplashActivity">
-
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity-alias>
-
-        <activity-alias
-            android:name=".activities.SplashActivity.Amber"
-            android:enabled="false"
-            android:exported="true"
-            android:icon="@mipmap/ic_launcher_amber"
-            android:roundIcon="@mipmap/ic_launcher_amber"
-            android:targetActivity=".activities.SplashActivity">
-
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity-alias>
-
-        <activity-alias
-            android:name=".activities.SplashActivity.Orange"
-            android:enabled="false"
-            android:exported="true"
-            android:icon="@mipmap/ic_launcher_orange"
-            android:roundIcon="@mipmap/ic_launcher_orange"
-            android:targetActivity=".activities.SplashActivity">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity-alias>
-
-        <activity-alias
-            android:name=".activities.SplashActivity.Deep_orange"
-            android:enabled="false"
-            android:exported="true"
-            android:icon="@mipmap/ic_launcher_deep_orange"
-            android:roundIcon="@mipmap/ic_launcher_deep_orange"
-            android:targetActivity=".activities.SplashActivity">
-
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity-alias>
-
-        <activity-alias
-            android:name=".activities.SplashActivity.Brown"
-            android:enabled="false"
-            android:exported="true"
-            android:icon="@mipmap/ic_launcher_brown"
-            android:roundIcon="@mipmap/ic_launcher_brown"
-            android:targetActivity=".activities.SplashActivity">
-
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity-alias>
-
-        <activity-alias
-            android:name=".activities.SplashActivity.Blue_grey"
-            android:enabled="false"
-            android:exported="true"
-            android:icon="@mipmap/ic_launcher_blue_grey"
-            android:roundIcon="@mipmap/ic_launcher_blue_grey"
-            android:targetActivity=".activities.SplashActivity">
-
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity-alias>
-
-        <activity-alias
-            android:name=".activities.SplashActivity.Grey_black"
-            android:enabled="false"
-            android:exported="true"
-            android:icon="@mipmap/ic_launcher_grey_black"
-            android:roundIcon="@mipmap/ic_launcher_grey_black"
-            android:targetActivity=".activities.SplashActivity">
-
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity-alias>
     </application>
 </manifest>

@@ -88,6 +88,12 @@ All hiding is derived at read time. Nothing on the `conversations` row records t
 
 `BlockedMessagesThread` changes from grouping by address to grouping by `threadId`.
 
+### Spam review order (November 2026)
+
+The Spam page reads like one conversation: oldest at the top, newest at the bottom, one day pill where the day changes, ties broken by SMS id. It opens at the newest message, or at the "New messages" divider when spam is unread. Nothing is marked read until that first jump, so rows shown for one frame are not cleared.
+
+"Not spam" on the page moves the thread's spam back to its conversation with Undo, and unblocks the sender if they are on the app's block list, so their next message does not go straight back to Spam. "Not spam" on messages inside a conversation unblocks the sender the same way.
+
 ### Removed
 
 `BlockedMessagesThreadActivity`, the `BlockedMessage` entity and `BlockedMessagesDao`, `BlockedMessage.toMessage`, `restoreBlockedMessage`, and the `blocked_thread_menu` resource.
@@ -220,7 +226,7 @@ Add `SpamChecks.kt` next to `InboxChecks.kt`. Insert SMS through `insertNewSMS` 
 - Update `migration11to12`, which reads `BlockedMessagesDao`.
 
 ```sh
-adb shell am instrument --user 0 -w -e class org.fossify.messages.SpamChecks org.fossify.messages.debug.test/androidx.test.runner.AndroidJUnitRunner
+adb shell am instrument --user 0 -w -e class com.afsh.messages.SpamChecks com.afsh.messages.debug.test/androidx.test.runner.AndroidJUnitRunner
 ```
 
 Also run `InboxChecks`, `ReadStateChecks` and `DeletionChecks`. On a device, text the phone from a second phone using a blocked keyword and check that it gets no notification, does not appear in the inbox, appears on the Spam screen, and appears in Telephony (visible to another SMS app).
