@@ -7,7 +7,8 @@ import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.animateColorAsState
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.ui.graphics.Color
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -134,8 +135,8 @@ fun SelectionIconAction(icon: Int, label: String, destructive: Boolean = false, 
 @Composable
 fun SelectionCheck(checked: Boolean, modifier: Modifier = Modifier) {
     val colors = MaterialTheme.colorScheme
-    val fill by animateColorAsState(if (checked) colors.primary else colors.surface, enterSpec(), label = "check fill")
-    val ring by animateColorAsState(if (checked) colors.primary else colors.outline, enterSpec(), label = "check ring")
+    val fill by animateColorAsState(if (checked) colors.primary else colors.surface, enterSpec<Color>(), label = "check fill")
+    val ring by animateColorAsState(if (checked) colors.primary else colors.outline, enterSpec<Color>(), label = "check ring")
     Box(
         modifier
             .size(CheckSize)
