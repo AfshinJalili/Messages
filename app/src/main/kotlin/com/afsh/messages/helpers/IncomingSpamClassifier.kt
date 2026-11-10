@@ -23,11 +23,16 @@ object IncomingSpamClassifier {
         if (context.config.spamNumbers.containsNumber(address)) {
             return BLOCK_REASON_NUMBER
         }
-        if (isMessageFilteredOut(context, body)) {
-            return BLOCK_REASON_KEYWORD
-        }
         if (context.isNumberBlocked(address)) {
             return BLOCK_REASON_NUMBER
+        }
+        // A one-time code is never caught by a blocked phrase, an unknown sender or the rules:
+        // missing a code costs more than letting one through. Only a blocked sender stops it.
+        if (isOneTimeCode(context, address, body)) {
+            return null
+        }
+        if (isMessageFilteredOut(context, body)) {
+            return BLOCK_REASON_KEYWORD
         }
 
         val isKnownContact = context.getMyContactsCursor(favoritesOnly = false, withPhoneNumbersOnly = true).use { cursor ->
@@ -47,4 +52,8 @@ object IncomingSpamClassifier {
             FilterVerdict.NO_VERDICT -> null
         }
     }
+
+    /** Uses the patterns even when the rule filter is off: that switch only turns blocking on. */
+    fun isOneTimeCode(context: Context, address: String, body: String): Boolean =
+        RuleBasedFilter.explain(context.config.spamPatterns, address, body).rule == FilterRule.ONE_TIME_CODE
 }
