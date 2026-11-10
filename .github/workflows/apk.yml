@@ -55,7 +55,7 @@ jobs:
           cp app/build/outputs/apk/debug/*.apk "dist/messages-debug-pr$PR-$short.apk"
           echo "APK=$(ls dist/*.apk)" >> "$GITHUB_ENV"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: messages-debug-pr${{ env.PR }}
           path: ${{ env.APK }}
