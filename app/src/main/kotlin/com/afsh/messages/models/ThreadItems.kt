@@ -18,11 +18,13 @@ sealed class ThreadItem {
 /**
  * Builds the thread list from [messages] sorted by date. Spam shows inline, but never gets the unread separator,
  * since the Spam screen owns its read state.
+ * The separator goes above the first message [isNew] holds; by default that is the first unread one.
  */
 fun buildThreadItems(
     messages: List<Message>,
     isSpam: (Message) -> Boolean,
     isHidden: (Message) -> Boolean,
+    isNew: (Message) -> Boolean = { !it.read },
 ): ArrayList<ThreadItem> {
     val items = ArrayList<ThreadItem>()
     var previousDay: LocalDate? = null
@@ -46,7 +48,7 @@ fun buildThreadItems(
             items.add(ThreadItem.ThreadSending(message.id))
         }
 
-        if (!message.read && message.isReceivedMessage() && !message.isScheduled && !isSpam(message)) {
+        if (isNew(message) && message.isReceivedMessage() && !message.isScheduled && !isSpam(message)) {
             if (!hadUnreadItems) {
                 items.add(separatorIndex, ThreadItem.ThreadUnreadSeparator)
             }
