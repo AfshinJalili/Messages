@@ -74,7 +74,7 @@ const val BLOCK_REASON_NUMBER = 2
 const val BLOCK_REASON_AI = 3
 const val BLOCK_REASON_RULE = 4
 
-private const val PATH = "org.fossify.com.afsh.messages.action."
+private const val PATH = "com.afsh.messages.action."
 const val MARK_AS_READ = PATH + "mark_as_read"
 const val REPLY = PATH + "reply"
 
