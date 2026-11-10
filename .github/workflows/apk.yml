@@ -11,9 +11,11 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# A closed PR reports the base branch as its ref, so group PR runs by number,
+# or the cleanup run cancels the release on main. Releases queue; they never cancel.
 concurrency:
-  group: apk-${{ github.ref }}
-  cancel-in-progress: true
+  group: apk-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: write
