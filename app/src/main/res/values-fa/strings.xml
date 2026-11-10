@@ -89,10 +89,6 @@
     <string name="allow_sender">همیشه این فرستنده را مجاز کن</string>
     <string name="sender_allowed">فرستنده مجاز شد و پیام بازگردانده شد</string>
     <string name="message_restored">پیام به صندوق بازگردانده شد</string>
-    <plurals name="spam_group_count">
-        <item quantity="one">%d پیام هرزنامه</item>
-        <item quantity="other">%d پیام هرزنامه</item>
-    </plurals>
     <string name="block_reason_ai">فیلتر قدیمی</string>
     <string name="block_reason_keyword">کلیدواژه</string>
     <string name="block_reason_number">شماره‌ی مسدودشده</string>
@@ -126,11 +122,11 @@
     <string name="search_in_conversation">جست‌وجو در گفت‌وگو</string>
     <string name="no_matching_messages">پیامی پیدا نشد</string>
     <string name="contact">مخاطب</string>
-    <string name="sim_chip">سیم‌کارت %d</string>
+    <string name="sim_chip">سیم %d</string>
     <string name="items_deleted">حذف شد</string>
     <string name="scroll_to_latest_message">رفتن به آخرین پیام</string>
     <string name="scroll_to_unread_messages">رفتن به پیام‌های خوانده‌نشده، %1$d پیام</string>
-    <string name="message_sim_label">سیم‌کارت %1$s</string>
+    <string name="message_sim_label">سیم %1$s</string>
     <string name="message_delivered">تحویل شد</string>
     <string name="message_sent">ارسال شد</string>
     <string name="inbox_search_hint">جست‌وجوی پیام‌ها</string>
@@ -178,10 +174,6 @@
         <item quantity="one">%d پیام به صندوق منتقل شد</item>
         <item quantity="other">%d پیام به صندوق منتقل شد</item>
     </plurals>
-    <plurals name="spam_group_hidden">
-        <item quantity="one">%d پیام هرزنامه پنهان شده</item>
-        <item quantity="other">%d پیام هرزنامه پنهان شده</item>
-    </plurals>
     <string name="library_subtitle">چیزهایی که می‌خواهید نگه دارید، بی‌صدا کنید یا بازگردانید</string>
     <string name="library_starred_description">پیام‌هایی که برای بازگشت علامت زده‌اید</string>
     <string name="library_archive_description">گفت‌وگوهای خارج از صندوق اصلی</string>
@@ -194,7 +186,7 @@
     <string name="composer_cant_reply">این فرستنده نمی‌تواند پاسخ دریافت کند</string>
     <string name="composer_send_mms">ارسال به‌صورت ام‌ام‌اس</string>
     <string name="composer_send_later">ارسال در زمانی دیگر</string>
-    <string name="composer_change_sim">تغییر سیم‌کارت</string>
+    <string name="composer_change_sim">تغییر سیم</string>
     <string name="composer_remove_attachment">حذف پیوست</string>
     <string name="composer_sms_counter">%1$d نویسه مانده · %2$d پیامک</string>
     <string name="thread_automated_sender">فرستندهٔ خودکار</string>
@@ -433,7 +425,7 @@
     <string name="unmute">باصدا</string>
     <string name="open_contact">باز کردن مخاطب</string>
     <string name="people">افراد</string>
-    <string name="sim">سیم‌کارت</string>
+    <string name="sim">سیم</string>
     <string name="sim_default">پیش‌فرض گوشی</string>
     <string name="custom_notifications">اعلان سفارشی</string>
     <string name="custom_notifications_on">روشن · این گفت‌وگو صدای خودش را دارد</string>
@@ -573,4 +565,47 @@
     <string name="open_in_another_app">باز کردن در برنامهٔ دیگر</string>
     <string name="play_video">پخش ویدیو</string>
     <string name="media_saved">ذخیره شد</string>
+    <string name="spam_why">چرا: %s</string>
+    <string name="spam_why_words">چرا: %1$s · %2$s</string>
+    <string name="spam_why_stale">چرا: %s · قوانین فعلی دیگر آن را نمی‌گیرند</string>
+    <string name="spam_why_phrase">عبارت مسدود</string>
+    <string name="spam_why_unsubscribe">خط لغو</string>
+    <string name="spam_why_marketing">واژه‌های تبلیغاتی</string>
+    <string name="spam_patterns">الگوهای هرزنامه</string>
+    <string name="spam_patterns_subtitle">آنچه قوانین روی گوشی دنبالش می‌گردند</string>
+    <string name="spam_patterns_card">دیدن، آزمودن و ویرایش الگوهای قوانین</string>
+    <string name="spam_patterns_filter_off">فیلتر هرزنامه‌های آشکار خاموش است</string>
+    <string name="spam_patterns_filter_off_text">تا روشن نشود، قوانین چیزی را مسدود نمی‌کنند. رمزهای یک‌بار مصرف همچنان از عبارت‌های مسدود رد می‌شوند.</string>
+    <string name="spam_patterns_try">آزمودن یک پیام</string>
+    <string name="spam_patterns_try_message">پیامی را جای‌گذاری کنید</string>
+    <string name="spam_patterns_try_sender">فرستنده (اختیاری)</string>
+    <string name="spam_patterns_result_code">مجاز · رمز یک‌بار مصرف</string>
+    <string name="spam_patterns_result_unsubscribe">هرزنامه · خط لغو</string>
+    <string name="spam_patterns_result_marketing">هرزنامه · واژه‌ی تبلیغاتی با پیوند یا فرستنده‌ی نام‌دار</string>
+    <string name="spam_patterns_result_none">هیچ قانونی نمی‌گیرد · در صندوق می‌ماند</string>
+    <string name="spam_patterns_code_words">واژه‌های رمز یک‌بار مصرف</string>
+    <string name="spam_patterns_code_words_text">اگر کد هم داشته باشد، پیام همیشه مجاز است، حتی با پیوند یا خط لغو.</string>
+    <string name="spam_patterns_code">کد</string>
+    <string name="spam_patterns_code_text">خود کد. هم واژه‌ی رمز و هم کد باید پیدا شوند.</string>
+    <string name="spam_patterns_unsubscribe">خط لغو</string>
+    <string name="spam_patterns_unsubscribe_text">هر تطبیقی پیام را به هرزنامه می‌برد.</string>
+    <string name="spam_patterns_links">پیوندها</string>
+    <string name="spam_patterns_links_text">واژه‌ی تبلیغاتی همراه پیوند، پیام را به هرزنامه می‌برد.</string>
+    <string name="spam_patterns_marketing">واژه‌های تبلیغاتی</string>
+    <string name="spam_patterns_marketing_text">وقتی پیوند دارد یا فرستنده نام است، هرزنامه است.</string>
+    <string name="spam_patterns_add">افزودن الگو</string>
+    <string name="spam_patterns_edit">ویرایش الگو</string>
+    <string name="spam_patterns_save">ذخیره‌ی الگو</string>
+    <string name="spam_patterns_remove">حذف %s</string>
+    <string name="spam_patterns_regex_hint">یک عبارت باقاعده (regex)، بدون توجه به بزرگی و کوچکی حروف. واژه‌ی ساده هم کار می‌کند.</string>
+    <string name="spam_patterns_reset">بازگشت به پیش‌فرض</string>
+    <string name="spam_patterns_reset_text">همه‌ی گروه‌ها به الگوهای داخلی برمی‌گردند و ویرایش‌هایتان از بین می‌رود.</string>
+    <string name="spam_patterns_recheck">بررسی دوباره‌ی هرزنامه</string>
+    <string name="spam_patterns_rechecking">در حال بررسی…</string>
+    <string name="spam_patterns_recheck_text">رمزهای یک‌بار مصرف و پیام‌هایی که قوانین دیگر نمی‌گیرند به گفتگوی خودشان برمی‌گردند. فرستنده‌های مسدود در هرزنامه می‌مانند.</string>
+    <plurals name="spam_patterns_rechecked">
+        <item quantity="one">%d پیام از هرزنامه بیرون رفت</item>
+        <item quantity="other">%d پیام از هرزنامه بیرون رفت</item>
+    </plurals>
+    <string name="spam_why_separator">"، "</string>
 </resources>

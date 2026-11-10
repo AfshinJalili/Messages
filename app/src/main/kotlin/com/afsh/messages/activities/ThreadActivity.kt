@@ -169,7 +169,6 @@ import com.afsh.messages.models.MessageAttachment
 import com.afsh.messages.models.SIMCard
 import com.afsh.messages.models.ThreadItem
 import com.afsh.messages.helpers.OPEN_THREAD_SEARCH
-import com.afsh.messages.models.ThreadItem.ThreadSpamGroup
 import com.afsh.messages.models.buildThreadItems
 import androidx.activity.OnBackPressedCallback
 import androidx.annotation.VisibleForTesting
@@ -237,6 +236,12 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
     private var isActivityVisible = false
     private var markReadInProgress = false
     private var providerMessagesReady = false
+    /**
+     * Stable ids of the messages that were unread when this visit opened. They keep the "New messages"
+     * divider in place after they are read, until the conversation is closed and opened again.
+     */
+    @Volatile
+    private var newOnOpen: Set<Long>? = null
     private var pendingInitialScroll = true
     private var initialPositionSettled = false
     private val updateScrollPosition = Runnable {
@@ -310,7 +315,6 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
     private var isRecycleBin = false
     private var isLaunchedFromShortcut = false
     private var spamReasons: Map<Long, Int> = emptyMap()
-    private val expandedSpamGroups = HashSet<Long>()
     private var openSpam = false
 
     private var isScheduledMessage: Boolean = false
@@ -336,6 +340,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         super.onCreate(savedInstanceState)
         restoredText = savedInstanceState?.getString(SAVED_COMPOSER_TEXT)
         restoredAttachments = savedInstanceState?.getStringArrayList(SAVED_COMPOSER_ATTACHMENTS).orEmpty().map { it.toUri() }
+        newOnOpen = savedInstanceState?.getLongArray(SAVED_NEW_ON_OPEN)?.toSet()
         setContentView(binding.root)
         onBackPressedDispatcher.addCallback(this, backCallback)
         refreshAfshTheme()
@@ -430,6 +435,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         outState.putString(SAVED_COMPOSER_TEXT, composerText.text)
         // Compressed copies live in the cache; the originals are re-added and compressed again.
         outState.putStringArrayList(SAVED_COMPOSER_ATTACHMENTS, ArrayList(getAttachmentSelections().map { it.id }))
+        newOnOpen?.let { outState.putLongArray(SAVED_NEW_ON_OPEN, it.toLongArray()) }
     }
 
     private fun saveDraftMessage() {
@@ -563,10 +569,6 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
             ThreadEvent.SearchClose -> closeSearch()
             is ThreadEvent.ToggleSelection -> toggleSelection(event.message)
             is ThreadEvent.Act -> onMessageAction(event.action, event.messages)
-            is ThreadEvent.SpamGroup -> {
-                toggleSpamGroup(event.group)
-                publishItems()
-            }
             is ThreadEvent.Retry -> resendMessage(event.message)
             ThreadEvent.NextSim -> nextSim()
             is ThreadEvent.OpenAttachment -> openAttachment(event.message, event.attachment)
@@ -1071,7 +1073,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         }
     }
 
-    // Spam is read by opening its group, so thread-wide read state leaves it out.
+    // Spam read state belongs to the Spam screen, so thread-wide read state leaves it out.
     private fun hasUnreadMessages(): Boolean {
         return messages.any { !it.read && it.isReceivedMessage() && !it.isScheduled && !isSpam(it) }
     }
@@ -1218,7 +1220,6 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         ui = ui.copy(initialScroll = null)
         fun Message.isTarget() = id == messageId && (isMms == null || isMMS == isMms)
         if (messages.any { it.isTarget() }) {
-            if (revealSpamMessage(messageId)) publishItems()
             requestScroll {
                 activeJump = it
                 ScrollRequest.ToMessage(it, messageId, isMms)
@@ -1245,7 +1246,6 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
                 }
 
                 threadItems = getThreadItems()
-                revealSpamMessage(messageId)
                 threadItems
             } catch (e: Exception) {
                 // Without this, page loads stay blocked for the rest of the visit.
@@ -1746,12 +1746,16 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
     private fun getThreadItems(): ArrayList<ThreadItem> {
         if (isFinishing) return ArrayList()
         messages.sortBy { it.date }
+        // Taken from the first provider load, before this visit marks anything read.
+        if (newOnOpen == null && providerMessagesReady) {
+            newOnOpen = messages.filter { !it.read }.mapTo(HashSet()) { it.getStableId() }
+        }
+        val pinned = newOnOpen.orEmpty()
         return buildThreadItems(
             messages = messages,
             isSpam = ::isSpam,
             isHidden = { it.getStableId() in UndoDeletion.messages || threadId in UndoDeletion.threads },
-            // In OPEN_SPAM mode the set holds the collapsed groups instead of the expanded ones.
-            isExpanded = { (it in expandedSpamGroups) != openSpam },
+            isNew = { !it.read || it.getStableId() in pinned },
         )
     }
 
@@ -1761,21 +1765,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         spamReasons = messagesDB.getThreadSpamMarkers(threadId).associate { it.id to it.reason }
     }
 
-    private fun toggleSpamGroup(group: ThreadSpamGroup) {
-        if (!expandedSpamGroups.remove(group.key)) expandedSpamGroups.add(group.key)
-        if (!group.expanded) markSpamRead(group.messageIds)
-        threadItems = getThreadItems()
-    }
-
-    // A jump to a message inside a collapsed spam group opens the group first.
-    private fun revealSpamMessage(messageId: Long): Boolean {
-        val group = threadItems.firstOrNull { it is ThreadSpamGroup && !it.expanded && messageId in it.messageIds } as? ThreadSpamGroup
-            ?: return false
-        toggleSpamGroup(group)
-        return true
-    }
-
-    // Opening a spam group is what marks its spam read.
+    // Opening the thread from the Spam screen is what marks its spam read.
     private fun markSpamRead(ids: Collection<Long>) {
         val unreadIds = messages.filter { it.id in ids && isSpam(it) && !it.read }.map { it.id }.toSet()
         if (unreadIds.isEmpty()) return
@@ -2425,6 +2415,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         private const val SMS_COUNTER_THRESHOLD = 20
         private const val OPAQUE = 255
         private const val SAVED_COMPOSER_TEXT = "composer_text"
+        private const val SAVED_NEW_ON_OPEN = "new_on_open"
         private const val SAVED_COMPOSER_ATTACHMENTS = "composer_attachments"
     }
 }

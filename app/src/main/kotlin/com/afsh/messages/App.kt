@@ -1,5 +1,6 @@
 package com.afsh.messages
 
+import android.content.res.Configuration
 import android.database.ContentObserver
 import android.net.Uri
 import android.os.Handler
@@ -11,6 +12,7 @@ import org.fossify.commons.helpers.PERMISSION_READ_CONTACTS
 import org.fossify.commons.helpers.ensureBackgroundThread
 import com.afsh.messages.extensions.rescheduleAllScheduledMessages
 import com.afsh.messages.extensions.config
+import com.afsh.messages.extensions.notificationHelper
 import com.afsh.messages.helpers.InboxRepository
 import com.afsh.messages.helpers.ListDetail
 import com.afsh.messages.helpers.MessagingCache
@@ -39,6 +41,13 @@ class App : FossifyApp() {
         ensureBackgroundThread {
             rescheduleAllScheduledMessages()
         }
+        notificationHelper.createDefaultChannel()
+    }
+
+    // Android shows the channel name it was given last; rename it when the app language changes.
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        notificationHelper.createDefaultChannel()
     }
 
     private val contactsObserver = object : ContentObserver(Handler(Looper.getMainLooper())) {

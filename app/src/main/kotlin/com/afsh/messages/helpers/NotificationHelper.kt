@@ -56,7 +56,7 @@ class NotificationHelper(private val context: Context) {
         val notificationChannelId =
             if (hasCustomNotifications) threadId.toString() else NOTIFICATION_CHANNEL_ID
         if (!hasCustomNotifications) {
-            createChannel(notificationChannelId, context.getString(R.string.channel_received_sms))
+            createDefaultChannel()
         }
 
         val notificationId = threadId.hashCode()
@@ -216,7 +216,7 @@ class NotificationHelper(private val context: Context) {
         val notificationChannelId =
             if (hasCustomNotifications) threadId.toString() else NOTIFICATION_CHANNEL_ID
         if (!hasCustomNotifications) {
-            createChannel(notificationChannelId, context.getString(R.string.message_not_sent_short))
+            createDefaultChannel()
         }
 
         val notificationId = generateRandomId().hashCode()
@@ -248,6 +248,14 @@ class NotificationHelper(private val context: Context) {
             .setChannelId(notificationChannelId)
 
         notificationManager.notify(notificationId, builder.build())
+    }
+
+    /**
+     * Creates the shared channel, or renames it in the current app language. Android keeps the
+     * name it was last given, so call this on start and on a locale change too.
+     */
+    fun createDefaultChannel() {
+        createChannel(NOTIFICATION_CHANNEL_ID, context.getString(R.string.channel_received_sms))
     }
 
     private fun createChannel(id: String, name: String) {

@@ -170,6 +170,14 @@
             android:windowSoftInputMode="adjustResize" />
 
         <activity
+            android:name=".activities.SpamPatternsActivity"
+            android:configChanges="orientation"
+            android:exported="false"
+            android:label="@string/spam_patterns"
+            android:parentActivityName=".activities.BlockRulesActivity"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
             android:name=".activities.MoveBlockRulesActivity"
             android:configChanges="orientation"
             android:exported="false"

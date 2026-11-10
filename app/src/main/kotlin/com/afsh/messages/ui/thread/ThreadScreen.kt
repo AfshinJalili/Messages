@@ -37,15 +37,18 @@ import android.text.SpannableString
 import android.text.style.URLSpan
 import android.text.util.Linkify
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -87,6 +90,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -168,13 +172,18 @@ import org.fossify.commons.extensions.formatTime
 import org.fossify.commons.models.SimpleContact
 import com.afsh.messages.R
 import com.afsh.messages.ui.components.DatePill
+import com.afsh.messages.ui.components.AnimatedBottomBar
+import com.afsh.messages.ui.components.SELECTION_ENTER_MS
+import com.afsh.messages.ui.components.SELECTION_EXIT_MS
+import com.afsh.messages.ui.components.SelectionCheck
+import com.afsh.messages.ui.components.SelectionIconAction
+import com.afsh.messages.ui.components.keptWhileLeaving
 import com.afsh.messages.ui.components.messageBubbleShape
 import com.afsh.messages.extensions.getFileSizeFromUri
 import com.afsh.messages.extensions.isVCardMimeType
 import com.afsh.messages.extensions.isVideoMimeType
 import com.afsh.messages.extensions.isImageMimeType
 import com.afsh.messages.helpers.THREAD_DATE_TIME
-import com.afsh.messages.helpers.THREAD_SPAM_GROUP
 import com.afsh.messages.helpers.THREAD_UNREAD_SEPARATOR
 import com.afsh.messages.helpers.ThreadDates
 import com.afsh.messages.helpers.generateStableId
@@ -203,8 +212,11 @@ private const val BUBBLE_WIDTH_FRACTION = 0.8f
 private const val MAX_MEDIA_HEIGHT_RATIO = 3
 private const val STICKY_DATE_HIDE_DELAY_MS = 700L
 private const val STICKY_DATE_FADE_MS = 180
-// R6-48: the lift is a soft spring of its own, not tied to the sheet's slide, so the bubble glides while the sheet moves.
-private val LiftSpring = spring<Float>(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow, visibilityThreshold = 0.001f)
+// R6-48: the lift is a spring of its own, not tied to the sheet's slide, so the bubble glides while the sheet moves.
+// Its stiffness is the sheet's (Material 3's default spatial spring, 700), so the bubble and the sheet arrive and
+// leave together, in about the 250-300 ms the app's other panels and screens take. It was 400, which trailed the sheet.
+private const val LIFT_STIFFNESS = 700f
+private val LiftSpring = spring<Float>(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = LIFT_STIFFNESS, visibilityThreshold = 0.001f)
 private val LiftGap = 12.dp
 private val LiftElevation = 6.dp
 private val LiftFade = 32.dp
@@ -420,7 +432,6 @@ fun ThreadTimeline(
                         is Message -> MessageRow(item, older, newer, state, onEvent, lifted?.message?.getStableId(), openSheet)
                         is ThreadItem.ThreadDateTime -> DatePill(item.date, Modifier.padding(vertical = 12.dp))
                         is ThreadItem.ThreadUnreadSeparator -> UnreadDivider()
-                        is ThreadItem.ThreadSpamGroup -> SpamGroupRow(item) { onEvent(ThreadEvent.SpamGroup(item)) }
                         else -> Unit
                     }
                 }
@@ -431,7 +442,7 @@ fun ThreadTimeline(
             SnackbarHost(snackbarHostState, Modifier.align(Alignment.BottomCenter))
             lifted?.let { lift -> LiftOverlay(lift, sheetOpen, sheetTop, state, onDim, onGone = { if (lifted === lift) lifted = null }) }
         }
-        if (state.selecting) {
+        AnimatedBottomBar(state.selecting) {
             SelectionBar(state, onEvent)
         }
     }
@@ -704,7 +715,6 @@ private fun ThreadItem.key(): Long = when (this) {
     is Message -> getStableId()
     is ThreadItem.ThreadDateTime -> generateStableId(THREAD_DATE_TIME, date.toLong())
     is ThreadItem.ThreadUnreadSeparator -> generateStableId(THREAD_UNREAD_SEPARATOR, 0)
-    is ThreadItem.ThreadSpamGroup -> generateStableId(THREAD_SPAM_GROUP, key)
     // Filtered out before display.
     is ThreadItem.ThreadError, is ThreadItem.ThreadSending, is ThreadItem.ThreadSent -> 0L
 }
@@ -749,10 +759,34 @@ private fun MessageRow(
                 modifier = Modifier.padding(start = 4.dp, bottom = 4.dp),
             )
         }
-        BoxWithConstraints(Modifier.fillMaxWidth(), contentAlignment = if (incoming) Alignment.CenterStart else Alignment.CenterEnd) {
-            Column(Modifier.width(minOf(maxWidth * BUBBLE_WIDTH_FRACTION, MaxBubbleWidth)), horizontalAlignment = if (incoming) Alignment.Start else Alignment.End) {
-                val groupedBelow = groupedWith(message, newer)
-                Bubble(message, state, onEvent, groupedBelow, hidden = lifted == message.getStableId()) { onOpen(message, groupedBelow, it) }
+        // While selecting, a check slides in at the start of every row and the bubbles make room for it.
+        // A tap anywhere on the row toggles it, so the target is not just the bubble.
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .then(
+                    if (state.selecting) {
+                        Modifier.pointerInput(message) { detectTapGestures { onEvent(ThreadEvent.ToggleSelection(message)) } }
+                    } else {
+                        Modifier
+                    },
+                ),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            AnimatedVisibility(
+                state.selecting,
+                enter = expandHorizontally(tween(SELECTION_ENTER_MS, easing = FastOutSlowInEasing), expandFrom = Alignment.Start) +
+                    fadeIn(tween(SELECTION_ENTER_MS, easing = FastOutSlowInEasing)),
+                exit = shrinkHorizontally(tween(SELECTION_EXIT_MS, easing = FastOutLinearInEasing), shrinkTowards = Alignment.Start) +
+                    fadeOut(tween(SELECTION_EXIT_MS, easing = FastOutLinearInEasing)),
+            ) {
+                SelectionCheck(message.getStableId() in state.selected, Modifier.padding(end = 12.dp))
+            }
+            BoxWithConstraints(Modifier.weight(1f), contentAlignment = if (incoming) Alignment.CenterStart else Alignment.CenterEnd) {
+                Column(Modifier.width(minOf(maxWidth * BUBBLE_WIDTH_FRACTION, MaxBubbleWidth)), horizontalAlignment = if (incoming) Alignment.Start else Alignment.End) {
+                    val groupedBelow = groupedWith(message, newer)
+                    Bubble(message, state, onEvent, groupedBelow, hidden = lifted == message.getStableId()) { onOpen(message, groupedBelow, it) }
+                }
             }
         }
     }
@@ -798,7 +832,6 @@ private fun Bubble(
                 .onGloballyPositioned { coordinates[0] = it }
                 .clip(shape)
                 .background(container)
-                .then(if (selected) Modifier.border(2.dp, colors.primary, shape) else Modifier)
                 .longPressToSelect(selectLabel) { onEvent(ThreadEvent.ToggleSelection(message)) }
                 .clickable(enabled = onOpen != null) {
                     if (state.selecting) {
@@ -1118,38 +1151,6 @@ private fun DatePill(seconds: Int, modifier: Modifier = Modifier) {
     }
 }
 
-@Composable
-private fun SpamGroupRow(group: ThreadItem.ThreadSpamGroup, onClick: () -> Unit) {
-    val colors = MaterialTheme.colorScheme
-    val rotation by animateFloatAsState(if (group.expanded) 180f else 0f, label = "spam chevron")
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp)
-            .heightIn(min = TargetSize)
-            .clip(MaterialTheme.shapes.small)
-            .background(colors.surfaceContainerHigh)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
-    ) {
-        Icon(painterResource(R.drawable.ic_shield_vector), null, tint = colors.onSurfaceVariant, modifier = Modifier.size(20.dp))
-        Text(
-            pluralStringResource(if (group.expanded) R.plurals.spam_group_count else R.plurals.spam_group_hidden, group.messageIds.size, group.messageIds.size),
-            style = MaterialTheme.typography.labelMedium,
-            color = colors.onSurfaceVariant,
-            modifier = Modifier.weight(1f),
-        )
-        Icon(
-            painterResource(org.fossify.commons.R.drawable.ic_chevron_down_vector),
-            contentDescription = null,
-            tint = colors.onSurfaceVariant,
-            modifier = Modifier.graphicsLayer { rotationZ = rotation },
-        )
-    }
-}
-
 /**
  * Follows the top visible day while scrolling, hides while its inline pill is on screen, and is
  * pushed up by the next day's pill. Fades 700 ms after scrolling stops (design board, dates).
@@ -1247,31 +1248,42 @@ private fun JumpToLatest(state: ThreadUiState, newestFirst: List<ThreadItem>, li
     }
 }
 
+/** Icon-only, like the conversation list's bar: each action names itself to TalkBack and in a long-press tooltip. */
 @Composable
 private fun SelectionBar(state: ThreadUiState, onEvent: (ThreadEvent) -> Unit) {
-    val (bar, overflow) = remember(state.selected, state.items, state.starred) { selectionActions(state).splitForBar() }
+    val actions = remember(state.selected, state.items, state.starred) { selectionActions(state).splitForBar() }
+    val (bar, overflow) = keptWhileLeaving(actions, empty = state.selected.isEmpty())
     val selected = state.selectedMessages
     Surface(color = MaterialTheme.colorScheme.surfaceContainer) {
         Row(
             Modifier
                 .fillMaxWidth()
                 .windowInsetsPadding(WindowInsets.navigationBars.union(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)))
-                .padding(8.dp),
+                .heightIn(min = 64.dp)
+                .padding(horizontal = 8.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             bar.forEach { action ->
-                BarItem(action.icon, stringResource(action.label), Modifier.weight(1f), danger = action == MessageAction.DELETE) {
+                SelectionIconAction(action.icon, stringResource(action.label), destructive = action == MessageAction.DELETE) {
                     onEvent(ThreadEvent.Act(action, selected))
                 }
             }
             if (overflow.isNotEmpty()) {
                 var open by remember { mutableStateOf(false) }
-                Box(Modifier.weight(1f)) {
-                    BarItem(org.fossify.commons.R.drawable.ic_three_dots_vector, stringResource(org.fossify.commons.R.string.more_options)) { open = true }
+                Box {
+                    SelectionIconAction(R.drawable.ic_lucide_ellipsis_vertical, stringResource(org.fossify.commons.R.string.more_options)) { open = true }
                     DropdownMenu(expanded = open, onDismissRequest = { open = false }, containerColor = MaterialTheme.colorScheme.surfaceContainer, shape = MaterialTheme.shapes.medium) {
                         overflow.forEach { action ->
+                            val danger = action == MessageAction.DELETE
                             DropdownMenuItem(
                                 text = { Text(stringResource(action.label), style = MaterialTheme.typography.bodyMedium) },
-                                leadingIcon = { Icon(painterResource(action.icon), contentDescription = null) },
+                                leadingIcon = { Icon(painterResource(action.icon), contentDescription = null, modifier = Modifier.size(20.dp)) },
+                                modifier = Modifier.heightIn(min = TargetSize),
+                                colors = MenuDefaults.itemColors(
+                                    textColor = if (danger) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+                                    leadingIconColor = if (danger) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                                ),
                                 onClick = {
                                     open = false
                                     onEvent(ThreadEvent.Act(action, selected))
@@ -1282,24 +1294,6 @@ private fun SelectionBar(state: ThreadUiState, onEvent: (ThreadEvent) -> Unit) {
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun BarItem(icon: Int, label: String, modifier: Modifier = Modifier, danger: Boolean = false, onClick: () -> Unit) {
-    val colors = MaterialTheme.colorScheme
-    Column(
-        modifier
-            .fillMaxWidth()
-            .heightIn(min = 64.dp)
-            .clip(MaterialTheme.shapes.small)
-            .clickable(onClick = onClick)
-            .padding(4.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
-    ) {
-        Icon(painterResource(icon), contentDescription = null, tint = if (danger) colors.error else colors.primary, modifier = Modifier.size(22.dp))
-        Text(label, style = MaterialTheme.typography.labelSmall, color = colors.onSurface, maxLines = 2, overflow = TextOverflow.Ellipsis)
     }
 }
 
