@@ -900,11 +900,6 @@
     <string name="sms_messenger_short">Mensajero SMS</string>
     <string name="thank_you_short">Gracias</string>
     <string name="voice_recorder_short">Grabadora de voz</string>
-    <string name="sideloaded_app">
-        <![CDATA[
-            Parece que la versión de tu aplicación está dañada. Por favor descargue la versión original <a href="%s">aquí</a>.
-        ]]>
-    </string>
     <string name="frequently_asked_questions">Preguntas frecuentes</string>
     <string name="before_asking_question">Antes de hacer una pregunta, primero lea las</string>
     <string name="faq_1_title_commons">¿Cómo es que no veo este widget de aplicaciones en la lista de widgets?</string>

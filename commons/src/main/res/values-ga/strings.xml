@@ -1007,9 +1007,6 @@
  Is féidir leat iad a íoslódáil ach a gcuid teidil nó deilbhíní a bhrú.<br><br>
  Go raibh maith agat
  ]]></string>
-    <string name="sideloaded_app"><![CDATA[
- Breathnaíonn sé go bhfuil do leagan app truaillithe. Íoslódáil an bunleagan <a href="%s">anseo</a> le do thoil.
- ]]></string>
     <string name="faq_2_text_commons"><![CDATA[
  Sea, ar ndóigh. Is féidir leat an focal a scaipeadh faoi na haipeanna nó aiseolas agus rátálacha maith a thabhairt. Is féidir leat cabhrú freisin trí na haipeanna a aistriú go teanga nua, nó díreach roinnt aistriúcháin atá ann cheana a nuashonrú.
  Tá an treoirleabhar aistrithe ag <a href="https://github.com/FossifyOrg/General-Discussion#how-can-i-suggest-an-edit-to-a-file">an suíomh Gréasáin seo</a> , nó déan teagmháil linn ag <a href="mailto:hello@fossify.org">hello@fossify.org</a> má tá aon cheist agat.

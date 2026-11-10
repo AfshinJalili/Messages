@@ -654,7 +654,6 @@
     <string name="sms_messenger_short">سنیہے</string>
     <string name="thank_you_short">مہربانی</string>
     <string name="voice_recorder_short">ریکارڈ والا</string>
-    <string name="sideloaded_app">It looks like your app version is corrupt. Please download the original version &lt;a href=%s&gt;here&lt;/a&gt;.</string>
     <string name="frequently_asked_questions">سوال تے جواب</string>
     <string name="faq_1_title_commons">How come I don\'t see this apps widget on the list of widgets\?</string>
     <string name="faq_1_text_commons">It is most likely because you moved the app on an SD card. There is an Android system limitation which hides the given app widgets in that case. The only solution is to move the app back onto the Internal Storage via your device settings.</string>

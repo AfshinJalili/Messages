@@ -844,11 +844,6 @@
     <string name="sms_messenger_short">SMS mezularia</string>
     <string name="thank_you_short">Eskerrik asko</string>
     <string name="voice_recorder_short">Grabagailua</string>
-    <string name="sideloaded_app">
-        <![CDATA[
-            Badirudi zure aplikazioaren bertsioa hondatuta dagoela. Deskargatu bertsio originala <a href="%s">hemen</a>.
-        ]]>
-    </string>
     <string name="frequently_asked_questions">Maiz egindako galderak</string>
     <string name="before_asking_question">Galdera bat egin aurretik, irakurri</string>
     <string name="faq_1_title_commons">Zer dela eta ez dut aplikazioen trepeta hau trepeten zerrendan ikusten\?</string>

@@ -904,7 +904,6 @@
     <string name="notes_short">Bilješke</string>
     <string name="thank_you_short">Hvala</string>
     <string name="voice_recorder_short">Diktafon</string>
-    <string name="sideloaded_app">Čini se da je verzija aplikacije oštećena. Preuzmi izvornu verziju &lt;a href=%s&gt;ovdje&lt;/a&gt;.</string>
     <string name="frequently_asked_questions">Često postavljenja pitanja</string>
     <string name="before_asking_question">Prije postavljanja pitanja, najprije pročitaj</string>
     <string name="faq_1_title_commons">Zašto ne vidim widgete ove aplikacije u popisu widgeta\?</string>

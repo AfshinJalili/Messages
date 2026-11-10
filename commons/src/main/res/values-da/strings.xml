@@ -793,11 +793,6 @@
     <string name="sms_messenger_short">Beskeder</string>
     <string name="thank_you_short">Tak skal du have</string>
     <string name="voice_recorder_short">Lydoptager</string>
-    <string name="sideloaded_app">
-        <![CDATA[
-            Det ser ud til at din app-version er beskadiget. <a href="%s">Download den originale version her</a>.
-        ]]>
-    </string>
     <string name="frequently_asked_questions">Ofte stillede spørgsmål</string>
     <string name="before_asking_question">Inden du stiller et spørgsmål bedes du først læse</string>
     <string name="faq_1_title_commons">Hvorfor kan jeg ikke se denne app\'s widget på listen med widgets?</string>

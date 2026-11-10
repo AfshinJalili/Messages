@@ -2,11 +2,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <queries>
-        <package android:name="org.fossify.thankyou.debug" />
-        <package android:name="org.fossify.thankyou" />
-    </queries>
-
     <uses-feature
         android:name="android.hardware.faketouch"
         android:required="false" />
@@ -27,8 +22,6 @@
     <uses-permission
         android:name="com.samsung.android.providers.context.permission.WRITE_USE_APP_FEATURE_SURVEY"
         tools:node="remove" />
-
-    <uses-permission android:name="org.fossify.android.permission.WRITE_GLOBAL_SETTINGS" />
 
     <application android:supportsRtl="true">
         <activity
@@ -67,14 +60,5 @@
         <activity
             android:name=".activities.AppLockActivity"
             android:exported="false" />
-
-        <receiver
-            android:name=".receivers.FossifyBroadcastReceiver"
-            android:exported="true"
-            tools:ignore="ExportedReceiver">
-            <intent-filter>
-                <action android:name="org.fossify.android.GLOBAL_CONFIG_UPDATED" />
-            </intent-filter>
-        </receiver>
     </application>
 </manifest>

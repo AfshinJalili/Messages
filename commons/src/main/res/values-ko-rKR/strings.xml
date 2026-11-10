@@ -507,11 +507,6 @@
     <string name="before_asking_question_read_faq">질문하기 전에 FAQ를 먼저 읽어 주세요. 해답이 있을지도 모릅니다.</string>
     <string name="read_it">읽어보기</string>
     <string name="new_app">안녕하세요,&lt;br&gt;&lt;br&gt; 저희의 새로운 앱이 출시되었습니다:&lt;br&gt;&lt;br&gt; &lt;a href=%1$s&gt;%2$s&lt;/a&gt;&lt;br&gt;&lt;br&gt; &lt;a href=%3$s&gt;%4$s&lt;/a&gt;&lt;br&gt;&lt;br&gt; &lt;a href=%5$s&gt;%6$s&lt;/a&gt;&lt;br&gt;&lt;br&gt; 위 링크를 탭하여 받을 수 있습니다.&lt;br&gt;&lt;br&gt; 감사합니다</string>
-    <string name="sideloaded_app">
-        <![CDATA[
-            앱 버전이 유효하지 않습니다. 원본을 설치해 주세요. <a href="%s">here</a>.
-        ]]>
-    </string>
     <string name="frequently_asked_questions">자주 묻는 질문</string>
     <string name="faq_1_title_commons">위젯 목록에 이 앱이 표시되지 않으면 어떻게 해야 하나요?</string>
     <string name="faq_1_text_commons">앱을 SD카드에 설치했기 때문인 가능성이 큽니다. 안드로이드 시스템 제한으로 SD카드에 설치한 앱은 위젯을 사용할 수 없습니다. 이런 경우에는 위젯을 사용하시려면 내장 메모리로 앱을 옮기는 방법밖에는 없습니다.</string>

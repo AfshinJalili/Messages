@@ -861,9 +861,6 @@
     <string name="sms_messenger_short">SMS-Messenger</string>
     <string name="thank_you_short">Dankeschön</string>
     <string name="voice_recorder_short">Diktiergerät</string>
-    <string name="sideloaded_app"><![CDATA[
-            Deine App-Version scheint beschädigt zu sein. Bitte lade dir die Originalversion <a href="%s">hier</a> herunter.
-        ]]></string>
     <string name="frequently_asked_questions">Häufig gestellte Fragen</string>
     <string name="before_asking_question">Bevor du eine Frage stellst, lies bitte zuerst die</string>
     <string name="faq_1_title_commons">Weshalb sehe ich das Widget dieser App nicht in der Liste der Widgets?</string>

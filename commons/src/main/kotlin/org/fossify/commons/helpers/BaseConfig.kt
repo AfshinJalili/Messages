@@ -376,9 +376,6 @@ open class BaseConfig(val context: Context) {
         set(wasAppIconCustomizationWarningShown) = prefs.edit().putBoolean(WAS_APP_ICON_CUSTOMIZATION_WARNING_SHOWN, wasAppIconCustomizationWarningShown)
             .apply()
 
-    var appSideloadingStatus: Int
-        get() = prefs.getInt(APP_SIDELOADING_STATUS, SIDELOADING_UNCHECKED)
-        set(appSideloadingStatus) = prefs.edit().putInt(APP_SIDELOADING_STATUS, appSideloadingStatus).apply()
 
     var dateFormat: String
         get() = prefs.getString(DATE_FORMAT, getDefaultDateFormat())!!

@@ -706,9 +706,6 @@
         <item quantity="many">%d semanas atrás</item>
         <item quantity="other">%d semanas atrás</item>
     </plurals>
-    <string name="sideloaded_app"><![CDATA[
-            Parece que a sua versão do app está corrompida. Por favor, descarregue a versão original <a href="%s">aqui</a>.
-        ]]></string>
     <string name="rename_in_sd_card_system_restriction">O sistema não permite que você renomeie esta pasta</string>
     <string name="copy_move">Copiar / Mover</string>
     <string name="path">Caminho</string>

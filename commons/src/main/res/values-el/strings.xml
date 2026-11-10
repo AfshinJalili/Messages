@@ -844,11 +844,6 @@
     <string name="sms_messenger_short">Μηνύματα SMS</string>
     <string name="thank_you_short">Σας Ευχαριστούμε</string>
     <string name="voice_recorder_short">Εγγραφή φωνής</string>
-    <string name="sideloaded_app">
-        <![CDATA[
-            Φαίνεται ότι η έκδοση της εφαρμογής σας είναι κατεστραμμένη. Κατεβάστε την αρχική έκδοση από <a href="%s">εδώ</a>.
-        ]]>
-    </string>
     <string name="frequently_asked_questions">Συχνές ερωτήσεις</string>
     <string name="before_asking_question">Πριν κάνετε μια ερώτηση, διαβάστε πρώτα τις</string>
     <string name="faq_1_title_commons">Γιατί δεν βλέπω αυτό το Γραφικό στοιχείο εφαρμογής στη λίστα;</string>

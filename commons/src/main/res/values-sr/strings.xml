@@ -815,11 +815,6 @@
     <string name="sms_messenger_short">СМС Мессенгер</string>
     <string name="thank_you_short">Хвала вам</string>
     <string name="voice_recorder_short">Диктафон</string>
-    <string name="sideloaded_app">
-        <![CDATA[
-            Изгледа да је верзија ваше апликације у квару. Молимо вас преузмите оригиналну верзију <a href="%s">овде</a>.
-        ]]>
-    </string>
     <string name="frequently_asked_questions">Најчешће постављена питања</string>
     <string name="before_asking_question">Пре него поставите питање, прво прочитајте</string>
     <string name="faq_1_title_commons">Зашто не видим виџете ове апликације у листи виџета?</string>

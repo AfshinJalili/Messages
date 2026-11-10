@@ -942,9 +942,6 @@
     <string name="sms_messenger_short">SMS Повідомлення</string>
     <string name="thank_you_short">Подяка</string>
     <string name="voice_recorder_short">Диктофон</string>
-    <string name="sideloaded_app"><![CDATA[
-             Схоже, що ваша версія застосунку пошкоджена. Завантажте оригінальну версію <a href="%s">тут</a>.
-        ]]></string>
     <string name="frequently_asked_questions">Часті питання - ЧаПи</string>
     <string name="before_asking_question">Перш ніж запитувати, будь ласка, прочитайте</string>
     <string name="faq_1_title_commons">Чому я не бачу віджета цього застосунку в списку віджетів?</string>

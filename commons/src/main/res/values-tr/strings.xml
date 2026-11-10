@@ -889,11 +889,6 @@
     <string name="sms_messenger_short">SMS İletiler</string>
     <string name="thank_you_short">Teşekkürler</string>
     <string name="voice_recorder_short">Ses Kaydedici</string>
-    <string name="sideloaded_app">
-        <![CDATA[
-            Uygulama sürümünüz bozuk görünüyor. Lütfen <a href="%s">buradan</a> orijinal sürümünü indirin.
-        ]]>
-    </string>
     <string name="frequently_asked_questions">Sık sorulan sorular</string>
     <string name="before_asking_question">Bir soru sormadan önce, lütfen şurayı okuyun:</string>
     <string name="faq_1_title_commons">Uygulamanın widget\'ını widget\'lar listesinde neden göremiyorum?</string>

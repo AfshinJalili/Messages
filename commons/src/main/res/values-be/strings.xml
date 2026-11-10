@@ -884,9 +884,6 @@
     <string name="sms_messenger_short">Паведамленні</string>
     <string name="thank_you_short">Падзяка</string>
     <string name="voice_recorder_short">Дыктафон</string>
-    <string name="sideloaded_app"><![CDATA[
-            Выглядае так, што версія ваша праграмы нядзейная. Калі ласка, спампуйце арыгінальнкю версію <a href="%s">here</a>.
-        ]]></string>
     <string name="frequently_asked_questions">Часта задаюць пытанні</string>
     <string name="before_asking_question">Перш чым задаць пытанне, прачытайце</string>
     <string name="faq_1_title_commons">Чаму я не бачу гэты віджэт праграм у спісе віджэтаў\?</string>

@@ -755,7 +755,6 @@
     <string name="sms_messenger_short">Žinutės</string>
     <string name="thank_you_short">Ačiū</string>
     <string name="voice_recorder_short">Garso rašytuvas</string>
-    <string name="sideloaded_app">Atrodo, kad jūsų programėlės versija yra pažeista. Atsisiųskite originalią versiją iš &lt;a href=%s&gt;čia&lt;/a&gt;.</string>
     <string name="frequently_asked_questions">Dažniausiai užduodami klausimai</string>
     <string name="before_asking_question">Prieš užduodami klausimą, iš pradžių, perskaitykite</string>
     <string name="faq_1_title_commons">Kodėl valdiklių sąraše nematau šios programėlės valdiklio\?</string>

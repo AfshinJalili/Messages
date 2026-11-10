@@ -757,11 +757,6 @@ class CustomizationActivity : BaseSimpleActivity() {
     }
 
     private fun pickPrimaryColor() {
-        if (!packageName.startsWith("org.fossify.", true) && baseConfig.appRunCount > 50) {
-            finish()
-            return
-        }
-
         curPrimaryLineColorPicker = LineColorPickerDialog(
             activity = this,
             color = curPrimaryColor,

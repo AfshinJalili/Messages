@@ -993,11 +993,6 @@
     <string name="sms_messenger_short">الرسائل القصيرة</string>
     <string name="thank_you_short">شكرًا لك</string>
     <string name="voice_recorder_short">مسجل الصوت</string>
-    <string name="sideloaded_app">
-        <![CDATA[
-يبدو أن إصدار التطبيق تالف. يرجى تنزيل الإصدار الأصلي<a href="%s">من هنا</a>.
-        ]]>
-    </string>
     <string name="frequently_asked_questions">الأسئلة المتداولة</string>
     <string name="before_asking_question">قبل أن تسأل سؤالاً ، يرجى قراءة أولاً</string>
     <string name="faq_1_title_commons">كيف لا أرى هذه التطبيقات في قائمة التطبيقات المصغّرة (الويدجت)؟</string>

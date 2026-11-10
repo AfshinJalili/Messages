@@ -942,11 +942,6 @@
     <string name="sms_messenger_short">Wiadomości SMS</string>
     <string name="thank_you_short">Podziękowanie</string>
     <string name="voice_recorder_short">Rejestrator głosu</string>
-    <string name="sideloaded_app">
-        <![CDATA[
-            Wygląda na to, że Twoja wersja aplikacji jest uszkodzona/zmodyfikowana. Pobierz <a href="%s">stąd</a> oryginalną wersję.
-        ]]>
-    </string>
     <string name="frequently_asked_questions">Często zadawane pytania (FAQ)</string>
     <string name="before_asking_question">Zanim zadasz pytanie, przeczytaj najpierw</string>
     <string name="faq_1_title_commons">Dlaczego nie widzę widżetu tej aplikacji na liście widżetów\?</string>

@@ -693,11 +693,6 @@
             Hwyl.
         ]]>
     </string>
-    <string name="sideloaded_app">
-        <![CDATA[
-            Mae\'n ymddangos bod fersiwn dy ap yn llwgr. Lawrlwytha\'r fersiwn gwreiddiol <a href="%s">yma</a>.
-        ]]>
-    </string>
     <string name="frequently_asked_questions">Cwestiynau cyffredin</string>
     <string name="before_asking_question">Cyn ofyn cwestiwn, gweler y</string>
     <string name="faq_1_title_commons">Pam nad ydw i\'n gweld teclyn yr ap hwn yn y rhestr teclynnau?</string>

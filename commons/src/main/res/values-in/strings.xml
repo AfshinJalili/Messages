@@ -748,11 +748,6 @@
     <string name="sms_messenger_short">Perpesanan SMS</string>
     <string name="thank_you_short">Terima Kasih</string>
     <string name="voice_recorder_short">Perekam Suara</string>
-    <string name="sideloaded_app">
-        <![CDATA[
-            Sepertinya versi aplikasi anda rusak. Silakan unduh versi original <a href="%s">di sini</a>.
-        ]]>
-    </string>
     <string name="frequently_asked_questions">FAQ</string>
     <string name="before_asking_question">Sebelum anda bertanya, silakan baca</string>
     <string name="faq_1_title_commons">Kenapa saya tidak melihat widget aplikasi ini di daftar widget?</string>

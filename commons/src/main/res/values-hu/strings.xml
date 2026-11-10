@@ -868,9 +868,6 @@
     <string name="sms_messenger_short">SMS üzenetküldő</string>
     <string name="thank_you_short">Köszönöm</string>
     <string name="voice_recorder_short">Hangrögzítő</string>
-    <string name="sideloaded_app"><![CDATA[
-            Úgy tűnik, hogy az alkalmazásverziója megsérült. Töltse le az eredeti verziót <a href="%s">innen</a>.
-        ]]></string>
     <string name="frequently_asked_questions">Gyakran Ismételt Kérdések</string>
     <string name="before_asking_question">Mielőtt feltenne egy kérdést, először olvassa el ezt:</string>
     <string name="faq_1_title_commons">Miért nem látom az alkalmazás modulját a modulok között\?</string>

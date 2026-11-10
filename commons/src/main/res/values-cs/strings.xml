@@ -890,11 +890,6 @@
     <string name="sms_messenger_short">SMS zprávy</string>
     <string name="thank_you_short">Děkujeme</string>
     <string name="voice_recorder_short">Hlasový záznamník</string>
-    <string name="sideloaded_app">
-        <![CDATA[
-            Zdá se, že vaše verze aplikace je poškozená. Prosím stáhněte originální verzi <a href="%s">zde</a>.
-        ]]>
-    </string>
     <string name="frequently_asked_questions">Často kladené otázky</string>
     <string name="before_asking_question">Před položením otázky si prosím prvně přečtěte</string>
     <string name="faq_1_title_commons">Proč nevidím widget této aplikace v přehledu widgetů?</string>

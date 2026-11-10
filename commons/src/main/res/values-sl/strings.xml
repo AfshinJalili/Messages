@@ -892,11 +892,6 @@
     <string name="sms_messenger_short">SMS sporočila</string>
     <string name="thank_you_short">Hvala</string>
     <string name="voice_recorder_short">Snemalnik</string>
-    <string name="sideloaded_app">
-        <![CDATA[
-            Izgleda, da je vaša verzija aplikacije pokvarjena. Prosimo naložite originalno verzijo od <a href="%s">tukaj</a>.
-        ]]>
-    </string>
     <string name="frequently_asked_questions">Pogosta vprašanja</string>
     <string name="before_asking_question">Preden postavite vprašanje, preberite</string>
     <string name="faq_1_title_commons">Zakaj aplikacije ne vidim na seznamu pripomočkov?</string>

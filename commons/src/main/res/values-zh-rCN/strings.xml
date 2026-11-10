@@ -846,9 +846,6 @@
     <string name="sms_messenger_short">信息</string>
     <string name="thank_you_short">感谢</string>
     <string name="voice_recorder_short">录音机</string>
-    <string name="sideloaded_app"><![CDATA[
-            似乎您的应用版本损坏了。 请在 <a href="%s">此处</a>下载原始版本。
-        ]]></string>
     <string name="frequently_asked_questions">常见问题</string>
     <string name="before_asking_question">在提问之前，请先阅读</string>
     <string name="faq_1_title_commons">为什么我在应用微件列表中没有找到此应用的微件？</string>

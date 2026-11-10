@@ -45,7 +45,6 @@ import org.fossify.commons.R
 import org.fossify.commons.activities.BaseSimpleActivity
 import org.fossify.commons.compose.extensions.DEVELOPER_PLAY_STORE_URL
 import org.fossify.commons.databinding.DialogTitleBinding
-import org.fossify.commons.dialogs.AppSideloadedDialog
 import org.fossify.commons.dialogs.ConfirmationAdvancedDialog
 import org.fossify.commons.dialogs.ConfirmationDialog
 import org.fossify.commons.dialogs.CustomIntervalPickerDialog
@@ -71,8 +70,6 @@ import org.fossify.commons.helpers.PROTECTION_FINGERPRINT
 import org.fossify.commons.helpers.REAL_FILE_PATH
 import org.fossify.commons.helpers.REQUEST_EDIT_IMAGE
 import org.fossify.commons.helpers.REQUEST_SET_AS
-import org.fossify.commons.helpers.SIDELOADING_FALSE
-import org.fossify.commons.helpers.SIDELOADING_TRUE
 import org.fossify.commons.helpers.SILENT
 import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.commons.helpers.isOnMainThread
@@ -127,11 +124,6 @@ fun Activity.appLaunched(appId: String) {
     }
 
     baseConfig.appRunCount++
-    if (baseConfig.appRunCount % 30 == 0 && !isAProApp()) {
-        if (!resources.getBoolean(R.bool.hide_google_relations)) {
-            showDonateOrUpgradeDialog()
-        }
-    }
 }
 
 fun Activity.showDonateOrUpgradeDialog() {
@@ -1750,50 +1742,6 @@ fun BaseSimpleActivity.getAlarmSounds(type: Int, callback: (ArrayList<AlarmSound
             showErrorToast(e)
             callback(ArrayList())
         }
-    }
-}
-
-fun BaseSimpleActivity.showModdedAppWarning() {
-    val label =
-        "You are using a fake version of the app. For your own safety " +
-                "download the original one from www.fossify.org. Thanks"
-    ConfirmationDialog(
-        activity = this,
-        message = label,
-        positive = R.string.ok,
-        negative = 0
-    ) {
-        launchViewIntent(DEVELOPER_PLAY_STORE_URL)
-    }
-}
-
-fun Activity.checkAppSideloading(): Boolean {
-    val isSideloaded = when (baseConfig.appSideloadingStatus) {
-        SIDELOADING_TRUE -> true
-        SIDELOADING_FALSE -> false
-        else -> isAppSideloaded()
-    }
-
-    baseConfig.appSideloadingStatus = if (isSideloaded) SIDELOADING_TRUE else SIDELOADING_FALSE
-    if (isSideloaded) {
-        showSideloadingDialog()
-    }
-
-    return isSideloaded
-}
-
-fun Activity.isAppSideloaded(): Boolean {
-    return try {
-        getDrawable(R.drawable.ic_camera_vector)
-        false
-    } catch (e: Exception) {
-        true
-    }
-}
-
-fun Activity.showSideloadingDialog() {
-    AppSideloadedDialog(this) {
-        finish()
     }
 }
 

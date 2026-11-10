@@ -896,11 +896,6 @@
     <string name="sms_messenger_short">Messaggi SMS</string>
     <string name="thank_you_short">Ringraziamento</string>
     <string name="voice_recorder_short">Registratore vocale</string>
-    <string name="sideloaded_app">
-        <![CDATA[
-        Sembra che la propria versione sia corrotta. Scaricare la versione originale <a href="%s">qui</a>.
-        ]]>
-    </string>
     <string name="frequently_asked_questions">Domande frequenti</string>
     <string name="before_asking_question">Prima di porre una domanda, per favore leggi le</string>
     <string name="faq_1_title_commons">Come mai non vedo il widget di questa app nell\'elenco dei widget?</string>

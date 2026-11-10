@@ -896,11 +896,6 @@
     <string name="sms_messenger_short">Missatges SMS</string>
     <string name="thank_you_short">Gràcies</string>
     <string name="voice_recorder_short">Enregistrador de veu</string>
-    <string name="sideloaded_app">
-        <![CDATA[
-            Sembla que aquesta versió de l\'aplicació està malmesa. Baixeu la versió original <a href="%s">aquí</a>.
-        ]]>
-    </string>
     <string name="frequently_asked_questions">Preguntes més freqüents</string>
     <string name="before_asking_question">Abans de fer una pregunta, primer llegiu les</string>
     <string name="faq_1_title_commons">Com és que no veig aquest giny a la llista de ginys\?</string>

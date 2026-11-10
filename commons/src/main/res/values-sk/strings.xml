@@ -864,11 +864,6 @@
     <string name="sms_messenger_short">SMS správy</string>
     <string name="thank_you_short">Ďakujem</string>
     <string name="voice_recorder_short">Nahrávač zvuku</string>
-    <string name="sideloaded_app">
-        <![CDATA[
-            Zdá sa, že vaša verzia apky je poškodená. Prosím stiahnite originálnu verziu <a href="%s">odtiaľ</a>.
-        ]]>
-    </string>
     <string name="frequently_asked_questions">Často kladené otázky</string>
     <string name="before_asking_question">Predtým, ako sa niečo opýtate si prosíme preštudujte</string>
     <string name="faq_1_title_commons">Prečo nevidím widget tejto apky na zozname widgetov?</string>

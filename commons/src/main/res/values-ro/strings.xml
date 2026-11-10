@@ -752,11 +752,6 @@
     <string name="sms_messenger_short">Mesaje</string>
     <string name="thank_you_short">Îţi mulţumesc</string>
     <string name="voice_recorder_short">Înregistrare vocală</string>
-    <string name="sideloaded_app">
-        <![CDATA[
-            Se pare că versiunea aplicației dvs. este coruptă. Vă rugăm să descărcați versiunea originală <a href="%s">aici</a>.
-        ]]>
-    </string>
     <string name="frequently_asked_questions">Întrebări frecvente</string>
     <string name="before_asking_question">Înainte de a pune o întrebare, vă rugăm să citiți mai întâi</string>
     <string name="faq_1_title_commons">Cum se face că nu văd widgetul corespunzător aplicaţiei în lista de widgeturi?</string>

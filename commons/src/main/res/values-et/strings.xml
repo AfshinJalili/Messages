@@ -828,9 +828,6 @@
     <string name="sms_messenger_short">SMS sõnumid</string>
     <string name="thank_you_short">Suur tänu</string>
     <string name="voice_recorder_short">Helisalvestaja</string>
-    <string name="sideloaded_app"><![CDATA[
-            Tundub sinu hetkel kasutatav rakenduse variant on vigane. Palun laadi algupärane versioon <a href="%s">siit</a>.
-        ]]></string>
     <string name="frequently_asked_questions">Korduma kippuvad küsimused</string>
     <string name="before_asking_question">Enne küsimuse kirjutamist palun loe esmalt järgnevat lehte</string>
     <string name="faq_1_title_commons">Kuidas ma ei näe seda rakenduste vidinat kõikide vidinate loendis\?</string>

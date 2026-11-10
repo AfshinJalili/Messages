@@ -710,9 +710,6 @@
     <string name="sms_messenger_short">短訊</string>
     <string name="thank_you_short">感謝您</string>
     <string name="voice_recorder_short">錄音機</string>
-    <string name="sideloaded_app"><![CDATA[
-            你的應用程式版本似乎是損壞的。請從 <a href="%s">這裡</a> 下載原始版本。
-        ]]></string>
     <string name="frequently_asked_questions">常見問題</string>
     <string name="before_asking_question">在你發問之前，請先閱讀</string>
     <string name="faq_1_title_commons">為什麼我在小工具列表中沒看到這應用程式的小工具?</string>

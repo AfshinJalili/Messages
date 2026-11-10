@@ -795,9 +795,6 @@
     <string name="sms_messenger_short">Mensaxería SMS</string>
     <string name="thank_you_short">Grazas</string>
     <string name="voice_recorder_short">Gravadora de voz</string>
-    <string name="sideloaded_app"><![CDATA[
-            Parece que a versión da túa aplicación está estragada. Descarga a versión orixinal <a href="%s">aquí</a>.
-        ]]></string>
     <string name="frequently_asked_questions">Preguntas máis frecuentes</string>
     <string name="before_asking_question">Antes de facer unha pregunta, lea primeiro</string>
     <string name="faq_1_title_commons">Como é que non vexo este widget de aplicacións na lista de widgets\?</string>

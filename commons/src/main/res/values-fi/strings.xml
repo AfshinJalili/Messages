@@ -862,11 +862,6 @@
     <string name="sms_messenger_short">Tekstiviesti Messenger</string>
     <string name="thank_you_short">Kiitos</string>
     <string name="voice_recorder_short">Ääninauhuri</string>
-    <string name="sideloaded_app">
-        <![CDATA[
-            Sovellusversiosi vaikuttaa korruptoituneelta. Lataa alkuperäinen versio <a href="%s">täältä</a>.
-        ]]>
-    </string>
     <string name="frequently_asked_questions">Usein kysytyt kysymykset</string>
     <string name="before_asking_question">Ennen kuin esität kysymyksen, luethan ensin</string>
     <string name="faq_1_title_commons">Miksi en näe tämän sovelluksen pienoissovellusta pienoissovellusvalikossa?</string>

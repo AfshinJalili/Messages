@@ -684,9 +684,6 @@
     <string name="support">תמיכה</string>
     <string name="update_thank_you">אנא עדכן את Fossify Thank לגרסה האחרונה</string>
     <string name="widget_locked_pro">הווידג\'ט נעול.\nאנא שדרג לגרסת ה-Pro כדי לפתוח אותו.</string>
-    <string name="sideloaded_app"><![CDATA[
-            נראה שגרסת האפליקציה שלך פגומה. אנא הורד את הגרסה המקורית <a href="%s">כאן</a>.
-        ]]></string>
     <string name="faq_4_title_commons">אני לא אוהב את צבעי הווידג\'ט, האם אני יכול לשנות אותם?</string>
     <string name="faq_8_title_commons">למה כדאי לי לשדרג לגרסת ה-Pro?</string>
     <string name="translation_central_kurdish">כורדית מרכזית</string>

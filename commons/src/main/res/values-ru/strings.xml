@@ -925,9 +925,6 @@
     <string name="sms_messenger_short">Сообщения</string>
     <string name="thank_you_short">Спасибо</string>
     <string name="voice_recorder_short">Диктофон</string>
-    <string name="sideloaded_app"><![CDATA[
-            Похоже, ваша версия приложения повреждена. Загрузите оригинальную версию <a href="%s">отсюда</a>.
-        ]]></string>
     <string name="frequently_asked_questions">Часто задаваемые вопросы</string>
     <string name="before_asking_question">Прежде чем задать вопрос, прочитайте</string>
     <string name="faq_1_title_commons">Почему я не вижу виджет этого приложения в списке виджетов?</string>

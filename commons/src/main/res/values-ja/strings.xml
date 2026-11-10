@@ -758,11 +758,6 @@
     <string name="notes_short">メモ</string>
     <string name="sms_messenger_short">ショートメール</string>
     <string name="voice_recorder_short">ボイスレコーダー</string>
-    <string name="sideloaded_app">
-        <![CDATA[
-            アプリのバージョンが破損しているようです。オリジナル版を<a href="%s">ここから</a>ダウンロードしてください。
-        ]]>
-    </string>
     <string name="frequently_asked_questions">よくある質問</string>
     <string name="before_asking_question">質問する前に、こちらをお読みください</string>
     <string name="faq_1_title_commons">ウィジェットのリストにこのアプリが表示されないのはなぜですか？</string>
