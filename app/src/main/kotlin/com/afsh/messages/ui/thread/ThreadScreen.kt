@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionOnScreen
+import androidx.compose.ui.layout.findRootCoordinates
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.toSize
@@ -38,6 +39,8 @@ import android.text.util.Linkify
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
@@ -200,10 +203,10 @@ private const val BUBBLE_WIDTH_FRACTION = 0.8f
 private const val MAX_MEDIA_HEIGHT_RATIO = 3
 private const val STICKY_DATE_HIDE_DELAY_MS = 700L
 private const val STICKY_DATE_FADE_MS = 180
-// R6-48: the lift shares the sheet's curve and length.
-private const val LIFT_MS = 300
+// R6-48: the lift is a soft spring of its own, not tied to the sheet's slide, so the bubble glides while the sheet moves.
+private val LiftSpring = spring<Float>(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow, visibilityThreshold = 0.001f)
 private val LiftGap = 12.dp
-private val LiftElevation = 2.dp
+private val LiftElevation = 6.dp
 private val LiftFade = 32.dp
 private val TargetSize = 48.dp
 // Keeps lines readable in landscape and on wide windows.
@@ -434,7 +437,7 @@ fun ThreadTimeline(
     }
     val lift = lifted
     if (sheetOpen && lift != null) {
-        MessageSheet(lift.message, state, onTop = { sheetTop = it }, onEvent = onEvent, onDismiss = { sheetOpen = false })
+        MessageSheet(lift.message, state, onRestingTop = { sheetTop = it }, onEvent = onEvent, onDismiss = { sheetOpen = false })
     }
 }
 
@@ -442,16 +445,17 @@ fun ThreadTimeline(
 private class LiftedBubble(val message: Message, val groupedBelow: Boolean, val bounds: Rect)
 
 /**
- * R6-48: dims the timeline and lifts a copy of the tapped bubble to 12 dp above the sheet, without scrolling, then
- * returns it to its slot. The sheet's own scrim is off; onDim lets the host dim the header views outside this one. A bubble taller than
- * the free space shows its top, fading out at the bottom.
+ * R6-48: dims the timeline and floats a copy of the tapped bubble, without scrolling, then returns it to its slot.
+ * It moves only as far as it must to clear the sheet's resting top by 12 dp, and it glides there on its own spring:
+ * it never follows the sheet's edge while the sheet slides in or out. The sheet's own scrim is off; onDim lets the
+ * host dim the header views outside this one. A bubble taller than the free space shows its top, fading out at the bottom.
  */
 @Composable
 private fun LiftOverlay(lift: LiftedBubble, up: Boolean, sheetTop: Float, state: ThreadUiState, onDim: (Float) -> Unit, onGone: () -> Unit) {
     val progress = remember(lift) { Animatable(0f) }
     LaunchedEffect(progress) { snapshotFlow { progress.value }.collect(onDim) }
     LaunchedEffect(lift, up) {
-        progress.animateTo(if (up) 1f else 0f, tween(LIFT_MS))
+        progress.animateTo(if (up) 1f else 0f, LiftSpring)
         if (!up) onGone()
     }
     val density = LocalDensity.current
@@ -469,11 +473,14 @@ private fun LiftOverlay(lift: LiftedBubble, up: Boolean, sheetTop: Float, state:
         val at = origin ?: return@Box
         val slot = lift.bounds.top - at.y
         val full = lift.bounds.height
-        // Until the sheet reports where it is, the bubble stays in its slot.
-        val free = if (sheetTop.isNaN()) slot + full else sheetTop - at.y - with(density) { LiftGap.toPx() }
+        val gap = with(density) { LiftGap.toPx() }
+        // sheetTop is where the sheet comes to rest, not its moving edge. Until it is known, the bubble stays in its slot.
+        val free = if (sheetTop.isNaN()) slot + full else sheetTop - at.y - gap
         val shown = minOf(full, free.coerceAtLeast(0f))
+        // Stays put when the sheet leaves it in view; a bubble cut off at the top comes down to the gap.
+        val target = minOf(maxOf(slot, gap), free - shown)
         val height = full + (shown - full) * progress.value
-        val top = slot + (free - shown - slot) * progress.value
+        val top = slot + (target - slot) * progress.value
         val clipped = height < full - 1f
         val incoming = lift.message.isReceivedMessage()
         val fade = with(density) { LiftFade.toPx() }
@@ -511,7 +518,7 @@ private fun LiftOverlay(lift: LiftedBubble, up: Boolean, sheetTop: Float, state:
 /** R6-48 (screens 97, 98): date · time · SIM, then the actions, Delete in the error colour. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun MessageSheet(message: Message, state: ThreadUiState, onTop: (Float) -> Unit, onEvent: (ThreadEvent) -> Unit, onDismiss: () -> Unit) {
+private fun MessageSheet(message: Message, state: ThreadUiState, onRestingTop: (Float) -> Unit, onEvent: (ThreadEvent) -> Unit, onDismiss: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     val context = LocalContext.current
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -532,9 +539,14 @@ private fun MessageSheet(message: Message, state: ThreadUiState, onTop: (Float) 
         containerColor = colors.surfaceContainer,
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
         scrimColor = Color.Transparent,
+        // The sheet rests against the bottom of its full-window dialog, so its resting top is known from the first
+        // frame, while it is still sliding in. The lifted bubble aims there instead of chasing the moving edge.
+        modifier = Modifier.onGloballyPositioned {
+            val window = it.findRootCoordinates()
+            onRestingTop(window.positionOnScreen().y + window.size.height - it.size.height)
+        },
         dragHandle = {
-            // The handle's slot starts at the sheet's top edge, which the lifted bubble follows.
-            Box(Modifier.onGloballyPositioned { onTop(it.positionOnScreen().y) }.padding(top = 8.dp)) {
+            Box(Modifier.padding(top = 8.dp)) {
                 Box(Modifier.size(32.dp, 4.dp).clip(CircleShape).background(colors.outlineVariant))
             }
         },

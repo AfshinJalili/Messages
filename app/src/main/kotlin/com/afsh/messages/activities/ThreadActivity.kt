@@ -526,7 +526,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
     }
 
     // The header is its own ComposeView, outside the timeline's lift scrim.
-    // setAlpha replaces the colour's own alpha, so the drawable is opaque and the scrim's 40% is applied here.
+    // setAlpha replaces the colour's own alpha, so the drawable is opaque and the scrim's own alpha is applied here.
     private val liftScrim by lazy { getColor(R.color.afsh_lift_scrim) }
     private val headerScrim by lazy {
         ColorDrawable(ColorUtils.setAlphaComponent(liftScrim, OPAQUE)).also { binding.threadHeader.foreground = it }
