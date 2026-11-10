@@ -27,8 +27,10 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 
@@ -135,6 +137,50 @@ fun RenameDialog(
             modifier = Modifier.fillMaxWidth(),
             enabled = name.isNotBlank(),
         )
+        AfshButton(dismissLabel, onClick = onDismiss, modifier = Modifier.fillMaxWidth(), kind = ButtonKind.QUIET)
+    }
+    LaunchedEffect(Unit) { focus.requestFocus() }
+}
+
+/**
+ * A one-field dialog that checks its value as it is typed: [error] returns why the value cannot
+ * be saved, or null. Used for spam patterns, which read left to right in a fixed-width face.
+ */
+@Composable
+fun TextInputDialog(
+    title: String,
+    current: String,
+    explanation: String,
+    confirmLabel: String,
+    dismissLabel: String,
+    error: (String) -> String?,
+    onSave: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var value by rememberSaveable { mutableStateOf(current) }
+    val focus = remember { FocusRequester() }
+    val problem = remember(value) { if (value.isBlank()) null else error(value) }
+    val canSave = value.isNotBlank() && problem == null
+    val save = { if (canSave) onSave(value) }
+    DialogFrame(title, onDismiss) {
+        TextFieldSlab(
+            value = value,
+            onValueChange = { value = it },
+            modifier = Modifier.focusRequester(focus),
+            accessibilityLabel = title,
+            keyboardOptions = KeyboardOptions(autoCorrectEnabled = false, imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(onDone = { save() }),
+            singleLine = false,
+            textStyle = MaterialTheme.typography.bodyLarge.copy(fontFamily = FontFamily.Monospace, textDirection = TextDirection.Ltr),
+            containerColor = MaterialTheme.colorScheme.surface,
+            isError = problem != null,
+        )
+        Text(
+            problem ?: explanation,
+            style = MaterialTheme.typography.bodySmall,
+            color = if (problem != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        AfshButton(confirmLabel, onClick = { save() }, modifier = Modifier.fillMaxWidth(), enabled = canSave)
         AfshButton(dismissLabel, onClick = onDismiss, modifier = Modifier.fillMaxWidth(), kind = ButtonKind.QUIET)
     }
     LaunchedEffect(Unit) { focus.requestFocus() }

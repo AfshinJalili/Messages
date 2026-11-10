@@ -2,7 +2,7 @@ package com.afsh.messages.models
 
 import androidx.compose.runtime.Immutable
 
-/** One spam SMS as the Spam review lists it. [date] is in milliseconds. */
+/** One spam SMS as the Spam review lists it. [date] is in milliseconds; [why] is filled in by the page. */
 @Immutable
 data class SpamReviewMessage(
     val id: Long,
@@ -14,4 +14,5 @@ data class SpamReviewMessage(
     val date: Long,
     val read: Boolean,
     val reason: Int,
+    val why: SpamWhy? = null,
 )

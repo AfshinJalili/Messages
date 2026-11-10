@@ -51,7 +51,7 @@ import com.afsh.messages.ui.forContent
 import com.afsh.messages.ui.withContentFonts
 
 private val PhraseRowHeight = 50.dp
-private const val PHRASES_HEADING_INDEX = 3
+private const val PHRASES_HEADING_INDEX = 4
 
 @Immutable
 data class BlockRulesUiState(
@@ -65,6 +65,7 @@ sealed interface BlockRulesEvent {
     data object Back : BlockRulesEvent
     data object OpenNumbers : BlockRulesEvent
     data object MoveRules : BlockRulesEvent
+    data object OpenPatterns : BlockRulesEvent
     data class SetFilter(val enabled: Boolean) : BlockRulesEvent
     data object AddPhrase : BlockRulesEvent
     data object AddNumber : BlockRulesEvent
@@ -121,6 +122,14 @@ fun BlockRulesScreen(
                 )
             }
             item(key = "filter") { FilterToggle(state.filterEnabled) { onEvent(BlockRulesEvent.SetFilter(it)) } }
+            item(key = "patterns") {
+                DestinationCard(
+                    icon = R.drawable.ic_lucide_shield_ban,
+                    label = stringResource(R.string.spam_patterns),
+                    description = stringResource(R.string.spam_patterns_card),
+                    onClick = { onEvent(BlockRulesEvent.OpenPatterns) },
+                )
+            }
             item(key = "phrases-heading") { SectionHeading(stringResource(R.string.blocked_phrases)) }
             items(state.phrases, key = { "p:$it" }) { phrase ->
                 PhraseRow(
