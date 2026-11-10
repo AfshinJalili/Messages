@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A pushed screen rises from 8% below and fades in. The rise matches SCREEN_RISE in Motion.kt. -->
+<set xmlns:android="http://schemas.android.com/apk/res/android"
+    android:duration="@integer/motion_push_ms"
+    android:interpolator="@android:interpolator/fast_out_slow_in"
+    android:shareInterpolator="true">
+    <translate
+        android:fromYDelta="8%"
+        android:toYDelta="0" />
+    <alpha
+        android:fromAlpha="0"
+        android:toAlpha="1" />
+</set>

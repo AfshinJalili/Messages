@@ -35,9 +35,11 @@ import com.afsh.messages.helpers.ExportOutcome
 import com.afsh.messages.helpers.InvalidBackupException
 import com.afsh.messages.helpers.MessagesExporter
 import com.afsh.messages.helpers.MessagesImporter
+import com.afsh.messages.helpers.ScreenMotion
 import com.afsh.messages.helpers.refreshConversations
 import com.afsh.messages.models.ImportResult
 import com.afsh.messages.ui.components.PageNavigation
+import com.afsh.messages.ui.components.ScreenStack
 import com.afsh.messages.ui.components.TopDestination
 import com.afsh.messages.ui.settings.ImportReview
 import com.afsh.messages.ui.settings.SettingsEvent
@@ -64,16 +66,22 @@ class SettingsActivity : ComposePageActivity() {
         uri?.let(::exportTo)
     }
 
+    // Settings is a top-level destination: it cross-fades in and out like Inbox and Library.
+    override val screenMotion = ScreenMotion.TAB
+
     @Composable
     override fun Page() {
-        SettingsScreen(
-            state = state,
-            page = pages.last(),
-            navigation = PageNavigation(TopDestination.SETTINGS, ::navigateTo),
-            snackbarHostState = snackbarHost,
-            onBack = ::back,
-            onEvent = ::onEvent,
-        )
+        // Its pages move like screens of their own: each rises over the last, and Back sinks it.
+        ScreenStack(screen = pages.last(), depth = pages.size) { page ->
+            SettingsScreen(
+                state = state,
+                page = page,
+                navigation = PageNavigation(TopDestination.SETTINGS, ::navigateTo),
+                snackbarHostState = snackbarHost,
+                onBack = ::back,
+                onEvent = ::onEvent,
+            )
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
