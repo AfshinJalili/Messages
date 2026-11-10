@@ -89,10 +89,6 @@
     <string name="allow_sender">همیشه این فرستنده را مجاز کن</string>
     <string name="sender_allowed">فرستنده مجاز شد و پیام بازگردانده شد</string>
     <string name="message_restored">پیام به صندوق بازگردانده شد</string>
-    <plurals name="spam_group_count">
-        <item quantity="one">%d پیام هرزنامه</item>
-        <item quantity="other">%d پیام هرزنامه</item>
-    </plurals>
     <string name="block_reason_ai">فیلتر قدیمی</string>
     <string name="block_reason_keyword">کلیدواژه</string>
     <string name="block_reason_number">شماره‌ی مسدودشده</string>
@@ -177,10 +173,6 @@
     <plurals name="spam_restored">
         <item quantity="one">%d پیام به صندوق منتقل شد</item>
         <item quantity="other">%d پیام به صندوق منتقل شد</item>
-    </plurals>
-    <plurals name="spam_group_hidden">
-        <item quantity="one">%d پیام هرزنامه پنهان شده</item>
-        <item quantity="other">%d پیام هرزنامه پنهان شده</item>
     </plurals>
     <string name="library_subtitle">چیزهایی که می‌خواهید نگه دارید، بی‌صدا کنید یا بازگردانید</string>
     <string name="library_starred_description">پیام‌هایی که برای بازگشت علامت زده‌اید</string>

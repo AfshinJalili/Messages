@@ -9,10 +9,6 @@
     <string name="allow_sender">Always allow this sender</string>
     <string name="sender_allowed">Sender allowed and message restored</string>
     <string name="message_restored">Message restored to inbox</string>
-    <plurals name="spam_group_count">
-        <item quantity="one">%d message marked as spam</item>
-        <item quantity="other">%d messages marked as spam</item>
-    </plurals>
     <string name="block_reason_ai">Legacy filter</string>
     <string name="block_reason_keyword">Keyword</string>
     <string name="block_reason_number">Blocked number</string>
@@ -197,10 +193,6 @@
     <plurals name="spam_restored">
         <item quantity="one">%d message moved to the inbox</item>
         <item quantity="other">%d messages moved to the inbox</item>
-    </plurals>
-    <plurals name="spam_group_hidden">
-        <item quantity="one">%d spam message hidden</item>
-        <item quantity="other">%d spam messages hidden</item>
     </plurals>
     <string name="library_subtitle">The things you want to keep, quiet, or recover</string>
     <string name="library_starred_description">Messages you marked to return to</string>

@@ -138,7 +138,6 @@ sealed interface ThreadEvent {
 
     data class ToggleSelection(val message: Message) : ThreadEvent
     data class Act(val action: MessageAction, val messages: List<Message>) : ThreadEvent
-    data class SpamGroup(val group: ThreadItem.ThreadSpamGroup) : ThreadEvent
     data class Retry(val message: Message) : ThreadEvent
     /** The failed bubble's switcher (R6-46): changes the SIM a retry uses, never sends. */
     data object NextSim : ThreadEvent
