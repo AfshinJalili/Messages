@@ -20,8 +20,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.Badge
-import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -31,11 +31,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -43,6 +46,17 @@ private val NavIconSize = 21.dp
 private val NavItemHeight = 64.dp
 private val RailWidth = 96.dp
 private const val MAX_BADGE = 99
+private val BadgeTextSize = 11.sp
+private val BadgeLineHeight = 14.sp
+private val BadgeMinHeight = 16.dp
+
+// How far the badge's centre sits below the icon's top edge.
+private val BadgeDrop = 4.dp
+// How much of the icon the badge covers at its end side.
+private val BadgeOverlap = 6.dp
+
+// Labels shrink to fit their item before they ellipsize; at normal sizes they never shrink.
+private val LabelMinSize = 8.sp
 
 // Insets before the width: a landscape cutout must widen the rail, not squeeze its labels.
 private val RailInsets
@@ -120,7 +134,7 @@ private fun NavItem(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
     ) {
-        BadgedBox(badge = { if (badge > 0) CountBadge(badge) }) {
+        BadgedIcon(badge = if (badge > 0) ({ CountBadge(badge) }) else null) {
             Icon(
                 painterResource(destination.icon),
                 contentDescription = null,
@@ -128,13 +142,43 @@ private fun NavItem(
                 modifier = Modifier.size(NavIconSize),
             )
         }
+        val style = if (selected) MaterialTheme.typography.labelMedium else MaterialTheme.typography.labelSmall
         Text(
             stringResource(destination.label),
-            style = if (selected) MaterialTheme.typography.labelMedium else MaterialTheme.typography.labelSmall,
+            style = style,
             color = tint,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
+            autoSize = TextAutoSize.StepBased(minFontSize = LabelMinSize, maxFontSize = style.fontSize),
         )
+    }
+}
+
+/**
+ * The icon with its count badge at the top end. Every item reserves the space the badge needs above
+ * the icon, whether it has one or not, so the badge stays inside the item's clip at any font size and
+ * the icons stay level across the bar.
+ */
+@Composable
+private fun BadgedIcon(badge: (@Composable () -> Unit)?, icon: @Composable () -> Unit) {
+    val reserve = with(LocalDensity.current) { (maxOf(BadgeMinHeight, BadgeLineHeight.toDp()) / 2 - BadgeDrop).coerceAtLeast(0.dp) }
+    Layout(content = { icon(); badge?.invoke() }) { measurables, constraints ->
+        val iconPlaceable = measurables[0].measure(constraints.copy(minWidth = 0, minHeight = 0))
+        val badgePlaceable = measurables.getOrNull(1)?.measure(Constraints())
+        val iconTop = reserve.roundToPx()
+        val badgeTop = badgePlaceable?.let { (iconTop + BadgeDrop.roundToPx() - it.height / 2).coerceAtLeast(0) } ?: 0
+        val height = maxOf(iconTop + iconPlaceable.height, badgeTop + (badgePlaceable?.height ?: 0))
+        // Take the item's full width so a wide badge ("99+" at a large font) slides inward instead of
+        // being cut by the item's rounded clip.
+        val width = if (constraints.hasBoundedWidth) constraints.maxWidth else iconPlaceable.width
+        val iconStart = (width - iconPlaceable.width) / 2
+        layout(width, height) {
+            iconPlaceable.placeRelative(iconStart, iconTop)
+            badgePlaceable?.let {
+                val start = (iconStart + iconPlaceable.width - BadgeOverlap.roundToPx()).coerceAtMost(width - it.width).coerceAtLeast(0)
+                it.placeRelative(start, badgeTop)
+            }
+        }
     }
 }
 
@@ -148,6 +192,6 @@ fun CountBadge(count: Int, modifier: Modifier = Modifier) {
     val label = String.format(locale, "%d", count.coerceAtMost(MAX_BADGE)) + if (count > MAX_BADGE) "+" else ""
     val colors = MaterialTheme.colorScheme
     Badge(modifier, containerColor = colors.error, contentColor = colors.onError) {
-        Text(label, style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp, lineHeight = 14.sp))
+        Text(label, style = MaterialTheme.typography.labelSmall.copy(fontSize = BadgeTextSize, lineHeight = BadgeLineHeight))
     }
 }
