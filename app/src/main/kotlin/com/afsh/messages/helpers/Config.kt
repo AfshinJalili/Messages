@@ -168,6 +168,11 @@ class Config(context: Context) : BaseConfig(context) {
         get() = prefs.getBoolean(WAS_DB_CLEARED, false)
         set(wasDbCleared) = prefs.edit().putBoolean(WAS_DB_CLEARED, wasDbCleared).apply()
 
+    /** The first import copied every thread's recent messages into Room, which search reads. */
+    var messagesImported: Boolean
+        get() = prefs.getBoolean(MESSAGES_IMPORTED, false)
+        set(messagesImported) = prefs.edit().putBoolean(MESSAGES_IMPORTED, messagesImported).apply()
+
     var keyboardHeight: Int
         get() = prefs.getInt(SOFT_KEYBOARD_HEIGHT, context.getDefaultKeyboardHeight())
         set(keyboardHeight) = prefs.edit().putInt(SOFT_KEYBOARD_HEIGHT, keyboardHeight).apply()

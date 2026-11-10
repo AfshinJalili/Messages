@@ -4,6 +4,7 @@ import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Immutable
 import com.afsh.messages.R
+import com.afsh.messages.helpers.ImportProgress
 import com.afsh.messages.helpers.InboxFilter
 import com.afsh.messages.helpers.SwipeAction
 import com.afsh.messages.messaging.isShortCodeWithLetters
@@ -27,6 +28,7 @@ data class InboxUiState(
     val unreadMessages: Int = 0,
     val loading: Boolean = false,
     val refreshFailed: Boolean = false,
+    val importProgress: ImportProgress? = null,
     val selected: Set<Long> = emptySet(),
     val unreadSpam: Int = 0,
     val archiveAvailable: Boolean = true,

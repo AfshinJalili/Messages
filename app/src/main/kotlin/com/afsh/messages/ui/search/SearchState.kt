@@ -2,6 +2,7 @@ package com.afsh.messages.ui.search
 
 import androidx.annotation.StringRes
 import com.afsh.messages.R
+import com.afsh.messages.helpers.ImportProgress
 import com.afsh.messages.models.SearchMatch
 
 const val SEARCH_DEBOUNCE_MS = 200L
@@ -22,6 +23,7 @@ data class SearchUiState(
     val recent: List<String> = emptyList(),
     val loading: Boolean = false,
     val failed: Boolean = false,
+    val importProgress: ImportProgress? = null,
 ) {
     val entry get() = query.isBlank()
     val showingHistory get() = entry && filter == SearchFilter.ALL

@@ -482,6 +482,7 @@ fun Context.getConversations(
     threadId: Long? = null,
     privateContacts: ArrayList<SimpleContact> = ArrayList(),
     failOnError: Boolean = false,
+    onProgress: ((done: Int, total: Int) -> Unit)? = null,
 ): ArrayList<Conversation> {
     val archiveAvailable = config.isArchiveAvailable
 
@@ -509,7 +510,7 @@ fun Context.getConversations(
     val sortOrder = "${Threads.DATE} DESC"
 
     val conversations = ArrayList<Conversation>()
-    val simpleContactHelper = SimpleContactsHelper(this)
+    val lookups = ThreadLookups(this, privateContacts, preload = threadId == null)
     val blockedNumbers = getBlockedNumbers()
     val unreadMap = getUnreadCountsByThread()
     val draftsByThread = draftsDB.getAll().associateBy { it.threadId }
@@ -521,6 +522,7 @@ fun Context.getConversations(
             selectionArgs,
             sortOrder
         ) { cursor ->
+            onProgress?.invoke(cursor.position, cursor.count)
             val id = cursor.getLongValue(Threads._ID)
             var snippet = cursor.getStringValue(Threads.SNIPPET) ?: ""
             if (snippet.isEmpty()) {
@@ -541,7 +543,7 @@ fun Context.getConversations(
             val rawIds = cursor.getStringValue(Threads.RECIPIENT_IDS)
             val recipientIds =
                 rawIds.split(" ").filter { it.areDigitsOnly() }.map { it.toInt() }.toMutableList()
-            val phoneNumbers = getThreadPhoneNumbers(recipientIds)
+            val phoneNumbers = recipientIds.mapTo(ArrayList()) { lookups.address(it) }
             if (phoneNumbers.isEmpty() || phoneNumbers.any {
                     isNumberBlocked(
                         it,
@@ -551,12 +553,9 @@ fun Context.getConversations(
                 return@queryCursorUnsafe
             }
 
-            val names = getThreadContactNames(phoneNumbers, privateContacts)
+            val names = phoneNumbers.map { lookups.name(it) }
             val title = TextUtils.join(", ", names.toTypedArray())
-            val photoUri =
-                if (phoneNumbers.size == 1) simpleContactHelper.getPhotoUriFromPhoneNumber(
-                    phoneNumbers.first()
-                ) else ""
+            val photoUri = if (phoneNumbers.size == 1) lookups.photoUri(phoneNumbers.first()) else ""
             val isGroupConversation = phoneNumbers.size > 1
             val unreadCount = unreadMap[id] ?: 0
             val read = unreadCount == 0
@@ -595,6 +594,63 @@ fun Context.getConversations(
 
     conversations.sortByDescending { it.date }
     return conversations
+}
+
+/**
+ * Per-call caches for [getConversations]. Each thread used to cost one canonical-address query per
+ * recipient plus two contact lookups, so a first import of a few hundred threads took half a minute.
+ * Addresses now come from one query and each number is looked up once, for its name and photo together.
+ */
+private class ThreadLookups(
+    private val context: Context,
+    private val privateContacts: ArrayList<SimpleContact>,
+    preload: Boolean,
+) {
+    private val addresses: Map<Int, String>? = if (preload) loadAddresses() else null
+    private val contacts = HashMap<String, Pair<String, String>>()
+    private val canReadContacts = context.hasPermission(PERMISSION_READ_CONTACTS)
+
+    fun address(id: Int): String = addresses?.get(id) ?: context.getPhoneNumberFromAddressId(id)
+
+    /** Same order as [getThreadContactNames]: the system contact, then a private contact, then the number. */
+    fun name(number: String): String {
+        val name = contact(number).first
+        if (name.isNotEmpty()) return name
+        return privateContacts.firstOrNull { it.doesHavePhoneNumber(number) }?.name ?: number
+    }
+
+    fun photoUri(number: String): String = contact(number).second
+
+    private fun contact(number: String): Pair<String, String> = contacts.getOrPut(number) {
+        if (!canReadContacts || number.isEmpty()) return@getOrPut "" to ""
+        val uri = Uri.withAppendedPath(PhoneLookup.CONTENT_FILTER_URI, Uri.encode(number))
+        try {
+            context.contentResolver.query(uri, arrayOf(PhoneLookup.DISPLAY_NAME, PhoneLookup.PHOTO_URI), null, null, null)?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    return@getOrPut cursor.getStringValue(PhoneLookup.DISPLAY_NAME).orEmpty() to
+                        cursor.getStringValue(PhoneLookup.PHOTO_URI).orEmpty()
+                }
+            }
+        } catch (_: Exception) {
+        }
+        "" to ""
+    }
+
+    private fun loadAddresses(): Map<Int, String>? = try {
+        val uri = Uri.withAppendedPath(MmsSms.CONTENT_URI, "canonical-addresses")
+        val map = HashMap<Int, String>()
+        context.contentResolver.query(uri, arrayOf(Mms._ID, Mms.Addr.ADDRESS), null, null, null)?.use { cursor ->
+            val idColumn = cursor.getColumnIndexOrThrow(Mms._ID)
+            val addressColumn = cursor.getColumnIndexOrThrow(Mms.Addr.ADDRESS)
+            while (cursor.moveToNext()) {
+                map[cursor.getInt(idColumn)] = cursor.getString(addressColumn).orEmpty()
+            }
+        }
+        map
+    } catch (_: Exception) {
+        // Some providers refuse an unfiltered query; fall back to one query per recipient.
+        null
+    }
 }
 
 private fun Context.queryCursorUnsafe(

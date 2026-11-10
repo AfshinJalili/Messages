@@ -22,7 +22,9 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.view.WindowCompat
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import com.afsh.messages.helpers.ScreenMotion
@@ -76,6 +78,8 @@ import com.afsh.messages.extensions.renameConversation
 import com.afsh.messages.extensions.updateConversationArchivedStatus
 import com.afsh.messages.helpers.INBOX_FILTER
 import com.afsh.messages.helpers.InboxFilter
+import com.afsh.messages.helpers.ImportProgress
+import com.afsh.messages.helpers.InboxImport
 import com.afsh.messages.helpers.InboxRepository
 import com.afsh.messages.helpers.ReconcileStatus
 import com.afsh.messages.helpers.SEARCHED_MESSAGE_ID
@@ -118,6 +122,8 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
     private var resumedBefore = false
     // 73: the last provider refresh failed; cleared by the next one that succeeds.
     private var refreshFailed = false
+    private var importProgress: ImportProgress? = null
+    private var importObserved = false
     private var inboxFilter = InboxFilter.ALL
     private var drafts: Map<Long, String> = emptyMap()
     private val pendingSwipes = mutableListOf<PendingSwipe>()
@@ -396,6 +402,21 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
         }
         InboxRepository.scheduleProviderReconcile(this, immediate = true)
         SpamBackfill.run(this)
+        if (!importObserved) {
+            importObserved = true
+            lifecycleScope.launch {
+                repeatOnLifecycle(Lifecycle.State.STARTED) {
+                    InboxImport.progress.collect { progress ->
+                        val finished = importProgress != null && progress == null
+                        importProgress = progress
+                        search = search.copy(importProgress = progress)
+                        publish()
+                        // Search reads Room, so results found mid-import may be missing threads.
+                        if (finished && search.open) loadSearchResults()
+                    }
+                }
+            }
+        }
     }
 
     /** Rebuilds the screen state from the Room snapshot plus everything only this activity knows. */
@@ -422,6 +443,7 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
             unreadMessages = present.filter { !it.read }.sumOf { it.unreadCount.coerceAtLeast(1) },
             loading = providerReconcileActive && inboxConversations.isEmpty(),
             refreshFailed = refreshFailed,
+            importProgress = importProgress,
             // A selection must not act on rows the current filter or an undo window hides. Before the
             // first snapshot arrives, keep a selection restored from saved state.
             selected = if (inboxConversations.isEmpty()) inbox.selected else inbox.selected intersect visibleIds,
@@ -741,14 +763,14 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
     }
 
     private fun openSearch() {
-        search = SearchUiState(open = true, recent = config.recentSearches)
+        search = SearchUiState(open = true, recent = config.recentSearches, importProgress = importProgress)
         applySystemBars()
     }
 
     private fun closeSearch() {
         if (!search.open) return
         searchJob?.cancel()
-        search = SearchUiState()
+        search = SearchUiState(importProgress = importProgress)
         hideKeyboard()
         applySystemBars()
     }
