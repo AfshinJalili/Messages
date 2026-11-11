@@ -46,8 +46,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -61,10 +59,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -105,7 +101,8 @@ import com.afsh.messages.ui.components.SwipeableRow
 import com.afsh.messages.ui.components.TopDestination
 import com.afsh.messages.ui.components.BottomBarHeight
 import com.afsh.messages.ui.components.BottomBarSwitch
-import com.afsh.messages.ui.components.SelectionIconAction
+import com.afsh.messages.ui.components.BarAction
+import com.afsh.messages.ui.components.SelectionBar
 import com.afsh.messages.ui.components.keptWhileLeaving
 import com.afsh.messages.ui.library.LibraryScreen
 import com.afsh.messages.helpers.InboxFilter
@@ -195,7 +192,7 @@ fun InboxScreen(
             }
             BottomBarSwitch(bar) {
                 when (it) {
-                    InboxBottomBar.SELECTION -> SelectionBar(state, onAction)
+                    InboxBottomBar.SELECTION -> InboxSelectionBar(state, onAction)
                     InboxBottomBar.NAVIGATION ->
                         PrimaryNavigation(if (libraryOpen) TopDestination.LIBRARY else TopDestination.INBOX, onDestination, unreadSpam = state.unreadSpam)
                     InboxBottomBar.NONE -> Unit
@@ -680,53 +677,18 @@ private fun NewMessageButton(expanded: Boolean, onClick: () -> Unit) {
     )
 }
 
-/** Icon-only, like the rest of the redesign: each action names itself to TalkBack and in a long-press tooltip. */
 @Composable
-private fun SelectionBar(state: InboxUiState, onAction: (InboxAction) -> Unit) {
+private fun InboxSelectionBar(state: InboxUiState, onAction: (InboxAction) -> Unit) {
     val actions = remember(state.selected, state.rows, state.archiveAvailable) {
         availableActions(state.selectedRows, state.archiveAvailable).splitForBar()
     }
     val (bar, overflow) = keptWhileLeaving(actions, empty = state.selected.isEmpty())
-    Surface(color = MaterialTheme.colorScheme.surfaceContainer) {
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .windowInsetsPadding(WindowInsets.navigationBars)
-                .heightIn(min = BottomBarHeight)
-                .padding(horizontal = 8.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            bar.forEach { action ->
-                SelectionIconAction(action.icon, stringResource(action.label), destructive = action == InboxAction.DELETE) { onAction(action) }
-            }
-            if (overflow.isNotEmpty()) {
-                var open by remember { mutableStateOf(false) }
-                Box {
-                    SelectionIconAction(R.drawable.ic_lucide_ellipsis_vertical, stringResource(org.fossify.commons.R.string.more_options)) { open = true }
-                    DropdownMenu(expanded = open, onDismissRequest = { open = false }, containerColor = MaterialTheme.colorScheme.surfaceContainer, shape = MaterialTheme.shapes.medium) {
-                        overflow.forEach { action ->
-                            val danger = action == InboxAction.BLOCK || action == InboxAction.DELETE
-                            DropdownMenuItem(
-                                text = { Text(stringResource(action.label)) },
-                                leadingIcon = { Icon(painterResource(action.icon), contentDescription = null, modifier = Modifier.size(20.dp)) },
-                                modifier = Modifier.heightIn(min = TargetSize),
-                                colors = androidx.compose.material3.MenuDefaults.itemColors(
-                                    textColor = if (danger) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
-                                    leadingIconColor = if (danger) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
-                                ),
-                                onClick = {
-                                    open = false
-                                    onAction(action)
-                                },
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
+    SelectionBar(bar.map { it.toBarAction(onAction) }, overflow = overflow.map { it.toBarAction(onAction) })
 }
+
+@Composable
+private fun InboxAction.toBarAction(onAction: (InboxAction) -> Unit) =
+    BarAction(stringResource(label), icon, destructive = this == InboxAction.BLOCK || this == InboxAction.DELETE) { onAction(this) }
 
 private enum class InboxBottomBar { SELECTION, NAVIGATION, NONE }
 

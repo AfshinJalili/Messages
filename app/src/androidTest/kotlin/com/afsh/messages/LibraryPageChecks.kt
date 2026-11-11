@@ -11,6 +11,7 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
@@ -107,7 +108,7 @@ class LibraryPageChecks {
 
         state = state.copy(selected = setOf(12))
         compose.onNodeWithText(resourcesPlural(R.plurals.inbox_selected, 1)).assertExists()
-        compose.onNodeWithText(text(org.fossify.commons.R.string.delete)).performClick()
+        compose.onNodeWithContentDescription(text(org.fossify.commons.R.string.delete)).performClick()
         check((events.last() as ArchiveEvent.Delete).conversations.single().threadId == 12L) { "Events $events" }
     }
 

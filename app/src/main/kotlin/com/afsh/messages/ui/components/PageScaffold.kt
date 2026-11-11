@@ -76,9 +76,19 @@ fun PageScaffold(
         },
         snackbarHost = { snackbarHostState?.let { AfshSnackbarHost(it) } },
         bottomBar = {
-            when {
-                bottomBar != null -> bottomBar()
-                navigation != null && !rail -> PrimaryNavigation(navigation)
+            // A selection bar rises over the navigation instead of snapping in, as on the conversation list.
+            val bar = when {
+                bottomBar != null -> PageBottomBar.CUSTOM
+                navigation != null && !rail -> PageBottomBar.NAVIGATION
+                else -> PageBottomBar.NONE
+            }
+            val leaving = keptWhileLeaving(bottomBar ?: NoBottomBar, empty = bottomBar == null)
+            BottomBarSwitch(bar) {
+                when (it) {
+                    PageBottomBar.CUSTOM -> leaving()
+                    PageBottomBar.NAVIGATION -> navigation?.let { nav -> PrimaryNavigation(nav) }
+                    PageBottomBar.NONE -> Unit
+                }
             }
         },
     ) { padding ->
@@ -97,6 +107,10 @@ fun PageScaffold(
         }
     }
 }
+
+private enum class PageBottomBar { CUSTOM, NAVIGATION, NONE }
+
+private val NoBottomBar: @Composable () -> Unit = {}
 
 @Composable
 private fun PrimaryNavigation(navigation: PageNavigation, vertical: Boolean = false) =
