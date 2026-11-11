@@ -25,7 +25,6 @@
     <string name="mark_as_read">Прачытана</string>
     <string name="mark_as_unread">Не прачытана</string>
     <string name="me">Я</string>
-    <string name="delete_whole_conversation_confirmation">Выдаліць усе паведамленні ў гэтай размове\?</string>
     <plurals name="delete_conversations">
         <item quantity="one">%d размову</item>
         <item quantity="few">%d размовы</item>
@@ -54,6 +53,5 @@
     <string name="import_messages">Імпартаваць паведамленні</string>
     <string name="import_sms">Імпартаваць SMS</string>
     <string name="import_mms">Імпартаваць MMS</string>
-    <string name="restore_confirmation">Вы ўпэўнены, што хаціце аднавіць %s?</string>
     <string name="app_launcher_name">Паведамленні</string>
 </resources>

@@ -17,7 +17,6 @@ import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.fossify.commons.dialogs.ConfirmationDialog
 import org.fossify.commons.dialogs.SecurityDialog
 import org.fossify.commons.extensions.getCurrentFormattedDateTime
 import org.fossify.commons.extensions.isAValidFilename
@@ -39,6 +38,7 @@ import com.afsh.messages.helpers.ScreenMotion
 import com.afsh.messages.helpers.refreshConversations
 import com.afsh.messages.models.ImportResult
 import com.afsh.messages.ui.components.PageNavigation
+import com.afsh.messages.ui.components.inform
 import com.afsh.messages.ui.components.ScreenStack
 import com.afsh.messages.ui.components.TopDestination
 import com.afsh.messages.ui.settings.ImportReview
@@ -263,7 +263,7 @@ class SettingsActivity : ComposePageActivity() {
                 } else {
                     org.fossify.commons.R.string.protection_setup_successfully
                 }
-                ConfirmationDialog(this, "", message, org.fossify.commons.R.string.ok, 0) {}
+                inform(getString(R.string.app_lock), getString(message))
             }
         }
     }

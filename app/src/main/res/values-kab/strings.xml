@@ -68,8 +68,6 @@
     <string name="keep_conversations_archived">Eǧǧ idiwenniyen deg uɣbaṛ</string>
     <string name="restore_all_messages">Err-d akk iznan</string>
     <string name="empty_recycle_bin_messages_confirmation">D tidet tebɣiḍ ad d-terreḍ d tilemt Taqecwalt Iḍumman? Iznan ad ṛuḥen s wudem imezgi.</string>
-    <string name="delete_whole_conversation_confirmation">Tebɣiḍ ad tekkseḍ akk iznan n udiwenni-agi?</string>
-    <string name="restore_confirmation">D tidet tebɣiḍ ad terreḍ %s?</string>
     <plurals name="delete_conversations">
         <item quantity="one">%d udiwenni</item>
         <item quantity="other">%d idiwenniyen</item>

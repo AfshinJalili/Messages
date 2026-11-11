@@ -42,8 +42,6 @@
     <string name="restore">Restaurar</string>
     <string name="restore_all_messages">Restaurar todas as mensagens</string>
     <string name="empty_recycle_bin_messages_confirmation">Tem a certeza de que pretende esvaziar a reciclagem\? As mensagens não poderão ser recuperadas.</string>
-    <string name="delete_whole_conversation_confirmation">Tem a certeza de que pretende eliminar todas as mensagens desta conversa?</string>
-    <string name="restore_confirmation">Tem a certeza de que pretende restaurar %s\?</string>
     <plurals name="delete_conversations">
         <item quantity="one">%d conversa</item>
         <item quantity="many">%d conversas</item>

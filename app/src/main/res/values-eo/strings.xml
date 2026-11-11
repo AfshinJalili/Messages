@@ -46,8 +46,6 @@
     <string name="restore">Restaŭri</string>
     <string name="restore_all_messages">Restaŭri ĉiujn mesaĝojn</string>
     <string name="empty_recycle_bin_messages_confirmation">Ĉu vi certas, ke vi volas malplenigi la rubujon? La enhavitaj mesaĝoj estos perditaj.</string>
-    <string name="delete_whole_conversation_confirmation">Ĉu vi certas, ke vi volas forigi ĉiujn mesaĝojn de tiu ĉi konversacio?</string>
-    <string name="restore_confirmation">Ĉu vi certas, ke vi volas restaŭri %s?</string>
     <string name="enable_delivery_reports">Ŝalti liverajn raportojn</string>
     <string name="use_simple_characters">Forigi diakritajn signojn el senditaj mesaĝoj</string>
     <string name="send_on_enter">Sendi mesaĝon per Enigi</string>

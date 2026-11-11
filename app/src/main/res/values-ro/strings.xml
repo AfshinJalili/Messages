@@ -24,7 +24,6 @@
     <string name="mark_as_read">Marchează ca citit</string>
     <string name="mark_as_unread">Marchează ca necitit</string>
     <string name="me">Eu</string>
-    <string name="delete_whole_conversation_confirmation">Ești sigur că dorești să ștergi toate mesajele din această conversație?</string>
     <plurals name="delete_conversations">
         <item quantity="one">%d conversație</item>
         <item quantity="few">%d conversații</item>
@@ -66,7 +65,6 @@
     <string name="no_archived_conversations">Nu au fost găsite conversații arhivate</string>
     <string name="restore_all_messages">Restaurează toate mesajele</string>
     <string name="empty_recycle_bin_messages_confirmation">Sigur dorești să golești Coșul de reciclare? Mesajele se vor pierde definitiv.</string>
-    <string name="restore_confirmation">Sigur dorești să restaurezi %s?</string>
     <string name="send_on_enter">Trimite mesaj apăsând Enter</string>
     <string name="unable_to_save_message">Nu se poate salva mesajul în baza de date de telefonie</string>
     <string name="error_radio_turned_off">Nu s-a putut trimite mesajul, modulul radio este oprit</string>

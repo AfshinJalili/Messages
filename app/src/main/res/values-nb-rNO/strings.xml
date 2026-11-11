@@ -31,7 +31,6 @@
     <string name="new_message">Ny melding</string>
     <string name="mark_as_read">Marker som lest</string>
     <string name="mark_as_unread">Marker som ulest</string>
-    <string name="delete_whole_conversation_confirmation">Er du sikker på at du vil slette alle meldinger fra denne konversasjonen\?</string>
     <plurals name="delete_conversations">
         <item quantity="one">%d konversasjon</item>
         <item quantity="other">%d konversasjoner</item>
@@ -63,7 +62,6 @@
     <string name="no_archived_conversations">Ingen arkiverte samtaler funnet</string>
     <string name="empty_archive_confirmation">Er du sikker på at du vil tømme arkivet? Alle arkiverte samtaler vil slettes permanent.</string>
     <string name="restore_all_messages">Gjenopprett alle meldinger</string>
-    <string name="restore_confirmation">Er du sikker på at du vil gjenopprette %s?</string>
     <string name="app_launcher_name">Meldinger</string>
     <string name="archived_conversations">Arkiver</string>
     <string name="archive">Arkiv</string>

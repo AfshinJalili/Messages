@@ -41,8 +41,6 @@
     <string name="restore">Khôi phục</string>
     <string name="restore_all_messages">Khôi phục tất cả tin nhắn</string>
     <string name="empty_recycle_bin_messages_confirmation">Bạn có chắc muốn dọn sạch Thùng rác? Tất cả tin nhắn sẽ bị mất vĩnh viễn.</string>
-    <string name="delete_whole_conversation_confirmation">Bạn có chắc muốn xóa tất cả các tin nhắn của cuộc trò chuyện này?</string>
-    <string name="restore_confirmation">Bạn có chắc muốn khôi phục %s?</string>
     <plurals name="delete_conversations">
         <item quantity="other">%d cuộc trò chuyện</item>
     </plurals>

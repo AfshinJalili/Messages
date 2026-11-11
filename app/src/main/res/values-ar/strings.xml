@@ -44,8 +44,6 @@
     <string name="restore">استعادة</string>
     <string name="restore_all_messages">استعادة جميع الرسائل</string>
     <string name="empty_recycle_bin_messages_confirmation">هل تريد بالتأكيد إفراغ سلة المحذوفات ؟ سيتم فقدان الرسائل نهائياً.</string>
-    <string name="delete_whole_conversation_confirmation">هل أنت متأكد أنك تريد حذف كافة رسائل هذه المحادثة؟</string>
-    <string name="restore_confirmation">هل أنت متأكد من أنك تريد استعادة %s؟</string>
     <plurals name="delete_conversations">
         <item quantity="zero">محادثة %d</item>
         <item quantity="one">محادثة %d</item>

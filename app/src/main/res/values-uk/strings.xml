@@ -44,8 +44,6 @@
     <string name="restore">Відновити</string>
     <string name="restore_all_messages">Віновити всі повідомлення</string>
     <string name="empty_recycle_bin_messages_confirmation">Ви дійсно хочете спустошити кошик? Всі архівовані розмови будуть остаточно видалено.</string>
-    <string name="delete_whole_conversation_confirmation">Справді видалити всі повідомлення у цьому листуванні\?</string>
-    <string name="restore_confirmation">Ви впевнені, ви хочете відновити %s?</string>
     <plurals name="delete_conversations">
         <item quantity="one">%d листування</item>
         <item quantity="few">%d листувань</item>

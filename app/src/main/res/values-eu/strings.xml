@@ -44,8 +44,6 @@
     <string name="restore">Leheneratu</string>
     <string name="restore_all_messages">Leheneratu mezu guztiak</string>
     <string name="empty_recycle_bin_messages_confirmation">Ziur zaude zakarrontzia hustu nahi duzula? Mezuak betiko galduko dira.</string>
-    <string name="delete_whole_conversation_confirmation">Ziur zaude elkarrizketa honetako mezu guztiak ezabatu nahi dituzula?</string>
-    <string name="restore_confirmation">Ziur zaude %s leheneratu nahi duzula?</string>
     <plurals name="delete_conversations">
         <item quantity="one">Elkarrizketa %d</item>
         <item quantity="other">%d elkarrizketa</item>

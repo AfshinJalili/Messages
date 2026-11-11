@@ -31,7 +31,6 @@
     <string name="mark_as_read">既読にする</string>
     <string name="mark_as_unread">未読にする</string>
     <string name="me">自分</string>
-    <string name="delete_whole_conversation_confirmation">本当にこの会話のすべてのメッセージを削除しますか？</string>
     <plurals name="delete_conversations">
         <item quantity="other">%d件の会話</item>
     </plurals>
@@ -75,7 +74,6 @@
     <string name="sim_card_not_available">SIMカードは利用できません</string>
     <string name="empty_archive_confirmation">アーカイブを空にしてよろしいですか？全ての会話は完全に消去されます。</string>
     <string name="empty_recycle_bin_messages_confirmation">ごみ箱を空にしてよろしいですか？メッセージは完全に消去されます。</string>
-    <string name="restore_confirmation">%sを復元してよろしいですか？</string>
     <string name="couldnt_download_mms">MMSをダウンロードできませんでした</string>
     <string name="keep_conversations_archived">会話をアーカイブに保存する</string>
 </resources>

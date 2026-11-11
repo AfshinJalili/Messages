@@ -40,8 +40,6 @@
     <string name="restore">Възстановяване</string>
     <string name="restore_all_messages">Възстановяване на всички съобщения</string>
     <string name="empty_recycle_bin_messages_confirmation">Желаете ли кошчето да бъде изпразнено? Разговорите ще бъдат безвъзвратно изгубени.</string>
-    <string name="delete_whole_conversation_confirmation">Желаете ли съобщенията от разговора да бъдат премахнати?</string>
-    <string name="restore_confirmation">Желаете ли да бъдат възстановени %s?</string>
     <plurals name="delete_conversations">
         <item quantity="one">%d разговор</item>
         <item quantity="other">%d разговора</item>

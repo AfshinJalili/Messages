@@ -18,17 +18,14 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SelectableDates
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.TimePickerDefaults
 import androidx.compose.material3.rememberDatePickerState
@@ -50,11 +47,13 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
 import org.fossify.commons.extensions.getTimeFormat
 import com.afsh.messages.R
 import com.afsh.messages.ui.Afsh
 import com.afsh.messages.ui.components.AfshButton
+import com.afsh.messages.ui.components.AfshDialog
+import com.afsh.messages.ui.components.ButtonKind
+import com.afsh.messages.ui.components.DialogActions
 import com.afsh.messages.ui.components.PageScaffold
 import com.afsh.messages.ui.components.SectionHeading
 import com.afsh.messages.ui.components.TextFieldSlab
@@ -65,7 +64,6 @@ import java.util.TimeZone
 private val DateChipWidth = 74.dp
 private val DateChipHeight = 48.dp
 private val MenuIconSize = 20.dp
-private val PickerShape = RoundedCornerShape(24.dp)
 private const val CHOSEN_DAYS = 14
 private const val MILLIS_PER_MINUTE = 60_000L
 
@@ -202,28 +200,36 @@ private fun DateChoice(millis: Long, now: Long, onChange: (Long) -> Unit) {
                 override fun isSelectableDate(utcTimeMillis: Long) = utcTimeMillis >= startOfToday
             },
         )
-        DatePickerDialog(
-            onDismissRequest = { calendarOpen = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    calendarOpen = false
-                    pickerState.selectedDateMillis?.let { utc ->
-                        val picked = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply { timeInMillis = utc }
-                        onChange(
-                            Calendar.getInstance().apply {
-                                timeInMillis = millis
-                                set(picked.get(Calendar.YEAR), picked.get(Calendar.MONTH), picked.get(Calendar.DAY_OF_MONTH))
-                            }.timeInMillis,
-                        )
-                    }
-                }) { Text(stringResource(org.fossify.commons.R.string.ok)) }
-            },
-            dismissButton = {
-                TextButton(onClick = { calendarOpen = false }) { Text(stringResource(org.fossify.commons.R.string.cancel)) }
-            },
-            colors = androidx.compose.material3.DatePickerDefaults.colors(containerColor = colors.surfaceContainer),
-        ) {
-            DatePicker(pickerState)
+        val pick = {
+            calendarOpen = false
+            pickerState.selectedDateMillis?.let { utc ->
+                val picked = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply { timeInMillis = utc }
+                onChange(
+                    Calendar.getInstance().apply {
+                        timeInMillis = millis
+                        set(picked.get(Calendar.YEAR), picked.get(Calendar.MONTH), picked.get(Calendar.DAY_OF_MONTH))
+                    }.timeInMillis,
+                )
+            }
+        }
+        AfshDialog(stringResource(R.string.other_date), onDismiss = { calendarOpen = false }, wide = true) {
+            DatePicker(
+                pickerState,
+                title = null,
+                headline = null,
+                showModeToggle = false,
+                colors = DatePickerDefaults.colors(containerColor = colors.surfaceContainer),
+            )
+            Column(Modifier.padding(horizontal = 12.dp)) {
+                DialogActions(
+                    dismissLabel = stringResource(org.fossify.commons.R.string.cancel),
+                    onDismiss = { calendarOpen = false },
+                    confirmLabel = stringResource(org.fossify.commons.R.string.ok),
+                    onConfirm = pick,
+                    confirmKind = ButtonKind.PRIMARY,
+                    confirmEnabled = pickerState.selectedDateMillis != null,
+                )
+            }
         }
     }
 }
@@ -280,26 +286,29 @@ private fun TimeChoice(millis: Long, onChange: (Long) -> Unit) {
             initialMinute = calendar.get(Calendar.MINUTE),
             is24Hour = is24Hour,
         )
-        Dialog(onDismissRequest = { clockOpen = false }) {
-            Surface(shape = PickerShape, color = colors.surfaceContainer) {
-                Column(Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    TimePicker(pickerState, colors = TimePickerDefaults.colors(clockDialColor = colors.surface))
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                        TextButton(onClick = { clockOpen = false }) { Text(stringResource(org.fossify.commons.R.string.cancel)) }
-                        TextButton(onClick = {
-                            clockOpen = false
-                            onChange(
-                                calendar.apply {
-                                    set(Calendar.HOUR_OF_DAY, pickerState.hour)
-                                    set(Calendar.MINUTE, pickerState.minute)
-                                    set(Calendar.SECOND, 0)
-                                    set(Calendar.MILLISECOND, 0)
-                                }.timeInMillis,
-                            )
-                        }) { Text(stringResource(org.fossify.commons.R.string.ok)) }
-                    }
-                }
-            }
+        AfshDialog(changeTime, onDismiss = { clockOpen = false }) {
+            TimePicker(
+                pickerState,
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+                colors = TimePickerDefaults.colors(clockDialColor = colors.surface),
+            )
+            DialogActions(
+                dismissLabel = stringResource(org.fossify.commons.R.string.cancel),
+                onDismiss = { clockOpen = false },
+                confirmLabel = stringResource(org.fossify.commons.R.string.ok),
+                onConfirm = {
+                    clockOpen = false
+                    onChange(
+                        calendar.apply {
+                            set(Calendar.HOUR_OF_DAY, pickerState.hour)
+                            set(Calendar.MINUTE, pickerState.minute)
+                            set(Calendar.SECOND, 0)
+                            set(Calendar.MILLISECOND, 0)
+                        }.timeInMillis,
+                    )
+                },
+                confirmKind = ButtonKind.PRIMARY,
+            )
         }
     }
 }

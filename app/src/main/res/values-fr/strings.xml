@@ -41,8 +41,6 @@
     <string name="restore">Restaurer</string>
     <string name="restore_all_messages">Restaurer tous les messages</string>
     <string name="empty_recycle_bin_messages_confirmation">Voulez-vous vraiment vider la corbeille \? Les messages seront définitivement perdus.</string>
-    <string name="delete_whole_conversation_confirmation">Voulez-vous vraiment supprimer tous les messages de cette conversation \?</string>
-    <string name="restore_confirmation">Voulez-vous vraiment restaurer %s \?</string>
     <plurals name="delete_conversations">
         <item quantity="one">%d conversation</item>
         <item quantity="many">%d conversations</item>

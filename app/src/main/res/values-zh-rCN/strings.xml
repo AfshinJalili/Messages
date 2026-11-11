@@ -41,8 +41,6 @@
     <string name="restore">恢复</string>
     <string name="restore_all_messages">恢复所有信息</string>
     <string name="empty_recycle_bin_messages_confirmation">是否确定要清空回收站？信息将会永久丢失。</string>
-    <string name="delete_whole_conversation_confirmation">是否确定要删除此对话的所有信息？</string>
-    <string name="restore_confirmation">确定要恢复 %s？</string>
     <plurals name="delete_conversations">
         <item quantity="other">%d 个对话</item>
     </plurals>

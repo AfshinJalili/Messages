@@ -42,8 +42,6 @@
     <string name="restore">Επαναφορά</string>
     <string name="restore_all_messages">Επαναφορά όλων των μηνυμάτων</string>
     <string name="empty_recycle_bin_messages_confirmation">Είστε σίγουροι ότι θέλετε να αδειάσετε τον Κάδο Ανακύκλωσης; Τα μηνύματα θα χαθούν οριστικά.</string>
-    <string name="delete_whole_conversation_confirmation">Είστε βέβαιοι ότι θέλετε να διαγράψετε όλα τα μηνύματα αυτής της συνομιλίας;</string>
-    <string name="restore_confirmation">Είστε σίγουροι ότι θέλετε να επαναφέρετε το %s;</string>
     <plurals name="delete_conversations">
         <item quantity="one">%d συνομιλία</item>
         <item quantity="other">%d συνομιλίες</item>

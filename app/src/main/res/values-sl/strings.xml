@@ -34,7 +34,6 @@
     <string name="mark_as_read">Označi kot prebrano</string>
     <string name="mark_as_unread">Označi kot neprebrano</string>
     <string name="me">Jaz</string>
-    <string name="delete_whole_conversation_confirmation">Ste prepričani, da želite izbrisati vsa sporočila tega pogovora\?</string>
     <plurals name="delete_conversations">
         <item quantity="one">%d pogovor</item>
         <item quantity="two">%d pogovora</item>
@@ -81,7 +80,6 @@
     <string name="attachment_sized_exceeds_max_limit">Velikost priloge presega najvišjo mejo za MMS</string>
     <string name="invalid_short_code_desc">Odgovorite lahko le na kratke kode s številkami, kot je \"503501\", ne pa tudi na kode, ki vsebujejo črke in številke, kot je \"AB-CD0\".</string>
     <string name="error_radio_turned_off">Ni bilo mogoče poslati sporočila, radio je izključen</string>
-    <string name="restore_confirmation">Ste prepričani, da želite obnoviti %s?</string>
     <string name="unarchive">Vrni iz arhiva</string>
     <string name="sim_card_not_available">Kartica SIM ni na voljo</string>
     <string name="unknown_error_occurred_sending_message">Sporočila ni bilo mogoče poslati, koda napake: %d</string>

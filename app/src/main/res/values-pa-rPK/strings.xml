@@ -28,7 +28,6 @@
     <string name="mark_as_read">پرھے وجوں چنھت کرو</string>
     <string name="mark_as_unread">نا پڑھے وجوں چنھت کرو</string>
     <string name="me">میں</string>
-    <string name="delete_whole_conversation_confirmation">تسیں پکے اے، سارے سنیہے مٹاؤ؟</string>
     <plurals name="delete_messages">
         <item quantity="one">%d سنیہا</item>
         <item quantity="other">%d سنیہے</item>

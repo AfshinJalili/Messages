@@ -50,6 +50,31 @@ fun Activity.confirm(
     )
 }
 
+/** A [MessageDialog] from any activity: information with one way out, OK. */
+fun Activity.inform(title: String, text: String) = showAfshDialog { dismiss ->
+    MessageDialog(
+        title = title,
+        text = text,
+        dismissLabel = getString(org.fossify.commons.R.string.ok),
+        onDismiss = dismiss,
+    )
+}
+
+/** A [ChoiceDialog] from any activity; [onChoose] runs after the dialog closes. */
+fun <T> Activity.choose(title: String, choices: List<Choice<T>>, onChoose: (T) -> Unit) = showAfshDialog { dismiss ->
+    ChoiceDialog(
+        title = title,
+        choices = choices,
+        selected = null,
+        dismissLabel = getString(org.fossify.commons.R.string.cancel),
+        onChoose = {
+            dismiss()
+            onChoose(it)
+        },
+        onDismiss = dismiss,
+    )
+}
+
 /** 39 · Rename, prefilled with the custom name if there is one; [onRename] gets the trimmed name. */
 fun Activity.showRenameDialog(conversation: Conversation, onRename: (String) -> Unit) = showAfshDialog { dismiss ->
     RenameDialog(

@@ -19,7 +19,6 @@
         <item quantity="one">और %d अन्य</item>
         <item quantity="other">और %d अन्य</item>
     </plurals>
-    <string name="restore_confirmation">क्या आप वाकई %s को पुनर्स्थापित करना चाहते हैं?</string>
     <plurals name="delete_conversations">
         <item quantity="one">%d वार्तालाप</item>
         <item quantity="other">%d वार्तालाप</item>
@@ -67,7 +66,6 @@
     <string name="unarchive">संग्रह से निकालें</string>
     <string name="archived_conversations">संग्रहालय</string>
     <string name="restore">पुनर्स्थापित</string>
-    <string name="delete_whole_conversation_confirmation">क्या आप वाकई इस वार्तालाप के सभी संदेशों को हटाना चाहते हैं?</string>
     <string name="restore_all_messages">सभी संदेश पुनर्स्थापित करें</string>
     <string name="empty_recycle_bin_messages_confirmation">क्या आप वाकई रीसायकल बिन खाली करना चाहते हैं? संदेश स्थायी रूप से खो जायेंगे।</string>
     <plurals name="delete_messages">
