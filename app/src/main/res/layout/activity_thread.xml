@@ -91,9 +91,23 @@
         android:layout_height="0dp"
         android:layout_weight="1" />
 
-    <androidx.compose.ui.platform.ComposeView
-        android:id="@+id/thread_composer"
+    <!-- The selection bar takes the composer's place in the same frame, so the timeline above never moves.
+         Both are match_parent so the frame sizes them to the taller one, which is the composer. -->
+    <FrameLayout
+        android:id="@+id/thread_bottom"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        android:layout_height="wrap_content">
+
+        <androidx.compose.ui.platform.ComposeView
+            android:id="@+id/thread_composer"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <androidx.compose.ui.platform.ComposeView
+            android:id="@+id/thread_selection_bar"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+    </FrameLayout>
 
 </LinearLayout>
