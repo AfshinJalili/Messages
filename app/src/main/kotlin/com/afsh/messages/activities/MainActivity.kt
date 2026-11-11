@@ -27,6 +27,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
+import androidx.compose.ui.platform.ComposeView
 import com.afsh.messages.helpers.SearchRepository
 import com.afsh.messages.ui.search.SearchUiState
 import com.afsh.messages.ui.search.SearchFilter
@@ -44,7 +45,6 @@ import org.fossify.commons.extensions.launchActivityIntent
 import org.fossify.commons.extensions.notificationManager
 import org.fossify.commons.extensions.openNotificationSettings
 import org.fossify.commons.extensions.toast
-import org.fossify.commons.extensions.viewBinding
 import org.fossify.commons.helpers.KEY_PHONE
 import org.fossify.commons.extensions.hasPermission
 import org.fossify.commons.helpers.PERMISSION_READ_CONTACTS
@@ -60,7 +60,6 @@ import com.afsh.messages.helpers.ListDetail
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.CompositionLocalProvider
-import com.afsh.messages.databinding.ActivityMainBinding
 import com.afsh.messages.ui.components.confirm
 import com.afsh.messages.ui.components.showRenameDialog
 import com.afsh.messages.extensions.checkAndDeleteOldRecycleBinMessages
@@ -141,7 +140,7 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
     @VisibleForTesting
     internal val snackbarHost = SnackbarHostState()
 
-    private val binding by viewBinding(ActivityMainBinding::inflate)
+    private val root by lazy { ComposeView(this) }
 
     @VisibleForTesting
     internal val inboxRows get() = inbox.rows
@@ -149,7 +148,7 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
     @SuppressLint("InlinedApi")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(binding.root)
+        setContentView(root)
         inboxFilter = InboxFilter.entries.getOrNull(savedInstanceState?.getInt(INBOX_FILTER) ?: 0) ?: InboxFilter.ALL
         savedInstanceState?.getLongArray(INBOX_SELECTION)?.let { inbox = inbox.copy(selected = it.toSet()) }
         appLaunched(BuildConfig.APPLICATION_ID)
@@ -162,7 +161,7 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
         )
         if (search.open) loadSearchResults()
         refreshInboxTheme()
-        binding.inboxCompose.setContent {
+        root.setContent {
             // A split starts or ends with a configuration change, so this is read again then.
             val listPane = remember(LocalConfiguration.current) { ListDetail.isPane(this) }
             CompositionLocalProvider(LocalListPane provides listPane) {

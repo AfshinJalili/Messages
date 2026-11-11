@@ -1,6 +1,6 @@
 # AFSH Messages
 
-A private, independent SMS/MMS client for Android. Kotlin. The launcher name is just "Messages"; AFSH is the product and design-system name. Started as a modified version of Fossify Messages (GPL-3.0); Fossify Commons is vendored as the `commons/` module and `mmslib` and `IndicatorFastScroll` remain dependencies, and the license and credit stay. The inbox, search and conversation are Jetpack Compose; everything else is still XML views. Package and app ID `com.afsh.messages`. GitHub: `AfshinJalili/Messages` (private). Push to remote `github`; `origin` is upstream Fossify and is read-only.
+A private, independent SMS/MMS client for Android. Kotlin. The launcher name is just "Messages"; AFSH is the product and design-system name. Started as a modified version of Fossify Messages (GPL-3.0); Fossify Commons is vendored as the `commons/` module and `mmslib` and `IndicatorFastScroll` remain dependencies, and the license and credit stay. Every screen is Jetpack Compose; the app has no XML layouts. Package and app ID `com.afsh.messages`. GitHub: `AfshinJalili/Messages` (private). Push to remote `github`; `origin` is upstream Fossify and is read-only.
 
 This file is the single source of truth for how the project is run. Update it in the same PR that changes the process. Product intent is in `PRODUCT.md`; design system in `DESIGN.md`; behavior specs in `docs/`. Do not add other Markdown files.
 

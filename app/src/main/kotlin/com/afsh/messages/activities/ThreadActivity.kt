@@ -1,5 +1,31 @@
 package com.afsh.messages.activities
 
+import org.fossify.commons.helpers.PERMISSION_READ_CONTACTS
+import org.fossify.commons.extensions.hasPermission
+import com.afsh.messages.extensions.toPickerPerson
+import com.afsh.messages.ui.newmessage.Recipient
+import com.afsh.messages.ui.newmessage.NewMessageUiState
+import com.afsh.messages.ui.thread.ManagePeopleState
+import com.afsh.messages.ui.thread.ManagePeoplePanel
+import androidx.compose.runtime.Composable
+import androidx.compose.foundation.layout.union
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.background
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.ui.platform.ComposeView
 import com.afsh.messages.helpers.UndoDeletion
 import android.annotation.SuppressLint
 import android.app.Activity
@@ -8,7 +34,6 @@ import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
 import android.content.Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-import android.graphics.drawable.LayerDrawable
 import android.net.Uri
 import android.os.Bundle
 import android.provider.ContactsContract
@@ -25,52 +50,28 @@ import android.text.format.DateUtils
 import android.text.format.DateUtils.FORMAT_NO_YEAR
 import android.text.format.DateUtils.FORMAT_SHOW_DATE
 import android.text.format.DateUtils.FORMAT_SHOW_TIME
-import android.view.Gravity
-import android.view.View
 import android.view.WindowManager
-import android.view.inputmethod.EditorInfo
-import android.widget.LinearLayout
-import android.widget.LinearLayout.LayoutParams
-import android.widget.RelativeLayout
 import android.widget.Toast
 import android.speech.RecognizerIntent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
-import androidx.appcompat.content.res.AppCompatResources
 import androidx.core.net.toUri
 import androidx.documentfile.provider.DocumentFile
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import org.fossify.commons.extensions.applyColorFilter
-import org.fossify.commons.extensions.beGone
-import org.fossify.commons.extensions.beVisible
-import org.fossify.commons.extensions.beVisibleIf
 import org.fossify.commons.extensions.copyToClipboard
 import org.fossify.commons.extensions.formatDate
-import org.fossify.commons.extensions.getBottomNavigationBackgroundColor
-import org.fossify.commons.extensions.getContrastColor
 import org.fossify.commons.extensions.getFilenameFromPath
 import org.fossify.commons.extensions.getFilenameFromUri
 import org.fossify.commons.extensions.getMyContactsCursor
 import org.fossify.commons.extensions.getMyFileUri
-import org.fossify.commons.extensions.getProperPrimaryColor
-import org.fossify.commons.extensions.getProperTextColor
-import org.fossify.commons.extensions.getPhoneNumberTypeText
 import org.fossify.commons.extensions.hideKeyboard
-import org.fossify.commons.extensions.isDynamicTheme
-import org.fossify.commons.extensions.isVisible
 import org.fossify.commons.extensions.launchActivityIntent
 import org.fossify.commons.extensions.normalizeString
 import org.fossify.commons.extensions.notificationManager
-import org.fossify.commons.extensions.onTextChangeListener
 import org.fossify.commons.extensions.openRequestExactAlarmSettings
-import org.fossify.commons.extensions.realScreenSize
 import org.fossify.commons.extensions.showErrorToast
-import org.fossify.commons.extensions.showKeyboard
 import org.fossify.commons.extensions.toast
-import org.fossify.commons.extensions.updateTextColors
-import org.fossify.commons.extensions.value
-import org.fossify.commons.extensions.viewBinding
 import org.fossify.commons.helpers.ContactsHelper
 import org.fossify.commons.helpers.ExportResult
 import org.fossify.commons.helpers.KEY_PHONE
@@ -84,9 +85,6 @@ import org.fossify.commons.models.PhoneNumber
 import org.fossify.commons.models.SimpleContact
 import com.afsh.messages.BuildConfig
 import com.afsh.messages.R
-import com.afsh.messages.adapters.AutoCompleteTextViewAdapter
-import com.afsh.messages.databinding.ActivityThreadBinding
-import com.afsh.messages.databinding.ItemSelectedContactBinding
 import com.afsh.messages.extensions.clearExpiredScheduledMessages
 import com.afsh.messages.extensions.config
 import com.afsh.messages.extensions.conversationsDB
@@ -189,8 +187,6 @@ import com.afsh.messages.helpers.EXTRA_VCARD_URI
 import org.fossify.commons.extensions.formatTime
 import org.fossify.commons.extensions.getTimeFormatWithSeconds
 import com.afsh.messages.ui.components.dayLabel
-import com.afsh.messages.ui.components.Choice
-import com.afsh.messages.ui.components.choose
 import com.afsh.messages.ui.components.confirm
 import com.afsh.messages.ui.components.inform
 import com.afsh.messages.ui.components.showRenameDialog
@@ -228,10 +224,6 @@ import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
 import org.joda.time.DateTime
 import java.io.File
-import android.graphics.Color as AndroidColor
-import android.graphics.drawable.ColorDrawable
-import androidx.core.graphics.ColorUtils
-import kotlin.math.roundToInt
 
 class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
     private var threadId = 0L
@@ -265,7 +257,6 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         get() = composerState.value
         set(value) {
             composerState.value = value
-            updateComposerVisibility()
         }
     /** Text and attachments from before a recreation; they win over the intent extras. */
     private var restoredText: String? = null
@@ -278,9 +269,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         set(value) {
             val wasSelecting = uiState.value.selecting
             uiState.value = value
-            backCallback.isEnabled = value.selecting || value.searching
-            // The selection bar takes the composer's place (design view 10). Gone, not empty, so its insets padding goes too.
-            updateComposerVisibility()
+            updateBackCallback()
             if (value.selecting && !wasSelecting) hideKeyboard()
         }
     private var darkTheme by mutableStateOf(false)
@@ -294,11 +283,25 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
     private val backCallback = object : OnBackPressedCallback(false) {
         override fun handleOnBackPressed() {
             when {
+                people.open -> closeManagePeople()
                 ui.selecting -> clearSelection()
                 ui.searching -> closeSearch()
             }
         }
     }
+
+    private fun updateBackCallback() {
+        backCallback.isEnabled = people.open || ui.selecting || ui.searching
+    }
+
+    private val peopleState = mutableStateOf(ManagePeopleState())
+    private var people: ManagePeopleState
+        get() = peopleState.value
+        set(value) {
+            peopleState.value = value
+            updateBackCallback()
+        }
+    private val headerDim = mutableFloatStateOf(0f)
     private var refreshedSinceSent = false
     private var threadItems = ArrayList<ThreadItem>()
     private var bus: EventBus? = null
@@ -334,7 +337,8 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         result?.let { (messageId, decision) -> onScheduledDecision(messageId, decision) }
     }
 
-    private val binding by viewBinding(ActivityThreadBinding::inflate)
+    /** The whole screen is one Compose tree; this view also posts the scroll-position checks. */
+    private val root by lazy { ComposeView(this) }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
@@ -347,13 +351,12 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         restoredText = savedInstanceState?.getString(SAVED_COMPOSER_TEXT)
         restoredAttachments = savedInstanceState?.getStringArrayList(SAVED_COMPOSER_ATTACHMENTS).orEmpty().map { it.toUri() }
         newOnOpen = savedInstanceState?.getLongArray(SAVED_NEW_ON_OPEN)?.toSet()
-        setContentView(binding.root)
+        setContentView(root)
         onBackPressedDispatcher.addCallback(this, backCallback)
         refreshAfshTheme()
         setupCompose()
-        setupEdgeToEdge(
-            padBottomImeAndSystem = listOf(binding.threadComposer)
-        )
+        // Keeps the side padding for display cutouts; the composer pads itself for the keyboard and navigation bar.
+        setupEdgeToEdge()
 
         val extras = intent.extras
         if (extras == null) {
@@ -386,7 +389,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         publishItems()
 
         isActivityVisible = true
-        binding.threadTimeline.post(updateScrollPosition)
+        root.post(updateScrollPosition)
 
         notificationManager.cancel(threadId.hashCode())
 
@@ -405,12 +408,11 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
             }
         }
 
-        binding.threadAddContacts.setBackgroundColor(getBottomBarColor())
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
-        if (hasFocus && isActivityVisible) binding.threadTimeline.post(updateScrollPosition)
+        if (hasFocus && isActivityVisible) root.post(updateScrollPosition)
     }
 
     override fun onPause() {
@@ -419,7 +421,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         flushThreadReadState()
         bus?.post(Events.RefreshConversations())
         isActivityVisible = false
-        binding.threadTimeline.removeCallbacks(updateScrollPosition)
+        root.removeCallbacks(updateScrollPosition)
     }
 
     override fun onStop() {
@@ -514,74 +516,80 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         )
     }
 
+    private fun setupCompose() {
+        root.setContent {
+            AfshTheme(dark = darkTheme, textScale = textScale) {
+                val ui = uiState.value
+                // The timeline's lift scrim also dims the header above it.
+                val scrim = colorResource(R.color.afsh_lift_scrim)
+                Column(Modifier.fillMaxSize()) {
+                    ThreadHeader(ui, ::onEvent, Modifier.drawWithContent {
+                        drawContent()
+                        drawRect(scrim, alpha = headerDim.floatValue)
+                    })
+                    Box(Modifier.weight(1f)) {
+                        ThreadTimeline(ui, snackbarHost, ::onEvent, onDim = ::dimHeader)
+                        val people = peopleState.value
+                        if (people.open) {
+                            ManagePeoplePanel(
+                                people,
+                                onAdd = ::addPerson,
+                                onRemove = ::removePerson,
+                                onDone = ::applyManagePeople,
+                                onAllowContacts = ::allowContacts,
+                                modifier = Modifier.fillMaxSize(),
+                            )
+                        }
+                    }
+                    ThreadBottom(ui, composerState.value)
+                }
+            }
+        }
+    }
+
     /**
-     * The selection bar takes the composer's place in the same frame (design view 10). The composer stays laid out
-     * while it sinks and fades, so the frame keeps its height and the timeline does not move; it is hidden once
-     * covered, so TalkBack and touch skip it. Gone only when there is no composer at all.
+     * The selection bar takes the composer's place in the same frame (design view 10): the frame is the composer's
+     * height, so the timeline above never moves. The composer stays laid out while it sinks and fades under the rising
+     * bar; covered, it says nothing to TalkBack and the bar takes the touches. With no composer at all (Recycle Bin)
+     * the bar grows from the bottom edge on its own.
      */
-    private fun updateComposerVisibility() {
-        val view = binding.threadComposer
+    @Composable
+    private fun ThreadBottom(ui: ThreadUiState, composer: ComposerState) {
         if (!composer.visible) {
-            view.animate().cancel()
-            view.beGone()
+            ThreadSelectionBar(ui, overComposer = false, ::onEvent)
             return
         }
-        val hide = ui.selecting
-        if (hide == composerHidden && view.visibility != View.GONE) return
-        composerHidden = hide
-        view.animate().cancel()
-        if (hide) {
-            view.animate()
-                .alpha(0f)
-                .translationY(view.height * COMPOSER_SINK)
-                .setDuration(SELECTION_ENTER_MS.toLong())
-                .withEndAction { view.visibility = View.INVISIBLE }
-        } else {
-            view.visibility = View.VISIBLE
-            view.animate().alpha(1f).translationY(0f).setDuration(SELECTION_EXIT_MS.toLong())
-        }
-    }
-    private var composerHidden = false
-
-    private fun setupCompose() {
-        binding.threadHeader.setContent {
-            AfshTheme(dark = darkTheme, textScale = textScale) {
-                ThreadHeader(uiState.value, ::onEvent)
+        val sink by animateFloatAsState(
+            if (ui.selecting) 1f else 0f,
+            tween(if (ui.selecting) SELECTION_ENTER_MS else SELECTION_EXIT_MS),
+            label = "composer sink",
+        )
+        Box(Modifier.fillMaxWidth()) {
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .graphicsLayer {
+                        alpha = 1f - sink
+                        translationY = size.height * COMPOSER_SINK * sink
+                    }
+                    .then(if (ui.selecting) Modifier.clearAndSetSemantics {} else Modifier)
+                    // The padding under the composer is its surface too.
+                    .background(colorResource(if (darkTheme) R.color.afsh_night_surface else R.color.design_white))
+                    .windowInsetsPadding(WindowInsets.navigationBars.union(WindowInsets.ime)),
+            ) {
+                ThreadComposer(composer, ui.firstName, composerText, config.sendOnEnter, ::onComposerTextChange, ::onComposerEvent)
             }
+            ThreadSelectionBar(ui, overComposer = true, ::onEvent, Modifier.matchParentSize())
         }
-        binding.threadTimeline.setContent {
-            AfshTheme(dark = darkTheme, textScale = textScale) {
-                ThreadTimeline(uiState.value, snackbarHost, ::onEvent, onDim = ::dimHeader)
-            }
-        }
-        binding.threadSelectionBar.setContent {
-            AfshTheme(dark = darkTheme, textScale = textScale) {
-                ThreadSelectionBar(uiState.value, overComposer = composerState.value.visible, ::onEvent)
-            }
-        }
-        binding.threadComposer.setContent {
-            AfshTheme(dark = darkTheme, textScale = textScale) {
-                ThreadComposer(composerState.value, uiState.value.firstName, composerText, config.sendOnEnter, ::onComposerTextChange, ::onComposerEvent)
-            }
-        }
-    }
-
-    // The header is its own ComposeView, outside the timeline's lift scrim.
-    // setAlpha replaces the colour's own alpha, so the drawable is opaque and the scrim's own alpha is applied here.
-    private val liftScrim by lazy { getColor(R.color.afsh_lift_scrim) }
-    private val headerScrim by lazy {
-        ColorDrawable(ColorUtils.setAlphaComponent(liftScrim, OPAQUE)).also { binding.threadHeader.foreground = it }
     }
 
     private fun dimHeader(progress: Float) {
-        headerScrim.alpha = (progress * AndroidColor.alpha(liftScrim)).roundToInt()
+        headerDim.floatValue = progress
     }
 
     private fun refreshAfshTheme() {
         darkTheme = afshDark()
         textScale = afshTextScale()
-        // setupEdgeToEdge pads this view for the nav bar and keyboard; the padding must be the composer's surfaceContainer too.
-        binding.threadComposer.setBackgroundColor(getColor(if (darkTheme) R.color.afsh_night_surface else R.color.design_white))
     }
 
     private fun applySystemBars() {
@@ -613,19 +621,19 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
             is ThreadEvent.Viewport -> {
                 listAtBottom = event.atBottom
                 listScrolling = event.scrolling
-                binding.threadTimeline.removeCallbacks(updateScrollPosition)
-                binding.threadTimeline.post(updateScrollPosition)
+                root.removeCallbacks(updateScrollPosition)
+                root.post(updateScrollPosition)
             }
             // An older jump's scroll can settle while a newer jump is still walking pages.
             is ThreadEvent.JumpSettled -> if (event.nonce == activeJump) {
                 isJumpingToMessage = false
                 initialPositionSettled = true
-                binding.threadTimeline.post(updateScrollPosition)
+                root.post(updateScrollPosition)
             }
             ThreadEvent.InitialScrollSettled -> {
                 initialPositionSettled = true
                 ui = ui.copy(initialScroll = null)
-                binding.threadTimeline.post(updateScrollPosition)
+                root.post(updateScrollPosition)
             }
         }
     }
@@ -1039,46 +1047,30 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
     }
 
     /**
-     * The "add contact or number" field. It needs every contact on the phone, so it loads the first
-     * time the person opens it, not on every thread load and refresh.
+     * The address book for Manage people. It needs every contact on the phone, so it loads the first
+     * time the person opens Manage people, not on every thread load and refresh.
      */
-    private fun setupAddContactField() {
+    private fun loadPeopleContacts() {
         if (addContactFieldReady) return
+        if (!hasPermission(PERMISSION_READ_CONTACTS)) {
+            people = people.copy(contacts = NewMessageUiState(canReadContacts = false))
+            return
+        }
         addContactFieldReady = true
-        binding.addContactOrNumber.imeOptions = EditorInfo.IME_ACTION_NEXT
-        binding.addContactOrNumber.setOnItemClickListener { _, _, position, _ ->
-            val currContacts =
-                (binding.addContactOrNumber.adapter as AutoCompleteTextViewAdapter).resultList
-            val selectedContact = currContacts[position]
-            pickPhoneNumber(selectedContact.name, selectedContact.phoneNumbers) { phoneNumber ->
-                val contactWithSelectedNumber = selectedContact.copy(
-                    phoneNumbers = arrayListOf(phoneNumber)
-                )
-                addSelectedContact(contactWithSelectedNumber)
-            }
-        }
-        binding.addContactOrNumber.onTextChangeListener {
-            binding.confirmInsertedNumber.beVisibleIf(it.length > 2)
-        }
-        binding.confirmInsertedNumber.setOnClickListener {
-            val number = binding.addContactOrNumber.value
-            val phoneNumber = PhoneNumber(number, 0, "", number)
-            val contact = SimpleContact(
-                rawId = number.hashCode(),
-                contactId = number.hashCode(),
-                name = number,
-                photoUri = "",
-                phoneNumbers = arrayListOf(phoneNumber),
-                birthdays = ArrayList(),
-                anniversaries = ArrayList()
-            )
-            addSelectedContact(contact)
-        }
         SimpleContactsHelper(this).getAvailableContacts(false) { contacts ->
-            contacts.addAll(privateContacts)
+            val all = (contacts + privateContacts).sorted().map { it.toPickerPerson(resources) }.filter { it.phones.isNotEmpty() }
             runOnUiThread {
                 if (isDestroyed || isFinishing) return@runOnUiThread
-                binding.addContactOrNumber.setAdapter(AutoCompleteTextViewAdapter(this, contacts))
+                people = people.copy(contacts = NewMessageUiState(contacts = all))
+            }
+        }
+    }
+
+    private fun allowContacts() {
+        handlePermission(PERMISSION_READ_CONTACTS) { granted ->
+            if (granted) {
+                people = people.copy(contacts = NewMessageUiState())
+                loadPeopleContacts()
             }
         }
     }
@@ -1370,36 +1362,32 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         }
     }
 
-    private fun setupButtons() = binding.apply {
-        updateTextColors(threadHolder)
-        confirmManageContacts.applyColorFilter(getProperTextColor())
-        confirmManageContacts.setOnClickListener {
-            hideKeyboard()
-            threadAddContacts.beGone()
-
-            val numbers = HashSet<String>()
-            participants.forEach { contact ->
-                contact.phoneNumbers.forEach {
-                    numbers.add(it.normalizedNumber)
-                }
-            }
-
-            val newThreadId = getThreadId(numbers)
-            if (threadId != newThreadId) {
-                hideKeyboard()
-                Intent(this@ThreadActivity, ThreadActivity::class.java).apply {
-                    putExtra(THREAD_ID, newThreadId)
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                    startActivity(this)
-                }
+    /** Applies Manage people: a different set of people is a different conversation, which opens in this one's place. */
+    private fun applyManagePeople() {
+        closeManagePeople()
+        val numbers = HashSet<String>()
+        participants.forEach { contact ->
+            contact.phoneNumbers.forEach {
+                numbers.add(it.normalizedNumber)
             }
         }
 
+        val newThreadId = getThreadId(numbers)
+        if (threadId != newThreadId) {
+            Intent(this, ThreadActivity::class.java).apply {
+                putExtra(THREAD_ID, newThreadId)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                startActivity(this)
+            }
+        }
+    }
+
+    private fun setupButtons() {
         val restored = restoredText
         if (restored != null) {
             setComposerText(restored)
             restoredAttachments.forEach { addAttachment(it) }
-            return@apply
+            return
         }
         intent.getStringExtra(THREAD_TEXT)?.let { setComposerText(it) }
         if (intent.extras?.containsKey(THREAD_ATTACHMENT_URI) == true) {
@@ -1618,16 +1606,6 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
     }
 
     /** The contact's only number at once, or a choice between them; a contact with none says so. */
-    private fun pickPhoneNumber(name: String, numbers: List<PhoneNumber>, onPick: (PhoneNumber) -> Unit) = when (numbers.size) {
-        0 -> toast(org.fossify.commons.R.string.no_phone_number_found)
-        1 -> onPick(numbers.first())
-        else -> choose(
-            title = name,
-            choices = numbers.map { Choice(it, it.value, getPhoneNumberTypeText(it.type, it.label)) },
-            onChoose = onPick,
-        )
-    }
-
     private fun askConfirmDelete() {
         if (threadId in UndoDeletion.threads) return
         // The whole conversation is deleted for good (deleteConversation does not use the bin).
@@ -1711,56 +1689,47 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
     }
 
     private fun managePeople() {
-        if (binding.threadAddContacts.isVisible()) {
-            hideKeyboard()
-            binding.threadAddContacts.beGone()
+        if (people.open) {
+            closeManagePeople()
         } else {
-            setupAddContactField()
-            showSelectedContacts()
-            binding.threadAddContacts.beVisible()
-            binding.addContactOrNumber.requestFocus()
-            showKeyboard(binding.addContactOrNumber)
+            people = people.copy(open = true, people = participants.map { it.toRecipient() })
+            loadPeopleContacts()
         }
     }
 
-    private fun showSelectedContacts() {
-        val properPrimaryColor = getProperPrimaryColor()
-
-        val views = ArrayList<View>()
-        participants.forEach { contact ->
-            ItemSelectedContactBinding.inflate(layoutInflater).apply {
-                val selectedContactBg =
-                    AppCompatResources.getDrawable(
-                        this@ThreadActivity,
-                        R.drawable.item_selected_contact_background
-                    )
-                (selectedContactBg as LayerDrawable).findDrawableByLayerId(R.id.selected_contact_bg)
-                    .applyColorFilter(properPrimaryColor)
-                selectedContactHolder.background = selectedContactBg
-
-                selectedContactName.text = contact.name
-                selectedContactName.setTextColor(properPrimaryColor.getContrastColor())
-                selectedContactRemove.applyColorFilter(properPrimaryColor.getContrastColor())
-
-                selectedContactRemove.setOnClickListener {
-                    if (contact.rawId != participants.first().rawId) {
-                        removeSelectedContact(contact.rawId)
-                    }
-                }
-                views.add(root)
-            }
-        }
-        showSelectedContact(views)
+    private fun closeManagePeople() {
+        hideKeyboard()
+        people = people.copy(open = false)
     }
 
-    private fun addSelectedContact(contact: SimpleContact) {
-        binding.addContactOrNumber.setText("")
-        if (participants.map { it.rawId }.contains(contact.rawId)) {
-            return
-        }
+    private fun SimpleContact.toRecipient(): Recipient {
+        val phone = phoneNumbers.firstOrNull()
+        return Recipient(phone?.normalizedNumber?.ifEmpty { phone.value } ?: "", name)
+    }
 
-        participants.add(contact)
-        showSelectedContacts()
+    private fun addPerson(recipient: Recipient) {
+        if (participants.any { it.toRecipient().number == recipient.number }) return
+        val phoneNumber = PhoneNumber(recipient.number, 0, "", recipient.number)
+        participants.add(
+            SimpleContact(
+                rawId = recipient.number.hashCode(),
+                contactId = recipient.number.hashCode(),
+                name = recipient.name,
+                photoUri = "",
+                phoneNumbers = arrayListOf(phoneNumber),
+                birthdays = ArrayList(),
+                anniversaries = ArrayList(),
+            )
+        )
+        people = people.copy(people = participants.map { it.toRecipient() })
+        refreshComposer()
+    }
+
+    private fun removePerson(recipient: Recipient) {
+        // The conversation's own person stays.
+        if (participants.firstOrNull()?.toRecipient() == recipient) return
+        participants = participants.filterNot { it.toRecipient() == recipient }.toCollection(ArrayList())
+        people = people.copy(people = participants.map { it.toRecipient() })
         refreshComposer()
     }
 
@@ -2168,67 +2137,6 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         }
     }
 
-    // show selected contacts, properly split to new lines when appropriate
-    // based on https://stackoverflow.com/a/13505029/1967672
-    private fun showSelectedContact(views: ArrayList<View>) {
-        binding.selectedContacts.removeAllViews()
-        var newLinearLayout = LinearLayout(this)
-        newLinearLayout.layoutParams =
-            LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT)
-        newLinearLayout.orientation = LinearLayout.HORIZONTAL
-
-        val sideMargin =
-            (binding.selectedContacts.layoutParams as RelativeLayout.LayoutParams).leftMargin
-        val mediumMargin = resources.getDimension(org.fossify.commons.R.dimen.medium_margin).toInt()
-        val parentWidth = realScreenSize.x - sideMargin * 2
-        val firstRowWidth =
-            parentWidth - resources.getDimension(org.fossify.commons.R.dimen.normal_icon_size)
-                .toInt() + sideMargin / 2
-        var widthSoFar = 0
-        var isFirstRow = true
-
-        for (i in views.indices) {
-            val layout = LinearLayout(this)
-            layout.orientation = LinearLayout.HORIZONTAL
-            layout.gravity = Gravity.CENTER_HORIZONTAL or Gravity.BOTTOM
-            layout.layoutParams = LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT)
-            views[i].measure(0, 0)
-
-            var params = LayoutParams(views[i].measuredWidth, LayoutParams.WRAP_CONTENT)
-            params.setMargins(0, 0, mediumMargin, 0)
-            layout.addView(views[i], params)
-            layout.measure(0, 0)
-            widthSoFar += views[i].measuredWidth + mediumMargin
-
-            val checkWidth = if (isFirstRow) firstRowWidth else parentWidth
-            if (widthSoFar >= checkWidth) {
-                isFirstRow = false
-                binding.selectedContacts.addView(newLinearLayout)
-                newLinearLayout = LinearLayout(this)
-                newLinearLayout.layoutParams =
-                    LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT)
-                newLinearLayout.orientation = LinearLayout.HORIZONTAL
-                params = LayoutParams(layout.measuredWidth, layout.measuredHeight)
-                params.topMargin = mediumMargin
-                newLinearLayout.addView(layout, params)
-                widthSoFar = layout.measuredWidth
-            } else {
-                if (!isFirstRow) {
-                    (layout.layoutParams as LayoutParams).topMargin = mediumMargin
-                }
-                newLinearLayout.addView(layout)
-            }
-        }
-        binding.selectedContacts.addView(newLinearLayout)
-    }
-
-    private fun removeSelectedContact(id: Int) {
-        participants =
-            participants.filter { it.rawId != id }.toMutableList() as ArrayList<SimpleContact>
-        showSelectedContacts()
-        refreshComposer()
-    }
-
     private fun getPhoneNumbersFromIntent(): ArrayList<String> {
         val numberFromIntent = intent.getStringExtra(THREAD_NUMBER)
         val numbers = ArrayList<String>()
@@ -2459,19 +2367,12 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         .map { Attachment(null, messageId, it.uri.toString(), it.mimetype, 0, 0, it.filename) }
         .toArrayList()
 
-    private fun getBottomBarColor() = if (isDynamicTheme()) {
-        resources.getColor(org.fossify.commons.R.color.you_bottom_bar_color)
-    } else {
-        getBottomNavigationBackgroundColor()
-    }
-
     companion object {
         private const val JUMP_WAIT_MS = 50L
         private const val JUMP_WAIT_LIMIT = 100
         private const val NO_JUMP = -1L
         // SmsMessage code units left in the current part before the counter appears.
         private const val SMS_COUNTER_THRESHOLD = 20
-        private const val OPAQUE = 255
         /** How far, as a share of its height, the composer sinks while the selection bar rises over it. */
         private const val COMPOSER_SINK = 0.5f
         private const val SAVED_COMPOSER_TEXT = "composer_text"

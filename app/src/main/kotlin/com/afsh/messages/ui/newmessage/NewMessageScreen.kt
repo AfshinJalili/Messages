@@ -78,6 +78,7 @@ import com.afsh.messages.ui.components.UpAction
 
 private val RowAvatarSize = 44.dp
 private val ChipRemoveSize = 15.dp
+private val ChipMinHeight = 48.dp
 private const val MIN_TYPED_LENGTH = 3
 private const val NUMBER_SEPARATORS = "+-(). "
 
@@ -265,37 +266,69 @@ private fun GroupPage(
         },
         modifier = modifier,
     ) {
-        LazyColumn(contentPadding = PaddingValues(start = 20.dp, top = 20.dp, end = 20.dp, bottom = 24.dp)) {
-            if (chosen.isNotEmpty()) {
-                item(key = "chosen") {
-                    FlowRow(
-                        Modifier.padding(bottom = 12.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        chosen.forEach { recipient -> ChosenChip(recipient) { chosen.remove(recipient) } }
-                    }
+        PeoplePicker(
+            state = state,
+            query = query,
+            onQuery = onQuery,
+            chosen = chosen,
+            onRemove = { chosen.remove(it) },
+            onPick = onPick,
+            onSubmitTyped = onSubmitTyped,
+        )
+    }
+}
+
+/**
+ * Picking people for a conversation: a chip for each one chosen, the search field, "Add 0912…" once the query is a
+ * number, and the matching contacts. 16 · New group and the conversation's Manage people both draw it, so the two
+ * never drift. [canRemove] keeps a chip without its remove button.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun PeoplePicker(
+    state: NewMessageUiState,
+    query: String,
+    onQuery: (String) -> Unit,
+    chosen: List<Recipient>,
+    onRemove: (Recipient) -> Unit,
+    onPick: (Person) -> Unit,
+    onSubmitTyped: () -> Unit,
+    modifier: Modifier = Modifier,
+    canRemove: (Recipient) -> Boolean = { true },
+    onAllowContacts: () -> Unit = {},
+    fieldModifier: Modifier = Modifier,
+    contentPadding: PaddingValues = PaddingValues(start = 20.dp, top = 20.dp, end = 20.dp, bottom = 24.dp),
+) {
+    LazyColumn(modifier, contentPadding = contentPadding) {
+        if (chosen.isNotEmpty()) {
+            item(key = "chosen") {
+                FlowRow(
+                    Modifier.padding(bottom = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    chosen.forEach { recipient -> ChosenChip(recipient, if (canRemove(recipient)) ({ onRemove(recipient) }) else null) }
                 }
             }
-            item(key = "search") {
-                SearchField(
-                    query = query,
-                    onQuery = onQuery,
-                    hint = stringResource(R.string.add_someone_else),
-                    modifier = Modifier.padding(bottom = 4.dp),
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                    keyboardActions = KeyboardActions(onDone = { onSubmitTyped() }),
-                )
-            }
-            typedNumberRow(query, R.string.add_number, onSubmitTyped)
-            contactRows(
-                state,
-                query,
-                excluded = chosen.map { it.number }.toSet(),
-                onPick = onPick,
-                onEvent = {},
+        }
+        item(key = "search") {
+            SearchField(
+                query = query,
+                onQuery = onQuery,
+                hint = stringResource(R.string.add_someone_else),
+                modifier = fieldModifier.padding(bottom = 4.dp),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(onDone = { onSubmitTyped() }),
             )
         }
+        typedNumberRow(query, R.string.add_number, onSubmitTyped)
+        contactRows(
+            state,
+            query,
+            excluded = chosen.map { it.number }.toSet(),
+            onPick = onPick,
+            onEvent = { if (it == NewMessageEvent.AllowContacts) onAllowContacts() },
+        )
     }
 }
 
@@ -442,19 +475,22 @@ private fun StartGroupRow(onClick: () -> Unit) {
 }
 
 @Composable
-private fun ChosenChip(recipient: Recipient, onRemove: () -> Unit) {
+private fun ChosenChip(recipient: Recipient, onRemove: (() -> Unit)?) {
     val colors = MaterialTheme.colorScheme
     val remove = stringResource(R.string.remove_person, recipient.name)
     Row(
         Modifier
             .clip(CircleShape)
             .background(colors.secondaryContainer)
-            .padding(start = 12.dp),
+            .heightIn(min = ChipMinHeight)
+            .padding(start = 12.dp, end = if (onRemove == null) 12.dp else 0.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(recipient.name, style = MaterialTheme.typography.labelMedium, color = colors.onSecondaryContainer)
-        IconButton(onClick = onRemove, modifier = Modifier.semantics { contentDescription = remove }) {
-            Icon(painterResource(R.drawable.ic_lucide_x), contentDescription = null, tint = colors.primary, modifier = Modifier.size(ChipRemoveSize))
+        if (onRemove != null) {
+            IconButton(onClick = onRemove, modifier = Modifier.semantics { contentDescription = remove }) {
+                Icon(painterResource(R.drawable.ic_lucide_x), contentDescription = null, tint = colors.primary, modifier = Modifier.size(ChipRemoveSize))
+            }
         }
     }
 }

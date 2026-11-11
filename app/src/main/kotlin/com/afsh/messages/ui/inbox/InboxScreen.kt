@@ -103,6 +103,7 @@ import com.afsh.messages.ui.components.BottomBarHeight
 import com.afsh.messages.ui.components.BottomBarSwitch
 import com.afsh.messages.ui.components.BarAction
 import com.afsh.messages.ui.components.SelectionBar
+import com.afsh.messages.ui.components.selectionTitle
 import com.afsh.messages.ui.components.keptWhileLeaving
 import com.afsh.messages.ui.library.LibraryScreen
 import com.afsh.messages.helpers.InboxFilter
@@ -317,7 +318,7 @@ private fun IdentityBand(
 ) {
     val colors = MaterialTheme.colorScheme
     val title = if (state.selecting) {
-        pluralStringResource(R.plurals.inbox_selected, state.selected.size, state.selected.size)
+        selectionTitle(state.selected.size)
     } else {
         stringResource(R.string.messages)
     }

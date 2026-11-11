@@ -14,7 +14,12 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import com.afsh.messages.R
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
@@ -48,8 +53,23 @@ fun usesNavigationRail(): Boolean {
 val LocalListPane = staticCompositionLocalOf { false }
 
 /**
+ * Selection mode of a page, owned by [PageScaffold]: while it is set, the app bar shows "[count] selected" with
+ * Close and Select all, [SelectionBar] rises over the navigation with [actions] and [overflow], and Back clears.
+ * Screens describe what is selected and what can be done; they never draw selection chrome themselves.
+ */
+@Immutable
+class PageSelection(
+    val count: Int,
+    val onClear: () -> Unit,
+    val actions: List<BarAction>,
+    val overflow: List<BarAction> = emptyList(),
+    val onSelectAll: (() -> Unit)? = null,
+)
+
+/**
  * A secondary page: [PageAppBar], the page body and the primary navigation, with one snackbar
- * host for Undo. [bottomBar] replaces the navigation, for selection bars.
+ * host for Undo. [selection] puts the page in selection mode (see [PageSelection]). [bottomBar] replaces the
+ * navigation for anything else that sits at the bottom, such as a disabled composer.
  */
 @Composable
 fun PageScaffold(
@@ -60,16 +80,25 @@ fun PageScaffold(
     upAction: UpAction = UpAction.BACK,
     navigation: PageNavigation? = null,
     snackbarHostState: SnackbarHostState? = null,
+    selection: PageSelection? = null,
     actions: @Composable RowScope.() -> Unit = {},
     bottomBar: (@Composable () -> Unit)? = null,
     content: @Composable () -> Unit,
 ) {
-    val rail = navigation != null && bottomBar == null && usesNavigationRail()
+    BackHandler(enabled = selection != null) { selection?.onClear?.invoke() }
+    // The leaving bar keeps its icons until it has sunk, instead of blanking first.
+    val leavingSelection = keptWhileLeaving(selection ?: NoSelection, empty = selection == null)
+    val activeBar: (@Composable () -> Unit)? = if (selection != null) {
+        { SelectionBar(leavingSelection.actions, overflow = leavingSelection.overflow) }
+    } else {
+        bottomBar
+    }
+    val rail = navigation != null && activeBar == null && usesNavigationRail()
     Scaffold(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.surface,
         // The app bar and navigation handle the top and bottom insets themselves.
-        contentWindowInsets = if (rail || (navigation == null && bottomBar == null)) {
+        contentWindowInsets = if (rail || (navigation == null && activeBar == null)) {
             WindowInsets.navigationBars
         } else {
             WindowInsets(0)
@@ -78,11 +107,11 @@ fun PageScaffold(
         bottomBar = {
             // A selection bar rises over the navigation instead of snapping in, as on the conversation list.
             val bar = when {
-                bottomBar != null -> PageBottomBar.CUSTOM
+                activeBar != null -> PageBottomBar.CUSTOM
                 navigation != null && !rail -> PageBottomBar.NAVIGATION
                 else -> PageBottomBar.NONE
             }
-            val leaving = keptWhileLeaving(bottomBar ?: NoBottomBar, empty = bottomBar == null)
+            val leaving = keptWhileLeaving(activeBar ?: NoBottomBar, empty = activeBar == null)
             BottomBarSwitch(bar) {
                 when (it) {
                     PageBottomBar.CUSTOM -> leaving()
@@ -101,7 +130,15 @@ fun PageScaffold(
                 PrimaryNavigation(navigation, vertical = true)
             }
             Column(Modifier.weight(1f)) {
-                PageAppBar(title, subtitle = subtitle, onBack = onBack, upAction = upAction, actions = actions)
+                if (selection != null) {
+                    PageAppBar(selectionTitle(selection.count), onBack = selection.onClear, upAction = UpAction.CLOSE) {
+                        selection.onSelectAll?.let { selectAll ->
+                            PageAppBarAction(R.drawable.ic_lucide_check_check, stringResource(org.fossify.commons.R.string.select_all), onClick = selectAll)
+                        }
+                    }
+                } else {
+                    PageAppBar(title, subtitle = subtitle, onBack = onBack, upAction = upAction, actions = actions)
+                }
                 Box(Modifier.weight(1f)) { content() }
             }
         }

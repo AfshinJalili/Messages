@@ -3,7 +3,6 @@ package com.afsh.messages.activities
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import android.provider.ContactsContract.CommonDataKinds.Phone
 import android.view.WindowManager
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -18,8 +17,8 @@ import org.fossify.commons.helpers.MyContactsContentProvider
 import org.fossify.commons.helpers.PERMISSION_READ_CONTACTS
 import org.fossify.commons.helpers.SimpleContactsHelper
 import org.fossify.commons.helpers.ensureBackgroundThread
-import org.fossify.commons.models.SimpleContact
 import com.afsh.messages.extensions.getSuggestedContacts
+import com.afsh.messages.extensions.toPickerPerson
 import com.afsh.messages.extensions.getThreadId
 import com.afsh.messages.helpers.SmsIntentParser
 import com.afsh.messages.helpers.THREAD_ATTACHMENT_URI
@@ -31,8 +30,6 @@ import com.afsh.messages.helpers.THREAD_TITLE
 import com.afsh.messages.ui.newmessage.NewMessageEvent
 import com.afsh.messages.ui.newmessage.NewMessageScreen
 import com.afsh.messages.ui.newmessage.NewMessageUiState
-import com.afsh.messages.ui.newmessage.Person
-import com.afsh.messages.ui.newmessage.PhoneChoice
 import com.afsh.messages.ui.newmessage.Recipient
 import java.net.URLDecoder
 
@@ -71,22 +68,14 @@ class NewConversationActivity : ComposePageActivity() {
         val privateCursor = getMyContactsCursor(false, true)
         ensureBackgroundThread {
             val privateContacts = MyContactsContentProvider.getSimpleContacts(this, privateCursor)
-            val suggested = getSuggestedContacts(privateContacts).map { it.toPerson() }
+            val suggested = getSuggestedContacts(privateContacts).map { it.toPickerPerson(resources) }
             runOnUiThread { state = state.copy(suggested = suggested) }
             SimpleContactsHelper(this).getAvailableContacts(false) { contacts ->
-                val all = (contacts + privateContacts).sorted().map { it.toPerson() }.filter { it.phones.isNotEmpty() }
+                val all = (contacts + privateContacts).sorted().map { it.toPickerPerson(resources) }.filter { it.phones.isNotEmpty() }
                 runOnUiThread { state = state.copy(contacts = all) }
             }
         }
     }
-
-    private fun SimpleContact.toPerson() = Person(
-        name = name,
-        photoUri = photoUri,
-        phones = phoneNumbers.distinctBy { it.normalizedNumber }.map { phone ->
-            PhoneChoice(phone.normalizedNumber.ifEmpty { phone.value }, Phone.getTypeLabel(resources, phone.type, phone.label).toString())
-        },
-    )
 
     /** An sms: link or share with a recipient goes straight to its thread. */
     private fun openFromSmsLink(): Boolean {
