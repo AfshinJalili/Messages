@@ -145,6 +145,12 @@ fun PageScaffold(
     }
 }
 
+/** "3 selected": the title of every screen in selection mode. */
+@Composable
+fun selectionTitle(count: Int): String = pluralStringResource(R.plurals.inbox_selected, count, count)
+
+private val NoSelection = PageSelection(0, onClear = {}, actions = emptyList())
+
 private enum class PageBottomBar { CUSTOM, NAVIGATION, NONE }
 
 private val NoBottomBar: @Composable () -> Unit = {}
