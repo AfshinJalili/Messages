@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Back: the top screen shrinks away and fades out. Values in values/motion.xml. -->
+<set xmlns:android="http://schemas.android.com/apk/res/android"
+    android:duration="@integer/motion_close_ms"
+    android:interpolator="@android:interpolator/fast_out_linear_in"
+    android:shareInterpolator="true"
+    android:zAdjustment="top">
+    <scale
+        android:fromXScale="1"
+        android:fromYScale="1"
+        android:pivotX="50%"
+        android:pivotY="50%"
+        android:toXScale="@dimen/motion_zoom_small"
+        android:toYScale="@dimen/motion_zoom_small" />
+    <alpha
+        android:fromAlpha="1"
+        android:toAlpha="0" />
+</set>

@@ -1,10 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Screen motion (issue #176). Activity animations in res/anim and Compose stacks in Motion.kt read these. -->
+<!--
+    Screen motion, the single source of truth (#176). One zoom for every screen change: the activity
+    animations in res/anim and the Compose stacks in ui/components/Motion.kt both read these values.
+    Opening: the new screen grows in from motion_zoom_small and fades in, over the old one growing
+    to motion_zoom_large. Back reverses it: the top screen shrinks to motion_zoom_small and fades out.
+-->
 <resources>
-    <!-- A screen pushed on top rises from the bottom and fades in. -->
-    <integer name="motion_push_ms">300</integer>
-    <!-- Back reverses the push, a little faster. -->
-    <integer name="motion_pop_ms">250</integer>
-    <!-- Inbox, Library and Settings cross-fade into each other. -->
-    <integer name="motion_tab_ms">200</integer>
+    <integer name="motion_open_ms">300</integer>
+    <integer name="motion_close_ms">250</integer>
+    <item name="motion_zoom_small" type="dimen" format="float">0.92</item>
+    <item name="motion_zoom_large" type="dimen" format="float">1.05</item>
 </resources>

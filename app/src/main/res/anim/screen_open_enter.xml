@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Opening: the new screen grows in and fades in. Values in values/motion.xml. -->
+<set xmlns:android="http://schemas.android.com/apk/res/android"
+    android:duration="@integer/motion_open_ms"
+    android:interpolator="@android:interpolator/fast_out_slow_in"
+    android:shareInterpolator="true"
+    android:zAdjustment="top">
+    <scale
+        android:fromXScale="@dimen/motion_zoom_small"
+        android:fromYScale="@dimen/motion_zoom_small"
+        android:pivotX="50%"
+        android:pivotY="50%"
+        android:toXScale="1"
+        android:toYScale="1" />
+    <alpha
+        android:fromAlpha="0"
+        android:toAlpha="1" />
+</set>

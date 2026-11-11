@@ -27,7 +27,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
-import com.afsh.messages.helpers.ScreenMotion
 import com.afsh.messages.helpers.SearchRepository
 import com.afsh.messages.ui.search.SearchUiState
 import com.afsh.messages.ui.search.SearchFilter
@@ -110,7 +109,7 @@ import com.afsh.messages.ui.inbox.LibraryDestination
 
 class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
     // The root of the task: it opens with the launcher's motion and is never pushed.
-    override val screenMotion: ScreenMotion? = null
+    override val usesScreenMotion = false
 
     private val MAKE_DEFAULT_APP_REQUEST = 1
 
@@ -854,7 +853,7 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
     private fun launchSettings() {
         closeSearch()
         hideKeyboard()
-        startActivity(Intent(this, SettingsActivity::class.java), ScreenMotion.TAB.options(this))
+        startActivity(Intent(this, SettingsActivity::class.java))
     }
 
     companion object {
