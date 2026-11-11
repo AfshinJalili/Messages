@@ -55,6 +55,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.afsh.messages.R
 import com.afsh.messages.models.SearchResult
+import com.afsh.messages.ui.components.ImportNotice
 import com.afsh.messages.ui.AfshTheme
 import com.afsh.messages.ui.forContent
 import com.afsh.messages.ui.withContentFonts
@@ -160,6 +161,9 @@ fun SearchContent(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         item(key = "filters") { SearchFilters(state, onFilter) }
+        state.importProgress?.let { progress ->
+            item(key = "import") { ImportNotice(progress, Modifier.widthIn(max = ContentWidth).fillMaxWidth()) }
+        }
         when {
             state.showingHistory -> {
                 item(key = "recent-heading") { SearchHeading(stringResource(R.string.recent_searches)) }

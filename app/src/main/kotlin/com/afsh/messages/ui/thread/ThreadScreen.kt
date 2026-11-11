@@ -42,16 +42,9 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.expandHorizontally
-import androidx.compose.animation.shrinkHorizontally
-import androidx.compose.animation.core.FastOutLinearInEasing
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -124,15 +117,11 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
-import androidx.compose.ui.input.pointer.PointerEventPass
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
@@ -144,7 +133,6 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.onLongClick
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
@@ -173,10 +161,9 @@ import org.fossify.commons.models.SimpleContact
 import com.afsh.messages.R
 import com.afsh.messages.ui.components.DatePill
 import com.afsh.messages.ui.components.AnimatedBottomBar
-import com.afsh.messages.ui.components.SELECTION_ENTER_MS
-import com.afsh.messages.ui.components.SELECTION_EXIT_MS
-import com.afsh.messages.ui.components.SelectionCheck
 import com.afsh.messages.ui.components.SelectionIconAction
+import com.afsh.messages.ui.components.SelectableBubbleRow
+import com.afsh.messages.ui.components.longPressToSelect
 import com.afsh.messages.ui.components.keptWhileLeaving
 import com.afsh.messages.ui.components.messageBubbleShape
 import com.afsh.messages.extensions.getFileSizeFromUri
@@ -208,7 +195,6 @@ import kotlin.coroutines.resume
 private const val JUMP_BUTTON_ITEM_LIMIT = 20
 private const val LOAD_OLDER_THRESHOLD = 45
 private const val GROUPING_WINDOW_SECS = 60
-private const val BUBBLE_WIDTH_FRACTION = 0.8f
 private const val MAX_MEDIA_HEIGHT_RATIO = 3
 private const val STICKY_DATE_HIDE_DELAY_MS = 700L
 private const val STICKY_DATE_FADE_MS = 180
@@ -221,8 +207,6 @@ private val LiftGap = 12.dp
 private val LiftElevation = 6.dp
 private val LiftFade = 32.dp
 private val TargetSize = 48.dp
-// Keeps lines readable in landscape and on wide windows.
-private val MaxBubbleWidth = 520.dp
 
 const val THREAD_LIST_TAG = "thread_list"
 const val THREAD_JUMP_TAG = "thread_jump_to_latest"
@@ -743,52 +727,29 @@ private fun MessageRow(
         groupedAbove -> 4.dp
         else -> 12.dp
     }
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .padding(start = 16.dp, end = 16.dp, top = topGap),
-        horizontalAlignment = if (incoming) Alignment.Start else Alignment.End,
+    SelectableBubbleRow(
+        selecting = state.selecting,
+        checked = message.getStableId() in state.selected,
+        incoming = incoming,
+        onToggle = { onEvent(ThreadEvent.ToggleSelection(message)) },
+        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = topGap),
+        above = if (incoming && state.isGroup && !groupedAbove && message.senderName.isNotEmpty()) {
+            { shift ->
+                Text(
+                    message.senderName.uppercase(),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = shift.padding(start = 4.dp, bottom = 4.dp),
+                )
+            }
+        } else {
+            null
+        },
     ) {
-        if (incoming && state.isGroup && !groupedAbove && message.senderName.isNotEmpty()) {
-            Text(
-                message.senderName.uppercase(),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(start = 4.dp, bottom = 4.dp),
-            )
-        }
-        // While selecting, a check slides in at the start of every row and the bubbles make room for it.
-        // A tap anywhere on the row toggles it, so the target is not just the bubble.
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .then(
-                    if (state.selecting) {
-                        Modifier.pointerInput(message) { detectTapGestures { onEvent(ThreadEvent.ToggleSelection(message)) } }
-                    } else {
-                        Modifier
-                    },
-                ),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            AnimatedVisibility(
-                state.selecting,
-                enter = expandHorizontally(tween(SELECTION_ENTER_MS, easing = FastOutSlowInEasing), expandFrom = Alignment.Start) +
-                    fadeIn(tween(SELECTION_ENTER_MS, easing = FastOutSlowInEasing)),
-                exit = shrinkHorizontally(tween(SELECTION_EXIT_MS, easing = FastOutLinearInEasing), shrinkTowards = Alignment.Start) +
-                    fadeOut(tween(SELECTION_EXIT_MS, easing = FastOutLinearInEasing)),
-            ) {
-                SelectionCheck(message.getStableId() in state.selected, Modifier.padding(end = 12.dp))
-            }
-            BoxWithConstraints(Modifier.weight(1f), contentAlignment = if (incoming) Alignment.CenterStart else Alignment.CenterEnd) {
-                Column(Modifier.width(minOf(maxWidth * BUBBLE_WIDTH_FRACTION, MaxBubbleWidth)), horizontalAlignment = if (incoming) Alignment.Start else Alignment.End) {
-                    val groupedBelow = groupedWith(message, newer)
-                    Bubble(message, state, onEvent, groupedBelow, hidden = lifted == message.getStableId()) { onOpen(message, groupedBelow, it) }
-                }
-            }
-        }
+        val groupedBelow = groupedWith(message, newer)
+        Bubble(message, state, onEvent, groupedBelow, hidden = lifted == message.getStableId()) { onOpen(message, groupedBelow, it) }
     }
 }
 
@@ -881,41 +842,6 @@ private fun Bubble(
 }
 
 // The tail corner marks the last bubble of a run, on the sender's side.
-/**
- * Long press anywhere on a bubble selects it, including over a link, whose own handler would
- * otherwise take the gesture. Watches the Initial pass so it sees the press before the text does,
- * and swallows the release so the link or bubble tap does not fire as well.
- */
-@Composable
-private fun Modifier.longPressToSelect(label: String, onLongPress: () -> Unit): Modifier {
-    val haptics = LocalHapticFeedback.current
-    val action by rememberUpdatedState(onLongPress)
-    return semantics {
-        onLongClick(label) {
-            action()
-            true
-        }
-    }.pointerInput(Unit) {
-        awaitEachGesture {
-            val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
-            val endedEarly = withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
-                while (true) {
-                    val change = awaitPointerEvent(PointerEventPass.Initial).changes.firstOrNull { it.id == down.id } ?: break
-                    if (!change.pressed || change.isConsumed || (change.position - down.position).getDistance() > viewConfiguration.touchSlop) break
-                }
-            }
-            if (endedEarly == null) {
-                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                action()
-                do {
-                    val event = awaitPointerEvent(PointerEventPass.Initial)
-                    event.changes.forEach { it.consume() }
-                } while (event.changes.any { it.pressed })
-            }
-        }
-    }
-}
-
 /** Web links and email addresses open; standalone numbers copy, as in the View timeline. */
 @Composable
 internal fun MessageText(body: String, color: Color, linkColor: Color, links: Boolean, onCopy: (String) -> Unit) {

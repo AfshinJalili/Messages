@@ -93,6 +93,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.layout.Layout
+import com.afsh.messages.ui.components.ImportNotice
 import com.afsh.messages.ui.components.ScreenStack
 import com.afsh.messages.ui.components.LocalListPane
 import com.afsh.messages.ui.components.ConversationRow
@@ -102,6 +103,7 @@ import com.afsh.messages.ui.components.SwipeGesture
 import com.afsh.messages.ui.components.SwipeTone
 import com.afsh.messages.ui.components.SwipeableRow
 import com.afsh.messages.ui.components.TopDestination
+import com.afsh.messages.ui.components.BottomBarHeight
 import com.afsh.messages.ui.components.BottomBarSwitch
 import com.afsh.messages.ui.components.SelectionIconAction
 import com.afsh.messages.ui.components.keptWhileLeaving
@@ -265,8 +267,14 @@ private fun InboxList(
                 RefreshFailedNotice(onRetryRefresh, Modifier.widthIn(max = 640.dp).fillMaxWidth().animateItem())
             }
         }
+        state.importProgress?.let { progress ->
+            item(key = "import", contentType = "notice") {
+                ImportNotice(progress, Modifier.widthIn(max = 640.dp).fillMaxWidth().animateItem().padding(horizontal = 20.dp, vertical = 8.dp))
+            }
+        }
         when {
-            state.loading -> item(key = "loading") { LoadingState() }
+            // The import notice already shows progress, so a second bar would only repeat it.
+            state.loading -> if (state.importProgress == null) item(key = "loading") { LoadingState() }
             state.rows.isEmpty() -> item(key = "empty") { EmptyState(state.filter) }
             else -> sections.forEach { (section, rows) ->
                 item(key = "section-${section.name}", contentType = "section") {
@@ -684,7 +692,7 @@ private fun SelectionBar(state: InboxUiState, onAction: (InboxAction) -> Unit) {
             Modifier
                 .fillMaxWidth()
                 .windowInsetsPadding(WindowInsets.navigationBars)
-                .heightIn(min = 64.dp)
+                .heightIn(min = BottomBarHeight)
                 .padding(horizontal = 8.dp),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically,

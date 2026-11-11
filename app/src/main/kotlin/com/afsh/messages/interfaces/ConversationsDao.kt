@@ -60,7 +60,8 @@ interface ConversationsDao {
     @Query(
         """SELECT * FROM conversations WHERE $NOT_ALL_SPAM
         AND (title LIKE :pattern ESCAPE '\' OR phone_number LIKE :pattern ESCAPE '\')
-        AND EXISTS (SELECT 1 $LATEST_VISIBLE_MESSAGE)
+        AND (EXISTS (SELECT 1 $LATEST_VISIBLE_MESSAGE)
+            OR NOT EXISTS (SELECT 1 FROM messages WHERE messages.thread_id = conversations.thread_id))
         ORDER BY date DESC"""
     )
     fun searchPeople(pattern: String): List<Conversation>

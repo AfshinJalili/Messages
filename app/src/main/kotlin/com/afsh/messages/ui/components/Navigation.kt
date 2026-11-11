@@ -44,6 +44,10 @@ import androidx.compose.ui.unit.sp
 
 private val NavIconSize = 21.dp
 private val NavItemHeight = 64.dp
+private val NavBarVerticalPadding = 8.dp
+
+/** The navigation bar's height without insets; bars that replace it use the same so nothing jumps. */
+val BottomBarHeight = NavItemHeight + NavBarVerticalPadding * 2
 private val RailWidth = 96.dp
 private const val MAX_BADGE = 99
 private val BadgeTextSize = 11.sp
@@ -104,7 +108,7 @@ fun PrimaryNavigation(
                 Modifier
                     .fillMaxWidth()
                     .windowInsetsPadding(WindowInsets.navigationBars)
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .padding(horizontal = 16.dp, vertical = NavBarVerticalPadding)
                     .selectableGroup(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {

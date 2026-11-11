@@ -482,6 +482,7 @@ fun Context.getConversations(
     threadId: Long? = null,
     privateContacts: ArrayList<SimpleContact> = ArrayList(),
     failOnError: Boolean = false,
+    onProgress: ((done: Int, total: Int) -> Unit)? = null,
 ): ArrayList<Conversation> {
     val archiveAvailable = config.isArchiveAvailable
 
@@ -509,7 +510,7 @@ fun Context.getConversations(
     val sortOrder = "${Threads.DATE} DESC"
 
     val conversations = ArrayList<Conversation>()
-    val simpleContactHelper = SimpleContactsHelper(this)
+    val lookups = ThreadLookups(this, privateContacts, preload = threadId == null)
     val blockedNumbers = getBlockedNumbers()
     val unreadMap = getUnreadCountsByThread()
     val draftsByThread = draftsDB.getAll().associateBy { it.threadId }
@@ -521,6 +522,7 @@ fun Context.getConversations(
             selectionArgs,
             sortOrder
         ) { cursor ->
+            onProgress?.invoke(cursor.position, cursor.count)
             val id = cursor.getLongValue(Threads._ID)
             var snippet = cursor.getStringValue(Threads.SNIPPET) ?: ""
             if (snippet.isEmpty()) {
@@ -541,7 +543,7 @@ fun Context.getConversations(
             val rawIds = cursor.getStringValue(Threads.RECIPIENT_IDS)
             val recipientIds =
                 rawIds.split(" ").filter { it.areDigitsOnly() }.map { it.toInt() }.toMutableList()
-            val phoneNumbers = getThreadPhoneNumbers(recipientIds)
+            val phoneNumbers = recipientIds.mapTo(ArrayList()) { lookups.address(it) }
             if (phoneNumbers.isEmpty() || phoneNumbers.any {
                     isNumberBlocked(
                         it,
@@ -551,12 +553,9 @@ fun Context.getConversations(
                 return@queryCursorUnsafe
             }
 
-            val names = getThreadContactNames(phoneNumbers, privateContacts)
+            val names = phoneNumbers.map { lookups.name(it) }
             val title = TextUtils.join(", ", names.toTypedArray())
-            val photoUri =
-                if (phoneNumbers.size == 1) simpleContactHelper.getPhotoUriFromPhoneNumber(
-                    phoneNumbers.first()
-                ) else ""
+            val photoUri = if (phoneNumbers.size == 1) lookups.photoUri(phoneNumbers.first()) else ""
             val isGroupConversation = phoneNumbers.size > 1
             val unreadCount = unreadMap[id] ?: 0
             val read = unreadCount == 0
@@ -595,6 +594,63 @@ fun Context.getConversations(
 
     conversations.sortByDescending { it.date }
     return conversations
+}
+
+/**
+ * Per-call caches for [getConversations]. Each thread used to cost one canonical-address query per
+ * recipient plus two contact lookups, so a first import of a few hundred threads took half a minute.
+ * Addresses now come from one query and each number is looked up once, for its name and photo together.
+ */
+private class ThreadLookups(
+    private val context: Context,
+    private val privateContacts: ArrayList<SimpleContact>,
+    preload: Boolean,
+) {
+    private val addresses: Map<Int, String>? = if (preload) loadAddresses() else null
+    private val contacts = HashMap<String, Pair<String, String>>()
+    private val canReadContacts = context.hasPermission(PERMISSION_READ_CONTACTS)
+
+    fun address(id: Int): String = addresses?.get(id) ?: context.getPhoneNumberFromAddressId(id)
+
+    /** Same order as [getThreadContactNames]: the system contact, then a private contact, then the number. */
+    fun name(number: String): String {
+        val name = contact(number).first
+        if (name.isNotEmpty()) return name
+        return privateContacts.firstOrNull { it.doesHavePhoneNumber(number) }?.name ?: number
+    }
+
+    fun photoUri(number: String): String = contact(number).second
+
+    private fun contact(number: String): Pair<String, String> = contacts.getOrPut(number) {
+        if (!canReadContacts || number.isEmpty()) return@getOrPut "" to ""
+        val uri = Uri.withAppendedPath(PhoneLookup.CONTENT_FILTER_URI, Uri.encode(number))
+        try {
+            context.contentResolver.query(uri, arrayOf(PhoneLookup.DISPLAY_NAME, PhoneLookup.PHOTO_URI), null, null, null)?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    return@getOrPut cursor.getStringValue(PhoneLookup.DISPLAY_NAME).orEmpty() to
+                        cursor.getStringValue(PhoneLookup.PHOTO_URI).orEmpty()
+                }
+            }
+        } catch (_: Exception) {
+        }
+        "" to ""
+    }
+
+    private fun loadAddresses(): Map<Int, String>? = try {
+        val uri = Uri.withAppendedPath(MmsSms.CONTENT_URI, "canonical-addresses")
+        val map = HashMap<Int, String>()
+        context.contentResolver.query(uri, arrayOf(Mms._ID, Mms.Addr.ADDRESS), null, null, null)?.use { cursor ->
+            val idColumn = cursor.getColumnIndexOrThrow(Mms._ID)
+            val addressColumn = cursor.getColumnIndexOrThrow(Mms.Addr.ADDRESS)
+            while (cursor.moveToNext()) {
+                map[cursor.getInt(idColumn)] = cursor.getString(addressColumn).orEmpty()
+            }
+        }
+        map
+    } catch (_: Exception) {
+        // Some providers refuse an unfiltered query; fall back to one query per recipient.
+        null
+    }
 }
 
 private fun Context.queryCursorUnsafe(
@@ -1149,6 +1205,7 @@ fun Context.markThreadMessagesRead(threadId: Long) {
 
     messagesDB.markThreadRead(threadId)
     conversationsDB.markRead(threadId)
+    config.clearManuallyUnread(threadId)
     EventBus.getDefault().post(Events.ConversationReadStateChanged(threadId, true))
 }
 
@@ -1158,20 +1215,55 @@ private fun Context.notSpamSelection(threadId: Long): String {
     return if (spamIds.isEmpty()) "" else " AND ${Sms._ID} NOT IN (${spamIds.joinToString()})"
 }
 
+/**
+ * Marks only the newest received message unread, as Google Messages does, so the inbox shows a dot
+ * rather than the size of the whole thread. The message is remembered as manually unread, so the
+ * thread opens without a "new messages" divider above it.
+ */
 fun Context.markThreadMessagesUnread(threadId: Long) {
-    val notSpam = notSpamSelection(threadId)
-    arrayOf(Sms.CONTENT_URI, Mms.CONTENT_URI).forEach { uri ->
-        val contentValues = ContentValues().apply {
+    val id = threadId.toString()
+    var newestSms: Pair<Long, Long>? = null // id to date in ms
+    queryCursor(
+        uri = Sms.CONTENT_URI,
+        projection = arrayOf(Sms._ID, Sms.DATE),
+        selection = "${Sms.THREAD_ID}=? AND ${Sms.TYPE}=${Sms.MESSAGE_TYPE_INBOX}${notSpamSelection(threadId)}",
+        selectionArgs = arrayOf(id),
+        sortOrder = "${Sms.DATE} DESC LIMIT 1",
+        showErrors = false,
+    ) { newestSms = it.getLongValue(Sms._ID) to it.getLongValue(Sms.DATE) }
+
+    var newestMms: Pair<Long, Long>? = null // id to date in ms
+    queryCursor(
+        uri = Mms.CONTENT_URI,
+        projection = arrayOf(Mms._ID, Mms.DATE),
+        selection = "${Mms.THREAD_ID}=? AND ${Mms.MESSAGE_BOX}=${Mms.MESSAGE_BOX_INBOX}",
+        selectionArgs = arrayOf(id),
+        sortOrder = "${Mms.DATE} DESC LIMIT 1",
+        showErrors = false,
+    ) { newestMms = it.getLongValue(Mms._ID) to it.getLongValue(Mms.DATE) * 1000 }
+
+    val sms = newestSms
+    val mms = newestMms
+    val target = if (mms != null && (sms == null || mms.second > sms.second)) {
+        mms.first to true
+    } else {
+        sms?.let { it.first to false }
+    }
+    if (target != null) {
+        val (messageId, isMms) = target
+        val uri = if (isMms) Mms.CONTENT_URI else Sms.CONTENT_URI
+        val values = ContentValues().apply {
             put(Sms.READ, 0)
             put(Sms.SEEN, 0)
         }
-        val selection = "${Sms.THREAD_ID} = ?" + if (uri == Sms.CONTENT_URI) notSpam else ""
-        val selectionArgs = arrayOf(threadId.toString())
-        contentResolver.update(uri, contentValues, selection, selectionArgs)
+        contentResolver.update(uri, values, "${Sms._ID}=?", arrayOf(messageId.toString()))
+        messagesDB.markUnread(messageId, isMms)
+        config.setManuallyUnread(threadId, messageId, isMms)
     }
-    conversationsDB.markUnread(threadId)
-    EventBus.getDefault().post(Events.ConversationReadStateChanged(threadId, false))
-} 
+    val count = getUnreadCountsByThread()[threadId] ?: 0
+    if (count > 0) conversationsDB.updateUnreadCount(threadId, count) else conversationsDB.markUnread(threadId)
+    EventBus.getDefault().post(Events.ConversationReadStateChanged(threadId, false, count.takeIf { it > 0 }))
+}
 
 @SuppressLint("NewApi")
 fun Context.getThreadId(address: String): Long {
