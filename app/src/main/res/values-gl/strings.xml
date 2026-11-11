@@ -30,7 +30,6 @@
     <string name="new_message">Nova mensaxe</string>
     <string name="mark_as_read">Marcar como lida</string>
     <string name="mark_as_unread">Marcar como non lida</string>
-    <string name="delete_whole_conversation_confirmation">Ten a certeza de que desexa eliminar todas as mensaxes desta conversa\?</string>
     <plurals name="delete_conversations">
         <item quantity="one">%d conversa</item>
         <item quantity="other">%d conversas</item>
@@ -73,7 +72,6 @@
     <string name="restore">Restablecer</string>
     <string name="restore_all_messages">Restablecer todas as mensaxes</string>
     <string name="empty_recycle_bin_messages_confirmation">Tes certeza de querer baleirar o Caldeiro do Lixo? Vanse eliminar definitivamente as mensaxes.</string>
-    <string name="restore_confirmation">Tes certeza de querer restablecer %s?</string>
     <string name="messages">Mensaxes</string>
     <string name="export_messages">Exportar mensaxes</string>
     <string name="export_sms">Exportar SMS</string>

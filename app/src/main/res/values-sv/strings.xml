@@ -42,8 +42,6 @@
     <string name="restore">Återställ</string>
     <string name="restore_all_messages">Återställ alla meddelanden</string>
     <string name="empty_recycle_bin_messages_confirmation">Är du säker på att du vill tömma papperskorgen\? Meddelandena tas bort permanent.</string>
-    <string name="delete_whole_conversation_confirmation">Är du säker på att du vill ta bort alla meddelanden i den här konversationen\?</string>
-    <string name="restore_confirmation">Är du säker på att du vill återställa %s\?</string>
     <plurals name="delete_conversations">
         <item quantity="one">%d konversation</item>
         <item quantity="other">%d konversationer</item>

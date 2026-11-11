@@ -41,8 +41,6 @@
     <string name="restore">Taasta</string>
     <string name="restore_all_messages">Taasta kõik sõnumid</string>
     <string name="empty_recycle_bin_messages_confirmation">Kas sa oled kindel, et soovid prügikasti tühjendada\? Kõik seal leiduvad sõnumid lähevad lõplikult kaduma.</string>
-    <string name="delete_whole_conversation_confirmation">Kas oled kindel, et soovid kustutada kõik selle vestluse sõnumid\?</string>
-    <string name="restore_confirmation">Kas sa oled kindel, et soovid taastada %s\?</string>
     <plurals name="delete_conversations">
         <item quantity="one">%d vestlus</item>
         <item quantity="other">%d vestlust</item>

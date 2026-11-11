@@ -43,8 +43,6 @@
     <string name="restore">Ripristina</string>
     <string name="restore_all_messages">Ripristina tutti i messaggi</string>
     <string name="empty_recycle_bin_messages_confirmation">Sei sicuro/a di voler svuotare il Cestino\? I messaggi andranno persi definitivamente.</string>
-    <string name="delete_whole_conversation_confirmation">Vuoi davvero eliminare tutti i messaggi di questa conversazione\?</string>
-    <string name="restore_confirmation">Sei sicuro/a di voler ripristinare %s\?</string>
     <plurals name="delete_conversations">
         <item quantity="one">%d conversazione</item>
         <item quantity="many">%d conversazioni</item>

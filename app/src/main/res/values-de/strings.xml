@@ -42,8 +42,6 @@
     <string name="restore">Wiederherstellen</string>
     <string name="restore_all_messages">Alle Nachrichten wiederherstellen</string>
     <string name="empty_recycle_bin_messages_confirmation">Soll wirklich der Papierkorb geleert werden? Die Nachrichten sind dann unwiederbringlich gelöscht.</string>
-    <string name="delete_whole_conversation_confirmation">Sollen wirklich alle Nachrichten dieser Unterhaltung gelöscht werden\?</string>
-    <string name="restore_confirmation">Soll wirklich %s wiederhergestellt werden?</string>
     <plurals name="delete_conversations">
         <item quantity="one">%d Unterhaltung</item>
         <item quantity="other">%d Unterhaltungen</item>

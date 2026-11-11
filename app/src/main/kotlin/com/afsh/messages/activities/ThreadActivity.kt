@@ -41,8 +41,6 @@ import androidx.core.net.toUri
 import androidx.documentfile.provider.DocumentFile
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import org.fossify.commons.dialogs.ConfirmationDialog
-import org.fossify.commons.dialogs.PermissionRequiredDialog
 import org.fossify.commons.extensions.applyColorFilter
 import org.fossify.commons.extensions.beGone
 import org.fossify.commons.extensions.beVisible
@@ -57,11 +55,11 @@ import org.fossify.commons.extensions.getMyContactsCursor
 import org.fossify.commons.extensions.getMyFileUri
 import org.fossify.commons.extensions.getProperPrimaryColor
 import org.fossify.commons.extensions.getProperTextColor
+import org.fossify.commons.extensions.getPhoneNumberTypeText
 import org.fossify.commons.extensions.hideKeyboard
 import org.fossify.commons.extensions.isDynamicTheme
 import org.fossify.commons.extensions.isVisible
 import org.fossify.commons.extensions.launchActivityIntent
-import org.fossify.commons.extensions.maybeShowNumberPickerDialog
 import org.fossify.commons.extensions.normalizeString
 import org.fossify.commons.extensions.notificationManager
 import org.fossify.commons.extensions.onTextChangeListener
@@ -191,8 +189,10 @@ import com.afsh.messages.helpers.EXTRA_VCARD_URI
 import org.fossify.commons.extensions.formatTime
 import org.fossify.commons.extensions.getTimeFormatWithSeconds
 import com.afsh.messages.ui.components.dayLabel
-import com.afsh.messages.ui.components.MessageDialog
-import com.afsh.messages.ui.components.showAfshDialog
+import com.afsh.messages.ui.components.Choice
+import com.afsh.messages.ui.components.choose
+import com.afsh.messages.ui.components.confirm
+import com.afsh.messages.ui.components.inform
 import com.afsh.messages.ui.components.showRenameDialog
 import com.afsh.messages.ui.message.DeliveryMark
 import com.afsh.messages.ui.media.MediaItem
@@ -1014,7 +1014,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
                     val currContacts =
                         (binding.addContactOrNumber.adapter as AutoCompleteTextViewAdapter).resultList
                     val selectedContact = currContacts[position]
-                    maybeShowNumberPickerDialog(selectedContact.phoneNumbers) { phoneNumber ->
+                    pickPhoneNumber(selectedContact.name, selectedContact.phoneNumbers) { phoneNumber ->
                         val contactWithSelectedNumber = selectedContact.copy(
                             phoneNumbers = arrayListOf(phoneNumber)
                         )
@@ -1403,14 +1403,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
                     launchViewIntent(it.uri, it.mimetype, it.filename)
                 }
             }
-            ComposerEvent.ReplyInfo -> showAfshDialog { dismiss ->
-                MessageDialog(
-                    title = getString(R.string.cannot_reply_title),
-                    text = getString(R.string.invalid_short_code_desc),
-                    dismissLabel = getString(org.fossify.commons.R.string.ok),
-                    onDismiss = dismiss,
-                )
-            }
+            ComposerEvent.ReplyInfo -> inform(getString(R.string.cannot_reply_title), getString(R.string.invalid_short_code_desc))
         }
     }
 
@@ -1448,13 +1441,13 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
             if (alarmManager.canScheduleExactAlarms()) {
                 callback()
             } else {
-                PermissionRequiredDialog(
-                    activity = this,
-                    textId = org.fossify.commons.R.string.allow_alarm_scheduled_messages,
-                    positiveActionCallback = {
-                        openRequestExactAlarmSettings(BuildConfig.APPLICATION_ID)
-                    },
-                )
+                confirm(
+                    title = getString(org.fossify.commons.R.string.permission_required),
+                    explanation = getString(org.fossify.commons.R.string.allow_alarm_scheduled_messages),
+                    confirmLabel = getString(R.string.open_settings),
+                ) {
+                    openRequestExactAlarmSettings(BuildConfig.APPLICATION_ID)
+                }
             }
         } else {
             callback()
@@ -1570,13 +1563,13 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
 
     private fun blockNumber() {
         val numbers = participants.getAddresses()
-        val numbersString = TextUtils.join(", ", numbers)
-        val question = String.format(
-            resources.getString(org.fossify.commons.R.string.block_confirmation),
-            numbersString
-        )
-
-        ConfirmationDialog(this, question) {
+        val names = conversation?.title ?: TextUtils.join(", ", numbers)
+        confirm(
+            title = getString(R.string.block_sender_title, names),
+            explanation = getString(R.string.block_sender_text),
+            confirmLabel = getString(R.string.block_sender),
+            destructive = true,
+        ) {
             ensureBackgroundThread {
                 // App-level block: new SMS from these numbers are stored and go to Spam.
                 numbers.forEach {
@@ -1587,9 +1580,26 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         }
     }
 
+    /** The contact's only number at once, or a choice between them; a contact with none says so. */
+    private fun pickPhoneNumber(name: String, numbers: List<PhoneNumber>, onPick: (PhoneNumber) -> Unit) = when (numbers.size) {
+        0 -> toast(org.fossify.commons.R.string.no_phone_number_found)
+        1 -> onPick(numbers.first())
+        else -> choose(
+            title = name,
+            choices = numbers.map { Choice(it, it.value, getPhoneNumberTypeText(it.type, it.label)) },
+            onChoose = onPick,
+        )
+    }
+
     private fun askConfirmDelete() {
         if (threadId in UndoDeletion.threads) return
-        ConfirmationDialog(this, getString(R.string.delete_whole_conversation_confirmation)) {
+        // The whole conversation is deleted for good (deleteConversation does not use the bin).
+        confirm(
+            title = resources.getQuantityString(R.plurals.delete_conversations_title, 1, 1),
+            explanation = resources.getQuantityString(R.plurals.delete_conversations_forever_text, 1),
+            confirmLabel = getString(R.string.delete_forever),
+            destructive = true,
+        ) {
             val deletedThread = threadId
             UndoDeletion.threads.add(deletedThread)
             threadItems = getThreadItems()
@@ -1616,7 +1626,11 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
     }
 
     private fun askConfirmRestoreAll() {
-        ConfirmationDialog(this, getString(R.string.restore_confirmation)) {
+        confirm(
+            title = getString(R.string.restore_conversation_title),
+            explanation = getString(R.string.restore_conversation_text),
+            confirmLabel = getString(R.string.restore),
+        ) {
             ensureBackgroundThread {
                 restoreAllMessagesFromRecycleBinForConversation(threadId)
                 runOnUiThread {

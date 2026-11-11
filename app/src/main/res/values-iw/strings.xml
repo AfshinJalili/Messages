@@ -24,7 +24,6 @@
     <string name="mark_as_read">סמן כנקרא</string>
     <string name="mark_as_unread">סמן כלא נקרא</string>
     <string name="me">אני</string>
-    <string name="delete_whole_conversation_confirmation">האם אתה בטוח שברצונך למחוק את כל ההודעות של השיחה הזו\?</string>
     <plurals name="delete_conversations">
         <item quantity="one">שיחה %d</item>
         <item quantity="two">%d שיחות</item>
@@ -73,7 +72,6 @@
     <string name="empty_archive_confirmation">האם אתה בטוח שברצונך לרוקן את הארכיון? כל השיחות בארכיון יאבדו לצמיתות.</string>
     <string name="restore">שחזור</string>
     <string name="restore_all_messages">שחזר את כל ההודעות</string>
-    <string name="restore_confirmation">האם אתה בטוח שברצונך לשחזר את %s?</string>
     <string name="send_on_enter">שלח הודעה בלחיצה על אנטר</string>
     <string name="unknown_error_occurred_sending_message">לא ניתן לשלוח הודעה, קוד שגיאה: %d</string>
     <string name="empty_destination_address">לא ניתן לשלוח הודעה למספר ריק</string>

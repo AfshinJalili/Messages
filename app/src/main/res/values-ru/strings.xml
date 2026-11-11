@@ -44,8 +44,6 @@
     <string name="restore">Восстановить</string>
     <string name="restore_all_messages">Восстановить все сообщения</string>
     <string name="empty_recycle_bin_messages_confirmation">Очистить корзину\? Сообщения в ней будут безвозвратно утрачены.</string>
-    <string name="delete_whole_conversation_confirmation">Удалить все сообщения в этой переписке\?</string>
-    <string name="restore_confirmation">Восстановить %s\?</string>
     <plurals name="delete_conversations">
         <item quantity="one">%d переписку</item>
         <item quantity="few">%d переписки</item>

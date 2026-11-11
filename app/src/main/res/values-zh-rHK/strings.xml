@@ -43,8 +43,6 @@
     <string name="restore">還原</string>
     <string name="restore_all_messages">還原所有訊息</string>
     <string name="empty_recycle_bin_messages_confirmation">您確定要清空回收筒嗎？訊息將會永久遺失。</string>
-    <string name="delete_whole_conversation_confirmation">您確定要刪除此對話中的所有訊息嗎？</string>
-    <string name="restore_confirmation">您確定要還原 %s 嗎？</string>
     <plurals name="delete_conversations">
         <item quantity="other">%d 個對話</item>
     </plurals>

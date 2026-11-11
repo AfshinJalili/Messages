@@ -42,8 +42,6 @@
     <string name="restore">Herstellen</string>
     <string name="restore_all_messages">Alle berichten herstellen</string>
     <string name="empty_recycle_bin_messages_confirmation">Alle berichten in de prullenbak permanent verwijderen\?</string>
-    <string name="delete_whole_conversation_confirmation">Alle berichten in dit gesprek verwijderen\?</string>
-    <string name="restore_confirmation">%s herstellen\?</string>
     <plurals name="delete_conversations">
         <item quantity="one">%d gesprek</item>
         <item quantity="other">%d gesprekken</item>

@@ -44,8 +44,6 @@
     <string name="restore">Przywróć</string>
     <string name="restore_all_messages">Przywróć wszystkie wiadomości</string>
     <string name="empty_recycle_bin_messages_confirmation">Czy opróżnić kosz\? Wiadomości zostaną utracone bezpowrotnie.</string>
-    <string name="delete_whole_conversation_confirmation">Czy usunąć wszystkie wiadomości z tej rozmowy\?</string>
-    <string name="restore_confirmation">Czy przywrócić %s\?</string>
     <plurals name="delete_conversations">
         <item quantity="one">%d rozmowę</item>
         <item quantity="few">%d rozmowy</item>

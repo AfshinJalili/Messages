@@ -32,7 +32,6 @@
     <string name="mark_as_read">Megjelölés olvasottként</string>
     <string name="mark_as_unread">Megjelölés olvasatlanként</string>
     <string name="me">Nekem</string>
-    <string name="delete_whole_conversation_confirmation">Biztos, hogy törli az összes üzenetet ebből a beszélgetésből\?</string>
     <plurals name="delete_conversations">
         <item quantity="one">%d beszélgetést</item>
         <item quantity="other">%d beszélgetéseket</item>
@@ -78,6 +77,5 @@
     <string name="empty_recycle_bin_messages_confirmation">Biztosan ki szeretné üríteni a Lomtárat? Az üzenetek véglegesen elvesznek.</string>
     <string name="app_launcher_name">Üzenetek</string>
     <string name="message_details">Üzenet részletei</string>
-    <string name="restore_confirmation">Biztosan vissza szeretné állítani %s-t?</string>
     <string name="unarchive">Archiválás visszavonása</string>
 </resources>

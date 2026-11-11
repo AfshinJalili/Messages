@@ -43,8 +43,6 @@
     <string name="restore">Restaurar</string>
     <string name="restore_all_messages">Restaurar todos los mensajes</string>
     <string name="empty_recycle_bin_messages_confirmation">¿Estás seguro de que quieres vaciar la papelera de reciclaje\? Los mensajes se perderán definitivamente.</string>
-    <string name="delete_whole_conversation_confirmation">¿Estás seguro que quieres eliminar todos los mensajes en esta conversación\?</string>
-    <string name="restore_confirmation">¿Estás seguro de que quieres restaurar %s\?</string>
     <plurals name="delete_conversations">
         <item quantity="one">%d conversación</item>
         <item quantity="many">%d conversaciones</item>

@@ -19,7 +19,6 @@
     <string name="new_message">Nauja žinutė</string>
     <string name="mark_as_read">Pažymėti kaip perskaitytą</string>
     <string name="mark_as_unread">Pažymėti kaip neskaitytą</string>
-    <string name="delete_whole_conversation_confirmation">Ar tikrai norite ištrinti visas šio pokalbio žinutes\?</string>
     <plurals name="delete_conversations">
         <item quantity="one">%d pokalbis</item>
         <item quantity="few">%d pokalbiai</item>

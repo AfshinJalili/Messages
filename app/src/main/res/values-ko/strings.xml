@@ -44,10 +44,8 @@
     <string name="reply">답장</string>
     <string name="unpin_conversation">고정 해제</string>
     <string name="conversation_name">대화명</string>
-    <string name="delete_whole_conversation_confirmation">이 대화의 메시지를 모두 삭제하시겠습니까?</string>
     <string name="empty_recycle_bin_messages_confirmation">휴지통을 비우시겠습니까? 모든 메시지가 영구적으로 삭제됩니다.</string>
     <string name="restore_all_messages">모든 메시지 복원</string>
-    <string name="restore_confirmation">%s를 복원하시겠습니까?</string>
     <string name="app_launcher_name">메시지</string>
     <string name="message_sending_error">\'%s\'에게 전송한 메시지가 전송되지 않았습니다</string>
     <string name="add_person">수신자 추가</string>

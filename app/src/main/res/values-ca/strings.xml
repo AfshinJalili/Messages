@@ -41,8 +41,6 @@
     <string name="restore">Restaura</string>
     <string name="restore_all_messages">Restaura tots els missatges</string>
     <string name="empty_recycle_bin_messages_confirmation">Segur que voleu buidar la paperera de reciclatge\? Els missatges es perdran definitivament.</string>
-    <string name="delete_whole_conversation_confirmation">Confirmeu que voleu suprimir tots els missatges d\'aquesta conversa\?</string>
-    <string name="restore_confirmation">Segur que voleu restaurar %s\?</string>
     <plurals name="delete_conversations">
         <item quantity="one">%d conversa</item>
         <item quantity="many">%d converses</item>

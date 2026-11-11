@@ -40,8 +40,6 @@
     <string name="restore">Врати</string>
     <string name="restore_all_messages">Врати све поруке</string>
     <string name="empty_recycle_bin_messages_confirmation">Да ли сте сигурни да желите испразнити канту за отпазке? Поруке ће бити трајно обрисане.</string>
-    <string name="delete_whole_conversation_confirmation">Да ли сте сигурни да желите да избришете све поруке ове конверзације\?</string>
-    <string name="restore_confirmation">Да ли сте сигурни да желите да вратите %s?</string>
     <plurals name="delete_conversations">
         <item quantity="one">%d разговор</item>
         <item quantity="few">%d разговорa</item>

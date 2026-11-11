@@ -74,14 +74,12 @@
     </plurals>
     <string name="sender_only">Seoltóir amháin</string>
     <string name="send_now">Seol anois</string>
-    <string name="delete_whole_conversation_confirmation">An bhfuil tú cinnte gur mhaith leat gach teachtaireacht den chomhrá seo a scriosadh?</string>
     <string name="archive">Cartlann</string>
     <string name="restore">Athchóirigh</string>
     <string name="restore_all_messages">Athchóirigh gach teachtaireacht</string>
     <string name="empty_recycle_bin_messages_confirmation">An bhfuil tú cinnte gur mhaith leat an Araid Athchúrsála a fholmhú? Caillfear na teachtaireachtaí go buan.</string>
     <string name="export_messages">Easpórtáil teachtaireachtaí</string>
     <string name="sender_and_message">Seoltóir agus teachtaireacht</string>
-    <string name="restore_confirmation">An bhfuil tú cinnte gur mhaith leat %s a chur ar ais?</string>
     <string name="lock_screen_visibility">Infheictheacht fógra scáileáin faoi ghlas</string>
     <string name="send_on_enter">Seol teachtaireacht nuair a bhrúnn tú Enter</string>
     <string name="enable_delivery_reports">Cumasaigh tuairiscí seachadta</string>

@@ -6,8 +6,6 @@
     <string name="no_archived_conversations">هیچ پیامی در بایگانی نیست</string>
     <string name="restore">بازیابی</string>
     <string name="restore_all_messages">بازیابی همه‌ی پیام‌ها</string>
-    <string name="delete_whole_conversation_confirmation">همه‌ی پیام‌های این گفت‌وگو حذف شود؟</string>
-    <string name="restore_confirmation">‏%s بازیابی شود؟</string>
     <plurals name="delete_conversations">
         <item quantity="one">‏%d گفت‌وگو</item>
         <item quantity="other">‏%d گفت‌وگو</item>
@@ -498,6 +496,8 @@
     <plurals name="restore_messages_text">
         <item quantity="other">به گفت‌وگوی خودشان برمی‌گردند.</item>
     </plurals>
+    <string name="restore_conversation_title">این گفت‌وگو بازیابی شود؟</string>
+    <string name="restore_conversation_text">پیام‌هایش به صندوق برمی‌گردند.</string>
 
     <!-- New message, new group and invalid number (05, 16, 42) -->
     <string name="new_message_subtitle">یک نفر را انتخاب کنید یا گروه بسازید</string>

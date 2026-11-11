@@ -51,7 +51,6 @@
     <string name="archive">Arhīvs</string>
     <string name="empty_archive_confirmation">Vai tiešām iztukšot arhīvu? Visas arhivētās sarunas tiks neatgriezeniski izdzēstas.</string>
     <string name="empty_recycle_bin_messages_confirmation">Vai tiešām iztukšot atkritni? Ziņojumi tiks neatgriezeniski zaudēti.</string>
-    <string name="restore_confirmation">Vai tiešām atjaunot %s?</string>
     <string name="lock_screen_visibility">Paziņojumu redzamība aizslēgšanas ekrānā</string>
     <string name="sender_and_message">Sūtītājs un ziņojums</string>
     <string name="sender_only">Tikai sūtītājs</string>
@@ -76,7 +75,6 @@
     <string name="new_message">Jauns ziņojums</string>
     <string name="send_now">Nosūtīt tagad</string>
     <string name="archived_conversations">Arhīvs</string>
-    <string name="delete_whole_conversation_confirmation">Vai tiešām izdzēst visus šīs sarunas ziņojumus?</string>
     <string name="me">Es</string>
     <string name="loading_messages">Ielādē ziņojumus…</string>
     <string name="scheduled_message">Ieplānots ziņojums</string>

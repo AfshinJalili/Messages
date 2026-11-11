@@ -21,7 +21,6 @@
     <string name="new_message">പുതിയ മെസ്സേജ്</string>
     <string name="mark_as_read">വായിച്ചതായി അടയാളപ്പെടുത്തുക</string>
     <string name="mark_as_unread">വായിച്ചിട്ടില്ലെന്ന് അടയാളപ്പെടുത്തുക</string>
-    <string name="delete_whole_conversation_confirmation">ഈ സംഭാഷണത്തിലെ എല്ലാ സന്ദേശങ്ങളും ഇല്ലാതാക്കണമെന്ന് തീർച്ചയാണോ\?</string>
     <plurals name="delete_conversations">
         <item quantity="one">%d സംഭാഷണം</item>
         <item quantity="other">%d സംഭാഷണങ്ങൾ</item>

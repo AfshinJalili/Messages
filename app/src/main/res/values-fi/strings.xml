@@ -42,8 +42,6 @@
     <string name="restore">Palauta</string>
     <string name="restore_all_messages">Palauta kaikki viestit</string>
     <string name="empty_recycle_bin_messages_confirmation">Haluatko tyhjentää Roskakorin\? Viestit menetetään pysyvästi.</string>
-    <string name="delete_whole_conversation_confirmation">Haluatko varmasti poistaa kaikki tämän keskustelun viestit\?</string>
-    <string name="restore_confirmation">Haluatko varmasti palauttaa %s?</string>
     <plurals name="delete_conversations">
         <item quantity="one">%d keskustelu</item>
         <item quantity="other">%d keskustelut</item>

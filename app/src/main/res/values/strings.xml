@@ -68,8 +68,6 @@
     <string name="restore_all_messages">Restore all messages</string>
     <string name="empty_recycle_bin_messages_confirmation">Are you sure you want to empty the Recycle Bin? The messages will be permanently lost.</string>
     <!-- Confirmation dialog -->
-    <string name="delete_whole_conversation_confirmation">Are you sure you want to delete all messages of this conversation?</string>
-    <string name="restore_confirmation">Are you sure you want to restore %s?</string>
     <!-- Are you sure you want to delete 5 conversations? -->
     <plurals name="delete_conversations">
         <item quantity="one">%d conversation</item>
@@ -527,6 +525,8 @@
         <item quantity="one">It goes back to its conversation.</item>
         <item quantity="other">They go back to their conversation.</item>
     </plurals>
+    <string name="restore_conversation_title">Restore this conversation?</string>
+    <string name="restore_conversation_text">Its messages go back to the inbox.</string>
 
     <!-- New message, new group and invalid number (05, 16, 42) -->
     <string name="new_message_subtitle">Choose one person or make a group</string>

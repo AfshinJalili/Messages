@@ -42,8 +42,6 @@
     <string name="restore">Obnovit</string>
     <string name="restore_all_messages">Obnovit všechny zprávy</string>
     <string name="empty_recycle_bin_messages_confirmation">Opravdu chcete vyprázdnit Koš\? Zprávy budou nenávratně ztraceny.</string>
-    <string name="delete_whole_conversation_confirmation">Opravdu chcete smazat všechny zprávy v této konverzaci\?</string>
-    <string name="restore_confirmation">Opravdu chcete obnovit %s\?</string>
     <plurals name="delete_conversations">
         <item quantity="one">%d konverzace</item>
         <item quantity="few">%d konverzace</item>

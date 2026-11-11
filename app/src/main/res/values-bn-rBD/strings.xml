@@ -59,8 +59,6 @@
     <string name="show_character_counter">বার্তা লেখার সময় একটি অক্ষর কাউন্টার দেখান</string>
     <string name="loading_messages">বার্তা লোড হচ্ছে…</string>
     <string name="conversation_details">কথোপকথনের বিবরণ</string>
-    <string name="delete_whole_conversation_confirmation">আপনি কি এই কথোপকথনের সমস্ত বার্তা মুছে ফেলার বিষয়ে নিশ্চিত?</string>
-    <string name="restore_confirmation">আপনি কি %s পুনরুদ্ধার করার বিষয়ে নিশ্চিত?</string>
     <plurals name="delete_messages">
         <item quantity="one">%d টি বার্তা</item>
         <item quantity="other">%d গুলো বার্তা</item>
