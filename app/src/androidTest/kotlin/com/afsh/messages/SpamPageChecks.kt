@@ -85,30 +85,31 @@ class SpamPageChecks {
         compose.onNodeWithText("Last chance", substring = true).performClick()
         check(events.last() == SpamEvent.Open(messages[1])) { "Events $events" }
 
-        // Long-press selects, as in a conversation; the bar acts on the selection and clears it.
+        // Long-press selects, as in a conversation; the icon-only bar acts on the selection and clears it.
         compose.onNodeWithText("Last chance", substring = true).performTouchInput { longClick() }
         compose.onNodeWithText(quantity(R.plurals.inbox_selected, 1)).assertExists()
-        compose.onNodeWithText(text(R.string.not_spam_short)).performClick()
-        check(events.last() == SpamEvent.NotSpam(listOf(messages[1]))) { "Events $events" }
         compose.onNodeWithText(text(R.string.not_spam_short)).assertDoesNotExist()
+        compose.onNodeWithContentDescription(text(R.string.not_spam_short)).performClick()
+        check(events.last() == SpamEvent.NotSpam(listOf(messages[1]))) { "Events $events" }
+        compose.onNodeWithContentDescription(text(R.string.not_spam_short)).assertDoesNotExist()
 
         // While selecting, a tap adds to the selection instead of opening.
         compose.onNodeWithText("50% extra data", substring = true).performTouchInput { longClick() }
         compose.onNodeWithText("Last chance", substring = true).performClick()
         check(events.last() !is SpamEvent.Open) { "A tap while selecting must not open: $events" }
         compose.onNodeWithText(quantity(R.plurals.inbox_selected, 2)).assertExists()
-        compose.onNodeWithText(text(R.string.block_sender)).performClick()
+        compose.onNodeWithContentDescription(text(R.string.block_sender)).performClick()
         check(events.last() !is SpamEvent.BlockSender) { "Block must ask first" }
         compose.onNodeWithText(text(R.string.block_sender_title, "0912 418 6630, MCI offer")).assertExists()
-        compose.onAllNodesWithText(text(R.string.block_sender)).let { it[it.fetchSemanticsNodes().size - 1].performClick() }
+        compose.onNodeWithText(text(R.string.block_sender)).performClick()
         check(events.last() == SpamEvent.BlockSender(listOf(messages[1], messages[2]))) { "Events $events" }
 
         compose.onNodeWithText("Special offer", substring = true).performTouchInput { longClick() }
-        compose.onNodeWithText(text(org.fossify.commons.R.string.delete)).performClick()
+        compose.onNodeWithContentDescription(text(org.fossify.commons.R.string.delete)).performClick()
         check(events.last() !is SpamEvent.Delete) { "Delete must ask first" }
         compose.onNodeWithText(text(R.string.delete_forever)).performClick()
         check(events.last() == SpamEvent.Delete(listOf(messages[0]))) { "Events $events" }
-        compose.onNodeWithText(text(R.string.not_spam_short)).assertDoesNotExist()
+        compose.onNodeWithContentDescription(text(R.string.not_spam_short)).assertDoesNotExist()
     }
 
     @Test
