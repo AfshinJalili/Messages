@@ -13,7 +13,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.tooling.preview.Preview
@@ -28,11 +27,10 @@ import com.afsh.messages.ui.components.InfoPanel
 import com.afsh.messages.ui.components.PageAppBarAction
 import com.afsh.messages.ui.components.PageNavigation
 import com.afsh.messages.ui.components.PageScaffold
-import com.afsh.messages.ui.components.SelectionBar
+import com.afsh.messages.ui.components.PageSelection
 import com.afsh.messages.ui.components.SwipeGesture
 import com.afsh.messages.ui.components.SwipeTone
 import com.afsh.messages.ui.components.SwipeableRow
-import com.afsh.messages.ui.components.UpAction
 import com.afsh.messages.ui.inbox.InboxRow
 
 private val SideMargin = 20.dp
@@ -62,38 +60,37 @@ fun ArchiveScreen(
     modifier: Modifier = Modifier,
 ) {
     val unarchive = SwipeGesture(R.string.unarchive, R.drawable.ic_lucide_inbox, SwipeTone.PRIMARY)
-    val selectedCount = state.selected.size
     PageScaffold(
-        title = if (state.selecting) {
-            pluralStringResource(R.plurals.inbox_selected, selectedCount, selectedCount)
-        } else {
-            stringResource(R.string.archived_conversations)
-        },
+        title = stringResource(R.string.archived_conversations),
         modifier = modifier,
-        subtitle = stringResource(R.string.archive_subtitle).takeUnless { state.selecting },
-        onBack = { onEvent(if (state.selecting) ArchiveEvent.ClearSelection else ArchiveEvent.Back) },
-        upAction = if (state.selecting) UpAction.CLOSE else UpAction.BACK,
+        subtitle = stringResource(R.string.archive_subtitle),
+        onBack = { onEvent(ArchiveEvent.Back) },
         navigation = navigation,
         snackbarHostState = snackbarHostState,
+        selection = if (state.selecting) {
+            val selected = state.selectedConversations
+            PageSelection(
+                count = state.selected.size,
+                onClear = { onEvent(ArchiveEvent.ClearSelection) },
+                onSelectAll = { onEvent(ArchiveEvent.SelectAll) },
+                actions = listOf(
+                    BarAction(stringResource(R.string.unarchive), R.drawable.ic_lucide_inbox) { onEvent(ArchiveEvent.Unarchive(selected)) },
+                    BarAction(stringResource(org.fossify.commons.R.string.delete), R.drawable.ic_lucide_trash_2, destructive = true) {
+                        onEvent(ArchiveEvent.Delete(selected))
+                    },
+                ),
+            )
+        } else {
+            null
+        },
         actions = {
-            if (state.selecting) {
-                PageAppBarAction(
-                    R.drawable.ic_lucide_check_check,
-                    stringResource(org.fossify.commons.R.string.select_all),
-                    onClick = { onEvent(ArchiveEvent.SelectAll) },
-                )
-            } else if (state.rows.isNotEmpty()) {
+            if (state.rows.isNotEmpty()) {
                 PageAppBarAction(
                     R.drawable.ic_lucide_trash_2,
                     stringResource(R.string.empty_archive),
                     onClick = { onEvent(ArchiveEvent.DeleteAll) },
                 )
             }
-        },
-        bottomBar = if (state.selecting) {
-            { ArchiveSelectionBar(state, onEvent) }
-        } else {
-            null
         },
     ) {
         LazyColumn(
@@ -172,23 +169,6 @@ private fun ArchivedRow(
             actions = actions,
         )
     }
-}
-
-@Composable
-private fun ArchiveSelectionBar(state: ArchiveUiState, onEvent: (ArchiveEvent) -> Unit) {
-    val selected = state.selectedConversations
-    SelectionBar(
-        listOf(
-            BarAction(stringResource(R.string.unarchive), R.drawable.ic_lucide_inbox) {
-                onEvent(ArchiveEvent.Unarchive(selected))
-            },
-            BarAction(
-                stringResource(org.fossify.commons.R.string.delete),
-                R.drawable.ic_lucide_trash_2,
-                destructive = true,
-            ) { onEvent(ArchiveEvent.Delete(selected)) },
-        ),
-    )
 }
 
 @Preview(name = "19 · Archive")

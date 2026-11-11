@@ -1,6 +1,9 @@
 package com.afsh.messages.extensions
 
 import android.content.Context
+import android.content.res.Resources
+import android.provider.ContactsContract.CommonDataKinds.Phone
+import com.afsh.messages.ui.newmessage.PhoneChoice
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.provider.ContactsContract
@@ -50,3 +53,12 @@ fun SimpleContact.loadIcon(context: Context): IconCompat {
     }
 }
 
+
+/** The contact as the people picker shows it: one row per person, each distinct number labelled "Mobile", "Work"…. */
+fun SimpleContact.toPickerPerson(resources: Resources) = com.afsh.messages.ui.newmessage.Person(
+    name = name,
+    photoUri = photoUri,
+    phones = phoneNumbers.distinctBy { it.normalizedNumber }.map { phone ->
+        PhoneChoice(phone.normalizedNumber.ifEmpty { phone.value }, Phone.getTypeLabel(resources, phone.type, phone.label).toString())
+    },
+)

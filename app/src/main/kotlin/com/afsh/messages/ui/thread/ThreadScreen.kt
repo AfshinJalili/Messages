@@ -170,6 +170,7 @@ import com.afsh.messages.ui.components.SELECTION_ENTER_MS
 import com.afsh.messages.ui.components.SELECTION_EXIT_MS
 import com.afsh.messages.ui.components.BarAction
 import com.afsh.messages.ui.components.SelectionBar
+import com.afsh.messages.ui.components.selectionTitle
 import com.afsh.messages.ui.components.SelectableBubbleRow
 import com.afsh.messages.ui.components.longPressToSelect
 import com.afsh.messages.ui.components.keptWhileLeaving
@@ -239,7 +240,7 @@ fun ThreadHeader(state: ThreadUiState, onEvent: (ThreadEvent) -> Unit, modifier:
                     LabeledIconButton(stringResource(org.fossify.commons.R.string.close), onClick = { onEvent(ThreadEvent.ClearSelection) }) {
                         Icon(painterResource(org.fossify.commons.R.drawable.ic_cross_vector), contentDescription = null)
                     }
-                    Identity(header, pluralStringResource(R.plurals.inbox_selected, state.selected.size, state.selected.size), Modifier.weight(1f))
+                    Identity(header, selectionTitle(state.selected.size), Modifier.weight(1f))
                 }
 
                 state.searching -> {
@@ -1185,10 +1186,10 @@ private fun JumpToLatest(state: ThreadUiState, newestFirst: List<ThreadItem>, li
  * With no composer (Recycle Bin) it grows from the bottom edge like the other selection bars.
  */
 @Composable
-fun ThreadSelectionBar(state: ThreadUiState, overComposer: Boolean, onEvent: (ThreadEvent) -> Unit) {
+fun ThreadSelectionBar(state: ThreadUiState, overComposer: Boolean, onEvent: (ThreadEvent) -> Unit, modifier: Modifier = Modifier) {
     val enter = if (overComposer) slideInVertically(tween(SELECTION_ENTER_MS)) { it } + fadeIn(tween(SELECTION_ENTER_MS)) else BarEnter
     val exit = if (overComposer) slideOutVertically(tween(SELECTION_EXIT_MS)) { it } + fadeOut(tween(SELECTION_EXIT_MS)) else BarExit
-    AnimatedVisibility(state.selecting, enter = enter, exit = exit) {
+    AnimatedVisibility(state.selecting, modifier, enter = enter, exit = exit) {
         MessageSelectionBar(state, onEvent, minHeight = if (overComposer) 0.dp else BottomBarHeight)
     }
 }

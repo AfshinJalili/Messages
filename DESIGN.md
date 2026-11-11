@@ -42,6 +42,8 @@ Every dialog, popup and picker in the app is drawn by one component, `AfshDialog
 
 Use the dialog that fits before writing a new one: `ConfirmationDialog` (decide), `MessageDialog` (inform), `ChoiceDialog` (pick one), `RenameDialog` and `TextInputDialog` (type a value). An activity outside one Compose tree calls `confirm`, `inform`, `choose` or `showAfshDialog` from `DialogHost.kt`. Never use Compose `Dialog`, `AlertDialog`, `DatePickerDialog`, Android or Material dialog builders, or a Fossify Commons dialog. `tests/check_dialogs.py` fails on any of them; the one exception is Commons' `SecurityDialog` for app lock, until it has an AFSH version.
 
+Selection mode has one source of truth too. Every selection bar is `SelectionBar` in `ui/components/SelectionBar.kt`: icon-only (each label is the TalkBack description and the long-press tooltip, never visible text), extra actions behind More options, and exactly the navigation bar's height so swapping the two never moves the list. A page built on `PageScaffold` passes a `PageSelection` (count, clear, select all, actions) and gets the whole mode: the "n selected" app bar with Close and Select all, the bar rising over the navigation, and Back clearing the selection. The inbox band and the conversation header keep their own top bars but use the same `SelectionBar` and `selectionTitle`. People are picked with `PeoplePicker` (New group and the conversation's Manage people).
+
 Board `00b` holds navigation, composer, button hierarchy, filter chips, type scale, snackbar, attention notice, empty state, attachment tile, and concrete draft, sending, blocked, disabled, focused, and loading examples. Board `00` holds the palette, type, line language, and system principles. The phone views show light, dark, and RTL conversation variations. The RTL header reverses action order, right-aligns identity, and keeps the message entry at the right edge.
 
 Every numbered phone frame is a fixed 390 × 844 design viewport. Long lists and settings are represented as scrollable content regions in the concept; the exported frame shows the first viewport. Actual scroll physics, keyboard insets, animation, TalkBack traversal, and Android SMS transport behavior still require implementation and device testing.
@@ -62,9 +64,9 @@ The interface icons are editable vector paths from `lucide-static` 1.48.0 (ISC l
 The app bundles the design's fonts in `app/src/main/res/font/`, copied unmodified from [google/fonts](https://github.com/google/fonts) under the SIL Open Font License 1.1: Funnel Sans (variable), Atkinson Hyperlegible Regular and Bold, and Vazirmatn (variable). The Library nav icon `ic_library_vector.xml` is Lucide `layers` (ISC).
 
 
-## Legacy XML screens
+## Commons resources
 
-Screens not yet moved to Compose still use the Fossify Commons theme and this system. Android resources are the source of truth; this document does not keep a second palette or sizing table.
+Every screen is Compose and the app has no XML layouts. Fossify Commons still draws the app-lock dialog, widgets and system surfaces from these resources. Android resources are the source of truth; this document does not keep a second palette or sizing table.
 
 Android resources are the source of truth. This document describes how to use them; it does not maintain a second palette or a second sizing table.
 

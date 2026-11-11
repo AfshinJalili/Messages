@@ -10,6 +10,8 @@ import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onLast
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performImeAction
@@ -21,6 +23,9 @@ import com.afsh.messages.ui.newmessage.NewMessageUiState
 import com.afsh.messages.ui.newmessage.Person
 import com.afsh.messages.ui.newmessage.PhoneChoice
 import com.afsh.messages.ui.newmessage.Recipient
+import com.afsh.messages.ui.ltr
+import com.afsh.messages.ui.thread.ManagePeoplePanel
+import com.afsh.messages.ui.thread.ManagePeopleState
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -69,6 +74,36 @@ class NewMessageChecks {
         check(events.isEmpty()) { "An invalid number must not open a thread: $events" }
         compose.onNodeWithText(text(R.string.edit_number)).performClick()
         compose.onNodeWithText(text(R.string.new_message)).assertExists()
+    }
+
+    @Test
+    fun managePeopleKeepsTheFirstPersonAndAddsFromContactsAndNumbers() {
+        val added = mutableListOf<Recipient>()
+        val removed = mutableListOf<Recipient>()
+        var people by mutableStateOf(listOf(Recipient("5550142", "Mina Farahani"), Recipient("5550176", "Dad")))
+        compose.setContent {
+            DesignVariantContent(DesignVariant.LIGHT) {
+                ManagePeoplePanel(
+                    ManagePeopleState(open = true, people = people, contacts = state),
+                    onAdd = { added += it; people = people + it },
+                    onRemove = { removed += it; people = people - it },
+                    onDone = {},
+                    onAllowContacts = {},
+                )
+            }
+        }
+        // The conversation's own person has no remove button; the others do.
+        compose.onNodeWithContentDescription(text(R.string.remove_person, "Mina Farahani")).assertDoesNotExist()
+        compose.onNodeWithContentDescription(text(R.string.remove_person, "Dad")).performClick()
+        check(removed == listOf(Recipient("5550176", "Dad"))) { "Removed $removed" }
+
+        search.performTextInput("Nadia")
+        compose.onAllNodesWithText("Nadia").onLast().performClick()
+        check(added.last() == Recipient("5550133", "Nadia")) { "Added $added" }
+
+        search.performTextInput("0912 555 0100")
+        compose.onNodeWithText(text(R.string.add_number, ltr("0912 555 0100"))).performClick()
+        check(added.last() == Recipient("0912 555 0100", "0912 555 0100")) { "Added $added" }
     }
 
     @Test

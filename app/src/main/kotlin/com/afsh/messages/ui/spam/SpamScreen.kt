@@ -9,7 +9,6 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -51,8 +50,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.semantics.selected
 import com.afsh.messages.ui.components.BarAction
 import com.afsh.messages.ui.components.SelectableBubbleRow
-import com.afsh.messages.ui.components.SelectionBar
-import com.afsh.messages.ui.components.UpAction
+import com.afsh.messages.ui.components.PageSelection
 import com.afsh.messages.ui.components.longPressToSelect
 import com.afsh.messages.models.SpamReviewMessage
 import com.afsh.messages.models.SpamWhy
@@ -165,55 +163,42 @@ fun SpamScreen(
     val chosen = remember(state.messages, selected) { state.messages.filter { it.id in selected } }
     val selecting = chosen.isNotEmpty()
     val clear = { selected = emptySet() }
-    BackHandler(enabled = selecting, onBack = clear)
     var confirmBlock by remember { mutableStateOf<List<SpamReviewMessage>?>(null) }
     var confirmDelete by remember { mutableStateOf<List<SpamReviewMessage>?>(null) }
     var confirmDeleteAll by remember { mutableStateOf(false) }
     PageScaffold(
-        title = if (selecting) {
-            pluralStringResource(R.plurals.inbox_selected, chosen.size, chosen.size)
-        } else {
-            stringResource(R.string.inbox_spam)
-        },
+        title = stringResource(R.string.inbox_spam),
         modifier = modifier,
-        subtitle = stringResource(R.string.spam_subtitle).takeUnless { selecting },
-        onBack = { if (selecting) clear() else onEvent(SpamEvent.Back) },
-        upAction = if (selecting) UpAction.CLOSE else UpAction.BACK,
+        subtitle = stringResource(R.string.spam_subtitle),
+        onBack = { onEvent(SpamEvent.Back) },
         navigation = navigation,
         snackbarHostState = snackbarHostState,
-        actions = {
-            when {
-                selecting -> PageAppBarAction(
-                    R.drawable.ic_lucide_check_check,
-                    stringResource(org.fossify.commons.R.string.select_all),
-                    onClick = { selected = state.messages.mapTo(HashSet()) { it.id } },
-                )
-
-                else -> {
-                    PageAppBarAction(R.drawable.ic_lucide_shield_ban, stringResource(R.string.block_rules), onClick = {
-                        onEvent(SpamEvent.OpenRules)
-                    })
-                    if (state.messages.isNotEmpty()) {
-                        PageAppBarAction(R.drawable.ic_lucide_trash_2, stringResource(R.string.clear_spam), onClick = {
-                            confirmDeleteAll = true
-                        })
-                    }
-                }
-            }
-        },
-        bottomBar = if (selecting) {
-            {
-                SpamSelectionBar(
-                    onNotSpam = {
+        selection = if (selecting) {
+            PageSelection(
+                count = chosen.size,
+                onClear = clear,
+                onSelectAll = { selected = state.messages.mapTo(HashSet()) { it.id } },
+                actions = listOf(
+                    BarAction(stringResource(R.string.not_spam_short), R.drawable.ic_lucide_inbox) {
                         clear()
                         onEvent(SpamEvent.NotSpam(chosen))
                     },
-                    onBlock = { confirmBlock = chosen },
-                    onDelete = { confirmDelete = chosen },
-                )
-            }
+                    BarAction(stringResource(R.string.block_sender), R.drawable.ic_lucide_ban, destructive = true) { confirmBlock = chosen },
+                    BarAction(stringResource(org.fossify.commons.R.string.delete), R.drawable.ic_lucide_trash_2, destructive = true) { confirmDelete = chosen },
+                ),
+            )
         } else {
             null
+        },
+        actions = {
+            PageAppBarAction(R.drawable.ic_lucide_shield_ban, stringResource(R.string.block_rules), onClick = {
+                onEvent(SpamEvent.OpenRules)
+            })
+            if (state.messages.isNotEmpty()) {
+                PageAppBarAction(R.drawable.ic_lucide_trash_2, stringResource(R.string.clear_spam), onClick = {
+                    confirmDeleteAll = true
+                })
+            }
         },
     ) {
         LazyColumn(
@@ -307,17 +292,6 @@ private val SelectionSaver = Saver<Set<Long>, LongArray>(
     save = { it.toLongArray() },
     restore = { it.toSet() },
 )
-
-@Composable
-private fun SpamSelectionBar(onNotSpam: () -> Unit, onBlock: () -> Unit, onDelete: () -> Unit) {
-    SelectionBar(
-        listOf(
-            BarAction(stringResource(R.string.not_spam_short), R.drawable.ic_lucide_inbox, onClick = onNotSpam),
-            BarAction(stringResource(R.string.block_sender), R.drawable.ic_lucide_ban, destructive = true, onClick = onBlock),
-            BarAction(stringResource(org.fossify.commons.R.string.delete), R.drawable.ic_lucide_trash_2, destructive = true, onClick = onDelete),
-        ),
-    )
-}
 
 /**
  * As in a conversation: the page opens at the newest message, or at the "New messages" divider
