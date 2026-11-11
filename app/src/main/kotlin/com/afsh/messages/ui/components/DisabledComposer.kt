@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.afsh.messages.R
 
@@ -43,11 +44,9 @@ fun DisabledComposer(reason: String, modifier: Modifier = Modifier) {
         Box(Modifier.size(TargetSize), contentAlignment = Alignment.Center) {
             Icon(painterResource(R.drawable.ic_lucide_plus), contentDescription = null, tint = colors.onSurfaceVariant, modifier = Modifier.size(IconSize))
         }
-        Text(
+        DisabledComposerText(
             reason,
-            style = MaterialTheme.typography.bodyLarge,
-            color = colors.onSurfaceVariant,
-            modifier = Modifier
+            Modifier
                 .weight(1f)
                 .clip(MaterialTheme.shapes.medium)
                 .background(colors.surface)
@@ -63,4 +62,20 @@ fun DisabledComposer(reason: String, modifier: Modifier = Modifier) {
             Icon(painterResource(R.drawable.ic_lucide_send), contentDescription = null, tint = colors.onSurfaceVariant, modifier = Modifier.size(IconSize))
         }
     }
+}
+
+/**
+ * The text of every switched-off composer: one line, cut with an ellipsis, so large fonts never
+ * make the composer grow. TalkBack still reads the whole text.
+ */
+@Composable
+fun DisabledComposerText(text: String, modifier: Modifier = Modifier) {
+    Text(
+        text,
+        style = MaterialTheme.typography.bodyLarge,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        modifier = modifier,
+    )
 }

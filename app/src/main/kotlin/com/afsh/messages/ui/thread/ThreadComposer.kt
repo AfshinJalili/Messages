@@ -93,6 +93,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.afsh.messages.R
 import com.afsh.messages.ui.components.DisabledComposer
+import com.afsh.messages.ui.components.DisabledComposerText
 import com.afsh.messages.extensions.isImageMimeType
 import com.afsh.messages.extensions.isVCardMimeType
 import com.afsh.messages.extensions.isVideoMimeType
@@ -301,7 +302,7 @@ private fun ReplyDisabledField(onEvent: (ComposerEvent) -> Unit, modifier: Modif
             .padding(horizontal = 16.dp, vertical = 15.dp),
         contentAlignment = Alignment.CenterStart,
     ) {
-        Text(stringResource(R.string.composer_cant_reply), style = MaterialTheme.typography.bodyLarge, color = colors.onSurfaceVariant)
+        DisabledComposerText(stringResource(R.string.composer_cant_reply))
     }
 }
 
