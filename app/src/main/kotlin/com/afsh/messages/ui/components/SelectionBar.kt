@@ -19,7 +19,6 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -31,7 +30,6 @@ import androidx.compose.material3.rememberTooltipState
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import com.afsh.messages.R
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -48,17 +46,23 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.union
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.MenuDefaults
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
-private val ActionHeight = 64.dp
-private val ActionIconSize = 22.dp
 private val CheckSize = 24.dp
 private val TargetSize = 48.dp
 
@@ -156,47 +160,54 @@ fun SelectionCheck(checked: Boolean, modifier: Modifier = Modifier) {
 @Immutable
 data class BarAction(val label: String, val icon: Int, val destructive: Boolean = false, val onClick: () -> Unit)
 
-/** The bar that replaces the navigation while rows are selected (41 · selection mode). */
+/**
+ * The bar that replaces the navigation (or the composer) while rows are selected (41 · selection mode).
+ * The one selection bar for every screen. Icon-only: each action names itself to TalkBack and in a
+ * long-press tooltip. [overflow] actions sit behind a "More options" menu. At its default [minHeight]
+ * it is exactly as tall as the navigation bar, so swapping the two never moves the list above.
+ */
 @Composable
-fun SelectionBar(actions: List<BarAction>, modifier: Modifier = Modifier) {
-    Surface(modifier, color = MaterialTheme.colorScheme.surfaceContainer) {
+fun SelectionBar(
+    actions: List<BarAction>,
+    modifier: Modifier = Modifier,
+    overflow: List<BarAction> = emptyList(),
+    minHeight: Dp = BottomBarHeight,
+) {
+    val colors = MaterialTheme.colorScheme
+    Surface(modifier, color = colors.surfaceContainer) {
         Row(
             Modifier
                 .fillMaxWidth()
-                .windowInsetsPadding(WindowInsets.navigationBars)
-                .heightIn(min = BottomBarHeight)
-                .padding(8.dp),
+                .windowInsetsPadding(WindowInsets.navigationBars.union(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)))
+                .heightIn(min = minHeight)
+                .padding(horizontal = 8.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            actions.forEach { action -> SelectionAction(action, Modifier.weight(1f)) }
+            actions.forEach { action -> SelectionIconAction(action.icon, action.label, action.destructive, action.onClick) }
+            if (overflow.isNotEmpty()) {
+                var open by remember { mutableStateOf(false) }
+                Box {
+                    SelectionIconAction(R.drawable.ic_lucide_ellipsis_vertical, stringResource(org.fossify.commons.R.string.more_options)) { open = true }
+                    DropdownMenu(expanded = open, onDismissRequest = { open = false }, containerColor = colors.surfaceContainer, shape = MaterialTheme.shapes.medium) {
+                        overflow.forEach { action ->
+                            DropdownMenuItem(
+                                text = { Text(action.label, style = MaterialTheme.typography.bodyMedium) },
+                                leadingIcon = { Icon(painterResource(action.icon), contentDescription = null, modifier = Modifier.size(20.dp)) },
+                                modifier = Modifier.heightIn(min = TargetSize),
+                                colors = MenuDefaults.itemColors(
+                                    textColor = if (action.destructive) colors.error else colors.onSurface,
+                                    leadingIconColor = if (action.destructive) colors.error else colors.onSurfaceVariant,
+                                ),
+                                onClick = {
+                                    open = false
+                                    action.onClick()
+                                },
+                            )
+                        }
+                    }
+                }
+            }
         }
-    }
-}
-
-@Composable
-private fun SelectionAction(action: BarAction, modifier: Modifier = Modifier) {
-    val colors = MaterialTheme.colorScheme
-    Column(
-        modifier
-            .heightIn(min = ActionHeight)
-            .clip(MaterialTheme.shapes.small)
-            .clickable(role = Role.Button, onClick = action.onClick)
-            .padding(4.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
-    ) {
-        Icon(
-            painterResource(action.icon),
-            contentDescription = null,
-            tint = if (action.destructive) colors.error else colors.primary,
-            modifier = Modifier.size(ActionIconSize),
-        )
-        Text(
-            action.label,
-            style = MaterialTheme.typography.labelSmall,
-            color = if (action.destructive) colors.error else colors.onSurface,
-            textAlign = TextAlign.Center,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-        )
     }
 }

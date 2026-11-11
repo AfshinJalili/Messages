@@ -168,7 +168,8 @@ import com.afsh.messages.ui.components.BarExit
 import com.afsh.messages.ui.components.BottomBarHeight
 import com.afsh.messages.ui.components.SELECTION_ENTER_MS
 import com.afsh.messages.ui.components.SELECTION_EXIT_MS
-import com.afsh.messages.ui.components.SelectionIconAction
+import com.afsh.messages.ui.components.BarAction
+import com.afsh.messages.ui.components.SelectionBar
 import com.afsh.messages.ui.components.SelectableBubbleRow
 import com.afsh.messages.ui.components.longPressToSelect
 import com.afsh.messages.ui.components.keptWhileLeaving
@@ -1188,58 +1189,22 @@ fun ThreadSelectionBar(state: ThreadUiState, overComposer: Boolean, onEvent: (Th
     val enter = if (overComposer) slideInVertically(tween(SELECTION_ENTER_MS)) { it } + fadeIn(tween(SELECTION_ENTER_MS)) else BarEnter
     val exit = if (overComposer) slideOutVertically(tween(SELECTION_EXIT_MS)) { it } + fadeOut(tween(SELECTION_EXIT_MS)) else BarExit
     AnimatedVisibility(state.selecting, enter = enter, exit = exit) {
-        SelectionBar(state, onEvent, minHeight = if (overComposer) 0.dp else BottomBarHeight)
+        MessageSelectionBar(state, onEvent, minHeight = if (overComposer) 0.dp else BottomBarHeight)
     }
 }
 
-/** Icon-only, like the conversation list's bar: each action names itself to TalkBack and in a long-press tooltip. */
 @Composable
-private fun SelectionBar(state: ThreadUiState, onEvent: (ThreadEvent) -> Unit, minHeight: Dp) {
+private fun MessageSelectionBar(state: ThreadUiState, onEvent: (ThreadEvent) -> Unit, minHeight: Dp) {
     val actions = remember(state.selected, state.items, state.starred) { selectionActions(state).splitForBar() }
     val (bar, overflow) = keptWhileLeaving(actions, empty = state.selected.isEmpty())
     val selected = state.selectedMessages
-    Surface(color = MaterialTheme.colorScheme.surfaceContainer) {
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .windowInsetsPadding(WindowInsets.navigationBars.union(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)))
-                .heightIn(min = minHeight)
-                .padding(horizontal = 8.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            bar.forEach { action ->
-                SelectionIconAction(action.icon, stringResource(action.label), destructive = action == MessageAction.DELETE) {
-                    onEvent(ThreadEvent.Act(action, selected))
-                }
-            }
-            if (overflow.isNotEmpty()) {
-                var open by remember { mutableStateOf(false) }
-                Box {
-                    SelectionIconAction(R.drawable.ic_lucide_ellipsis_vertical, stringResource(org.fossify.commons.R.string.more_options)) { open = true }
-                    DropdownMenu(expanded = open, onDismissRequest = { open = false }, containerColor = MaterialTheme.colorScheme.surfaceContainer, shape = MaterialTheme.shapes.medium) {
-                        overflow.forEach { action ->
-                            val danger = action == MessageAction.DELETE
-                            DropdownMenuItem(
-                                text = { Text(stringResource(action.label), style = MaterialTheme.typography.bodyMedium) },
-                                leadingIcon = { Icon(painterResource(action.icon), contentDescription = null, modifier = Modifier.size(20.dp)) },
-                                modifier = Modifier.heightIn(min = TargetSize),
-                                colors = MenuDefaults.itemColors(
-                                    textColor = if (danger) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
-                                    leadingIconColor = if (danger) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
-                                ),
-                                onClick = {
-                                    open = false
-                                    onEvent(ThreadEvent.Act(action, selected))
-                                },
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
+    val act = { action: MessageAction -> onEvent(ThreadEvent.Act(action, selected)) }
+    SelectionBar(bar.map { it.toBarAction(act) }, overflow = overflow.map { it.toBarAction(act) }, minHeight = minHeight)
 }
+
+@Composable
+private fun MessageAction.toBarAction(onAction: (MessageAction) -> Unit) =
+    BarAction(stringResource(label), icon, destructive = this == MessageAction.DELETE) { onAction(this) }
 
 private fun previewMessage(id: Long, body: String, incoming: Boolean, minutesAgo: Int, read: Boolean = true, type: Int? = null) = Message(
     id = id,
