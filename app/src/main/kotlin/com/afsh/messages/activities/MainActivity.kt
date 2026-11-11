@@ -52,6 +52,7 @@ import org.fossify.commons.helpers.PERMISSION_READ_SMS
 import org.fossify.commons.helpers.PERMISSION_SEND_SMS
 import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.commons.helpers.isQPlus
+import com.afsh.messages.App
 import com.afsh.messages.BuildConfig
 import com.afsh.messages.R
 import com.afsh.messages.ui.components.LocalListPane
@@ -380,6 +381,8 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
     }
 
     private fun initMessenger() {
+        // Contacts permission may have just been granted; the inbox's contact cache needs its observer.
+        (application as App).watchContacts()
         InboxRepository.setReconcileListener { status ->
             providerReconcileActive = status == ReconcileStatus.RUNNING
             when (status) {

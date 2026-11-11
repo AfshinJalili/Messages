@@ -13,6 +13,8 @@ androidx-constraintlayout = "2.2.2"
 androidx-swiperefreshlayout = "1.2.0"
 androidx-lifecycleprocess = "2.10.0"
 androidx-documentfile = "1.1.0"
+# Installs the baseline profile on sideloaded installs, where Play does not.
+androidx-profileinstaller = "1.4.1"
 # Also used by the commons module; declared because Compose pages use BackHandler.
 androidx-activity = "1.12.4"
 #Eventbus
@@ -64,6 +66,7 @@ androidx-constraintlayout = { module = "androidx.constraintlayout:constraintlayo
 androidx-lifecycle-process = { module = "androidx.lifecycle:lifecycle-process", version.ref = "androidx-lifecycleprocess" }
 androidx-swiperefreshlayout = { module = "androidx.swiperefreshlayout:swiperefreshlayout", version.ref = "androidx-swiperefreshlayout" }
 androidx-documentfile = { module = "androidx.documentfile:documentfile", version.ref = "androidx-documentfile" }
+androidx-profileinstaller = { module = "androidx.profileinstaller:profileinstaller", version.ref = "androidx-profileinstaller" }
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity" }
 androidx-window = { module = "androidx.window:window", version.ref = "androidx-window" }
 #Room

@@ -599,7 +599,8 @@ fun Context.getConversations(
 /**
  * Per-call caches for [getConversations]. Each thread used to cost one canonical-address query per
  * recipient plus two contact lookups, so a first import of a few hundred threads took half a minute.
- * Addresses now come from one query and each number is looked up once, for its name and photo together.
+ * Addresses now come from one query, and names and photos come from [MessagingCache.namePhoto], which
+ * outlives the call, so the reconcile that runs on every return to the inbox does not look them up again.
  */
 private class ThreadLookups(
     private val context: Context,
@@ -621,19 +622,12 @@ private class ThreadLookups(
 
     fun photoUri(number: String): String = contact(number).second
 
+    // The app-wide cache is cleared when contacts change, so a refresh after the first one makes no
+    // contact queries. A miss is cached as the number itself.
     private fun contact(number: String): Pair<String, String> = contacts.getOrPut(number) {
         if (!canReadContacts || number.isEmpty()) return@getOrPut "" to ""
-        val uri = Uri.withAppendedPath(PhoneLookup.CONTENT_FILTER_URI, Uri.encode(number))
-        try {
-            context.contentResolver.query(uri, arrayOf(PhoneLookup.DISPLAY_NAME, PhoneLookup.PHOTO_URI), null, null, null)?.use { cursor ->
-                if (cursor.moveToFirst()) {
-                    return@getOrPut cursor.getStringValue(PhoneLookup.DISPLAY_NAME).orEmpty() to
-                        cursor.getStringValue(PhoneLookup.PHOTO_URI).orEmpty()
-                }
-            }
-        } catch (_: Exception) {
-        }
-        "" to ""
+        val found = context.getNameAndPhotoFromPhoneNumber(number)
+        (if (found.name == number) "" else found.name) to found.photoUri.orEmpty()
     }
 
     private fun loadAddresses(): Map<Int, String>? = try {

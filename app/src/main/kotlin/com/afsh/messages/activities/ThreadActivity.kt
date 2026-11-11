@@ -305,6 +305,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
     private var conversation: Conversation? = null
     private var participants = ArrayList<SimpleContact>()
     private var privateContacts = ArrayList<SimpleContact>()
+    private var addContactFieldReady = false
     private var messages = ArrayList<Message>()
     private val availableSIMCards = ArrayList<SIMCard>()
     /** [Message.getStableId]s of failed messages whose Retry is in flight. */
@@ -1035,45 +1036,49 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
                 startInitialScroll()
             }
         }
+    }
 
+    /**
+     * The "add contact or number" field. It needs every contact on the phone, so it loads the first
+     * time the person opens it, not on every thread load and refresh.
+     */
+    private fun setupAddContactField() {
+        if (addContactFieldReady) return
+        addContactFieldReady = true
+        binding.addContactOrNumber.imeOptions = EditorInfo.IME_ACTION_NEXT
+        binding.addContactOrNumber.setOnItemClickListener { _, _, position, _ ->
+            val currContacts =
+                (binding.addContactOrNumber.adapter as AutoCompleteTextViewAdapter).resultList
+            val selectedContact = currContacts[position]
+            pickPhoneNumber(selectedContact.name, selectedContact.phoneNumbers) { phoneNumber ->
+                val contactWithSelectedNumber = selectedContact.copy(
+                    phoneNumbers = arrayListOf(phoneNumber)
+                )
+                addSelectedContact(contactWithSelectedNumber)
+            }
+        }
+        binding.addContactOrNumber.onTextChangeListener {
+            binding.confirmInsertedNumber.beVisibleIf(it.length > 2)
+        }
+        binding.confirmInsertedNumber.setOnClickListener {
+            val number = binding.addContactOrNumber.value
+            val phoneNumber = PhoneNumber(number, 0, "", number)
+            val contact = SimpleContact(
+                rawId = number.hashCode(),
+                contactId = number.hashCode(),
+                name = number,
+                photoUri = "",
+                phoneNumbers = arrayListOf(phoneNumber),
+                birthdays = ArrayList(),
+                anniversaries = ArrayList()
+            )
+            addSelectedContact(contact)
+        }
         SimpleContactsHelper(this).getAvailableContacts(false) { contacts ->
             contacts.addAll(privateContacts)
             runOnUiThread {
-                val adapter = AutoCompleteTextViewAdapter(this, contacts)
-                binding.addContactOrNumber.setAdapter(adapter)
-                binding.addContactOrNumber.imeOptions = EditorInfo.IME_ACTION_NEXT
-                binding.addContactOrNumber.setOnItemClickListener { _, _, position, _ ->
-                    val currContacts =
-                        (binding.addContactOrNumber.adapter as AutoCompleteTextViewAdapter).resultList
-                    val selectedContact = currContacts[position]
-                    pickPhoneNumber(selectedContact.name, selectedContact.phoneNumbers) { phoneNumber ->
-                        val contactWithSelectedNumber = selectedContact.copy(
-                            phoneNumbers = arrayListOf(phoneNumber)
-                        )
-                        addSelectedContact(contactWithSelectedNumber)
-                    }
-                }
-
-                binding.addContactOrNumber.onTextChangeListener {
-                    binding.confirmInsertedNumber.beVisibleIf(it.length > 2)
-                }
-            }
-        }
-
-        runOnUiThread {
-            binding.confirmInsertedNumber.setOnClickListener {
-                val number = binding.addContactOrNumber.value
-                val phoneNumber = PhoneNumber(number, 0, "", number)
-                val contact = SimpleContact(
-                    rawId = number.hashCode(),
-                    contactId = number.hashCode(),
-                    name = number,
-                    photoUri = "",
-                    phoneNumbers = arrayListOf(phoneNumber),
-                    birthdays = ArrayList(),
-                    anniversaries = ArrayList()
-                )
-                addSelectedContact(contact)
+                if (isDestroyed || isFinishing) return@runOnUiThread
+                binding.addContactOrNumber.setAdapter(AutoCompleteTextViewAdapter(this, contacts))
             }
         }
     }
@@ -1710,6 +1715,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
             hideKeyboard()
             binding.threadAddContacts.beGone()
         } else {
+            setupAddContactField()
             showSelectedContacts()
             binding.threadAddContacts.beVisible()
             binding.addContactOrNumber.requestFocus()

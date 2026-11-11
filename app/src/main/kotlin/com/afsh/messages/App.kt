@@ -25,18 +25,7 @@ class App : FossifyApp() {
         InboxRepository.init(this)
         ListDetail.install(this)
         config.applyCobaltDefaults()
-        if (hasPermission(PERMISSION_READ_CONTACTS)) {
-            listOf(
-                ContactsContract.Contacts.CONTENT_URI,
-                ContactsContract.Data.CONTENT_URI,
-                ContactsContract.DisplayPhoto.CONTENT_URI
-            ).forEach {
-                try {
-                    contentResolver.registerContentObserver(it, true, contactsObserver)
-                } catch (_: Exception) {
-                }
-            }
-        }
+        watchContacts()
 
         ensureBackgroundThread {
             rescheduleAllScheduledMessages()
@@ -48,6 +37,27 @@ class App : FossifyApp() {
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
         notificationHelper.createDefaultChannel()
+    }
+
+    private var watchingContacts = false
+
+    /**
+     * Clears the contact caches when contacts change. The inbox refresh relies on them, so this runs
+     * again once contacts permission is granted after launch.
+     */
+    fun watchContacts() {
+        if (watchingContacts || !hasPermission(PERMISSION_READ_CONTACTS)) return
+        watchingContacts = true
+        listOf(
+            ContactsContract.Contacts.CONTENT_URI,
+            ContactsContract.Data.CONTENT_URI,
+            ContactsContract.DisplayPhoto.CONTENT_URI
+        ).forEach {
+            try {
+                contentResolver.registerContentObserver(it, true, contactsObserver)
+            } catch (_: Exception) {
+            }
+        }
     }
 
     private val contactsObserver = object : ContentObserver(Handler(Looper.getMainLooper())) {
