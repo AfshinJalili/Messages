@@ -50,6 +50,10 @@ jobs:
       - name: Build debug APK
         run: ./gradlew :app:assembleDebug --stacktrace
 
+      # R8 runs only in release builds; catch its failures here rather than on main.
+      - name: Check release build
+        run: ./gradlew :app:assembleRelease --stacktrace
+
       - name: Name the APK
         run: |
           short=${SHA::7}

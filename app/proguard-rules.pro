@@ -33,3 +33,7 @@
 -keep class org.fossify.commons.models.SimpleContact { *; }
 -keep class com.afsh.messages.models.Attachment { *; }
 -keep class com.afsh.messages.models.MessageAttachment { *; }
+
+# The API 37 SDK stubs no longer have FingerprintManager, which reprint's Marshmallow module (Commons
+# app lock) references. This keeps R8 as it was before the API 37 bump (#186).
+-dontwarn android.hardware.fingerprint.**
