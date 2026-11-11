@@ -2,6 +2,7 @@ package com.afsh.messages
 
 import android.provider.Telephony
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.SnackbarHostState
@@ -28,6 +29,7 @@ import com.afsh.messages.models.Message
 import com.afsh.messages.ui.AfshTheme
 import com.afsh.messages.ui.thread.MessageAction
 import com.afsh.messages.ui.thread.ThreadEvent
+import com.afsh.messages.ui.thread.ThreadSelectionBar
 import com.afsh.messages.ui.thread.ThreadTimeline
 import com.afsh.messages.ui.thread.ScrollRequest
 import com.afsh.messages.ui.thread.ThreadUiState
@@ -55,8 +57,10 @@ class MessageActionChecks {
 
     private fun show(state: ThreadUiState, textScale: Float = 1f, onEvent: (ThreadEvent) -> Unit) = compose.setContent {
         AfshTheme(dark = false, textScale = textScale) {
-            Box(Modifier.size(360.dp, 640.dp)) {
-                ThreadTimeline(state, SnackbarHostState(), onEvent)
+            // The selection bar lives under the timeline, in the composer's frame, as in ThreadActivity.
+            Column(Modifier.size(360.dp, 640.dp)) {
+                ThreadTimeline(state, SnackbarHostState(), onEvent, Modifier.weight(1f))
+                ThreadSelectionBar(state, overComposer = false, onEvent)
             }
         }
     }

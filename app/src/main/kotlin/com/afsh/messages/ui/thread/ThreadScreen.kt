@@ -42,6 +42,8 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -148,6 +150,7 @@ import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.text.util.LinkifyCompat
 import kotlinx.coroutines.Dispatchers
@@ -160,7 +163,11 @@ import org.fossify.commons.extensions.formatTime
 import org.fossify.commons.models.SimpleContact
 import com.afsh.messages.R
 import com.afsh.messages.ui.components.DatePill
-import com.afsh.messages.ui.components.AnimatedBottomBar
+import com.afsh.messages.ui.components.BarEnter
+import com.afsh.messages.ui.components.BarExit
+import com.afsh.messages.ui.components.BottomBarHeight
+import com.afsh.messages.ui.components.SELECTION_ENTER_MS
+import com.afsh.messages.ui.components.SELECTION_EXIT_MS
 import com.afsh.messages.ui.components.SelectionIconAction
 import com.afsh.messages.ui.components.SelectableBubbleRow
 import com.afsh.messages.ui.components.longPressToSelect
@@ -425,9 +432,6 @@ fun ThreadTimeline(
             JumpToLatest(state, newestFirst, listState, onEvent, Modifier.align(Alignment.BottomEnd))
             SnackbarHost(snackbarHostState, Modifier.align(Alignment.BottomCenter))
             lifted?.let { lift -> LiftOverlay(lift, sheetOpen, sheetTop, state, onDim, onGone = { if (lifted === lift) lifted = null }) }
-        }
-        AnimatedBottomBar(state.selecting) {
-            SelectionBar(state, onEvent)
         }
     }
     val lift = lifted
@@ -1174,9 +1178,23 @@ private fun JumpToLatest(state: ThreadUiState, newestFirst: List<ThreadItem>, li
     }
 }
 
+/**
+ * The selection bar, drawn in the composer's frame. Over the composer it fills the frame, so both are the same
+ * height and the timeline above never moves: the bar rises over the composer while the composer sinks under it.
+ * With no composer (Recycle Bin) it grows from the bottom edge like the other selection bars.
+ */
+@Composable
+fun ThreadSelectionBar(state: ThreadUiState, overComposer: Boolean, onEvent: (ThreadEvent) -> Unit) {
+    val enter = if (overComposer) slideInVertically(tween(SELECTION_ENTER_MS)) { it } + fadeIn(tween(SELECTION_ENTER_MS)) else BarEnter
+    val exit = if (overComposer) slideOutVertically(tween(SELECTION_EXIT_MS)) { it } + fadeOut(tween(SELECTION_EXIT_MS)) else BarExit
+    AnimatedVisibility(state.selecting, enter = enter, exit = exit) {
+        SelectionBar(state, onEvent, minHeight = if (overComposer) 0.dp else BottomBarHeight)
+    }
+}
+
 /** Icon-only, like the conversation list's bar: each action names itself to TalkBack and in a long-press tooltip. */
 @Composable
-private fun SelectionBar(state: ThreadUiState, onEvent: (ThreadEvent) -> Unit) {
+private fun SelectionBar(state: ThreadUiState, onEvent: (ThreadEvent) -> Unit, minHeight: Dp) {
     val actions = remember(state.selected, state.items, state.starred) { selectionActions(state).splitForBar() }
     val (bar, overflow) = keptWhileLeaving(actions, empty = state.selected.isEmpty())
     val selected = state.selectedMessages
@@ -1185,7 +1203,7 @@ private fun SelectionBar(state: ThreadUiState, onEvent: (ThreadEvent) -> Unit) {
             Modifier
                 .fillMaxWidth()
                 .windowInsetsPadding(WindowInsets.navigationBars.union(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)))
-                .heightIn(min = 64.dp)
+                .heightIn(min = minHeight)
                 .padding(horizontal = 8.dp),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically,

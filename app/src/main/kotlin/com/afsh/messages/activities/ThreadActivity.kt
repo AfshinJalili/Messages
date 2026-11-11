@@ -209,6 +209,9 @@ import com.afsh.messages.ui.thread.ComposerState
 import com.afsh.messages.ui.thread.InitialScroll
 import com.afsh.messages.ui.thread.SimOption
 import com.afsh.messages.ui.thread.ThreadComposer
+import com.afsh.messages.ui.thread.ThreadSelectionBar
+import com.afsh.messages.ui.components.SELECTION_ENTER_MS
+import com.afsh.messages.ui.components.SELECTION_EXIT_MS
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import com.afsh.messages.ui.thread.MessageAction
@@ -510,10 +513,34 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         )
     }
 
-    // The selection bar takes the composer's place (design view 10). Gone, not empty, so its insets padding goes too.
+    /**
+     * The selection bar takes the composer's place in the same frame (design view 10). The composer stays laid out
+     * while it sinks and fades, so the frame keeps its height and the timeline does not move; it is hidden once
+     * covered, so TalkBack and touch skip it. Gone only when there is no composer at all.
+     */
     private fun updateComposerVisibility() {
-        binding.threadComposer.beVisibleIf(composer.visible && !ui.selecting)
+        val view = binding.threadComposer
+        if (!composer.visible) {
+            view.animate().cancel()
+            view.beGone()
+            return
+        }
+        val hide = ui.selecting
+        if (hide == composerHidden && view.visibility != View.GONE) return
+        composerHidden = hide
+        view.animate().cancel()
+        if (hide) {
+            view.animate()
+                .alpha(0f)
+                .translationY(view.height * COMPOSER_SINK)
+                .setDuration(SELECTION_ENTER_MS.toLong())
+                .withEndAction { view.visibility = View.INVISIBLE }
+        } else {
+            view.visibility = View.VISIBLE
+            view.animate().alpha(1f).translationY(0f).setDuration(SELECTION_EXIT_MS.toLong())
+        }
     }
+    private var composerHidden = false
 
     private fun setupCompose() {
         binding.threadHeader.setContent {
@@ -524,6 +551,11 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         binding.threadTimeline.setContent {
             AfshTheme(dark = darkTheme, textScale = textScale) {
                 ThreadTimeline(uiState.value, snackbarHost, ::onEvent, onDim = ::dimHeader)
+            }
+        }
+        binding.threadSelectionBar.setContent {
+            AfshTheme(dark = darkTheme, textScale = textScale) {
+                ThreadSelectionBar(uiState.value, overComposer = composerState.value.visible, ::onEvent)
             }
         }
         binding.threadComposer.setContent {
@@ -2434,6 +2466,8 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         // SmsMessage code units left in the current part before the counter appears.
         private const val SMS_COUNTER_THRESHOLD = 20
         private const val OPAQUE = 255
+        /** How far, as a share of its height, the composer sinks while the selection bar rises over it. */
+        private const val COMPOSER_SINK = 0.5f
         private const val SAVED_COMPOSER_TEXT = "composer_text"
         private const val SAVED_NEW_ON_OPEN = "new_on_open"
         private const val SAVED_COMPOSER_ATTACHMENTS = "composer_attachments"
