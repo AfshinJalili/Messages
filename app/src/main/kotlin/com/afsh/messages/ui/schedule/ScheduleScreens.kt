@@ -200,7 +200,7 @@ private fun DateChoice(millis: Long, now: Long, onChange: (Long) -> Unit) {
                 override fun isSelectableDate(utcTimeMillis: Long) = utcTimeMillis >= startOfToday
             },
         )
-        val pick = {
+        val pick: () -> Unit = {
             calendarOpen = false
             pickerState.selectedDateMillis?.let { utc ->
                 val picked = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply { timeInMillis = utc }
