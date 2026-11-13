@@ -9,6 +9,7 @@ This file is the single source of truth for how the project is run. Update it in
 - Build: `./gradlew :app:assembleDebug :app:assembleDebugAndroidTest` (one variant; no flavors).
 - Install: `adb install -r` both APKs from `app/build/outputs/apk`. The debug app is `com.afsh.messages.debug`.
 - Instrumented class: `adb shell am instrument --user 0 -w -e class com.afsh.messages.<Class> com.afsh.messages.debug.test/androidx.test.runner.AndroidJUnitRunner`. Read the `OK (n tests)` line; the exit code does not show failures. Wake and unlock the phone first.
+- Unit tests: `./gradlew :app:testDebugUnitTest` (JVM, in `app/src/test`). State holders such as `ThreadStateHolder` are tested here, through their interface with a fake host.
 - Host checks: `python3 tests/check_design_tokens.py` (no inline colors or opacity), `python3 tests/check_inbox_database.py` (inbox SQL against the Room schema), `python3 tests/check_dialogs.py` (every dialog uses `AfshDialog`; see Dialogs in `DESIGN.md`).
 - Icons: `python3 tools/export_icon.py`.
 - Release signing: `./gradlew :app:assembleRelease` signs only when `AFSH_STORE_FILE`, `AFSH_STORE_PASSWORD`, `AFSH_KEY_ALIAS` and `AFSH_KEY_PASSWORD` are set in `~/.gradle/gradle.properties` or the environment. Make the key once with `keytool -genkeypair -v -keystore ~/keys/afsh.jks -alias afsh -keyalg RSA -keysize 4096 -validity 10000`, keep it and its passwords outside the repo and backed up, and never commit a keystore (`*.jks` and `*.keystore` are git-ignored). Losing the key means updates need an uninstall.

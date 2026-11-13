@@ -25,6 +25,9 @@ python3 tests/check_dialogs.py > "$out/dialogs.txt" 2>&1 || { failed+=(dialogs);
 echo "== build"
 ./gradlew -q :app:assembleDebug :app:assembleDebugAndroidTest
 
+echo "== unit tests"
+./gradlew -q :app:testDebugUnitTest || failed+=(unit-tests)
+
 emulators() { adb devices | awk '/^emulator-[0-9]+\tdevice/{print $1}'; }
 matching() { for e in $(emulators); do [ "$(adb -s "$e" emu avd name 2>/dev/null | head -n1 | tr -d '\r')" = "$AVD" ] && echo "$e"; done; true; }
 serial=$(matching | head -n1)
