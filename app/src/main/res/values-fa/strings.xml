@@ -63,7 +63,7 @@
     <string name="forward_message">ارسال به دیگری</string>
     <string name="compress_error">امکان فشرده‌سازی تصویر به اندازه‌ی انتخاب‌شده وجود ندارد</string>
     <string name="new_conversation">گفت‌وگوی تازه</string>
-    <string name="show_character_counter">نمایش شمارشگر نویسه‌ها هنگام نوشتن پیام</string>
+    <string name="show_character_counter">نمایش شمارشگر نویسه‌ها</string>
     <string name="rename_conversation">تغییر عنوان گفت‌وگو</string>
     <string name="scheduled_message">پیام زمان‌بندی‌شده</string>
     <string name="schedule_message">زمان‌بندی پیام</string>
@@ -360,7 +360,6 @@
     <string name="settings_composer">نوار نوشتن</string>
     <string name="setting_on">روشن</string>
     <string name="setting_off">خاموش</string>
-    <string name="character_counter_on">روشن، نزدیک حد پیامک</string>
     <string name="settings_delivery">تحویل</string>
     <string name="settings_alerts">اعلان‌ها</string>
     <string name="new_message_alerts">اعلان پیام تازه</string>

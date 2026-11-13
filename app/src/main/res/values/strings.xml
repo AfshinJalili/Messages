@@ -20,7 +20,7 @@
     <string name="send_message">Send</string>
     <string name="no_recycle_bin_conversations">No conversations in the recycle bin</string>
     <string name="reply">Reply</string>
-    <string name="show_character_counter">Show a character counter at writing messages</string>
+    <string name="show_character_counter">Show character counter</string>
     <string name="loading_messages">Loading messages…</string>
     <string name="sending">Sending…</string>
     <string name="pin_conversation">Pin to the top</string>
@@ -383,7 +383,6 @@
     <string name="settings_composer">Composer</string>
     <string name="setting_on">On</string>
     <string name="setting_off">Off</string>
-    <string name="character_counter_on">On, near SMS limit</string>
     <string name="settings_delivery">Delivery</string>
     <string name="settings_alerts">Alerts</string>
     <string name="new_message_alerts">New message alerts</string>

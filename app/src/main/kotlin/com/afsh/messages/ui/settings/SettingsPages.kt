@@ -262,7 +262,7 @@ internal fun WritingPage(state: SettingsUiState, onEvent: (SettingsEvent) -> Uni
         state.characterCounter,
         { onEvent(SettingsEvent.SetCharacterCounter(it)) },
         icon = R.drawable.ic_lucide_hash,
-        value = stringResource(if (state.characterCounter) R.string.character_counter_on else R.string.setting_off),
+        value = onOff(state.characterCounter),
     )
     SwitchSetting(
         stringResource(R.string.use_simple_characters),
