@@ -73,12 +73,10 @@ import org.fossify.commons.extensions.openRequestExactAlarmSettings
 import org.fossify.commons.extensions.showErrorToast
 import org.fossify.commons.extensions.toast
 import org.fossify.commons.helpers.ContactsHelper
-import org.fossify.commons.helpers.ExportResult
 import org.fossify.commons.helpers.KEY_PHONE
 import org.fossify.commons.helpers.MyContactsContentProvider
 import org.fossify.commons.helpers.PERMISSION_READ_PHONE_STATE
 import org.fossify.commons.helpers.SimpleContactsHelper
-import org.fossify.commons.helpers.VcfExporter
 import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.commons.helpers.isSPlus
 import org.fossify.commons.models.PhoneNumber
@@ -133,6 +131,8 @@ import com.afsh.messages.helpers.IS_LAUNCHED_FROM_SHORTCUT
 import com.afsh.messages.helpers.IS_RECYCLE_BIN
 import com.afsh.messages.helpers.MESSAGES_LIMIT
 import com.afsh.messages.helpers.PICK_CONTACT_INTENT
+import com.afsh.messages.helpers.contactAsText
+import com.afsh.messages.helpers.insertBlock
 import com.afsh.messages.helpers.PICK_DOCUMENT_INTENT
 import com.afsh.messages.helpers.PICK_PHOTO_INTENT
 import com.afsh.messages.helpers.PICK_SAVE_DIR_INTENT
@@ -884,7 +884,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
                 PICK_PHOTO_INTENT,
                 PICK_VIDEO_INTENT -> addAttachment(data)
 
-                PICK_CONTACT_INTENT -> addContactAttachment(data)
+                PICK_CONTACT_INTENT -> addContactAsText(data)
                 PICK_SAVE_FILE_INTENT -> saveAttachments(resultData)
                 PICK_SAVE_DIR_INTENT -> saveAttachments(resultData)
             }
@@ -1883,30 +1883,21 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         }
     }
 
-    private fun addContactAttachment(contactUri: Uri) {
+    /** A picked contact goes into the composer as plain text (name, then numbers), so it sends as SMS. */
+    private fun addContactAsText(contactUri: Uri) {
         ensureBackgroundThread {
             val contact = ContactsHelper(this).getContactFromUri(contactUri)
-            if (contact != null) {
-                val outputFile = File(getAttachmentsDir(), "${contact.contactId}.vcf")
-                val outputStream = outputFile.outputStream()
-
-                VcfExporter().exportContacts(
-                    activity = this,
-                    outputStream = outputStream,
-                    contacts = arrayListOf(contact),
-                    showExportingToast = false,
-                ) {
-                    if (it == ExportResult.EXPORT_OK) {
-                        val vCardUri = getMyFileUri(outputFile)
-                        runOnUiThread {
-                            addAttachment(vCardUri)
-                        }
-                    } else {
-                        toast(org.fossify.commons.R.string.unknown_error_occurred)
+            val text = contact?.let { contactAsText(it.getNameToDisplay(), it.phoneNumbers) }
+            runOnUiThread {
+                when {
+                    contact == null -> toast(org.fossify.commons.R.string.unknown_error_occurred)
+                    text == null -> toast(org.fossify.commons.R.string.no_phone_number_found)
+                    else -> {
+                        val at = composerText.selection.min.coerceIn(0, composerText.text.length)
+                        val (value, cursor) = insertBlock(composerText.text, at, text)
+                        onComposerTextChange(TextFieldValue(value, TextRange(cursor)))
                     }
                 }
-            } else {
-                toast(org.fossify.commons.R.string.unknown_error_occurred)
             }
         }
     }

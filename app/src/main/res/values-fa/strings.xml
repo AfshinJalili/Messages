@@ -204,7 +204,7 @@
     <string name="attach_file">فایل</string>
     <string name="attach_file_text">سندها و فایل‌های دیگر</string>
     <string name="attach_contact">مخاطب</string>
-    <string name="attach_contact_text">کارت مخاطب بفرستید</string>
+    <string name="attach_contact_text">نام و شماره‌ها، به‌صورت متن</string>
     <string name="attach_send_later_text">پیش از ارسال، زمانی انتخاب کنید</string>
 
     <!-- AFSH global search, designs 03 / 04 / 53. -->
