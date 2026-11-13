@@ -86,6 +86,11 @@ android {
         targetCompatibility = currentJavaVersionFromLibs
     }
 
+    testOptions {
+        // State holders are tested on the JVM; android.* calls they reach return defaults there.
+        unitTests.isReturnDefaultValues = true
+    }
+
     dependenciesInfo {
         includeInApk = false
     }
@@ -148,6 +153,7 @@ dependencies {
     androidTestImplementation(platform(libs.compose.bom))
     androidTestImplementation(libs.compose.ui.test.junit4)
     ksp(libs.androidx.room.compiler)
+    testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.ext.junit)
     detektPlugins(libs.compose.detekt)
