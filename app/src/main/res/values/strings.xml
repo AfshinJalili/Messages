@@ -225,7 +225,7 @@
     <string name="attach_file">File</string>
     <string name="attach_file_text">Documents and other files</string>
     <string name="attach_contact">Contact</string>
-    <string name="attach_contact_text">Send a contact card</string>
+    <string name="attach_contact_text">Name and numbers, as text</string>
     <string name="attach_send_later_text">Pick a time before sending</string>
 
     <!-- AFSH global search, designs 03 / 04 / 53. -->

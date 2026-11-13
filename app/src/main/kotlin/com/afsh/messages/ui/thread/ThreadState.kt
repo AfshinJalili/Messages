@@ -92,16 +92,19 @@ sealed interface ComposerEvent {
     data object ReplyInfo : ComposerEvent
 }
 
-/** Declaration order is the attach sheet's order (design 11). */
+/**
+ * Declaration order is the attach sheet's order (design 11). Contact and Send later lead: they are
+ * plain SMS, and where MMS is unavailable they are the only options that work.
+ */
 enum class AttachOption(@StringRes val title: Int, @StringRes val subtitle: Int, @DrawableRes val icon: Int) {
+    CONTACT(R.string.attach_contact, R.string.attach_contact_text, org.fossify.commons.R.drawable.ic_person_vector),
+    SEND_LATER(R.string.composer_send_later, R.string.attach_send_later_text, org.fossify.commons.R.drawable.ic_clock_vector),
     PHOTO(R.string.attach_photos, R.string.attach_photos_text, R.drawable.ic_image_vector),
     CAMERA(R.string.attach_camera, R.string.attach_camera_text, org.fossify.commons.R.drawable.ic_camera_vector),
     VIDEO(R.string.attach_video, R.string.attach_video_text, R.drawable.ic_videocam_vector),
     RECORD_VIDEO(R.string.attach_record_video, R.string.attach_record_video_text, R.drawable.ic_video_camera_vector),
     AUDIO(R.string.attach_audio, R.string.attach_audio_text, org.fossify.commons.R.drawable.ic_microphone_vector),
     FILE(R.string.attach_file, R.string.attach_file_text, R.drawable.ic_document_vector),
-    CONTACT(R.string.attach_contact, R.string.attach_contact_text, org.fossify.commons.R.drawable.ic_person_vector),
-    SEND_LATER(R.string.composer_send_later, R.string.attach_send_later_text, org.fossify.commons.R.drawable.ic_clock_vector),
 }
 
 /** Matches [com.afsh.messages.helpers.Config.isMessageStarred]'s key space: MMS and SMS ids can collide. */
