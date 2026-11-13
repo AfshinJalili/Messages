@@ -1443,19 +1443,17 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         AttachOption.SEND_LATER -> launchScheduleSendDialog(if (isScheduledMessage) scheduledDateTime else null)
     }
 
-    /** Length pill (R6-45): only near the SMS limit or with the counter setting on; an MMS shows "MMS" instead. */
+    /** Length pill (R6-45): only with the counter setting on (off by default); an MMS shows "MMS" instead. */
     private fun refreshComposer() {
         val text = composerText.text
         val attachments = getAttachmentSelections()
         val mms = isMmsMessage(text) && (text.isNotEmpty() || attachments.isNotEmpty())
         var parts = 0
         var remaining = 0
-        if (!mms && text.isNotEmpty()) {
+        if (!mms && text.isNotEmpty() && config.showCharacterCounter) {
             val length = SmsMessage.calculateLength(if (config.useSimpleCharacters) text.normalizeString() else text, false)
-            if (config.showCharacterCounter || length[0] > 1 || length[2] <= SMS_COUNTER_THRESHOLD) {
-                parts = length[0]
-                remaining = length[2]
-            }
+            parts = length[0]
+            remaining = length[2]
         }
         updateComposer { copy(isMms = mms, smsParts = parts, smsLeft = remaining) }
     }
@@ -2362,8 +2360,6 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         private const val JUMP_WAIT_MS = 50L
         private const val JUMP_WAIT_LIMIT = 100
         private const val NO_JUMP = -1L
-        // SmsMessage code units left in the current part before the counter appears.
-        private const val SMS_COUNTER_THRESHOLD = 20
         /** How far, as a share of its height, the composer sinks while the selection bar rises over it. */
         private const val COMPOSER_SINK = 0.5f
         private const val SAVED_COMPOSER_TEXT = "composer_text"
