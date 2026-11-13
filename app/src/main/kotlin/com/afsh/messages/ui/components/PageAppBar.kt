@@ -50,8 +50,7 @@ fun PageAppBar(
     upAction: UpAction = UpAction.BACK,
     actions: @Composable RowScope.() -> Unit = {},
 ) {
-    val colors = MaterialTheme.colorScheme
-    Surface(modifier.fillMaxWidth(), color = colors.primaryContainer, contentColor = colors.onPrimaryContainer) {
+    Surface(modifier.fillMaxWidth(), color = Afsh.colors.header.container, contentColor = Afsh.colors.header.content) {
         Column(
             Modifier
                 .windowInsetsPadding(
@@ -68,7 +67,7 @@ fun PageAppBar(
                 if (onBack != null) {
                     IconButton(
                         onClick = onBack,
-                        colors = IconButtonDefaults.iconButtonColors(contentColor = colors.onPrimaryContainer),
+                        colors = IconButtonDefaults.iconButtonColors(contentColor = Afsh.colors.header.content),
                     ) {
                         Icon(
                             painterResource(upAction.icon),
@@ -80,7 +79,7 @@ fun PageAppBar(
                 Text(
                     title,
                     style = MaterialTheme.typography.headlineMedium,
-                    color = colors.onPrimaryContainer,
+                    color = Afsh.colors.header.content,
                     modifier = Modifier
                         .weight(1f)
                         .semantics { heading() },
@@ -100,7 +99,7 @@ fun PageAppBarAction(icon: Int, label: String, onClick: () -> Unit, modifier: Mo
     IconButton(
         onClick = onClick,
         modifier = modifier,
-        colors = IconButtonDefaults.iconButtonColors(contentColor = MaterialTheme.colorScheme.onPrimaryContainer),
+        colors = IconButtonDefaults.iconButtonColors(contentColor = Afsh.colors.header.content),
     ) {
         Icon(painterResource(icon), contentDescription = label, modifier = Modifier.size(24.dp))
     }
