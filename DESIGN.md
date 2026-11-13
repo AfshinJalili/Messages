@@ -91,6 +91,21 @@ Kotlin screens obtain the current accent, foreground and background through Comm
 
 `Config.applyCobaltDefaults()` runs once at application startup. It replaces the old default green, opts implicit system-theme defaults into cobalt, and retains explicit custom color or system-theme selections. Later settings changes are not reset on startup.
 
+### Spacing
+
+One scale for gaps and padding, read through the theme as `Afsh.spacing.<step>` (defined in `ui/AfshTheme.kt`, like `Afsh.colors`). The steps are the values the screens already use, so adopting them changes nothing visible. Existing literals migrate screen by screen; components built new use the tokens from the start. Sizes (icons, touch targets, avatars) and corner radii are not spacing.
+
+| Step | Value | Use |
+| --- | --- | --- |
+| `xxs` | 2dp | Hairline offsets, such as a badge nudge or a line gap inside one text block |
+| `xs` | 4dp | Tight gaps between an icon and its label or between stacked text lines |
+| `sm` | 8dp | Gaps between related controls and the inner padding of compact chips |
+| `md` | 12dp | Standard gap between items in a row or list, and inner padding of small cards |
+| `lg` | 16dp | Page side padding, default card padding, and gaps between groups |
+| `xl` | 20dp | Roomy row padding and gaps between sections |
+| `xxl` | 24dp | Dialog padding and gaps between major blocks |
+| `xxxl` | 32dp | Empty-state and onboarding breathing room |
+
 ### Components
 
 Keep surface-colored app bars, one filled icon family, letter avatars for individual contacts, and group icons for groups. Reserve accent for actions, unread indicators, selected filters and sent messages. Attachment actions share a neutral tinted background.
