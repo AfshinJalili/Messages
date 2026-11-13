@@ -76,7 +76,8 @@ Android resources are the source of truth. This document describes how to use th
 | --- | --- |
 | Brand palette, surface colors, semantic action colors and Commons defaults | `app/src/main/res/values/colors.xml` |
 | Light and dark widget themes, shared component styles | `app/src/main/res/values/styles.xml` |
-| Component spacing, sizes and corner radii | `app/src/main/res/values/dimens.xml` |
+| Component spacing and sizes | `app/src/main/res/values/dimens.xml` |
+| Corner radii (Material shape scale and named component corners) | `AfshShapes` and `AfshCorners` in `app/src/main/kotlin/com/afsh/messages/ui/AfshTheme.kt` |
 | Shared opacity and user-font-size multipliers | `app/src/main/res/values/design_values.xml` |
 | Runtime theme selection and API-compatible float resource access | `app/src/main/kotlin/com/afsh/messages/helpers/Design.kt` |
 | Launcher shape | `app/src/main/res/drawable/ic_launcher_foreground.xml` |
@@ -95,7 +96,7 @@ Kotlin screens obtain the current accent, foreground and background through Comm
 
 Keep surface-colored app bars, one filled icon family, letter avatars for individual contacts, and group icons for groups. Reserve accent for actions, unread indicators, selected filters and sent messages. Attachment actions share a neutral tinted background.
 
-Use the named bubble and tail radii in `dimens.xml`, the shared minimum touch target for composer actions, and the shared attachment action dimensions. Component-local constraint geometry can remain in its layout; reusable sizes belong in resources.
+Corners come from the theme's shape scale, never a literal `RoundedCornerShape` in UI code (`tests/check_design_tokens.py` fails on one). Use `MaterialTheme.shapes` (extraSmall 4dp, small 12dp, medium 16dp, large 22dp, extraLarge 28dp) for Material roles, and `AfshCorners` for corners without a slot: message bubbles (16dp, 4dp tail), the dialog frame (24dp), the thread sheet top (28dp) and the SIM badge. Commons still reads `message_bubble_radius` in `dimens.xml` for its own thread drawing. Use the shared minimum touch target for composer actions, and the shared attachment action dimensions. Component-local constraint geometry can remain in its layout; reusable sizes belong in resources.
 
 Keep system typography and the user's font-size choice. List primary, secondary and metadata text use the multipliers in `design_values.xml`. Read and unread rows share their geometry; unread emphasis changes weight and opacity.
 
