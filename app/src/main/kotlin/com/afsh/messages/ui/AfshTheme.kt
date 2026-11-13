@@ -27,6 +27,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
@@ -65,9 +66,26 @@ val LocalAfshColors = staticCompositionLocalOf {
     AfshColors(Color.Unspecified, Color.Unspecified, Color.Unspecified, emptyList(), Color.Unspecified)
 }
 
+/** The shared spacing scale for gaps and padding; see Spacing in DESIGN.md for when to use each step. */
+@Immutable
+data class AfshSpacing(
+    val xxs: Dp = 2.dp,
+    val xs: Dp = 4.dp,
+    val sm: Dp = 8.dp,
+    val md: Dp = 12.dp,
+    val lg: Dp = 16.dp,
+    val xl: Dp = 20.dp,
+    val xxl: Dp = 24.dp,
+    val xxxl: Dp = 32.dp,
+)
+
+val LocalAfshSpacing = staticCompositionLocalOf { AfshSpacing() }
+
 object Afsh {
     val colors: AfshColors
         @Composable get() = LocalAfshColors.current
+    val spacing: AfshSpacing
+        @Composable get() = LocalAfshSpacing.current
 }
 
 @OptIn(androidx.compose.ui.text.ExperimentalTextApi::class)
@@ -215,6 +233,7 @@ fun AfshTheme(dark: Boolean, textScale: Float = 1f, content: @Composable () -> U
     ) {
         CompositionLocalProvider(
             LocalAfshColors provides extras,
+            LocalAfshSpacing provides AfshSpacing(),
             LocalDensity provides Density(density.density, density.fontScale * textScale),
             content = content,
         )
