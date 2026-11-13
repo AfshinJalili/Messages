@@ -20,6 +20,7 @@ import kotlinx.coroutines.withContext
 import org.fossify.commons.dialogs.SecurityDialog
 import org.fossify.commons.extensions.getCurrentFormattedDateTime
 import org.fossify.commons.extensions.isAValidFilename
+import org.fossify.commons.extensions.launchViewIntent
 import org.fossify.commons.helpers.PROTECTION_FINGERPRINT
 import org.fossify.commons.helpers.SHOW_ALL_TABS
 import org.fossify.commons.helpers.isQPlus
@@ -142,7 +143,7 @@ class SettingsActivity : ComposePageActivity() {
         recentSearches = config.recentSearches.size,
         exportSms = config.exportSms,
         exportMms = config.exportMms,
-        version = BuildConfig.VERSION_NAME,
+        version = getString(R.string.app_version_value, BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE),
     )
 
     private fun back() {
@@ -213,7 +214,8 @@ class SettingsActivity : ComposePageActivity() {
             is SettingsEvent.SetRestoreSms -> state.review?.let { state = state.copy(review = it.copy(restoreSms = event.enabled)) }
             is SettingsEvent.SetRestoreMms -> state.review?.let { state = state.copy(review = it.copy(restoreMms = event.enabled)) }
             SettingsEvent.Restore -> restore()
-            SettingsEvent.OpenHelp -> startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(HELP_URL)))
+            SettingsEvent.OpenHelp -> launchViewIntent(HELP_URL)
+            SettingsEvent.CheckForUpdates -> launchViewIntent(RELEASES_URL)
         }
     }
 
@@ -369,5 +371,8 @@ class SettingsActivity : ComposePageActivity() {
         const val JSON = "application/json"
         const val DARK_LUMINANCE = 0.5
         const val HELP_URL = "https://github.com/AfshinJalili/Messages/issues"
+
+        // The app has no INTERNET permission on purpose (#214): the browser downloads updates.
+        const val RELEASES_URL = "https://github.com/AfshinJalili/Messages/releases/latest"
     }
 }

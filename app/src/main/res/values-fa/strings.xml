@@ -338,6 +338,9 @@
     <string name="about_summary">اطلاعات برنامه و راهنما</string>
     <string name="about_description">ساخته‌شده برای گفت‌وگوهای خوانا و قابل‌اعتماد.</string>
     <string name="help_and_support">راهنما و پشتیبانی</string>
+    <string name="about_updates">به‌روزرسانی</string>
+    <string name="check_for_updates">بررسی به‌روزرسانی</string>
+    <string name="check_for_updates_summary">صفحهٔ نسخه‌ها در گیت‌هاب باز می‌شود</string>
     <string name="privacy_information">اطلاعات حریم خصوصی</string>
     <string name="privacy_information_text">پیام‌ها روی همین گوشی می‌مانند. برنامه به حساب کاربری نیاز ندارد و جز به اپراتور شما چیزی نمی‌فرستد. پشتیبان‌ها فایل‌هایی هستند که خودتان می‌سازید و نگه می‌دارید.</string>
     <string name="open_source_licenses">مجوزهای متن‌باز</string>

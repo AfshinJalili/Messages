@@ -105,6 +105,7 @@ fun NavigationSetting(
     value: String? = null,
     disclosure: Boolean = true,
     destructive: Boolean = false,
+    disclosureIcon: Int = R.drawable.ic_lucide_chevron_right,
 ) {
     SettingItem(
         label = label,
@@ -117,7 +118,7 @@ fun NavigationSetting(
     ) {
         if (disclosure) {
             Icon(
-                painterResource(R.drawable.ic_lucide_chevron_right),
+                painterResource(disclosureIcon),
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(SettingIconSize),
