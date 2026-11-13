@@ -109,4 +109,5 @@ sealed interface SettingsEvent {
     data class SetRestoreMms(val enabled: Boolean) : SettingsEvent
     data object Restore : SettingsEvent
     data object OpenHelp : SettingsEvent
+    data object CheckForUpdates : SettingsEvent
 }

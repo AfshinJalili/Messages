@@ -361,6 +361,10 @@
     <string name="about_summary">App information and help</string>
     <string name="about_description">Built for readable, dependable conversations.</string>
     <string name="help_and_support">Help &amp; support</string>
+    <string name="about_updates">Updates</string>
+    <string name="check_for_updates">Check for updates</string>
+    <string name="check_for_updates_summary">Opens the releases page on GitHub</string>
+    <string name="app_version_value" translatable="false">%1$s (%2$d)</string>
     <string name="privacy_information">Privacy information</string>
     <string name="privacy_information_text">Messages stay on this phone. The app needs no account and sends nothing anywhere but your carrier. Backups are files you create and keep yourself.</string>
     <string name="open_source_licenses">Open-source licenses</string>

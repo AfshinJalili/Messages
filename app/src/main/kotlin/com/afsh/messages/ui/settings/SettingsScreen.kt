@@ -29,6 +29,7 @@ import com.afsh.messages.ui.components.PageScaffold
 import com.afsh.messages.ui.components.SectionHeading
 import com.afsh.messages.ui.components.SettingItem
 import com.afsh.messages.ui.components.SwitchSetting
+import com.afsh.messages.ui.ltr
 
 /** Settings bodies use a 16dp top and 4dp between rows (24); the rows carry their own padding. */
 private val SettingsBodyPadding = PaddingValues(
@@ -211,7 +212,16 @@ private fun AboutPage(state: SettingsUiState, onEvent: (SettingsEvent) -> Unit) 
         icon = R.drawable.ic_lucide_file_text,
         disclosure = false,
     )
-    SettingItem(stringResource(org.fossify.commons.R.string.app_version), icon = R.drawable.ic_lucide_info, value = state.version)
+    SectionHeading(stringResource(R.string.about_updates))
+    SettingItem(stringResource(org.fossify.commons.R.string.app_version), icon = R.drawable.ic_lucide_info, value = ltr(state.version))
+    // The app stays offline (#214): the browser fetches the release and Android installs it.
+    NavigationSetting(
+        stringResource(R.string.check_for_updates),
+        onClick = { onEvent(SettingsEvent.CheckForUpdates) },
+        icon = R.drawable.ic_lucide_refresh_cw,
+        value = stringResource(R.string.check_for_updates_summary),
+        disclosureIcon = R.drawable.ic_lucide_external_link,
+    )
     if (privacyOpen) {
         MessageDialog(
             title = stringResource(R.string.privacy_information),
