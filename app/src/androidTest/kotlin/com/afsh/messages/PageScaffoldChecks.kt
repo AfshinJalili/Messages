@@ -11,12 +11,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.semantics.SemanticsProperties
-import androidx.compose.ui.test.SemanticsMatcher
-import androidx.compose.ui.test.and
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isHeading
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -44,7 +42,7 @@ class PageScaffoldChecks {
     private val back get() = text(org.fossify.commons.R.string.back)
     private val close get() = text(org.fossify.commons.R.string.close)
     private val selectAll get() = text(org.fossify.commons.R.string.select_all)
-    private fun heading(title: String) = compose.onNode(hasText(title) and SemanticsMatcher.keyIsDefined(SemanticsProperties.Heading))
+    private fun heading(title: String) = compose.onNode(hasText(title) and isHeading())
 
     private fun page(
         selected: Int = 0,
