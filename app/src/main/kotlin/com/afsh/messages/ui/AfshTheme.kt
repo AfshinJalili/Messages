@@ -27,6 +27,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
@@ -43,7 +44,18 @@ fun Context.afshDark() = ColorUtils.calculateLuminance(getProperBackgroundColor(
 /** The app's own font-size setting, relative to its default. */
 fun Context.afshTextScale() = getTextSize() / resources.getDimension(org.fossify.commons.R.dimen.normal_text_size)
 
-/** Roles the AFSH design uses that Material 3 has no slot for. */
+/** A surface color and the color of what sits on it. */
+@Immutable
+data class ColorRole(val container: Color, val content: Color) {
+    companion object {
+        val Unspecified = ColorRole(Color.Unspecified, Color.Unspecified)
+    }
+}
+
+/**
+ * Roles the AFSH design uses that Material 3 has no slot for. Each job that used to share
+ * `primaryContainer` has its own [ColorRole], so recoloring one never recolors the others.
+ */
 @Immutable
 data class AfshColors(
     val accent: Color,
@@ -59,15 +71,44 @@ data class AfshColors(
     val scrim: Color = Color.Unspecified,
     /** Outline of the focused control (`focus-ring`). */
     val focusRing: Color = Color.Unspecified,
+    /** Page, inbox and conversation headers. */
+    val header: ColorRole = ColorRole.Unspecified,
+    /** Messages the user sent, in the conversation and in message details. */
+    val sentBubble: ColorRole = ColorRole.Unspecified,
+    /** Secondary buttons and the jump-to-latest button. */
+    val secondaryButton: ColorRole = ColorRole.Unspecified,
+    /** The panel behind a non-destructive swipe action such as Archive. */
+    val swipeAction: ColorRole = ColorRole.Unspecified,
+    /** The selected filter chip in the inbox and in search. */
+    val selected: ColorRole = ColorRole.Unspecified,
+    /** The unread count and attachment type icons. */
+    val badge: ColorRole = ColorRole.Unspecified,
 )
 
 val LocalAfshColors = staticCompositionLocalOf {
     AfshColors(Color.Unspecified, Color.Unspecified, Color.Unspecified, emptyList(), Color.Unspecified)
 }
 
+/** The shared spacing scale for gaps and padding; see Spacing in DESIGN.md for when to use each step. */
+@Immutable
+data class AfshSpacing(
+    val xxs: Dp = 2.dp,
+    val xs: Dp = 4.dp,
+    val sm: Dp = 8.dp,
+    val md: Dp = 12.dp,
+    val lg: Dp = 16.dp,
+    val xl: Dp = 20.dp,
+    val xxl: Dp = 24.dp,
+    val xxxl: Dp = 32.dp,
+)
+
+val LocalAfshSpacing = staticCompositionLocalOf { AfshSpacing() }
+
 object Afsh {
     val colors: AfshColors
         @Composable get() = LocalAfshColors.current
+    val spacing: AfshSpacing
+        @Composable get() = LocalAfshSpacing.current
 }
 
 @OptIn(androidx.compose.ui.text.ExperimentalTextApi::class)
@@ -191,6 +232,9 @@ private fun colorScheme(dark: Boolean): ColorScheme {
 fun AfshTheme(dark: Boolean, textScale: Float = 1f, content: @Composable () -> Unit) {
     val density = LocalDensity.current
     val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+    val scheme = colorScheme(dark)
+    // Every role resolves to today's pine container; give a role its own value to recolor only that job.
+    val pine = ColorRole(scheme.primaryContainer, scheme.onPrimaryContainer)
     val extras = AfshColors(
         accent = colorResource(R.color.afsh_lime),
         onAccent = colorResource(R.color.afsh_ink),
@@ -203,9 +247,15 @@ fun AfshTheme(dark: Boolean, textScale: Float = 1f, content: @Composable () -> U
         inverseAccent = colorResource(if (dark) R.color.afsh_pine else R.color.afsh_lime),
         scrim = colorResource(if (dark) R.color.afsh_scrim_dark else R.color.afsh_scrim),
         focusRing = colorResource(if (dark) R.color.afsh_lime else R.color.afsh_pine),
+        header = pine,
+        sentBubble = pine,
+        secondaryButton = pine,
+        swipeAction = pine,
+        selected = pine,
+        badge = pine,
     )
     MaterialTheme(
-        colorScheme = colorScheme(dark),
+        colorScheme = scheme,
         typography = typography(rtl),
         shapes = Shapes(
             small = RoundedCornerShape(12.dp),
@@ -215,6 +265,7 @@ fun AfshTheme(dark: Boolean, textScale: Float = 1f, content: @Composable () -> U
     ) {
         CompositionLocalProvider(
             LocalAfshColors provides extras,
+            LocalAfshSpacing provides AfshSpacing(),
             LocalDensity provides Density(density.density, density.fontScale * textScale),
             content = content,
         )

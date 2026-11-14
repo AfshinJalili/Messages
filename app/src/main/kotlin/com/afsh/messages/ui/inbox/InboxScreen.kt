@@ -316,7 +316,6 @@ private fun IdentityBand(
     onSearchQuery: (String) -> Unit,
     onSearchBack: () -> Unit,
 ) {
-    val colors = MaterialTheme.colorScheme
     val title = if (state.selecting) {
         selectionTitle(state.selected.size)
     } else {
@@ -330,7 +329,7 @@ private fun IdentityBand(
     }
     val bandModifier = Modifier
         .fillMaxWidth()
-        .background(colors.primaryContainer)
+        .background(Afsh.colors.header.container)
         .windowInsetsPadding(WindowInsets.statusBars)
     // Very short windows and very large text never have room for the full band.
     if (!search.open && (forcedCollapsed || compactHeight)) {
@@ -378,7 +377,7 @@ private fun IdentityBand(
                     Row(
                         Modifier
                             .fillMaxWidth()
-                            .background(colors.primaryContainer)
+                            .background(Afsh.colors.header.container)
                             .heightIn(min = 64.dp)
                             .padding(start = 20.dp, end = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
@@ -386,7 +385,7 @@ private fun IdentityBand(
                         Text(
                             text = title,
                             style = MaterialTheme.typography.headlineMedium,
-                            color = colors.onPrimaryContainer,
+                            color = Afsh.colors.header.content,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier
@@ -409,7 +408,7 @@ private fun IdentityBand(
                                 // Not announced while it isn't there to tap.
                                 .then(if (searchShown && !state.selecting) Modifier else Modifier.clearAndSetSemantics {}),
                         ) {
-                            Icon(painterResource(R.drawable.ic_lucide_search), stringResource(R.string.inbox_search_hint), tint = colors.onPrimaryContainer)
+                            Icon(painterResource(R.drawable.ic_lucide_search), stringResource(R.string.inbox_search_hint), tint = Afsh.colors.header.content)
                         }
                     }
                 }
@@ -441,7 +440,6 @@ private fun StaticBar(
     onClearSelection: () -> Unit,
     modifier: Modifier,
 ) {
-    val colors = MaterialTheme.colorScheme
     Row(
         modifier.heightIn(min = minHeight).padding(horizontal = 20.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -449,13 +447,13 @@ private fun StaticBar(
     ) {
         if (state.selecting) {
             IconButton(onClick = onClearSelection) {
-                Icon(painterResource(org.fossify.commons.R.drawable.ic_cross_vector), stringResource(org.fossify.commons.R.string.close), tint = colors.onPrimaryContainer)
+                Icon(painterResource(org.fossify.commons.R.drawable.ic_cross_vector), stringResource(org.fossify.commons.R.string.close), tint = Afsh.colors.header.content)
             }
         }
         Text(
             text = title,
             style = MaterialTheme.typography.headlineMedium,
-            color = colors.onPrimaryContainer,
+            color = Afsh.colors.header.content,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier
@@ -464,11 +462,11 @@ private fun StaticBar(
         )
         if (state.selecting) {
             TextButton(onClick = onSelectAll) {
-                Text(stringResource(org.fossify.commons.R.string.select_all), style = MaterialTheme.typography.labelMedium, color = colors.onPrimaryContainer)
+                Text(stringResource(org.fossify.commons.R.string.select_all), style = MaterialTheme.typography.labelMedium, color = Afsh.colors.header.content)
             }
         } else {
             IconButton(onClick = onSearch) {
-                Icon(painterResource(org.fossify.commons.R.drawable.ic_search_vector), stringResource(R.string.inbox_search_hint), tint = colors.onPrimaryContainer)
+                Icon(painterResource(org.fossify.commons.R.drawable.ic_search_vector), stringResource(R.string.inbox_search_hint), tint = Afsh.colors.header.content)
             }
         }
     }
@@ -503,7 +501,7 @@ private fun SearchField(onClick: () -> Unit) {
 
 @Composable
 private fun SelectionControls(onSelectAll: () -> Unit, onClearSelection: () -> Unit) {
-    val onBand = MaterialTheme.colorScheme.onPrimaryContainer
+    val onBand = Afsh.colors.header.content
     Row(
         Modifier
             .fillMaxWidth()
@@ -541,7 +539,7 @@ private fun FilterRow(current: InboxFilter, onFilter: (InboxFilter) -> Unit) {
                 Modifier
                     .heightIn(min = TargetSize)
                     .clip(CircleShape)
-                    .background(if (selected) colors.primaryContainer else colors.surfaceContainer)
+                    .background(if (selected) Afsh.colors.selected.container else colors.surfaceContainer)
                     .selectable(selected = selected, role = Role.Tab, onClick = { onFilter(filter) })
                     .padding(horizontal = 16.dp),
                 contentAlignment = Alignment.Center,
@@ -549,7 +547,7 @@ private fun FilterRow(current: InboxFilter, onFilter: (InboxFilter) -> Unit) {
                 Text(
                     stringResource(filter.label),
                     style = MaterialTheme.typography.labelMedium,
-                    color = if (selected) colors.onPrimaryContainer else colors.primary,
+                    color = if (selected) Afsh.colors.selected.content else colors.primary,
                 )
             }
         }
