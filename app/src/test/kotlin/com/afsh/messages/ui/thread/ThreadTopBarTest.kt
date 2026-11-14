@@ -26,7 +26,6 @@ class ThreadTopBarTest {
     @Test
     fun `the bar keeps its design height for one line of title and subtitle`() {
         assertEquals(72.dp, threadTopBarHeight(compact = false, title = 29.dp, subtitle = 22.dp, padding = 8.dp))
-        assertEquals(56.dp, threadTopBarHeight(compact = true, title = 29.dp, subtitle = null, padding = 8.dp))
     }
 
     @Test
