@@ -71,6 +71,8 @@ data class AfshColors(
     val inverseAccent: Color = Color.Unspecified,
     /** Behind a held message or a focused task (`scrim`). */
     val scrim: Color = Color.Unspecified,
+    /** Over the conversation and its header while a message is lifted for actions. Same in both themes. */
+    val liftScrim: Color = Color.Unspecified,
     /** Outline of the focused control (`focus-ring`). */
     val focusRing: Color = Color.Unspecified,
     /** Page, inbox and conversation headers. */
@@ -85,7 +87,17 @@ data class AfshColors(
     val selected: ColorRole = ColorRole.Unspecified,
     /** The unread count and attachment type icons. */
     val badge: ColorRole = ColorRole.Unspecified,
+    /** The theme picker's pictures of each theme, whichever theme is on: a page ([ColorRole.container]) and its line. */
+    val themePreview: ThemePreview = ThemePreview.Unspecified,
 )
+
+/** How the light and dark themes look in a small picture of each. */
+@Immutable
+data class ThemePreview(val light: ColorRole, val dark: ColorRole) {
+    companion object {
+        val Unspecified = ThemePreview(ColorRole.Unspecified, ColorRole.Unspecified)
+    }
+}
 
 val LocalAfshColors = staticCompositionLocalOf {
     AfshColors(Color.Unspecified, Color.Unspecified, Color.Unspecified, emptyList(), Color.Unspecified)
@@ -290,6 +302,7 @@ fun AfshTheme(dark: Boolean, textScale: Float = 1f, content: @Composable () -> U
         ),
         inverseAccent = colorResource(if (dark) R.color.afsh_pine else R.color.afsh_lime),
         scrim = colorResource(if (dark) R.color.afsh_scrim_dark else R.color.afsh_scrim),
+        liftScrim = colorResource(R.color.afsh_lift_scrim),
         focusRing = colorResource(if (dark) R.color.afsh_lime else R.color.afsh_pine),
         header = pine,
         sentBubble = pine,
@@ -297,6 +310,10 @@ fun AfshTheme(dark: Boolean, textScale: Float = 1f, content: @Composable () -> U
         swipeAction = pine,
         selected = pine,
         badge = pine,
+        themePreview = ThemePreview(
+            light = ColorRole(colorResource(R.color.surface_light), colorResource(R.color.afsh_pine)),
+            dark = ColorRole(colorResource(R.color.surface_dark), colorResource(R.color.afsh_lime)),
+        ),
     )
     MaterialTheme(
         colorScheme = scheme,
