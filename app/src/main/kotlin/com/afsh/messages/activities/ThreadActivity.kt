@@ -312,7 +312,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         refreshAfshTheme()
         root.setContent {
             AfshTheme(dark = darkTheme, textScale = textScale) {
-                ThreadRoute(holder, snackbarHost, dark = darkTheme, sendOnEnter = config.sendOnEnter)
+                ThreadRoute(holder, snackbarHost, sendOnEnter = config.sendOnEnter)
             }
         }
         // Keeps the side padding for display cutouts; the composer pads itself for the keyboard and navigation bar.
