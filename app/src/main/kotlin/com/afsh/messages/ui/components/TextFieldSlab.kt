@@ -35,8 +35,7 @@ private val FocusRingWidth = 2.dp
 /**
  * Component / text field: a white slab with the value in title type. [label] sits inside the slab
  * as the design's uppercase caption; leave it null when the page labels the field itself. The
- * focus ring is the design's `focus-ring` (pine, lime in dark). Inside a dialog, which is itself
- * surfaceContainer, pass [containerColor] = surface so the field stays visible. [isError] outlines it
+ * focus ring is the design's `focus-ring` (pine, lime in dark). [isError] outlines it
  * in the error colour (42).
  */
 @Composable

@@ -260,9 +260,6 @@ object AfshCorners {
     private val Bubble = 16.dp
     private val BubbleTail = 4.dp
 
-    /** Dialog frame, see `AfshDialog`. */
-    val Dialog: Shape = RoundedCornerShape(24.dp)
-
     /** Top of the bottom sheet that holds the attachment and thread actions. */
     val Sheet: Shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
 
