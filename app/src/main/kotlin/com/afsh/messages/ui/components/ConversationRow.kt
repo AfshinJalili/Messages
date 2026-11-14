@@ -88,15 +88,17 @@ fun ConversationRow(
     ).joinToString(", ")
     val inlineMetadata = fontScale >= INLINE_METADATA_SCALE
     ListItem(
+        // The row's own description replaces its parts for TalkBack; the parts stay in the unmerged tree.
         headlineContent = {
-            Text(
-                remember(conversation.title) { AnnotatedString(conversation.title).withContentFonts() },
-                modifier = Modifier.clearAndSetSemantics { },
-                style = MaterialTheme.typography.titleMedium.forContent(conversation.title),
-                color = colors.onSurface,
-                maxLines = if (fontScale >= TWO_LINE_TITLE_SCALE) 2 else 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+            Box(Modifier.clearAndSetSemantics { }) {
+                Text(
+                    remember(conversation.title) { AnnotatedString(conversation.title).withContentFonts() },
+                    style = MaterialTheme.typography.titleMedium.forContent(conversation.title),
+                    color = colors.onSurface,
+                    maxLines = if (fontScale >= TWO_LINE_TITLE_SCALE) 2 else 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         },
         supportingContent = {
             Column(Modifier.clearAndSetSemantics { }, verticalArrangement = Arrangement.spacedBy(Afsh.spacing.xs)) {
