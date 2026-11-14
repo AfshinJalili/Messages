@@ -13,8 +13,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.compose.ui.test.onFirst
-import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.afsh.messages.models.Conversation
@@ -60,8 +58,8 @@ class ListDetailChecks {
         val library = compose.activity.getString(TopDestination.LIBRARY.label)
         val settings = compose.activity.getString(TopDestination.SETTINGS.label)
         fun stacked(): Boolean {
-            val a = compose.onAllNodesWithText(library, useUnmergedTree = true).onFirst().getUnclippedBoundsInRoot()
-            val b = compose.onAllNodesWithText(settings, useUnmergedTree = true).onFirst().getUnclippedBoundsInRoot()
+            val a = compose.onNode(isNavigationItem(library)).getUnclippedBoundsInRoot()
+            val b = compose.onNode(isNavigationItem(settings)).getUnclippedBoundsInRoot()
             return b.top > a.bottom
         }
         check(stacked()) { "The list pane must show the rail" }

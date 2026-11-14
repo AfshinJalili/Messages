@@ -16,6 +16,7 @@ import com.afsh.messages.helpers.category
 import com.afsh.messages.helpers.sortedForInbox
 import com.afsh.messages.models.Conversation
 import org.json.JSONObject
+import com.afsh.messages.ui.components.TopDestination
 import org.junit.Rule
 import org.junit.Test
 import androidx.compose.material3.SnackbarHostState
@@ -105,10 +106,8 @@ class InboxChecks {
                 )
             }
         }
-        listOf(
-            R.string.inbox_nav_inbox, R.string.inbox_nav_library, org.fossify.commons.R.string.settings,
-            InboxFilter.ALL.label, InboxFilter.UNREAD.label,
-        ).forEach {
+        TopDestination.entries.forEach { compose.onNode(isNavigationItem(text(it.label))).assertHeightIsAtLeast(48.dp) }
+        listOf(InboxFilter.ALL.label, InboxFilter.UNREAD.label).forEach {
             compose.onNodeWithText(text(it)).assertHeightIsAtLeast(48.dp)
         }
     }
