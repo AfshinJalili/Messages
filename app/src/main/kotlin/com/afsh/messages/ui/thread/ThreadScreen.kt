@@ -175,6 +175,9 @@ import com.afsh.messages.ui.components.SelectableBubbleRow
 import com.afsh.messages.ui.components.longPressToSelect
 import com.afsh.messages.ui.components.keptWhileLeaving
 import com.afsh.messages.ui.components.messageBubbleShape
+import com.afsh.messages.ui.components.BubbleTone
+import com.afsh.messages.ui.components.MessageBubble
+import com.afsh.messages.ui.components.role
 import com.afsh.messages.extensions.getFileSizeFromUri
 import com.afsh.messages.extensions.isVCardMimeType
 import com.afsh.messages.extensions.isVideoMimeType
@@ -771,12 +774,8 @@ private fun Bubble(
     val incoming = message.isReceivedMessage()
     val failed = message.type == Telephony.Sms.MESSAGE_TYPE_FAILED
     val selected = message.getStableId() in state.selected
-    val (container, content) = when {
-        selected -> colors.secondaryContainer to colors.onSecondaryContainer
-        failed -> colors.errorContainer to colors.onErrorContainer
-        incoming -> colors.surfaceContainer to colors.onSurface
-        else -> Afsh.colors.sentBubble.container to Afsh.colors.sentBubble.content
-    }
+    val tone = BubbleTone.of(incoming, failed, selected)
+    val content = tone.role().content
     val shape = messageBubbleShape(incoming, groupedBelow)
     val attachments = message.attachment?.attachments.orEmpty()
     val coordinates = remember { arrayOfNulls<LayoutCoordinates>(1) }
@@ -792,12 +791,13 @@ private fun Bubble(
     }
     // Hidden while its copy sits lifted above the sheet.
     Box(Modifier.graphicsLayer { alpha = if (hidden) 0f else 1f }) {
-        Column(
+        MessageBubble(
+            tone,
+            shape,
             Modifier
                 .then(if (attachments.isNotEmpty()) Modifier.fillMaxWidth() else Modifier.width(IntrinsicSize.Max))
                 .onGloballyPositioned { coordinates[0] = it }
                 .clip(shape)
-                .background(container)
                 .longPressToSelect(selectLabel) { onEvent(ThreadEvent.ToggleSelection(message)) }
                 .clickable(enabled = onOpen != null) {
                     if (state.selecting) {
@@ -809,9 +809,7 @@ private fun Bubble(
                 .semantics {
                     if (state.selecting) this.selected = selected
                     customActions = accessibleActions
-                }
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+                },
         ) {
             attachments.forEach { attachment ->
                 AttachmentView(attachment) {
@@ -980,25 +978,27 @@ private fun ImageAttachment(attachment: Attachment, clickable: Modifier) {
             attachment.width > 0 && attachment.height > 0 -> attachment.width.toFloat() / attachment.height
             else -> null
         }?.coerceAtLeast(1f / MAX_MEDIA_HEIGHT_RATIO)
-        Box(
+        Surface(
             Modifier
                 .fillMaxWidth()
                 .then(if (ratio != null) Modifier.aspectRatio(ratio) else Modifier.height(180.dp))
                 .clip(MaterialTheme.shapes.small)
-                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                 .then(clickable),
-            contentAlignment = Alignment.Center,
+            shape = MaterialTheme.shapes.small,
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
         ) {
-            if (bitmap != null) {
-                Image(bitmap, contentDescription = attachment.filename.ifEmpty { null }, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize())
-            }
-            if (attachment.mimetype.isVideoMimeType()) {
-                Icon(
-                    painterResource(org.fossify.commons.R.drawable.ic_play_outline_vector),
-                    contentDescription = null,
-                    tint = Color.Unspecified,
-                    modifier = Modifier.size(56.dp),
-                )
+            Box(contentAlignment = Alignment.Center) {
+                if (bitmap != null) {
+                    Image(bitmap, contentDescription = attachment.filename.ifEmpty { null }, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize())
+                }
+                if (attachment.mimetype.isVideoMimeType()) {
+                    Icon(
+                        painterResource(org.fossify.commons.R.drawable.ic_play_outline_vector),
+                        contentDescription = null,
+                        tint = Color.Unspecified,
+                        modifier = Modifier.size(56.dp),
+                    )
+                }
             }
         }
     }
@@ -1047,29 +1047,29 @@ private fun FileAttachment(attachment: Attachment, clickable: Modifier) {
 @Composable
 private fun AttachmentTile(icon: Int, title: String, subtitle: String, clickable: Modifier) {
     val colors = MaterialTheme.colorScheme
-    Row(
+    Surface(
         Modifier
             .fillMaxWidth()
             .heightIn(min = 56.dp)
             .clip(MaterialTheme.shapes.small)
-            .background(colors.surfaceContainerHigh)
-            .then(clickable)
-            .padding(8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+            .then(clickable),
+        shape = MaterialTheme.shapes.small,
+        color = colors.surfaceContainerHigh,
     ) {
-        Box(
-            Modifier
-                .size(40.dp)
-                .clip(CircleShape)
-                .background(Afsh.colors.badge.container),
-            contentAlignment = Alignment.Center,
+        Row(
+            Modifier.padding(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Icon(painterResource(icon), contentDescription = null, tint = Afsh.colors.badge.content, modifier = Modifier.size(22.dp))
-        }
-        Column(Modifier.weight(1f)) {
-            Text(title, style = MaterialTheme.typography.labelMedium, color = colors.onSurface, maxLines = 2, overflow = TextOverflow.Ellipsis)
-            if (subtitle.isNotEmpty()) Text(subtitle, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant, maxLines = 1)
+            Surface(Modifier.size(40.dp), shape = CircleShape, color = Afsh.colors.badge.container, contentColor = Afsh.colors.badge.content) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(painterResource(icon), contentDescription = null, modifier = Modifier.size(22.dp))
+                }
+            }
+            Column(Modifier.weight(1f)) {
+                Text(title, style = MaterialTheme.typography.labelMedium, color = colors.onSurface, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                if (subtitle.isNotEmpty()) Text(subtitle, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant, maxLines = 1)
+            }
         }
     }
 }

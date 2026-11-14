@@ -9,11 +9,9 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -63,6 +61,8 @@ import com.afsh.messages.ui.components.PageNavigation
 import com.afsh.messages.ui.components.PageScaffold
 import com.afsh.messages.ui.components.dayLabel
 import com.afsh.messages.ui.components.messageBubbleShape
+import com.afsh.messages.ui.components.BubbleTone
+import com.afsh.messages.ui.components.MessageBubble
 import com.afsh.messages.ui.forContent
 import com.afsh.messages.ui.withContentFonts
 import java.util.Calendar
@@ -379,19 +379,12 @@ private fun Bubble(message: SpamReviewMessage, selected: Boolean, modifier: Modi
     val time = remember(message.date) {
         android.text.format.DateFormat.format(context.getTimeFormat(), message.date).toString()
     }
-    val shape = messageBubbleShape(incoming = true)
-    Column(
-        modifier
-            .background(if (selected) colors.secondaryContainer else colors.surfaceContainer, shape)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
+    MessageBubble(BubbleTone.of(incoming = true, selected = selected), messageBubbleShape(incoming = true), modifier) {
         val ranges = message.why?.ranges.orEmpty()
         val highlight = SpanStyle(background = colors.errorContainer, color = colors.onErrorContainer)
         Text(
             remember(message.body, ranges, highlight) { highlighted(message.body, ranges, highlight).withContentFonts() },
             style = MaterialTheme.typography.bodyLarge.forContent(message.body),
-            color = if (selected) colors.onSecondaryContainer else colors.onSurface,
         )
         val meta = if (selected) Afsh.colors.onSecondaryContainerVariant else colors.onSurfaceVariant
         message.why?.let { WhyLine(message.body, it, meta) }
