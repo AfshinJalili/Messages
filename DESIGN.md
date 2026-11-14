@@ -34,7 +34,7 @@ The palette uses mineral paper (`$paper`), deep pine (`$pine`, `$ink`), lime for
 
 ## Components and variations
 
-In the app, the reusable parts of board `00b` live in `ui/components/`: primary navigation (bar or rail), page app bar, buttons, destination card, info panel, empty state, attention notice, decision option, confirmation dialog, setting rows (section heading, navigation, switch, radio, checkbox), snackbar and `PageScaffold`, which composes a secondary page from them. Compose pages outside the inbox extend `ComposePageActivity`, which applies the theme and shows deletion Undo on the page's snackbar.
+In the app, the reusable parts of board `00b` live in `ui/components/`: primary navigation (bar or rail), page app bar, buttons, destination card, info panel, empty state, attention notice, decision option, confirmation dialog, setting rows (section heading, navigation, switch, radio, checkbox), snackbar and `PageScaffold`, which composes a secondary page from them. Buttons and setting rows sit on stock Material 3 parts with colours from theme roles: `AfshButton` on `Button` (primary, danger) and `FilledTonalButton` (secondary, quiet), `FloatingButton` on `ExtendedFloatingActionButton` (new message, jump to latest), `SendButton` on `FilledIconButton`, and every setting row on `ListItem` with a stock `Switch`, `RadioButton` or `Checkbox`. The whole row is the target, found in tests by its label and role. Compose pages outside the inbox extend `ComposePageActivity`, which applies the theme and shows deletion Undo on the page's snackbar.
 
 ### Dialogs
 

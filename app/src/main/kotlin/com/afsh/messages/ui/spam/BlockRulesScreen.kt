@@ -156,9 +156,9 @@ private fun FilterToggle(enabled: Boolean, onChange: (Boolean) -> Unit) {
         modifier = Modifier
             .clip(MaterialTheme.shapes.medium)
             .background(MaterialTheme.colorScheme.surfaceContainer)
-            .toggleable(value = enabled, role = Role.Switch, onValueChange = onChange)
-            .padding(horizontal = 8.dp),
+            .toggleable(value = enabled, role = Role.Switch, onValueChange = onChange),
         value = stringResource(if (enabled) R.string.filter_obvious_spam_on else R.string.filter_obvious_spam_off),
+        bleed = false,
     ) {
         Switch(checked = enabled, onCheckedChange = null, colors = afshSwitchColors())
     }

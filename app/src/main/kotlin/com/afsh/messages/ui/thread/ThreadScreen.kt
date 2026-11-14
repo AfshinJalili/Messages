@@ -1,6 +1,7 @@
 package com.afsh.messages.ui.thread
 
 import com.afsh.messages.ui.AfshCorners
+import com.afsh.messages.ui.components.FloatingButton
 import com.afsh.messages.ui.components.UnreadDivider
 import android.content.res.Configuration
 import android.text.format.DateFormat
@@ -1151,30 +1152,14 @@ private fun JumpToLatest(state: ThreadUiState, newestFirst: List<ThreadItem>, li
         stringResource(R.string.scroll_to_latest_message)
     }
     AnimatedVisibility(show && !state.selecting, modifier.padding(16.dp), enter = fadeIn(), exit = fadeOut()) {
-        Surface(
+        FloatingButton(
+            R.drawable.ic_arrow_down_vector,
+            description = description,
             onClick = { onEvent(ThreadEvent.JumpToLatest) },
-            shape = CircleShape,
-            color = Afsh.colors.secondaryButton.container,
-            contentColor = Afsh.colors.secondaryButton.content,
-            shadowElevation = 4.dp,
-            modifier = Modifier
-                .heightIn(min = TargetSize)
-                .semantics(mergeDescendants = true) { contentDescription = description }
-                .testTag(THREAD_JUMP_TAG),
-        ) {
-            Row(
-                Modifier
-                    .heightIn(min = TargetSize)
-                    .padding(horizontal = 14.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Icon(painterResource(R.drawable.ic_arrow_down_vector), contentDescription = null, modifier = Modifier.size(20.dp))
-                if (unread > 0) {
-                    Text(pluralStringResource(R.plurals.thread_new_count, unread, unread), style = MaterialTheme.typography.labelMedium)
-                }
-            }
-        }
+            modifier = Modifier.testTag(THREAD_JUMP_TAG),
+            text = if (unread > 0) pluralStringResource(R.plurals.thread_new_count, unread, unread) else null,
+            secondary = true,
+        )
     }
 }
 
