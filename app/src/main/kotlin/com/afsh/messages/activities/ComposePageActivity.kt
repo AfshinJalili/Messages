@@ -20,6 +20,7 @@ import org.fossify.commons.helpers.isQPlus
 import com.afsh.messages.helpers.NavBadges
 import com.afsh.messages.helpers.UndoDeletion
 import com.afsh.messages.helpers.refreshConversations
+import com.afsh.messages.ui.AfshSystemBars
 import com.afsh.messages.ui.AfshTheme
 import com.afsh.messages.ui.components.PageNavigation
 import com.afsh.messages.ui.components.TopDestination
@@ -53,22 +54,22 @@ abstract class ComposePageActivity : SimpleActivity(), UndoDeletion.UndoHost {
         setContentView(
             ComposeView(this).apply {
                 setContent {
-                    AfshTheme(dark = darkTheme, textScale = textScale) { Page() }
+                    AfshTheme(dark = darkTheme, textScale = textScale) {
+                        AfshSystemBars(window)
+                        Page()
+                    }
                 }
             },
         )
         WindowCompat.setDecorFitsSystemWindows(window, false)
+        // The bottom bar paints its own surface; a system scrim on top would double it.
+        if (isQPlus()) window.isNavigationBarContrastEnforced = false
     }
 
     override fun onResume() {
         super.onResume()
         refreshTheme()
         NavBadges.refresh(this)
-        if (isQPlus()) window.isNavigationBarContrastEnforced = false
-        WindowCompat.getInsetsController(window, window.decorView).apply {
-            isAppearanceLightStatusBars = false
-            isAppearanceLightNavigationBars = !darkTheme
-        }
     }
 
     override fun onStop() {

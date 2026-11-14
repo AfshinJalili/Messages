@@ -15,8 +15,10 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.colorResource
@@ -181,33 +183,37 @@ private fun typography(rtl: Boolean): Typography {
     )
 }
 
-@Composable
-private fun colorScheme(dark: Boolean): ColorScheme {
-    val paper = colorResource(R.color.afsh_paper)
-    val ink = colorResource(R.color.afsh_ink)
-    val pine = colorResource(R.color.afsh_pine)
-    val white = colorResource(R.color.design_white)
-    val lilac = colorResource(R.color.afsh_lilac)
-    val lime = colorResource(R.color.afsh_lime)
+/**
+ * The one palette: Compose screens read it through [AfshTheme], and the XML theme, Commons'
+ * stored accent and notifications read the same roles through [com.afsh.messages.helpers.primaryRoleColor].
+ */
+fun Context.afshColorScheme(dark: Boolean): ColorScheme {
+    fun color(id: Int) = Color(getColor(id))
+    val paper = color(R.color.afsh_paper)
+    val ink = color(R.color.afsh_ink)
+    val pine = color(R.color.afsh_pine)
+    val white = color(R.color.design_white)
+    val lilac = color(R.color.afsh_lilac)
+    val lime = color(R.color.afsh_lime)
     return if (dark) {
         darkColorScheme(
-            primary = colorResource(R.color.afsh_primary_dark),
+            primary = color(R.color.afsh_primary_dark),
             onPrimary = ink,
-            primaryContainer = colorResource(R.color.afsh_pine_2),
+            primaryContainer = color(R.color.afsh_pine_2),
             onPrimaryContainer = white,
-            secondaryContainer = colorResource(R.color.afsh_lilac_dark),
+            secondaryContainer = color(R.color.afsh_lilac_dark),
             onSecondaryContainer = lilac,
-            background = colorResource(R.color.afsh_night),
-            surface = colorResource(R.color.afsh_night),
-            surfaceContainer = colorResource(R.color.afsh_night_surface),
-            surfaceContainerHigh = colorResource(R.color.afsh_surface_high_dark),
+            background = color(R.color.afsh_night),
+            surface = color(R.color.afsh_night),
+            surfaceContainer = color(R.color.afsh_night_surface),
+            surfaceContainerHigh = color(R.color.afsh_surface_high_dark),
             onSurface = paper,
-            onSurfaceVariant = colorResource(R.color.afsh_muted_dark),
-            outlineVariant = colorResource(R.color.afsh_line_dark),
-            error = colorResource(R.color.afsh_coral),
+            onSurfaceVariant = color(R.color.afsh_muted_dark),
+            outlineVariant = color(R.color.afsh_line_dark),
+            error = color(R.color.afsh_coral),
             onError = ink,
-            errorContainer = colorResource(R.color.afsh_error_container_dark),
-            onErrorContainer = colorResource(R.color.afsh_error_container),
+            errorContainer = color(R.color.afsh_error_container_dark),
+            onErrorContainer = color(R.color.afsh_error_container),
             inverseSurface = paper,
             inverseOnSurface = ink,
             inversePrimary = pine,
@@ -223,13 +229,13 @@ private fun colorScheme(dark: Boolean): ColorScheme {
             background = paper,
             surface = paper,
             surfaceContainer = white,
-            surfaceContainerHigh = colorResource(R.color.afsh_surface_high),
+            surfaceContainerHigh = color(R.color.afsh_surface_high),
             onSurface = ink,
-            onSurfaceVariant = colorResource(R.color.afsh_muted),
-            outlineVariant = colorResource(R.color.afsh_line),
-            error = colorResource(R.color.afsh_error),
+            onSurfaceVariant = color(R.color.afsh_muted),
+            outlineVariant = color(R.color.afsh_line),
+            error = color(R.color.afsh_error),
             onError = white,
-            errorContainer = colorResource(R.color.afsh_error_container),
+            errorContainer = color(R.color.afsh_error_container),
             onErrorContainer = ink,
             inverseSurface = ink,
             inverseOnSurface = white,
@@ -288,7 +294,8 @@ object AfshCorners {
 fun AfshTheme(dark: Boolean, textScale: Float = 1f, content: @Composable () -> Unit) {
     val density = LocalDensity.current
     val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
-    val scheme = colorScheme(dark)
+    val context = LocalContext.current
+    val scheme = remember(context, dark) { context.afshColorScheme(dark) }
     // Every role resolves to today's pine container; give a role its own value to recolor only that job.
     val pine = ColorRole(scheme.primaryContainer, scheme.onPrimaryContainer)
     val extras = AfshColors(

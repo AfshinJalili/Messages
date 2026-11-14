@@ -1,25 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <!-- Brand palette. Screens consume the semantic roles below. -->
-    <color name="brand_cobalt">#345AE8</color>
-    <color name="brand_cobalt_dark">#A9BAFF</color>
-    <color name="brand_container">#E3E9FF</color>
-    <color name="brand_on_container">#132967</color>
-    <color name="brand_container_dark">#243466</color>
-    <color name="brand_on_container_dark">#DEE4FF</color>
     <color name="design_white">#FFFFFF</color>
     <color name="design_ink">#202124</color>
 
-    <!-- Commons configuration and XML widgets share these defaults. -->
-    <color name="color_primary">@color/brand_cobalt</color>
-    <color name="color_primary_dark">@color/brand_cobalt_dark</color>
-    <color name="color_accent">@color/brand_cobalt</color>
-    <color name="default_primary_color">@color/brand_cobalt_dark</color>
-    <color name="default_accent_color">@color/brand_cobalt</color>
+    <!-- Commons reads these names for its defaults; they point at the theme's primary role. -->
+    <color name="color_primary">@color/afsh_pine</color>
+    <color name="color_primary_dark">@color/afsh_primary_dark</color>
+    <color name="color_accent">@color/afsh_pine</color>
+    <color name="default_primary_color">@color/afsh_pine</color>
+    <color name="default_accent_color">@color/afsh_pine</color>
     <color name="launcher_pine">@color/afsh_pine</color>
     <color name="icon_mask">@color/design_white</color>
-    <color name="on_action">@color/design_white</color>
     <color name="surface_light">@color/design_white</color>
     <color name="on_surface_light">@color/design_ink</color>
     <color name="surface_dark">@color/theme_dark_background_color</color>
