@@ -83,11 +83,11 @@ class MessageActionChecks {
         val events = mutableListOf<ThreadEvent>()
         show(ThreadUiState(items = listOf(fixture))) { events += it }
         compose.onNode(hasContentDescription(context.getString(R.string.message_delivered), substring = true)).performClick()
-        compose.onNodeWithText(context.getString(org.fossify.commons.R.string.copy)).assertIsDisplayed()
-        compose.onNodeWithText(context.getString(org.fossify.commons.R.string.delete)).assertIsDisplayed()
-        compose.onNodeWithText(context.getString(R.string.star_message)).assertIsDisplayed()
-        compose.onNodeWithText(context.getString(org.fossify.commons.R.string.share)).assertExists()
-        compose.onNodeWithText(context.getString(R.string.forward_message)).performClick()
+        compose.onNode(sheetAction(context.getString(org.fossify.commons.R.string.copy))).assertIsDisplayed()
+        compose.onNode(sheetAction(context.getString(org.fossify.commons.R.string.delete))).assertIsDisplayed()
+        compose.onNode(sheetAction(context.getString(R.string.star_message))).assertIsDisplayed()
+        compose.onNode(sheetAction(context.getString(org.fossify.commons.R.string.share))).assertExists()
+        compose.onNode(sheetAction(context.getString(R.string.forward_message))).performClick()
         // The sheet acts only once it has slid away.
         compose.waitUntil(5_000) { events.any { it is ThreadEvent.Act } }
         assertEquals(ThreadEvent.Act(MessageAction.FORWARD, listOf(fixture)), events.filterIsInstance<ThreadEvent.Act>().single())

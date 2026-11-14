@@ -1,5 +1,6 @@
 package com.afsh.messages
 
+import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.SnackbarHostState
@@ -99,7 +100,8 @@ class ThreadDateChecks {
         compose.onAllNodes(hasContentDescription(context.getString(R.string.message_delivered), substring = true)).onFirst().assertExists()
         compose.onNodeWithText("Document.pdf").assertExists()
         openGroupedSimMessageDetails()
-        compose.onNode(hasText(sheetInfo())).assertExists()
+        compose.onNode(isSheet(sheetInfo())).assertExists()
+        compose.onNode(hasText(sheetInfo()) and hasAnyAncestor(isSheet(sheetInfo()))).assertExists()
     }
 
     @Test fun stickyDateFollowsTopDayThenFades() {
@@ -119,7 +121,7 @@ class ThreadDateChecks {
         show(state(), rtl = true, textScale = 1.5f)
         compose.onNodeWithTag(THREAD_LIST_TAG).performScrollToIndex(state().items.size - 12)
         openGroupedSimMessageDetails()
-        val meta = compose.onNode(hasText(sheetInfo())).getUnclippedBoundsInRoot()
+        val meta = compose.onNode(hasText(sheetInfo()) and hasAnyAncestor(isSheet(sheetInfo()))).getUnclippedBoundsInRoot()
         // The sheet is its own full-width window, so it is bounded by the screen, not the 360 dp host.
         val screen = context.resources.configuration.screenWidthDp.dp
         assertTrue("Sheet info ${meta.left}..${meta.right} fits 0..$screen", meta.left >= 0.dp && meta.right <= screen)

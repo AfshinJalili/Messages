@@ -1,5 +1,7 @@
 package com.afsh.messages
 
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasText
 import android.provider.Telephony
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Box
@@ -194,9 +196,9 @@ class ConversationPageChecks {
             }
         }
         compose.onNodeWithText("Happy birthday", substring = true).performClick()
-        compose.onNodeWithText(text(R.string.edit_message_and_time)).assertExists()
-        compose.onNodeWithText(text(R.string.send_now)).assertExists()
-        compose.onNodeWithText(text(R.string.scheduled_for, ""), substring = true).assertExists()
+        compose.onNode(sheetAction(text(R.string.edit_message_and_time))).assertExists()
+        compose.onNode(sheetAction(text(R.string.send_now))).assertExists()
+        compose.onNode(hasText(text(R.string.scheduled_for, ""), substring = true) and hasAnyAncestor(isAnySheet())).assertExists()
     }
 
     @Test
