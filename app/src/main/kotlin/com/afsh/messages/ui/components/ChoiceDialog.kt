@@ -13,7 +13,7 @@ import androidx.compose.ui.Modifier
 data class Choice<T>(val value: T, val label: String, val detail: String? = null)
 
 /**
- * A single choice in the shared [AfshDialog] frame: the title, the options as radio rows
+ * A single choice in the shared [AfshDialog]: the title, the options as radio rows
  * (choosing one closes the dialog), and Cancel. [selected] may be null when nothing is chosen yet.
  */
 @Composable
@@ -25,7 +25,7 @@ fun <T> ChoiceDialog(
     onChoose: (T) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    AfshDialog(title, onDismiss, scroll = false) {
+    AfshDialog(title, onDismiss, dismissLabel, scroll = false) {
         Column(
             Modifier
                 .weight(1f, fill = false)
@@ -41,6 +41,5 @@ fun <T> ChoiceDialog(
                 )
             }
         }
-        DialogActions(dismissLabel = dismissLabel, onDismiss = onDismiss)
     }
 }
