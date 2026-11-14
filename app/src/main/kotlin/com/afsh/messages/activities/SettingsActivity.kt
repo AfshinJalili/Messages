@@ -33,6 +33,7 @@ import com.afsh.messages.extensions.messagesDB
 import com.afsh.messages.helpers.BackupFile
 import com.afsh.messages.helpers.ExportOutcome
 import com.afsh.messages.helpers.InvalidBackupException
+import com.afsh.messages.helpers.NavBadges
 import com.afsh.messages.helpers.MessagesExporter
 import com.afsh.messages.helpers.MessagesImporter
 import com.afsh.messages.helpers.refreshConversations
