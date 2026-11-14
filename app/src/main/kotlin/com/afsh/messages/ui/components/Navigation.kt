@@ -67,15 +67,15 @@ private val RailInsets
     @Composable get() = WindowInsets.safeDrawing.only(WindowInsetsSides.Start + WindowInsetsSides.Vertical)
 
 /**
- * Component / primary navigation: a bar at the bottom, or a rail on wide and short windows. The
- * Library item carries the unread spam count.
+ * Component / primary navigation: a bar at the bottom, or a rail on wide and short windows. Each
+ * item carries its [NavCounts] badge, whichever destination is selected.
  */
 @Composable
 fun PrimaryNavigation(
     selected: TopDestination,
     onSelect: (TopDestination) -> Unit,
     modifier: Modifier = Modifier,
-    unreadSpam: Int = 0,
+    counts: NavCounts = NavCounts(),
     vertical: Boolean = false,
 ) {
     @Composable
@@ -85,7 +85,7 @@ fun PrimaryNavigation(
             selected = destination == selected,
             onClick = { onSelect(destination) },
             modifier = modifier,
-            badge = if (destination == TopDestination.LIBRARY) unreadSpam else 0,
+            badge = counts.of(destination),
         )
     }
     Surface(modifier, color = MaterialTheme.colorScheme.surfaceContainer) {
