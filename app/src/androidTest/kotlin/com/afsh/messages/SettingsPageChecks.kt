@@ -19,6 +19,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.fossify.commons.helpers.DATE_FORMAT_ONE
 import com.afsh.messages.helpers.SwipeAction
 import com.afsh.messages.ui.AfshTheme
+import com.afsh.messages.helpers.NavBadges
+import com.afsh.messages.ui.components.NavCounts
 import com.afsh.messages.ui.components.PageNavigation
 import com.afsh.messages.ui.components.TopDestination
 import com.afsh.messages.ui.settings.ImportReview
@@ -93,6 +95,28 @@ class SettingsPageChecks {
         compose.onAllNodesWithText(DATE_FORMAT_ONE).assertCountEquals(0)
         compose.onNodeWithText(text(R.string.theme_dark)).performScrollTo().performClick()
         check(events.last() == SettingsEvent.SetTheme(ThemeChoice.DARK)) { "Events $events" }
+    }
+
+    /** Settings shows the same Library badge as the inbox: pages read the shared counts. */
+    @Test
+    fun settingsKeepsTheLibraryBadge() {
+        val before = NavBadges.counts.value
+        try {
+            NavBadges.publish(NavCounts(library = 7))
+            show(SettingsPage.OVERVIEW) {}
+            val seven = String.format(compose.activity.resources.configuration.locales[0], "%d", 7)
+            compose.onNodeWithText(seven, useUnmergedTree = true).assertExists()
+        } finally {
+            NavBadges.publish(before)
+        }
+    }
+
+    @Test
+    fun appearanceTurnsOnTheInboxCount() {
+        val events = mutableListOf<SettingsEvent>()
+        show(SettingsPage.APPEARANCE) { events += it }
+        compose.onNodeWithText(text(R.string.show_inbox_unread_count)).performScrollTo().performClick()
+        check(events.last() == SettingsEvent.SetInboxUnreadCount(true)) { "Events $events" }
     }
 
     @Test
