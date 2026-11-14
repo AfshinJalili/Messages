@@ -34,7 +34,7 @@ The palette uses mineral paper (`$paper`), deep pine (`$pine`, `$ink`), lime for
 
 ## Components and variations
 
-In the app, the reusable parts of board `00b` live in `ui/components/`: primary navigation (bar or rail), page app bar, buttons, destination card, info panel, empty state, attention notice, decision option, confirmation dialog, setting rows (section heading, navigation, switch, radio, checkbox), snackbar and `PageScaffold`, which composes a secondary page from them. Compose pages outside the inbox extend `ComposePageActivity`, which applies the theme and shows deletion Undo on the page's snackbar.
+In the app, the reusable parts of board `00b` live in `ui/components/`: primary navigation (bar or rail), page app bar, buttons, destination card, info panel, empty state, attention notice, decision option, confirmation dialog, setting rows (section heading, navigation, switch, radio, checkbox), snackbar and `PageScaffold`, which composes a secondary page from them. The page app bar is the stock Material 3 `TopAppBar` in the header role, with pinned scroll behavior wired by `PageScaffold`; screens never build their own top bar. Compose pages outside the inbox extend `ComposePageActivity`, which applies the theme and shows deletion Undo on the page's snackbar.
 
 ### Dialogs
 
