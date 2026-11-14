@@ -53,17 +53,17 @@ private val RailInsets
 
 /**
  * Component / primary navigation: Material 3's navigation bar at the bottom, or its navigation rail on
- * wide and short windows. Items are tabs. The Library item carries the unread spam count.
+ * wide and short windows. Items are tabs, and each carries its [NavCounts] badge whichever is selected.
  */
 @Composable
 fun PrimaryNavigation(
     selected: TopDestination,
     onSelect: (TopDestination) -> Unit,
     modifier: Modifier = Modifier,
-    unreadSpam: Int = 0,
+    counts: NavCounts = NavCounts(),
     vertical: Boolean = false,
 ) {
-    fun badge(destination: TopDestination) = if (destination == TopDestination.LIBRARY) unreadSpam else 0
+    fun badge(destination: TopDestination) = counts.of(destination)
     val colors = MaterialTheme.colorScheme
     if (vertical) {
         NavigationRail(modifier, containerColor = colors.surfaceContainer, windowInsets = RailInsets) {

@@ -31,7 +31,9 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.afsh.messages.ui.AfshTheme
 import androidx.compose.ui.platform.testTag
 import com.afsh.messages.ui.components.BottomBarHeight
+import com.afsh.messages.ui.components.NavCounts
 import com.afsh.messages.ui.components.PrimaryNavigation
+import com.afsh.messages.ui.components.navCounts
 import com.afsh.messages.ui.components.TopDestination
 import org.junit.Rule
 import org.junit.Test
@@ -59,7 +61,7 @@ class NavigationChecks {
             ) {
                 AfshTheme(dark = false) {
                     Box(Modifier.width(360.dp).consumeWindowInsets(WindowInsets.systemBars)) {
-                        PrimaryNavigation(TopDestination.LIBRARY, onSelect = {}, modifier = Modifier.testTag(BAR), unreadSpam = 120)
+                        PrimaryNavigation(TopDestination.LIBRARY, onSelect = {}, modifier = Modifier.testTag(BAR), counts = NavCounts(library = 120))
                     }
                 }
             }
@@ -90,6 +92,44 @@ class NavigationChecks {
                 }
             }
         }
+    }
+
+    /** The Library badge stays whichever destination is open; Settings used to drop it. */
+    @Test
+    fun libraryBadgeShowsOnEveryDestination() {
+        var selected by mutableStateOf(TopDestination.INBOX)
+        compose.setContent {
+            AfshTheme(dark = false) {
+                PrimaryNavigation(selected, onSelect = {}, counts = NavCounts(library = 7))
+            }
+        }
+        val seven = String.format(compose.activity.resources.configuration.locales[0], "%d", 7)
+        for (destination in TopDestination.entries) {
+            selected = destination
+            compose.waitForIdle()
+            compose.onNodeWithText(seven, useUnmergedTree = true).assertExists("No Library badge on $destination")
+        }
+    }
+
+    /** The Inbox badge counts unread messages, and only when its setting is on (it is off by default). */
+    @Test
+    fun inboxBadgeFollowsItsSetting() {
+        check(navCounts(unreadSpam = 2, unreadMessages = 5, inboxCountShown = false) == NavCounts(library = 2, inbox = 0))
+        check(navCounts(unreadSpam = 2, unreadMessages = 5, inboxCountShown = true) == NavCounts(library = 2, inbox = 5))
+        check(NavCounts(library = 2, inbox = 5).of(TopDestination.INBOX) == 5)
+        check(NavCounts(library = 2, inbox = 5).of(TopDestination.LIBRARY) == 2)
+        check(NavCounts(library = 2, inbox = 5).of(TopDestination.SETTINGS) == 0)
+        var shown by mutableStateOf(false)
+        compose.setContent {
+            AfshTheme(dark = false) {
+                PrimaryNavigation(TopDestination.SETTINGS, onSelect = {}, counts = navCounts(0, 5, shown))
+            }
+        }
+        val five = String.format(compose.activity.resources.configuration.locales[0], "%d", 5)
+        compose.onNodeWithText(five, useUnmergedTree = true).assertDoesNotExist()
+        shown = true
+        compose.waitForIdle()
+        compose.onNodeWithText(five, useUnmergedTree = true).assertExists()
     }
 
     private companion object {

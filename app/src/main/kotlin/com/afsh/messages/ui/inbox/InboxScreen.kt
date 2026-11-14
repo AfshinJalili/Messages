@@ -194,7 +194,7 @@ fun InboxScreen(
                 when (it) {
                     InboxBottomBar.SELECTION -> InboxSelectionBar(state, onAction)
                     InboxBottomBar.NAVIGATION ->
-                        PrimaryNavigation(if (libraryOpen) TopDestination.LIBRARY else TopDestination.INBOX, onDestination, unreadSpam = state.unreadSpam)
+                        PrimaryNavigation(if (libraryOpen) TopDestination.LIBRARY else TopDestination.INBOX, onDestination, counts = state.navCounts)
                     InboxBottomBar.NONE -> Unit
                 }
             }
@@ -209,7 +209,7 @@ fun InboxScreen(
                 PrimaryNavigation(
                     if (libraryOpen) TopDestination.LIBRARY else TopDestination.INBOX,
                     onDestination,
-                    unreadSpam = state.unreadSpam,
+                    counts = state.navCounts,
                     vertical = true,
                 )
             }
