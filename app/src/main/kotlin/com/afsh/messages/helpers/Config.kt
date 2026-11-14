@@ -51,6 +51,12 @@ class Config(context: Context) : BaseConfig(context) {
         set(showCharacterCounter) = prefs.edit()
             .putBoolean(SHOW_CHARACTER_COUNTER, showCharacterCounter).apply()
 
+    /** Unread message count on the Inbox navigation item; off by default. */
+    var showInboxUnreadCount: Boolean
+        get() = prefs.getBoolean(SHOW_INBOX_UNREAD_COUNT, false)
+        set(showInboxUnreadCount) = prefs.edit()
+            .putBoolean(SHOW_INBOX_UNREAD_COUNT, showInboxUnreadCount).apply()
+
     var useSimpleCharacters: Boolean
         get() = prefs.getBoolean(USE_SIMPLE_CHARACTERS, false)
         set(useSimpleCharacters) = prefs.edit()
