@@ -2,10 +2,14 @@ package org.fossify.commons.extensions
 
 import android.app.Activity
 import android.graphics.Color
+import org.fossify.commons.FossifyApp
 import org.fossify.commons.R
 import org.fossify.commons.helpers.DARK_GREY
 
-fun Activity.getThemeId(color: Int = baseConfig.primaryColor, showTransparentTop: Boolean = false) = when {
+fun Activity.getThemeId(color: Int = baseConfig.primaryColor, showTransparentTop: Boolean = false) =
+    (application as? FossifyApp)?.themeId(this) ?: paletteThemeId(color, showTransparentTop)
+
+private fun Activity.paletteThemeId(color: Int, showTransparentTop: Boolean) = when {
     isDynamicTheme() -> if (isSystemInDarkMode()) R.style.AppTheme_Base_System else R.style.AppTheme_Base_System_Light
     isBlackAndWhiteTheme() -> when {
         showTransparentTop -> R.style.AppTheme_BlackAndWhite_NoActionBar
