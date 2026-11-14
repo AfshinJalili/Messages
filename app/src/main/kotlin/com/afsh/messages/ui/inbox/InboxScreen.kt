@@ -57,10 +57,11 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBarScrollBehavior
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -123,6 +124,7 @@ private const val BandTitle = "band-title"
 private const val BandBody = "band-body"
 private const val BandTitleCollapsedScale = 25f / 31f
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InboxScreen(
     state: InboxUiState,
@@ -160,18 +162,13 @@ fun InboxScreen(
     val configuration = LocalConfiguration.current
     val compactHeight = configuration.screenHeightDp < COMPACT_HEIGHT_DP
     val forcedCollapsed = configuration.screenHeightDp < 320 || LocalDensity.current.fontScale >= 1.5f
-    // D01 / 80: the band follows the scroll; searching and selecting keep it open.
-    val band = rememberBandCollapse()
-    val linked by rememberUpdatedState(!search.open && !state.selecting && !forcedCollapsed && !compactHeight)
-    val scrollConnection = rememberBandScrollConnection(
-        band,
-        enabled = { linked },
-        canScroll = { listState.canScrollForward || listState.canScrollBackward },
-    )
-    LaunchedEffect(linked) { if (!linked) band.settle(open = true) }
+    // D01 / 80: the header follows the scroll (Material 3 enter-always); searching and selecting keep it open.
+    val linked = !search.open && !state.selecting && !forcedCollapsed && !compactHeight
+    val header = rememberInboxHeaderScroll(linked) { listState.canScrollForward || listState.canScrollBackward }
+    LaunchedEffect(linked) { if (!linked) header.state.expand() }
     // Derived, so the screen recomposes when the FAB should change, not on every scrolled pixel.
-    val bandCollapsed by remember(band) { derivedStateOf { band.fraction > BandCollapse.HALF } }
-    val collapsed = forcedCollapsed || bandCollapsed
+    val headerCollapsed by remember(header) { derivedStateOf { header.state.collapsedFraction > HEADER_HALF } }
+    val collapsed = forcedCollapsed || headerCollapsed
     val showRail = (compactHeight || configuration.screenWidthDp >= EXPANDED_WIDTH_DP || LocalListPane.current) && !state.selecting
     Scaffold(
         modifier = modifier.imePadding(),
@@ -224,9 +221,9 @@ fun InboxScreen(
                         modifier = Modifier.fillMaxSize(),
                     )
                 } else {
-                    Column(Modifier.fillMaxSize().nestedScroll(scrollConnection)) {
+                    Column(Modifier.fillMaxSize().nestedScroll(header.nestedScrollConnection)) {
                         IdentityBand(
-                            state, compactHeight, forcedCollapsed, band, onSearch, onSelectAll, onClearSelection,
+                            state, compactHeight, forcedCollapsed, header, onSearch, onSelectAll, onClearSelection,
                             search, onSearchQuery, onSearchBack,
                         )
                         if (search.open) {
@@ -303,12 +300,13 @@ private fun InboxList(
 }
 
 /** Selection swaps the search field for same-height controls, so rows do not jump under the finger. */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun IdentityBand(
     state: InboxUiState,
     compactHeight: Boolean,
     forcedCollapsed: Boolean,
-    band: BandCollapse,
+    header: TopAppBarScrollBehavior,
     onSearch: () -> Unit,
     onSelectAll: () -> Unit,
     onClearSelection: () -> Unit,
@@ -337,7 +335,7 @@ private fun IdentityBand(
         return
     }
     val showSubtitle = !compactHeight && LocalConfiguration.current.screenWidthDp >= 360 && LocalDensity.current.fontScale < 1.5f
-    val searchShown by remember(band) { derivedStateOf { band.fraction > BandCollapse.HALF } }
+    val searchShown by remember(header) { derivedStateOf { header.state.collapsedFraction > HEADER_HALF } }
     val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     Layout(
         modifier = bandModifier.clipToBounds(),
@@ -346,7 +344,7 @@ private fun IdentityBand(
             Column(
                 Modifier
                     .layoutId(BandBody)
-                    .graphicsLayer { alpha = 1f - band.fraction }
+                    .graphicsLayer { alpha = 1f - header.state.collapsedFraction }
                     .padding(start = 20.dp, end = 20.dp, bottom = 20.dp),
             ) {
                 AnimatedVisibility(
@@ -392,7 +390,7 @@ private fun IdentityBand(
                                 .weight(1f)
                                 .graphicsLayer {
                                     // Draw-only shrink from headline (31) to title-lg (25): no text layout per frame.
-                                    val titleScale = BandTitleCollapsedScale + (1f - BandTitleCollapsedScale) * (1f - band.fraction)
+                                    val titleScale = BandTitleCollapsedScale + (1f - BandTitleCollapsedScale) * (1f - header.state.collapsedFraction)
                                     scaleX = titleScale
                                     scaleY = titleScale
                                     transformOrigin = TransformOrigin(if (rtl) 1f else 0f, 0.5f)
@@ -404,7 +402,7 @@ private fun IdentityBand(
                             onClick = onSearch,
                             enabled = searchShown && !state.selecting,
                             modifier = Modifier
-                                .graphicsLayer { alpha = if (state.selecting) 0f else band.fraction }
+                                .graphicsLayer { alpha = if (state.selecting) 0f else header.state.collapsedFraction }
                                 // Not announced while it isn't there to tap.
                                 .then(if (searchShown && !state.selecting) Modifier else Modifier.clearAndSetSemantics {}),
                         ) {
@@ -418,8 +416,8 @@ private fun IdentityBand(
         val loose = constraints.copy(minHeight = 0)
         val titleRow = measurables.first { it.layoutId == BandTitle }.measure(loose)
         val body = measurables.first { it.layoutId == BandBody }.measure(loose)
-        band.updateLimit(body.height.toFloat())
-        val offset = band.offsetPx.roundToInt()
+        header.state.fitCollapsibleHeight(body.height.toFloat())
+        val offset = header.state.heightOffset.roundToInt()
         val height = titleRow.height + (body.height + offset).coerceAtLeast(0)
         layout(constraints.maxWidth, height) {
             body.place(0, titleRow.height + offset)
