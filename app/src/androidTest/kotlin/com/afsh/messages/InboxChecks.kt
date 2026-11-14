@@ -39,6 +39,12 @@ import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import com.afsh.messages.ui.components.ConversationRow
+import com.afsh.messages.ui.components.SwipeGesture
+import com.afsh.messages.ui.components.SwipeTone
+import com.afsh.messages.ui.components.SwipeableRow
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeLeft
+import androidx.compose.ui.test.swipeRight
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
@@ -275,6 +281,42 @@ class InboxChecks {
             }
             compose.onNodeWithText(String.format(compose.activity.resources.configuration.locales[0], "%d", 120), useUnmergedTree = true)
                 .assertExists()
+        }
+    }
+
+    /**
+     * Swipe settings are physical: a leftward swipe reports left under RTL too, and a short fast
+     * flick never commits Delete or Archive.
+     */
+    @Test
+    fun swipeRowDirectionsAndFlicks() {
+        var rtl by mutableStateOf(false)
+        val swipes = mutableListOf<Boolean>()
+        val gesture = SwipeGesture(R.string.archive, R.drawable.ic_archive_vector, SwipeTone.PRIMARY)
+        compose.setContent {
+            CompositionLocalProvider(LocalLayoutDirection provides if (rtl) LayoutDirection.Rtl else LayoutDirection.Ltr) {
+                AfshTheme(dark = false) {
+                    Box(Modifier.width(360.dp)) {
+                        SwipeableRow(left = gesture, right = gesture, enabled = true, onSwipe = { swipes += it }) {
+                            ConversationRow(row(1, "Mina"), selected = false, selecting = false, onClick = {}, onLongClick = {})
+                        }
+                    }
+                }
+            }
+        }
+        val mina = compose.onNode(hasContentDescription("Mina", substring = true))
+        for (direction in listOf(false, true)) {
+            rtl = direction
+            swipes.clear()
+            compose.waitForIdle()
+            mina.performTouchInput { swipeLeft(startX = centerX, endX = centerX - width * 0.25f, durationMillis = 40) }
+            compose.waitForIdle()
+            check(swipes.isEmpty()) { "A short flick committed (rtl=$direction): $swipes" }
+            mina.performTouchInput { swipeLeft() }
+            compose.waitForIdle()
+            mina.performTouchInput { swipeRight() }
+            compose.waitForIdle()
+            check(swipes == listOf(false, true)) { "Swipes were not physical (rtl=$direction): $swipes" }
         }
     }
 
