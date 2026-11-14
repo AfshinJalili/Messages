@@ -17,6 +17,8 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import com.afsh.messages.R
@@ -25,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import com.afsh.messages.ui.Afsh
+import com.afsh.messages.helpers.NavBadges
 
 private const val COMPACT_HEIGHT_DP = 480
 private const val EXPANDED_WIDTH_DP = 600
@@ -32,11 +35,14 @@ private const val EXPANDED_WIDTH_DP = 600
 /** Content padding of every page body: 20dp sides, 20dp top, 24dp bottom. */
 val PageContentPadding = PaddingValues(start = 20.dp, top = 20.dp, end = 20.dp, bottom = 24.dp)
 
-/** Where a page sits in the primary navigation, or null for a page outside it (a flow step). */
+/**
+ * Where a page sits in the primary navigation, or null for a page outside it (a flow step). Badges
+ * come from [counts], or from the shared [NavBadges] when it is null, so every page shows the same ones.
+ */
 class PageNavigation(
     val selected: TopDestination,
     val onSelect: (TopDestination) -> Unit,
-    val unreadSpam: Int = 0,
+    val counts: NavCounts? = null,
 )
 
 /** The navigation is a rail on wide and on short windows, the same rule the inbox uses. */
@@ -156,8 +162,10 @@ private enum class PageBottomBar { CUSTOM, NAVIGATION, NONE }
 private val NoBottomBar: @Composable () -> Unit = {}
 
 @Composable
-private fun PrimaryNavigation(navigation: PageNavigation, vertical: Boolean = false) =
-    PrimaryNavigation(navigation.selected, navigation.onSelect, unreadSpam = navigation.unreadSpam, vertical = vertical)
+private fun PrimaryNavigation(navigation: PageNavigation, vertical: Boolean = false) {
+    val shared by NavBadges.counts.collectAsState()
+    PrimaryNavigation(navigation.selected, navigation.onSelect, counts = navigation.counts ?: shared, vertical = vertical)
+}
 
 /** Component / undo snackbar: ink slab, bold message, lime action. */
 @Composable

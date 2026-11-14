@@ -33,11 +33,11 @@ import com.afsh.messages.extensions.messagesDB
 import com.afsh.messages.helpers.BackupFile
 import com.afsh.messages.helpers.ExportOutcome
 import com.afsh.messages.helpers.InvalidBackupException
+import com.afsh.messages.helpers.NavBadges
 import com.afsh.messages.helpers.MessagesExporter
 import com.afsh.messages.helpers.MessagesImporter
 import com.afsh.messages.helpers.refreshConversations
 import com.afsh.messages.models.ImportResult
-import com.afsh.messages.ui.components.PageNavigation
 import com.afsh.messages.ui.components.inform
 import com.afsh.messages.ui.components.ScreenStack
 import com.afsh.messages.ui.components.TopDestination
@@ -73,7 +73,7 @@ class SettingsActivity : ComposePageActivity() {
             SettingsScreen(
                 state = state,
                 page = page,
-                navigation = PageNavigation(TopDestination.SETTINGS, ::navigateTo),
+                navigation = settingsNavigation(),
                 snackbarHostState = snackbarHost,
                 onBack = ::back,
                 onEvent = ::onEvent,
@@ -127,6 +127,7 @@ class SettingsActivity : ComposePageActivity() {
         use24Hour = config.use24HourFormat,
         sendOnEnter = config.sendOnEnter,
         characterCounter = config.showCharacterCounter,
+        inboxUnreadCount = config.showInboxUnreadCount,
         simpleCharacters = config.useSimpleCharacters,
         deliveryReports = config.enableDeliveryReports,
         longAsMms = config.sendLongMessageMMS,
@@ -185,6 +186,7 @@ class SettingsActivity : ComposePageActivity() {
             is SettingsEvent.SetUse24Hour -> update { config.use24HourFormat = event.enabled }.also { refreshConversations() }
             is SettingsEvent.SetSendOnEnter -> update { config.sendOnEnter = event.enabled }
             is SettingsEvent.SetCharacterCounter -> update { config.showCharacterCounter = event.enabled }
+            is SettingsEvent.SetInboxUnreadCount -> update { config.showInboxUnreadCount = event.enabled }.also { NavBadges.refresh(this) }
             is SettingsEvent.SetSimpleCharacters -> update { config.useSimpleCharacters = event.enabled }
             is SettingsEvent.SetDeliveryReports -> update { config.enableDeliveryReports = event.enabled }
             is SettingsEvent.SetLongAsMms -> update { config.sendLongMessageMMS = event.enabled }
