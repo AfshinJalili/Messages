@@ -9,6 +9,7 @@ import com.afsh.messages.helpers.InboxFilter
 import com.afsh.messages.helpers.SwipeAction
 import com.afsh.messages.messaging.isShortCodeWithLetters
 import com.afsh.messages.models.Conversation
+import com.afsh.messages.ui.components.navCounts
 import java.util.Calendar
 
 @Immutable
@@ -31,12 +32,14 @@ data class InboxUiState(
     val importProgress: ImportProgress? = null,
     val selected: Set<Long> = emptySet(),
     val unreadSpam: Int = 0,
+    val inboxCountShown: Boolean = false,
     val archiveAvailable: Boolean = true,
     val recycleBinAvailable: Boolean = true,
     val swipeLeft: SwipeAction = SwipeAction.NONE,
     val swipeRight: SwipeAction = SwipeAction.NONE,
 ) {
     val selecting get() = selected.isNotEmpty()
+    val navCounts get() = navCounts(unreadSpam, unreadMessages, inboxCountShown)
     val selectedRows get() = rows.filter { it.threadId in selected }
 }
 
