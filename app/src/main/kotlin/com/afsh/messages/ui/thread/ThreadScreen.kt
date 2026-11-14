@@ -1,7 +1,8 @@
 package com.afsh.messages.ui.thread
 
-import com.afsh.messages.ui.AfshCorners
 import com.afsh.messages.ui.components.UnreadDivider
+import com.afsh.messages.ui.components.AfshSheet
+import com.afsh.messages.ui.components.AfshSheetItem
 import android.content.res.Configuration
 import android.text.format.DateFormat
 import androidx.compose.animation.core.Animatable
@@ -9,12 +10,8 @@ import androidx.compose.foundation.layout.absoluteOffset
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.shadow
@@ -30,7 +27,6 @@ import androidx.compose.ui.layout.findRootCoordinates
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.toSize
-import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 import android.net.Uri
 import android.provider.Telephony
@@ -515,13 +511,10 @@ private fun LiftOverlay(lift: LiftedBubble, up: Boolean, sheetTop: Float, state:
 }
 
 /** R6-48 (screens 97, 98): date · time · SIM, then the actions, Delete in the error colour. */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MessageSheet(message: Message, state: ThreadUiState, onRestingTop: (Float) -> Unit, onEvent: (ThreadEvent) -> Unit, onDismiss: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     val context = LocalContext.current
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val scope = rememberCoroutineScope()
     val sim = state.simLabels[message.subscriptionId]?.let { stringResource(R.string.message_sim_label, it) }
     val info = remember(message.date, message.isScheduled, sim) {
         val millis = message.date * 1000L
@@ -532,55 +525,29 @@ private fun MessageSheet(message: Message, state: ThreadUiState, onRestingTop: (
             listOfNotNull(DateFormat.format("EEE d MMM yyyy", millis).toString(), millis.formatTime(context), sim).joinToString(" · ")
         }
     }
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState,
-        containerColor = colors.surfaceContainer,
-        shape = AfshCorners.Sheet,
-        scrimColor = Color.Transparent,
+    AfshSheet(
+        title = info,
+        onDismiss = onDismiss,
+        showTitle = false,
+        // The lifted bubble dims the page itself.
+        dimBehind = false,
         // The sheet rests against the bottom of its full-window dialog, so its resting top is known from the first
         // frame, while it is still sliding in. The lifted bubble aims there instead of chasing the moving edge.
         modifier = Modifier.onGloballyPositioned {
             val window = it.findRootCoordinates()
             onRestingTop(window.positionOnScreen().y + window.size.height - it.size.height)
         },
-        dragHandle = {
-            Box(Modifier.padding(top = 8.dp)) {
-                Box(Modifier.size(32.dp, 4.dp).clip(CircleShape).background(colors.outlineVariant))
-            }
-        },
     ) {
-        // Scrolls when landscape, split-screen or a large font leave less room than the eight rows need.
-        Column(
-            Modifier
-                .verticalScroll(rememberScrollState())
-                .padding(start = 20.dp, end = 20.dp, bottom = 16.dp),
-        ) {
-            Text(info, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant, modifier = Modifier.padding(horizontal = 4.dp, vertical = 12.dp))
-            HorizontalDivider(color = colors.outlineVariant)
-            tapActions(message, state).forEach { action ->
-                val danger = action == MessageAction.DELETE
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = TargetSize)
-                        .clickable {
-                            // Act once the sheet is gone, so a dialog or the forward screen does not open under it.
-                            scope.launch {
-                                sheetState.hide()
-                                // Not reached when the hide is cancelled, so a dismissed sheet never acts.
-                                onDismiss()
-                                onEvent(ThreadEvent.Act(action, listOf(message)))
-                            }
-                        }
-                        .padding(horizontal = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                ) {
-                    Icon(painterResource(action.icon), contentDescription = null, tint = if (danger) colors.error else colors.primary, modifier = Modifier.size(24.dp))
-                    Text(stringResource(action.label), style = MaterialTheme.typography.bodyLarge, color = if (danger) colors.error else colors.onSurface)
-                }
-            }
+        Text(info, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant, modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp))
+        HorizontalDivider(Modifier.padding(horizontal = 20.dp), color = colors.outlineVariant)
+        tapActions(message, state).forEach { action ->
+            AfshSheetItem(
+                label = stringResource(action.label),
+                icon = action.icon,
+                danger = action == MessageAction.DELETE,
+                // Act once the sheet is gone, so a dialog or the forward screen does not open under it.
+                onClick = { dismissThen { onEvent(ThreadEvent.Act(action, listOf(message))) } },
+            )
         }
     }
 }
