@@ -14,7 +14,6 @@ import android.media.RingtoneManager
 import androidx.core.app.NotificationCompat
 import androidx.core.app.RemoteInput
 import androidx.core.app.Person
-import org.fossify.commons.extensions.getProperPrimaryColor
 import org.fossify.commons.extensions.notificationManager
 import org.fossify.commons.helpers.SimpleContactsHelper
 import org.fossify.commons.helpers.ensureBackgroundThread
@@ -146,7 +145,7 @@ class NotificationHelper(private val context: Context) {
                 }
             }
 
-            color = context.getProperPrimaryColor()
+            color = context.primaryRoleColor()
             setSmallIcon(R.drawable.ic_message_bubble)
             setContentIntent(contentPendingIntent)
             priority = NotificationCompat.PRIORITY_MAX
@@ -236,7 +235,7 @@ class NotificationHelper(private val context: Context) {
         val builder = NotificationCompat.Builder(context, notificationChannelId)
             .setContentTitle(context.getString(R.string.message_not_sent_short))
             .setContentText(summaryText)
-            .setColor(context.getProperPrimaryColor())
+            .setColor(context.primaryRoleColor())
             .setSmallIcon(R.drawable.ic_message_bubble)
             .setLargeIcon(largeIcon)
             .setStyle(NotificationCompat.BigTextStyle().bigText(summaryText))

@@ -1,6 +1,6 @@
 # AFSH design system
 
-Personal messaging as a clear, living line between people. The inbox favors sender, latest meaning, and urgency over decorative conversation cards. Cool mineral paper, deep pine ink, sharp lime for new activity, lilac for media, coral for attention. A fine route line, round contact markers, flat slabs, and strong typography replace the current cobalt styling. No literal vintage hardware.
+Personal messaging as a clear, living line between people. The inbox favors sender, latest meaning, and urgency over decorative conversation cards. Cool mineral paper, deep pine ink, sharp lime for new activity, lilac for media, coral for attention. A fine route line, round contact markers, flat slabs, and strong typography. No literal vintage hardware.
 
 The design source is `design/afsh.pen` (encrypted; edit only through the pen CLI or pencil MCP). PNG exports in `design/exports/` are previews only; the canvas is the truth. Screens are fixed 390 × 844 frames and the design decides open questions through issues labeled `design-gap`.
 
@@ -42,6 +42,8 @@ Every dialog, popup and picker in the app is drawn by one component, `AfshDialog
 
 Use the dialog that fits before writing a new one: `ConfirmationDialog` (decide), `MessageDialog` (inform), `ChoiceDialog` (pick one), `RenameDialog` and `TextInputDialog` (type a value). An activity outside one Compose tree calls `confirm`, `inform`, `choose` or `showAfshDialog` from `DialogHost.kt`. Never use Compose `Dialog`, `AlertDialog`, `DatePickerDialog`, `TimePickerDialog`, Android or Material dialog builders outside `AfshDialog.kt`, or a Fossify Commons dialog. `tests/check_dialogs.py` fails on any of them, and on a hand-built frame (window `Dialog`, `Surface` card or fixed corner) inside `AfshDialog.kt`; the one exception is Commons' `SecurityDialog` for app lock, until it has an AFSH version.
 
+System bar icons follow the theme, never a constant. Each activity calls `AfshSystemBars(window)` (`ui/SystemBars.kt`) inside its `AfshTheme`: the status bar icons take whichever of black or white has more contrast on the `header` role, and the navigation bar icons do the same on `surface`. Recoloring the header needs no status bar change.
+
 Selection mode has one source of truth too. Every selection bar is `SelectionBar` in `ui/components/SelectionBar.kt`: icon-only (each label is the TalkBack description and the long-press tooltip, never visible text), extra actions behind More options, and exactly the navigation bar's height so swapping the two never moves the list. A page built on `PageScaffold` passes a `PageSelection` (count, clear, select all, actions) and gets the whole mode: the "n selected" app bar with Close and Select all, the bar rising over the navigation, and Back clearing the selection. The inbox band and the conversation header keep their own top bars but use the same `SelectionBar` and `selectionTitle`. People are picked with `PeoplePicker` (New group and the conversation's Manage people).
 
 Board `00b` holds navigation, composer, button hierarchy, filter chips, type scale, snackbar, attention notice, empty state, attachment tile, and concrete draft, sending, blocked, disabled, focused, and loading examples. Board `00` holds the palette, type, line language, and system principles. The phone views show light, dark, and RTL conversation variations. The RTL header reverses action order, right-aligns identity, and keeps the message entry at the right edge.
@@ -74,23 +76,38 @@ Android resources are the source of truth. This document describes how to use th
 
 | Definition | Source |
 | --- | --- |
-| Brand palette, surface colors, semantic action colors and Commons defaults | `app/src/main/res/values/colors.xml` |
-| Light and dark widget themes, shared component styles | `app/src/main/res/values/styles.xml` |
+| AFSH palette values and the Commons default names that point at them | `app/src/main/res/values/colors.xml` |
+| Color roles (Material slots and `Afsh.colors`) | `afshColorScheme` and `AfshTheme` in `app/src/main/kotlin/com/afsh/messages/ui/AfshTheme.kt` |
+| Light and dark XML themes for Commons screens, mirroring the roles | `app/src/main/res/values/styles.xml` |
 | Component spacing and sizes | `app/src/main/res/values/dimens.xml` |
 | Corner radii (Material shape scale and named component corners) | `AfshShapes` and `AfshCorners` in `app/src/main/kotlin/com/afsh/messages/ui/AfshTheme.kt` |
 | Shared opacity and user-font-size multipliers | `app/src/main/res/values/design_values.xml` |
-| Runtime theme selection and API-compatible float resource access | `app/src/main/kotlin/com/afsh/messages/helpers/Design.kt` |
+| XML theme selection, the primary role for Commons and notifications, and API-compatible float resource access | `app/src/main/kotlin/com/afsh/messages/helpers/Design.kt` |
 | Launcher shape | `app/src/main/res/drawable/ic_launcher_foreground.xml` |
 
 ### Color
 
-Cobalt is the default accent. The launcher and light theme use `brand_cobalt`; the dark theme uses `brand_cobalt_dark` for readable accent text and controls. Both themes use neutral backgrounds. Destructive actions use `design_error`, archive uses cobalt, and mute uses a neutral slate. White icon paths are tint masks, not independent palette choices.
+The theme is the one color source. `colors.xml` holds the palette values (paper, ink, pine, lime, lilac, coral and their dark partners); screens never read them directly. `afshColorScheme(dark)` in `ui/AfshTheme.kt` maps them to roles, and everything else reads roles:
 
-Kotlin screens obtain the current accent, foreground and background through Commons' `getProperPrimaryColor()`, `getProperTextColor()` and `getProperBackgroundColor()`. These respect customization. Use `getContrastColor()` for content on a user-selected fill. Static action colors come from the semantic resources in `colors.xml`. Do not add hex colors or RGB calls to activities, adapters, layouts or drawables.
+- Compose screens read Material slots through `MaterialTheme.colorScheme` and the AFSH roles through `Afsh.colors`.
+- XML widgets and Commons screens (the app-lock dialog and screen) use `AppTheme.Afsh.Light` and `AppTheme.Afsh.Dark` in `styles.xml`, whose items mirror the same roles. `SimpleActivity.setTheme()` and Commons' `getThemeId()` (through `App.themeId`) always pick one of them by `afshDark()`.
+- Notifications and Commons' stored accent use `primaryRoleColor()`. `Config.applyThemeDefaults()` points the stored accent at the primary role on every start, and Settings calls `syncAccentWithTheme()` after the light or dark choice changes. With the system theme on, `you_primary_color` is overridden to the same role, so the wallpaper never recolors the app.
 
-`SimpleActivity.setTheme()` selects our cobalt theme when the configured accent is cobalt. This keeps XML controls consistent with runtime colors and avoids Commons' green fallback for custom colors. Explicit custom palettes and Material You continue to use Commons' theme selection.
+| Role | Light | Dark | Used for |
+| --- | --- | --- | --- |
+| `primary` / `onPrimary` | pine / white | `afsh_primary_dark` / ink | Actions, controls, notification accent, Commons accent |
+| `primaryContainer` | pine / white | `afsh_pine_2` / white | Only inside the theme; screens use the job roles below |
+| `secondaryContainer` | lilac / ink | `afsh_lilac_dark` / lilac | Media and lilac panels |
+| `surface`, `background` / `onSurface` | paper / ink | night / paper | Pages |
+| `surfaceContainer`, `surfaceContainerHigh` | white, `afsh_surface_high` | `afsh_night_surface`, `afsh_surface_high_dark` | Cards, dialogs, raised rows |
+| `onSurfaceVariant`, `outlineVariant` | muted, line | muted dark, line dark | Secondary text, dividers |
+| `error`, `errorContainer` | `afsh_error`, `afsh_error_container` | coral, `afsh_error_container_dark` | Destructive actions and failures |
+| `inverseSurface`, `inversePrimary` | ink, lime | paper, pine | Snackbar |
+| `Afsh.colors.accent` / `onAccent` | lime / ink | lime / ink | New activity, unread |
+| `Afsh.colors.header`, `sentBubble`, `secondaryButton`, `swipeAction`, `selected`, `badge` | each a `ColorRole`, today all the pine container | each the dark pine container | One job each; recolor a job by giving its role its own value |
+| `Afsh.colors.onSecondaryContainerVariant`, `inverseAccent`, `scrim`, `focusRing`, `avatars`, `onAvatar`, `onBandVariant` | see `AfshTheme` | see `AfshTheme` | Secondary text on lilac, snackbar action, scrims, focus outline, avatars, band text |
 
-`Config.applyCobaltDefaults()` runs once at application startup. It replaces the old default green, opts implicit system-theme defaults into cobalt, and retains explicit custom color or system-theme selections. Later settings changes are not reset on startup.
+Light or dark follows the app's background setting (`afshDark()`), not the system night mode. `tests/check_design_tokens.py` rejects inline colors and opacities, and `primaryContainer` outside the theme. `DesignChecks` asserts that the XML themes, Commons' accent and the Commons screens' theme match these roles. White icon paths are tint masks, not palette choices.
 
 ### Spacing
 
