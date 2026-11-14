@@ -1,5 +1,6 @@
 package com.afsh.messages.ui.search
 
+import com.afsh.messages.ui.Afsh
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -231,8 +232,8 @@ private fun SearchFilters(state: SearchUiState, onFilter: (SearchFilter) -> Unit
             Surface(
                 onClick = { onFilter(filter) },
                 shape = CircleShape,
-                color = if (active) colors.primaryContainer else colors.surfaceContainer,
-                contentColor = if (active) colors.onPrimaryContainer else colors.primary,
+                color = if (active) Afsh.colors.selected.container else colors.surfaceContainer,
+                contentColor = if (active) Afsh.colors.selected.content else colors.primary,
                 modifier = Modifier.heightIn(min = TouchTarget).semantics { selected = active },
             ) {
                 Box(

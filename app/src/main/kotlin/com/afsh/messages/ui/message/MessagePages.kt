@@ -80,7 +80,6 @@ data class MessageFacts(val body: String, val time: String, val mark: DeliveryMa
 /** 13 · Message / details: the message as it looks in the thread, then its facts. */
 @Composable
 fun MessageDetailsScreen(facts: MessageFacts, onBack: () -> Unit, modifier: Modifier = Modifier) {
-    val colors = MaterialTheme.colorScheme
     PageScaffold(
         title = stringResource(R.string.message_details),
         subtitle = stringResource(R.string.message_details_subtitle),
@@ -97,12 +96,12 @@ fun MessageDetailsScreen(facts: MessageFacts, onBack: () -> Unit, modifier: Modi
                 Modifier
                     .fillMaxWidth()
                     .clip(MaterialTheme.shapes.medium)
-                    .background(colors.primaryContainer)
+                    .background(Afsh.colors.sentBubble.container)
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 if (facts.body.isNotEmpty()) {
-                    Text(facts.body, style = MaterialTheme.typography.bodyLarge.forUserText(facts.body), color = colors.onPrimaryContainer)
+                    Text(facts.body, style = MaterialTheme.typography.bodyLarge.forUserText(facts.body), color = Afsh.colors.sentBubble.content)
                 }
                 DeliveryLine(facts.time, facts.mark)
             }

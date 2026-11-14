@@ -29,7 +29,7 @@ private fun ButtonKind.palette(): ButtonPalette {
     val colors = MaterialTheme.colorScheme
     return when (this) {
         ButtonKind.PRIMARY -> ButtonPalette(Afsh.colors.accent, Afsh.colors.onAccent)
-        ButtonKind.SECONDARY -> ButtonPalette(colors.primaryContainer, colors.onPrimaryContainer)
+        ButtonKind.SECONDARY -> ButtonPalette(Afsh.colors.secondaryButton.container, Afsh.colors.secondaryButton.content)
         ButtonKind.QUIET -> ButtonPalette(colors.surfaceContainer, colors.primary)
         ButtonKind.DANGER -> ButtonPalette(colors.error, colors.onError)
     }
