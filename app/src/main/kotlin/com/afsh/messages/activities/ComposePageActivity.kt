@@ -17,6 +17,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import org.fossify.commons.helpers.isQPlus
+import com.afsh.messages.helpers.NavBadges
 import com.afsh.messages.helpers.UndoDeletion
 import com.afsh.messages.helpers.refreshConversations
 import com.afsh.messages.ui.AfshTheme
@@ -62,6 +63,7 @@ abstract class ComposePageActivity : SimpleActivity(), UndoDeletion.UndoHost {
     override fun onResume() {
         super.onResume()
         refreshTheme()
+        NavBadges.refresh(this)
         if (isQPlus()) window.isNavigationBarContrastEnforced = false
         WindowCompat.getInsetsController(window, window.decorView).apply {
             isAppearanceLightStatusBars = false
@@ -88,8 +90,7 @@ abstract class ComposePageActivity : SimpleActivity(), UndoDeletion.UndoHost {
     }
 
     /** Library pages sit under the Library destination of the primary navigation. */
-    protected fun libraryNavigation(unreadSpam: Int = 0) =
-        PageNavigation(TopDestination.LIBRARY, ::navigateTo, unreadSpam)
+    protected fun libraryNavigation() = PageNavigation(TopDestination.LIBRARY, ::navigateTo)
 
     /** Settings sub-pages keep the navigation with Settings active (R5-34). */
     protected fun settingsNavigation() = PageNavigation(TopDestination.SETTINGS, ::navigateTo)

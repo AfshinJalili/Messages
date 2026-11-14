@@ -12,15 +12,15 @@ import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
-import com.afsh.messages.R
+import com.afsh.messages.ui.Afsh
 import com.afsh.messages.ui.components.SELECTION_ENTER_MS
 import com.afsh.messages.ui.components.SELECTION_EXIT_MS
 
@@ -29,10 +29,10 @@ private const val COMPOSER_SINK = 0.5f
 
 /** The whole conversation screen: header, timeline (with Manage people over it) and the composer frame. */
 @Composable
-fun ThreadRoute(model: ThreadScreenModel, snackbarHost: SnackbarHostState, dark: Boolean, sendOnEnter: Boolean) {
+fun ThreadRoute(model: ThreadScreenModel, snackbarHost: SnackbarHostState, sendOnEnter: Boolean) {
     val ui = model.ui
     // The timeline's lift scrim also dims the header above it.
-    val scrim = colorResource(R.color.afsh_lift_scrim)
+    val scrim = Afsh.colors.liftScrim
     Column(Modifier.fillMaxSize()) {
         ThreadHeader(ui, model::onEvent, Modifier.drawWithContent {
             drawContent()
@@ -52,7 +52,7 @@ fun ThreadRoute(model: ThreadScreenModel, snackbarHost: SnackbarHostState, dark:
                 )
             }
         }
-        ThreadBottom(model, dark, sendOnEnter)
+        ThreadBottom(model, sendOnEnter)
     }
 }
 
@@ -63,7 +63,7 @@ fun ThreadRoute(model: ThreadScreenModel, snackbarHost: SnackbarHostState, dark:
  * the bar grows from the bottom edge on its own.
  */
 @Composable
-private fun ThreadBottom(model: ThreadScreenModel, dark: Boolean, sendOnEnter: Boolean) {
+private fun ThreadBottom(model: ThreadScreenModel, sendOnEnter: Boolean) {
     val ui = model.ui
     val composer = model.composer
     if (!composer.visible) {
@@ -85,7 +85,7 @@ private fun ThreadBottom(model: ThreadScreenModel, dark: Boolean, sendOnEnter: B
                 }
                 .then(if (ui.selecting) Modifier.clearAndSetSemantics {} else Modifier)
                 // The padding under the composer is its surface too.
-                .background(colorResource(if (dark) R.color.afsh_night_surface else R.color.design_white))
+                .background(MaterialTheme.colorScheme.surfaceContainer)
                 .windowInsetsPadding(WindowInsets.navigationBars.union(WindowInsets.ime)),
         ) {
             ThreadComposer(composer, ui.firstName, model.composerText, sendOnEnter, model::onComposerTextChange, model::onComposerEvent)
