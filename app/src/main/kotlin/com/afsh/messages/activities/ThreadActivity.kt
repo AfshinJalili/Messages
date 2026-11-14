@@ -38,7 +38,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.ComposeView
 import androidx.core.net.toUri
-import androidx.core.view.WindowCompat
 import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.lifecycleScope
 import com.afsh.messages.BuildConfig
@@ -132,6 +131,7 @@ import com.afsh.messages.models.Message
 import com.afsh.messages.models.MessageAttachment
 import com.afsh.messages.models.SIMCard
 import com.afsh.messages.models.ThreadItem
+import com.afsh.messages.ui.AfshSystemBars
 import com.afsh.messages.ui.AfshTheme
 import com.afsh.messages.ui.afshDark
 import com.afsh.messages.ui.afshTextScale
@@ -312,6 +312,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         refreshAfshTheme()
         root.setContent {
             AfshTheme(dark = darkTheme, textScale = textScale) {
+                AfshSystemBars(window)
                 ThreadRoute(holder, snackbarHost, dark = darkTheme, sendOnEnter = config.sendOnEnter)
             }
         }
@@ -341,7 +342,6 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
     override fun onResume() {
         super.onResume()
         refreshAfshTheme()
-        applySystemBars()
         // mute and starring can change on other screens
         refreshMenuItems()
         publishItems()
@@ -438,14 +438,6 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
     private fun refreshAfshTheme() {
         darkTheme = afshDark()
         textScale = afshTextScale()
-    }
-
-    private fun applySystemBars() {
-        // Status icons sit on the pine header in both themes; the composer below is light or dark.
-        WindowCompat.getInsetsController(window, window.decorView).apply {
-            isAppearanceLightStatusBars = false
-            isAppearanceLightNavigationBars = !darkTheme
-        }
     }
 
     // region Screen events
