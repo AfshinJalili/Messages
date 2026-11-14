@@ -46,7 +46,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -89,6 +88,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.layout.Layout
+import com.afsh.messages.ui.components.FloatingButton
 import com.afsh.messages.ui.components.ImportNotice
 import com.afsh.messages.ui.components.ScreenStack
 import com.afsh.messages.ui.components.LocalListPane
@@ -664,16 +664,8 @@ private fun EmptyState(filter: InboxFilter) {
 
 @Composable
 private fun NewMessageButton(expanded: Boolean, onClick: () -> Unit) {
-    ExtendedFloatingActionButton(
-        onClick = onClick,
-        expanded = expanded,
-        containerColor = Afsh.colors.accent,
-        contentColor = Afsh.colors.onAccent,
-        shape = MaterialTheme.shapes.medium,
-        // Collapsed it shows only the icon, so the icon must carry the label for TalkBack.
-        icon = { Icon(painterResource(R.drawable.ic_message_bubble), contentDescription = if (expanded) null else stringResource(R.string.new_message)) },
-        text = { Text(stringResource(R.string.new_message), style = MaterialTheme.typography.labelLarge) },
-    )
+    val label = stringResource(R.string.new_message)
+    FloatingButton(R.drawable.ic_message_bubble, description = label, onClick = onClick, text = label, expanded = expanded)
 }
 
 @Composable
