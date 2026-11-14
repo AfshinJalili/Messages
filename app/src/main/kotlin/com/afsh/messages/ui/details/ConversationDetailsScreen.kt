@@ -203,8 +203,7 @@ fun ConversationDetailsScreen(state: ConversationDetailsUiState, onEvent: (Detai
 /** The conversation header of 09: back, the name over "Conversation details", and Call. */
 @Composable
 private fun DetailsHeader(state: ConversationDetailsUiState, onEvent: (DetailsEvent) -> Unit) {
-    val colors = MaterialTheme.colorScheme
-    Surface(color = colors.primaryContainer, contentColor = colors.onPrimaryContainer) {
+    Surface(color = Afsh.colors.header.container, contentColor = Afsh.colors.header.content) {
         Row(
             Modifier
                 .fillMaxWidth()

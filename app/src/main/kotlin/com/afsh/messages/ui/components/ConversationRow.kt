@@ -1,5 +1,6 @@
 package com.afsh.messages.ui.components
 
+import com.afsh.messages.ui.Afsh
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.animation.animateColorAsState
@@ -165,7 +166,7 @@ private fun SwipeBackground(gesture: SwipeGesture, armed: Boolean, alignStart: B
     val (panel, onPanel) = when (gesture.tone) {
         SwipeTone.DESTRUCTIVE -> colors.errorContainer to colors.error
         SwipeTone.QUIET -> colors.surfaceContainerHigh to colors.onSurfaceVariant
-        SwipeTone.PRIMARY -> colors.primaryContainer to colors.onPrimaryContainer
+        SwipeTone.PRIMARY -> Afsh.colors.swipeAction.container to Afsh.colors.swipeAction.content
     }
     val background by animateColorAsState(panel, label = "swipe background")
     val tint by animateColorAsState(onPanel, label = "swipe icon")
@@ -396,13 +397,13 @@ private fun UnreadSignal(count: Int) {
             Modifier
                 .heightIn(min = 22.dp)
                 .clip(CircleShape)
-                .background(colors.primaryContainer)
+                .background(Afsh.colors.badge.container)
                 .padding(horizontal = 6.dp),
             contentAlignment = Alignment.Center,
         ) {
             Text(
                 String.format(LocalConfiguration.current.locales[0], "%d", count),
-                color = colors.onPrimaryContainer,
+                color = Afsh.colors.badge.content,
                 style = MaterialTheme.typography.labelSmall,
             )
         }

@@ -223,10 +223,9 @@ const val THREAD_STICKY_DATE_TAG = "thread_sticky_date"
 
 @Composable
 fun ThreadHeader(state: ThreadUiState, onEvent: (ThreadEvent) -> Unit, modifier: Modifier = Modifier) {
-    val colors = MaterialTheme.colorScheme
     val header = state.header
     val compact = LocalConfiguration.current.screenHeightDp < 480
-    Surface(color = colors.primaryContainer, contentColor = colors.onPrimaryContainer, modifier = modifier.fillMaxWidth()) {
+    Surface(color = Afsh.colors.header.container, contentColor = Afsh.colors.header.content, modifier = modifier.fillMaxWidth()) {
         Row(
             Modifier
                 .windowInsetsPadding(WindowInsets.statusBars.union(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)))
@@ -776,7 +775,7 @@ private fun Bubble(
         selected -> colors.secondaryContainer to colors.onSecondaryContainer
         failed -> colors.errorContainer to colors.onErrorContainer
         incoming -> colors.surfaceContainer to colors.onSurface
-        else -> colors.primaryContainer to colors.onPrimaryContainer
+        else -> Afsh.colors.sentBubble.container to Afsh.colors.sentBubble.content
     }
     val shape = messageBubbleShape(incoming, groupedBelow)
     val attachments = message.attachment?.attachments.orEmpty()
@@ -1063,10 +1062,10 @@ private fun AttachmentTile(icon: Int, title: String, subtitle: String, clickable
             Modifier
                 .size(40.dp)
                 .clip(CircleShape)
-                .background(colors.primaryContainer),
+                .background(Afsh.colors.badge.container),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(painterResource(icon), contentDescription = null, tint = colors.onPrimaryContainer, modifier = Modifier.size(22.dp))
+            Icon(painterResource(icon), contentDescription = null, tint = Afsh.colors.badge.content, modifier = Modifier.size(22.dp))
         }
         Column(Modifier.weight(1f)) {
             Text(title, style = MaterialTheme.typography.labelMedium, color = colors.onSurface, maxLines = 2, overflow = TextOverflow.Ellipsis)
@@ -1156,8 +1155,8 @@ private fun JumpToLatest(state: ThreadUiState, newestFirst: List<ThreadItem>, li
         Surface(
             onClick = { onEvent(ThreadEvent.JumpToLatest) },
             shape = CircleShape,
-            color = MaterialTheme.colorScheme.primaryContainer,
-            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            color = Afsh.colors.secondaryButton.container,
+            contentColor = Afsh.colors.secondaryButton.content,
             shadowElevation = 4.dp,
             modifier = Modifier
                 .heightIn(min = TargetSize)
