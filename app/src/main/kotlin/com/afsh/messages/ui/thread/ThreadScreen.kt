@@ -1,5 +1,6 @@
 package com.afsh.messages.ui.thread
 
+import com.afsh.messages.ui.AfshCorners
 import com.afsh.messages.ui.components.UnreadDivider
 import android.content.res.Configuration
 import android.text.format.DateFormat
@@ -77,7 +78,6 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -129,7 +129,6 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -459,7 +458,7 @@ private fun LiftOverlay(lift: LiftedBubble, up: Boolean, sheetTop: Float, state:
         if (!up) onGone()
     }
     val density = LocalDensity.current
-    val scrim = colorResource(R.color.afsh_lift_scrim)
+    val scrim = Afsh.colors.liftScrim
     var origin by remember { mutableStateOf<Offset?>(null) }
     Box(
         Modifier
@@ -537,7 +536,7 @@ private fun MessageSheet(message: Message, state: ThreadUiState, onRestingTop: (
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         containerColor = colors.surfaceContainer,
-        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+        shape = AfshCorners.Sheet,
         scrimColor = Color.Transparent,
         // The sheet rests against the bottom of its full-window dialog, so its resting top is known from the first
         // frame, while it is still sliding in. The lifted bubble aims there instead of chasing the moving edge.
