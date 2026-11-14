@@ -2,7 +2,9 @@ package com.afsh.messages.ui
 
 import androidx.compose.ui.text.style.TextDirection
 import android.content.Context
+import androidx.compose.foundation.shape.AbsoluteRoundedCornerShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Shape
 import androidx.core.graphics.ColorUtils
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
@@ -228,6 +230,48 @@ private fun colorScheme(dark: Boolean): ColorScheme {
  * [textScale] carries the app's own font-size setting on top of the system font scale, so Compose
  * screens honour it the same way the XML screens do.
  */
+/**
+ * The shape scale. Material slots carry the app's corners; extraSmall and extraLarge are set
+ * explicitly so they stay at the values the app has always drawn.
+ */
+val AfshShapes = Shapes(
+    extraSmall = RoundedCornerShape(4.dp),
+    small = RoundedCornerShape(12.dp),
+    medium = RoundedCornerShape(16.dp),
+    large = RoundedCornerShape(22.dp),
+    extraLarge = RoundedCornerShape(28.dp),
+)
+
+/** Corners that have no Material slot. Each value is the one the app has always drawn. */
+object AfshCorners {
+    /** Message bubble corners, and the tail corner of a bubble. */
+    private val Bubble = 16.dp
+    private val BubbleTail = 4.dp
+
+    /** Dialog frame, see `AfshDialog`. */
+    val Dialog: Shape = RoundedCornerShape(24.dp)
+
+    /** Top of the bottom sheet that holds the attachment and thread actions. */
+    val Sheet: Shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+
+    /** The SIM badge: square-ish with a cut top-right corner, which tells SIM 1 from SIM 2 without colour. */
+    val SimTile: Shape = AbsoluteRoundedCornerShape(topLeft = 2.dp, topRight = 5.dp, bottomRight = 2.dp, bottomLeft = 2.dp)
+
+    /**
+     * A message bubble. The tail corner sits at the bottom on the sender's side; a bubble followed
+     * by one from the same sender drops the tail.
+     */
+    fun bubble(incoming: Boolean, groupedBelow: Boolean = false): Shape {
+        val corner = Bubble
+        val tail = if (groupedBelow) corner else BubbleTail
+        return if (incoming) {
+            RoundedCornerShape(corner, corner, corner, tail)
+        } else {
+            RoundedCornerShape(corner, corner, tail, corner)
+        }
+    }
+}
+
 @Composable
 fun AfshTheme(dark: Boolean, textScale: Float = 1f, content: @Composable () -> Unit) {
     val density = LocalDensity.current
@@ -257,11 +301,7 @@ fun AfshTheme(dark: Boolean, textScale: Float = 1f, content: @Composable () -> U
     MaterialTheme(
         colorScheme = scheme,
         typography = typography(rtl),
-        shapes = Shapes(
-            small = RoundedCornerShape(12.dp),
-            medium = RoundedCornerShape(16.dp),
-            large = RoundedCornerShape(22.dp),
-        ),
+        shapes = AfshShapes,
     ) {
         CompositionLocalProvider(
             LocalAfshColors provides extras,
