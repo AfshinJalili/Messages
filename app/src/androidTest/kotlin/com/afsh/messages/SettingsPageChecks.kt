@@ -26,6 +26,7 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.LayoutDirection
@@ -143,7 +144,7 @@ class SettingsPageChecks {
     fun appearanceTurnsOnTheInboxCount() {
         val events = mutableListOf<SettingsEvent>()
         show(SettingsPage.APPEARANCE) { events += it }
-        compose.onNodeWithText(text(R.string.show_inbox_unread_count)).performScrollTo().performClick()
+        switch(text(R.string.show_inbox_unread_count)).performScrollTo().assertIsOff().performClick()
         check(events.last() == SettingsEvent.SetInboxUnreadCount(true)) { "Events $events" }
     }
 
