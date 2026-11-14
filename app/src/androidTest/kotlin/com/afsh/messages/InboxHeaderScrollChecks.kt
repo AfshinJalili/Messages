@@ -48,6 +48,9 @@ class InboxHeaderScrollChecks {
 
     private fun near(a: Dp, b: Dp) = abs((a - b).value) < 1f
 
+    // Up the middle of the list: the root's bottom edge is the navigation bar, which does not scroll.
+    private fun androidx.compose.ui.test.TouchInjectionScope.scrollList() = swipeUp(startY = centerY + 300f, endY = centerY - 300f)
+
     private fun settle() {
         compose.mainClock.advanceTimeBy(1000)
         compose.waitForIdle()
@@ -78,11 +81,15 @@ class InboxHeaderScrollChecks {
         compose.waitForIdle()
         val mid = fieldTop()
         check(mid < open && open - mid < Dp(40f)) { "Mid-drag the header moves with the finger: $open → $mid" }
-        compose.onRoot().performTouchInput { up() }
+        // Held still before letting go, so there is no fling: the header settles to the nearer state.
+        compose.onRoot().performTouchInput {
+            moveBy(Offset.Zero, delayMillis = 200)
+            up()
+        }
         settle()
         check(near(fieldTop(), open)) { "A header let go near open settles open" }
 
-        compose.onRoot().performTouchInput { swipeUp() }
+        compose.onRoot().performTouchInput { scrollList() }
         settle()
         check(fieldTop() < open - Dp(20f)) { "A full swipe up collapses the header" }
         Screenshots.capture("80-band-collapsed")
@@ -100,14 +107,14 @@ class InboxHeaderScrollChecks {
 
         state = state.copy(selected = emptySet())
         settle()
-        compose.onRoot().performTouchInput { swipeUp() }
+        compose.onRoot().performTouchInput { scrollList() }
         settle()
         check(fieldTop() < open - Dp(20f)) { "The header collapsed before selecting" }
 
         state = state.copy(selected = setOf(1L))
         settle()
         check(near(selectAllTop(), open)) { "Selecting opens the header: $open → ${selectAllTop()}" }
-        compose.onRoot().performTouchInput { swipeUp() }
+        compose.onRoot().performTouchInput { scrollList() }
         settle()
         check(near(selectAllTop(), open)) { "While selecting, scrolling leaves the header open" }
     }
@@ -117,7 +124,7 @@ class InboxHeaderScrollChecks {
         val restoration = StateRestorationTester(compose)
         restoration.setContent { Inbox(InboxUiState(rows = rows)) }
         val open = fieldTop()
-        compose.onRoot().performTouchInput { swipeUp() }
+        compose.onRoot().performTouchInput { scrollList() }
         settle()
         val collapsed = fieldTop()
         check(collapsed < open - Dp(20f)) { "The header collapsed before the restore" }
