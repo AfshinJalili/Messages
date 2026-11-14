@@ -69,6 +69,8 @@ import com.afsh.messages.extensions.deleteConversation
 import com.afsh.messages.extensions.dialNumber
 import com.afsh.messages.extensions.getAllDrafts
 import com.afsh.messages.extensions.getUnreadSpamCounts
+import com.afsh.messages.helpers.NavBadges
+import com.afsh.messages.helpers.unreadMessageCount
 import com.afsh.messages.extensions.launchConversationDetails
 import com.afsh.messages.extensions.markThreadMessagesRead
 import com.afsh.messages.extensions.markThreadMessagesUnread
@@ -430,7 +432,8 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
         inbox = inbox.copy(
             rows = rows,
             filter = inboxFilter,
-            unreadMessages = present.filter { !it.read }.sumOf { it.unreadCount.coerceAtLeast(1) },
+            unreadMessages = present.unreadMessageCount(),
+            inboxCountShown = config.showInboxUnreadCount,
             loading = providerReconcileActive && inboxConversations.isEmpty(),
             refreshFailed = refreshFailed,
             importProgress = importProgress,
@@ -442,6 +445,7 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
             swipeLeft = config.swipeAction(towardsRight = false),
             swipeRight = config.swipeAction(towardsRight = true),
         )
+        NavBadges.publish(inbox.navCounts)
     }
 
     private fun refreshDrafts() {
@@ -835,6 +839,7 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
             val unread = getUnreadSpamCounts().values.sum()
             runOnUiThread {
                 inbox = inbox.copy(unreadSpam = unread)
+                NavBadges.publish(inbox.navCounts)
             }
         }
     }
