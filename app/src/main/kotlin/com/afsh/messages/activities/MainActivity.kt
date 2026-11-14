@@ -21,7 +21,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.core.view.WindowCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -96,6 +95,7 @@ import com.afsh.messages.helpers.sortedForInbox
 import com.afsh.messages.helpers.swipeAction
 import com.afsh.messages.models.Conversation
 import com.afsh.messages.models.SearchResult
+import com.afsh.messages.ui.AfshSystemBars
 import com.afsh.messages.ui.AfshTheme
 import com.afsh.messages.ui.afshDark
 import com.afsh.messages.ui.afshTextScale
@@ -168,6 +168,7 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
             val listPane = remember(LocalConfiguration.current) { ListDetail.isPane(this) }
             CompositionLocalProvider(LocalListPane provides listPane) {
                 AfshTheme(dark = darkTheme, textScale = textScale) {
+                    AfshSystemBars(window)
                     val step = firstRun
                     if (step != null) FirstRunScreen(step, ::onFirstRun) else InboxScreen(
                         state = inbox,
@@ -194,7 +195,6 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
                         onLibraryTab = {
                             closeSearch()
                             libraryOpen = it
-                            applySystemBars()
                         },
                     )
                 }
@@ -202,6 +202,8 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
         }
 
         setupEdgeToEdge()
+        // The bottom bar paints its own surface; a system scrim on top would double it.
+        if (isQPlus()) window.isNavigationBarContrastEnforced = false
 
         checkAndDeleteOldRecycleBinMessages()
         clearAllMessagesIfNeeded {
@@ -213,7 +215,6 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
         super.onResume()
         refreshInboxTheme()
         if (search.open) loadSearchResults()
-        applySystemBars()
         refreshSpamBadge()
         refreshDrafts()
         publish()
@@ -258,14 +259,12 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
         intent.topDestination()?.let { destination ->
             closeSearch()
             libraryOpen = destination == TopDestination.LIBRARY
-            applySystemBars()
         }
     }
 
     override fun onBackPressedCompat(): Boolean {
         if (libraryOpen && !search.open) {
             libraryOpen = false
-            applySystemBars()
             return true
         }
         return when {
@@ -290,16 +289,6 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
     private fun refreshInboxTheme() {
         darkTheme = afshDark()
         textScale = afshTextScale()
-    }
-
-    private fun applySystemBars() {
-        // The bottom bar paints its own surface; a system scrim on top would double it.
-        if (isQPlus()) window.isNavigationBarContrastEnforced = false
-        // Inbox and Library both open with the pine band.
-        WindowCompat.getInsetsController(window, window.decorView).apply {
-            isAppearanceLightStatusBars = false
-            isAppearanceLightNavigationBars = !darkTheme
-        }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, resultData: Intent?) {
@@ -769,7 +758,6 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
 
     private fun openSearch() {
         search = SearchUiState(open = true, recent = config.recentSearches, importProgress = importProgress)
-        applySystemBars()
     }
 
     private fun closeSearch() {
@@ -777,7 +765,6 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
         searchJob?.cancel()
         search = SearchUiState(importProgress = importProgress)
         hideKeyboard()
-        applySystemBars()
     }
 
     private fun setSearchFilter(filter: SearchFilter) {
