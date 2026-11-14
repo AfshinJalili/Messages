@@ -58,6 +58,7 @@ import com.afsh.messages.ui.Afsh
 import com.afsh.messages.ui.components.ConfirmationDialog
 import com.afsh.messages.ui.components.DatePill
 import com.afsh.messages.ui.components.EmptyState
+import com.afsh.messages.ui.components.AfshIcon
 import com.afsh.messages.ui.components.PageAppBarAction
 import com.afsh.messages.ui.components.PageNavigation
 import com.afsh.messages.ui.components.PageScaffold
@@ -191,11 +192,11 @@ fun SpamScreen(
             null
         },
         actions = {
-            PageAppBarAction(R.drawable.ic_lucide_shield_ban, stringResource(R.string.block_rules), onClick = {
+            PageAppBarAction(AfshIcon.SpamShield, stringResource(R.string.block_rules), onClick = {
                 onEvent(SpamEvent.OpenRules)
             })
             if (state.messages.isNotEmpty()) {
-                PageAppBarAction(R.drawable.ic_lucide_trash_2, stringResource(R.string.clear_spam), onClick = {
+                PageAppBarAction(AfshIcon.Delete, stringResource(R.string.clear_spam), onClick = {
                     confirmDeleteAll = true
                 })
             }
