@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- With the system theme on, Commons reads its accent here instead of the wallpaper's: the app keeps its own primary role. -->
+    <color name="you_primary_color">@color/afsh_primary_dark</color>
+</resources>

@@ -1,5 +1,6 @@
 package com.afsh.messages
 
+import android.app.Activity
 import android.content.res.Configuration
 import android.database.ContentObserver
 import android.net.Uri
@@ -14,17 +15,20 @@ import com.afsh.messages.extensions.rescheduleAllScheduledMessages
 import com.afsh.messages.extensions.config
 import com.afsh.messages.extensions.notificationHelper
 import com.afsh.messages.helpers.InboxRepository
+import com.afsh.messages.helpers.afshXmlTheme
 import com.afsh.messages.helpers.ListDetail
 import com.afsh.messages.helpers.MessagingCache
 
 class App : FossifyApp() {
     override val isAppLockFeatureAvailable = true
 
+    override fun themeId(activity: Activity) = activity.afshXmlTheme()
+
     override fun onCreate() {
         super.onCreate()
         InboxRepository.init(this)
         ListDetail.install(this)
-        config.applyCobaltDefaults()
+        config.applyThemeDefaults()
         watchContacts()
 
         ensureBackgroundThread {

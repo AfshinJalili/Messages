@@ -237,6 +237,7 @@ class SettingsActivity : ComposePageActivity() {
                     if (dark) org.fossify.commons.R.color.theme_dark_text_color else org.fossify.commons.R.color.theme_light_text_color,
                 )
             }
+            config.syncAccentWithTheme()
         }
         refreshTheme()
     }
