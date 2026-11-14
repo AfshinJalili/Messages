@@ -15,6 +15,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
@@ -136,7 +137,7 @@ class ConversationPageChecks {
         }
         val save = compose.onNodeWithText(text(R.string.save_name))
         save.assertIsNotEnabled()
-        compose.onNodeWithText("Book club").performTextInput("  Readers  ")
+        compose.onNode(hasSetTextAction()).performTextInput("  Readers  ")
         save.assertIsEnabled().performClick()
         check(renamed == "Readers") { "Renamed $renamed" }
     }

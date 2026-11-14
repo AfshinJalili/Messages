@@ -8,6 +8,7 @@ import com.afsh.messages.models.Attachment
 import com.afsh.messages.models.AttachmentSelection
 import com.afsh.messages.models.Message
 import com.afsh.messages.models.ThreadItem
+import com.afsh.messages.ui.components.AfshIcon
 
 @Immutable
 data class ThreadHeaderState(
@@ -155,22 +156,27 @@ sealed interface ThreadEvent {
 }
 
 /** Declaration order is the overflow menu order (design view 40). */
-enum class ThreadMenuAction(@StringRes val label: Int, @DrawableRes val icon: Int) {
-    SEARCH(R.string.search_in_conversation, org.fossify.commons.R.drawable.ic_search_vector),
-    DETAILS(R.string.conversation_details, org.fossify.commons.R.drawable.ic_info_vector),
-    MUTE(R.string.mute_conversation, R.drawable.ic_bell_off_vector),
-    UNMUTE(R.string.unmute_conversation, org.fossify.commons.R.drawable.ic_bell_vector),
-    MARK_UNREAD(R.string.mark_as_unread, org.fossify.commons.R.drawable.ic_mail_vector),
-    RENAME(R.string.rename_conversation, org.fossify.commons.R.drawable.ic_edit_vector),
-    ADD_PERSON(R.string.add_person, org.fossify.commons.R.drawable.ic_add_person_vector),
-    ADD_TO_CONTACT(org.fossify.commons.R.string.add_number_to_contact, org.fossify.commons.R.drawable.ic_add_person_vector),
-    COPY_NUMBER(org.fossify.commons.R.string.copy_number_to_clipboard, org.fossify.commons.R.drawable.ic_copy_vector),
-    ARCHIVE(R.string.archive, R.drawable.ic_archive_vector),
-    UNARCHIVE(R.string.unarchive, R.drawable.ic_unarchive_vector),
-    ALLOW_SENDER(R.string.allow_sender, org.fossify.commons.R.drawable.ic_check_circle_vector),
-    BLOCK(org.fossify.commons.R.string.block_number, org.fossify.commons.R.drawable.ic_block_vector),
-    RESTORE(R.string.restore_all_messages, org.fossify.commons.R.drawable.ic_restart_alt_vector),
-    DELETE(org.fossify.commons.R.string.delete, org.fossify.commons.R.drawable.ic_delete_vector),
+enum class ThreadMenuAction(@StringRes val label: Int, val icon: AfshIcon) {
+    SEARCH(R.string.search_in_conversation, AfshIcon.Search),
+    DETAILS(R.string.conversation_details, AfshIcon.Info),
+    MUTE(R.string.mute_conversation, AfshIcon.NotificationsOff),
+    UNMUTE(R.string.unmute_conversation, AfshIcon.Notifications),
+    MARK_UNREAD(R.string.mark_as_unread, AfshIcon.Mail),
+    RENAME(R.string.rename_conversation, AfshIcon.Edit),
+    ADD_PERSON(R.string.add_person, AfshIcon.PersonAdd),
+    ADD_TO_CONTACT(org.fossify.commons.R.string.add_number_to_contact, AfshIcon.PersonAdd),
+    COPY_NUMBER(org.fossify.commons.R.string.copy_number_to_clipboard, AfshIcon.Copy),
+    ARCHIVE(R.string.archive, AfshIcon.Archive),
+    UNARCHIVE(R.string.unarchive, AfshIcon.Inbox),
+    ALLOW_SENDER(R.string.allow_sender, AfshIcon.Verified),
+    BLOCK(org.fossify.commons.R.string.block_number, AfshIcon.Block),
+    RESTORE(R.string.restore_all_messages, AfshIcon.Restore),
+    DELETE(org.fossify.commons.R.string.delete, AfshIcon.Delete),
+
+    ;
+
+    /** Shown in the error color: these remove or shut out the conversation. */
+    val destructive: Boolean get() = this == DELETE || this == BLOCK
 }
 
 /** Declaration order is the display order; the bar takes the first few (design view 10), the rest overflow. */
