@@ -5,7 +5,7 @@ import android.os.Bundle
 import org.fossify.commons.activities.BaseSimpleActivity
 import com.afsh.messages.R
 import com.afsh.messages.helpers.ScreenMotion
-import com.afsh.messages.helpers.cobaltTheme
+import com.afsh.messages.helpers.afshXmlTheme
 
 open class SimpleActivity : BaseSimpleActivity() {
     /** Whether this screen opens and closes with [ScreenMotion]; the inbox, the task root, keeps the system's. */
@@ -37,8 +37,9 @@ open class SimpleActivity : BaseSimpleActivity() {
         com.afsh.messages.helpers.UndoDeletion.attach(this)
     }
 
+    // Whatever theme Commons or the manifest asks for, XML widgets use the AFSH roles.
     override fun setTheme(resId: Int) {
-        super.setTheme(cobaltTheme() ?: resId)
+        super.setTheme(afshXmlTheme())
     }
 
     // One launcher icon: the colour variants were a Fossify customisation the app no longer offers.
