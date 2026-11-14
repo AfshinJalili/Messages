@@ -5,6 +5,7 @@ import com.afsh.messages.ui.forUserText
 import android.os.Bundle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -38,6 +39,8 @@ import androidx.compose.ui.unit.dp
 import com.afsh.messages.R
 import com.afsh.messages.ui.Afsh
 import com.afsh.messages.ui.components.DetailRow
+import com.afsh.messages.ui.components.BubbleTone
+import com.afsh.messages.ui.components.MessageBubble
 import com.afsh.messages.ui.components.AfshButton
 import com.afsh.messages.ui.components.PageScaffold
 
@@ -92,16 +95,9 @@ fun MessageDetailsScreen(facts: MessageFacts, onBack: () -> Unit, modifier: Modi
                 .then(PageContentPadding),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Column(
-                Modifier
-                    .fillMaxWidth()
-                    .clip(MaterialTheme.shapes.medium)
-                    .background(Afsh.colors.sentBubble.container)
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
+            MessageBubble(BubbleTone.Sent, MaterialTheme.shapes.medium, Modifier.fillMaxWidth(), contentPadding = PaddingValues(16.dp)) {
                 if (facts.body.isNotEmpty()) {
-                    Text(facts.body, style = MaterialTheme.typography.bodyLarge.forUserText(facts.body), color = Afsh.colors.sentBubble.content)
+                    Text(facts.body, style = MaterialTheme.typography.bodyLarge.forUserText(facts.body))
                 }
                 DeliveryLine(facts.time, facts.mark)
             }

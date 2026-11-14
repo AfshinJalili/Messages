@@ -21,6 +21,7 @@ echo "== host checks"
 python3 tests/check_design_tokens.py > "$out/design-tokens.txt" 2>&1 || { failed+=(design-tokens); tail -1 "$out/design-tokens.txt"; }
 python3 tests/check_inbox_database.py > "$out/inbox-database.txt" 2>&1 || { failed+=(inbox-database); tail -1 "$out/inbox-database.txt"; }
 python3 tests/check_dialogs.py > "$out/dialogs.txt" 2>&1 || { failed+=(dialogs); tail -1 "$out/dialogs.txt"; }
+python3 tests/check_material_components.py > "$out/material-components.txt" 2>&1 || { failed+=(material-components); tail -1 "$out/material-components.txt"; }
 
 echo "== build"
 ./gradlew -q :app:assembleDebug :app:assembleDebugAndroidTest
