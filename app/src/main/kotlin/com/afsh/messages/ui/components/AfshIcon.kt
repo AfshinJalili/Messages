@@ -30,6 +30,7 @@ enum class AfshIcon(@DrawableRes private val lucide: Int, @DrawableRes private v
     Check(R.drawable.ic_lucide_check, R.drawable.ic_msym_check),
     CheckAll(R.drawable.ic_lucide_check_check, R.drawable.ic_msym_done_all),
     ChevronForward(R.drawable.ic_lucide_chevron_right, R.drawable.ic_msym_chevron_right),
+    ChevronUp(R.drawable.ic_lucide_chevron_up, R.drawable.ic_msym_keyboard_arrow_up),
     Verified(R.drawable.ic_lucide_circle_check, R.drawable.ic_msym_check_circle),
     Help(R.drawable.ic_lucide_circle_help, R.drawable.ic_msym_help),
     Schedule(R.drawable.ic_lucide_clock, R.drawable.ic_msym_schedule),
