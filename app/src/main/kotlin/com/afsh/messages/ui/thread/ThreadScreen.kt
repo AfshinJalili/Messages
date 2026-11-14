@@ -1,5 +1,6 @@
 package com.afsh.messages.ui.thread
 
+import com.afsh.messages.ui.AfshCorners
 import com.afsh.messages.ui.components.UnreadDivider
 import android.content.res.Configuration
 import android.text.format.DateFormat
@@ -77,7 +78,6 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -129,7 +129,6 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -223,10 +222,9 @@ const val THREAD_STICKY_DATE_TAG = "thread_sticky_date"
 
 @Composable
 fun ThreadHeader(state: ThreadUiState, onEvent: (ThreadEvent) -> Unit, modifier: Modifier = Modifier) {
-    val colors = MaterialTheme.colorScheme
     val header = state.header
     val compact = LocalConfiguration.current.screenHeightDp < 480
-    Surface(color = colors.primaryContainer, contentColor = colors.onPrimaryContainer, modifier = modifier.fillMaxWidth()) {
+    Surface(color = Afsh.colors.header.container, contentColor = Afsh.colors.header.content, modifier = modifier.fillMaxWidth()) {
         Row(
             Modifier
                 .windowInsetsPadding(WindowInsets.statusBars.union(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)))
@@ -460,7 +458,7 @@ private fun LiftOverlay(lift: LiftedBubble, up: Boolean, sheetTop: Float, state:
         if (!up) onGone()
     }
     val density = LocalDensity.current
-    val scrim = colorResource(R.color.afsh_lift_scrim)
+    val scrim = Afsh.colors.liftScrim
     var origin by remember { mutableStateOf<Offset?>(null) }
     Box(
         Modifier
@@ -538,7 +536,7 @@ private fun MessageSheet(message: Message, state: ThreadUiState, onRestingTop: (
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         containerColor = colors.surfaceContainer,
-        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+        shape = AfshCorners.Sheet,
         scrimColor = Color.Transparent,
         // The sheet rests against the bottom of its full-window dialog, so its resting top is known from the first
         // frame, while it is still sliding in. The lifted bubble aims there instead of chasing the moving edge.
@@ -776,7 +774,7 @@ private fun Bubble(
         selected -> colors.secondaryContainer to colors.onSecondaryContainer
         failed -> colors.errorContainer to colors.onErrorContainer
         incoming -> colors.surfaceContainer to colors.onSurface
-        else -> colors.primaryContainer to colors.onPrimaryContainer
+        else -> Afsh.colors.sentBubble.container to Afsh.colors.sentBubble.content
     }
     val shape = messageBubbleShape(incoming, groupedBelow)
     val attachments = message.attachment?.attachments.orEmpty()
@@ -1063,10 +1061,10 @@ private fun AttachmentTile(icon: Int, title: String, subtitle: String, clickable
             Modifier
                 .size(40.dp)
                 .clip(CircleShape)
-                .background(colors.primaryContainer),
+                .background(Afsh.colors.badge.container),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(painterResource(icon), contentDescription = null, tint = colors.onPrimaryContainer, modifier = Modifier.size(22.dp))
+            Icon(painterResource(icon), contentDescription = null, tint = Afsh.colors.badge.content, modifier = Modifier.size(22.dp))
         }
         Column(Modifier.weight(1f)) {
             Text(title, style = MaterialTheme.typography.labelMedium, color = colors.onSurface, maxLines = 2, overflow = TextOverflow.Ellipsis)
@@ -1156,8 +1154,8 @@ private fun JumpToLatest(state: ThreadUiState, newestFirst: List<ThreadItem>, li
         Surface(
             onClick = { onEvent(ThreadEvent.JumpToLatest) },
             shape = CircleShape,
-            color = MaterialTheme.colorScheme.primaryContainer,
-            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            color = Afsh.colors.secondaryButton.container,
+            contentColor = Afsh.colors.secondaryButton.content,
             shadowElevation = 4.dp,
             modifier = Modifier
                 .heightIn(min = TargetSize)

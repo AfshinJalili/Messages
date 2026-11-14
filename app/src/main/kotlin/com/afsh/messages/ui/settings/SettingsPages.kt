@@ -2,7 +2,6 @@ package com.afsh.messages.ui.settings
 
 import android.text.format.DateFormat
 import androidx.compose.foundation.background
-import androidx.compose.ui.res.colorResource
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.border
@@ -216,20 +215,23 @@ private fun ThemeCard(theme: ThemeChoice, selected: Boolean, onClick: () -> Unit
 @Composable
 private fun ThemeSwatch(theme: ThemeChoice) {
     @Composable
-    fun Page(dark: Boolean, modifier: Modifier) = Box(
-        modifier
-            .fillMaxHeight()
-            .background(colorResource(if (dark) R.color.surface_dark else R.color.surface_light))
-            .padding(horizontal = 6.dp),
-        contentAlignment = Alignment.CenterStart,
-    ) {
+    fun Page(dark: Boolean, modifier: Modifier) {
+        val preview = Afsh.colors.themePreview.let { if (dark) it.dark else it.light }
         Box(
-            Modifier
-                .fillMaxWidth()
-                .heightIn(min = PreviewLineHeight)
-                .clip(MaterialTheme.shapes.extraSmall)
-                .background(if (dark) Afsh.colors.accent else colorResource(R.color.afsh_pine)),
-        )
+            modifier
+                .fillMaxHeight()
+                .background(preview.container)
+                .padding(horizontal = 6.dp),
+            contentAlignment = Alignment.CenterStart,
+        ) {
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = PreviewLineHeight)
+                    .clip(MaterialTheme.shapes.extraSmall)
+                    .background(preview.content),
+            )
+        }
     }
     Row(
         Modifier

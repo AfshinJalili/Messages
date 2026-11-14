@@ -2,7 +2,9 @@ package com.afsh.messages.ui
 
 import androidx.compose.ui.text.style.TextDirection
 import android.content.Context
+import androidx.compose.foundation.shape.AbsoluteRoundedCornerShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Shape
 import androidx.core.graphics.ColorUtils
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
@@ -27,6 +29,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
@@ -43,7 +46,18 @@ fun Context.afshDark() = ColorUtils.calculateLuminance(getProperBackgroundColor(
 /** The app's own font-size setting, relative to its default. */
 fun Context.afshTextScale() = getTextSize() / resources.getDimension(org.fossify.commons.R.dimen.normal_text_size)
 
-/** Roles the AFSH design uses that Material 3 has no slot for. */
+/** A surface color and the color of what sits on it. */
+@Immutable
+data class ColorRole(val container: Color, val content: Color) {
+    companion object {
+        val Unspecified = ColorRole(Color.Unspecified, Color.Unspecified)
+    }
+}
+
+/**
+ * Roles the AFSH design uses that Material 3 has no slot for. Each job that used to share
+ * `primaryContainer` has its own [ColorRole], so recoloring one never recolors the others.
+ */
 @Immutable
 data class AfshColors(
     val accent: Color,
@@ -57,17 +71,58 @@ data class AfshColors(
     val inverseAccent: Color = Color.Unspecified,
     /** Behind a held message or a focused task (`scrim`). */
     val scrim: Color = Color.Unspecified,
+    /** Over the conversation and its header while a message is lifted for actions. Same in both themes. */
+    val liftScrim: Color = Color.Unspecified,
     /** Outline of the focused control (`focus-ring`). */
     val focusRing: Color = Color.Unspecified,
+    /** Page, inbox and conversation headers. */
+    val header: ColorRole = ColorRole.Unspecified,
+    /** Messages the user sent, in the conversation and in message details. */
+    val sentBubble: ColorRole = ColorRole.Unspecified,
+    /** Secondary buttons and the jump-to-latest button. */
+    val secondaryButton: ColorRole = ColorRole.Unspecified,
+    /** The panel behind a non-destructive swipe action such as Archive. */
+    val swipeAction: ColorRole = ColorRole.Unspecified,
+    /** The selected filter chip in the inbox and in search. */
+    val selected: ColorRole = ColorRole.Unspecified,
+    /** The unread count and attachment type icons. */
+    val badge: ColorRole = ColorRole.Unspecified,
+    /** The theme picker's pictures of each theme, whichever theme is on: a page ([ColorRole.container]) and its line. */
+    val themePreview: ThemePreview = ThemePreview.Unspecified,
 )
+
+/** How the light and dark themes look in a small picture of each. */
+@Immutable
+data class ThemePreview(val light: ColorRole, val dark: ColorRole) {
+    companion object {
+        val Unspecified = ThemePreview(ColorRole.Unspecified, ColorRole.Unspecified)
+    }
+}
 
 val LocalAfshColors = staticCompositionLocalOf {
     AfshColors(Color.Unspecified, Color.Unspecified, Color.Unspecified, emptyList(), Color.Unspecified)
 }
 
+/** The shared spacing scale for gaps and padding; see Spacing in DESIGN.md for when to use each step. */
+@Immutable
+data class AfshSpacing(
+    val xxs: Dp = 2.dp,
+    val xs: Dp = 4.dp,
+    val sm: Dp = 8.dp,
+    val md: Dp = 12.dp,
+    val lg: Dp = 16.dp,
+    val xl: Dp = 20.dp,
+    val xxl: Dp = 24.dp,
+    val xxxl: Dp = 32.dp,
+)
+
+val LocalAfshSpacing = staticCompositionLocalOf { AfshSpacing() }
+
 object Afsh {
     val colors: AfshColors
         @Composable get() = LocalAfshColors.current
+    val spacing: AfshSpacing
+        @Composable get() = LocalAfshSpacing.current
 }
 
 @OptIn(androidx.compose.ui.text.ExperimentalTextApi::class)
@@ -187,10 +242,55 @@ private fun colorScheme(dark: Boolean): ColorScheme {
  * [textScale] carries the app's own font-size setting on top of the system font scale, so Compose
  * screens honour it the same way the XML screens do.
  */
+/**
+ * The shape scale. Material slots carry the app's corners; extraSmall and extraLarge are set
+ * explicitly so they stay at the values the app has always drawn.
+ */
+val AfshShapes = Shapes(
+    extraSmall = RoundedCornerShape(4.dp),
+    small = RoundedCornerShape(12.dp),
+    medium = RoundedCornerShape(16.dp),
+    large = RoundedCornerShape(22.dp),
+    extraLarge = RoundedCornerShape(28.dp),
+)
+
+/** Corners that have no Material slot. Each value is the one the app has always drawn. */
+object AfshCorners {
+    /** Message bubble corners, and the tail corner of a bubble. */
+    private val Bubble = 16.dp
+    private val BubbleTail = 4.dp
+
+    /** Dialog frame, see `AfshDialog`. */
+    val Dialog: Shape = RoundedCornerShape(24.dp)
+
+    /** Top of the bottom sheet that holds the attachment and thread actions. */
+    val Sheet: Shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+
+    /** The SIM badge: square-ish with a cut top-right corner, which tells SIM 1 from SIM 2 without colour. */
+    val SimTile: Shape = AbsoluteRoundedCornerShape(topLeft = 2.dp, topRight = 5.dp, bottomRight = 2.dp, bottomLeft = 2.dp)
+
+    /**
+     * A message bubble. The tail corner sits at the bottom on the sender's side; a bubble followed
+     * by one from the same sender drops the tail.
+     */
+    fun bubble(incoming: Boolean, groupedBelow: Boolean = false): Shape {
+        val corner = Bubble
+        val tail = if (groupedBelow) corner else BubbleTail
+        return if (incoming) {
+            RoundedCornerShape(corner, corner, corner, tail)
+        } else {
+            RoundedCornerShape(corner, corner, tail, corner)
+        }
+    }
+}
+
 @Composable
 fun AfshTheme(dark: Boolean, textScale: Float = 1f, content: @Composable () -> Unit) {
     val density = LocalDensity.current
     val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+    val scheme = colorScheme(dark)
+    // Every role resolves to today's pine container; give a role its own value to recolor only that job.
+    val pine = ColorRole(scheme.primaryContainer, scheme.onPrimaryContainer)
     val extras = AfshColors(
         accent = colorResource(R.color.afsh_lime),
         onAccent = colorResource(R.color.afsh_ink),
@@ -202,19 +302,27 @@ fun AfshTheme(dark: Boolean, textScale: Float = 1f, content: @Composable () -> U
         ),
         inverseAccent = colorResource(if (dark) R.color.afsh_pine else R.color.afsh_lime),
         scrim = colorResource(if (dark) R.color.afsh_scrim_dark else R.color.afsh_scrim),
+        liftScrim = colorResource(R.color.afsh_lift_scrim),
         focusRing = colorResource(if (dark) R.color.afsh_lime else R.color.afsh_pine),
+        header = pine,
+        sentBubble = pine,
+        secondaryButton = pine,
+        swipeAction = pine,
+        selected = pine,
+        badge = pine,
+        themePreview = ThemePreview(
+            light = ColorRole(colorResource(R.color.surface_light), colorResource(R.color.afsh_pine)),
+            dark = ColorRole(colorResource(R.color.surface_dark), colorResource(R.color.afsh_lime)),
+        ),
     )
     MaterialTheme(
-        colorScheme = colorScheme(dark),
+        colorScheme = scheme,
         typography = typography(rtl),
-        shapes = Shapes(
-            small = RoundedCornerShape(12.dp),
-            medium = RoundedCornerShape(16.dp),
-            large = RoundedCornerShape(22.dp),
-        ),
+        shapes = AfshShapes,
     ) {
         CompositionLocalProvider(
             LocalAfshColors provides extras,
+            LocalAfshSpacing provides AfshSpacing(),
             LocalDensity provides Density(density.density, density.fontScale * textScale),
             content = content,
         )

@@ -1,5 +1,6 @@
 package com.afsh.messages.ui.thread
 
+import com.afsh.messages.ui.AfshCorners
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandHorizontally
@@ -32,7 +33,6 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.AbsoluteRoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
@@ -373,7 +373,7 @@ private fun LengthPill(composer: ComposerState) {
 @Composable
 internal fun SimGlyph(slot: Int, modifier: Modifier = Modifier) {
     val colors = MaterialTheme.colorScheme
-    val shape = AbsoluteRoundedCornerShape(topLeft = 2.dp, topRight = 5.dp, bottomRight = 2.dp, bottomLeft = 2.dp)
+    val shape = AfshCorners.SimTile
     val solid = slot == 1
     Box(modifier.size(24.dp), contentAlignment = Alignment.Center) {
         Box(
