@@ -2,7 +2,9 @@ package com.afsh.messages.ui
 
 import androidx.compose.ui.text.style.TextDirection
 import android.content.Context
+import androidx.compose.foundation.shape.AbsoluteRoundedCornerShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Shape
 import androidx.core.graphics.ColorUtils
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
@@ -71,6 +73,8 @@ data class AfshColors(
     val inverseAccent: Color = Color.Unspecified,
     /** Behind a held message or a focused task (`scrim`). */
     val scrim: Color = Color.Unspecified,
+    /** Over the conversation and its header while a message is lifted for actions. Same in both themes. */
+    val liftScrim: Color = Color.Unspecified,
     /** Outline of the focused control (`focus-ring`). */
     val focusRing: Color = Color.Unspecified,
     /** Page, inbox and conversation headers. */
@@ -85,7 +89,17 @@ data class AfshColors(
     val selected: ColorRole = ColorRole.Unspecified,
     /** The unread count and attachment type icons. */
     val badge: ColorRole = ColorRole.Unspecified,
+    /** The theme picker's pictures of each theme, whichever theme is on: a page ([ColorRole.container]) and its line. */
+    val themePreview: ThemePreview = ThemePreview.Unspecified,
 )
+
+/** How the light and dark themes look in a small picture of each. */
+@Immutable
+data class ThemePreview(val light: ColorRole, val dark: ColorRole) {
+    companion object {
+        val Unspecified = ThemePreview(ColorRole.Unspecified, ColorRole.Unspecified)
+    }
+}
 
 val LocalAfshColors = staticCompositionLocalOf {
     AfshColors(Color.Unspecified, Color.Unspecified, Color.Unspecified, emptyList(), Color.Unspecified)
@@ -234,6 +248,48 @@ fun Context.afshColorScheme(dark: Boolean): ColorScheme {
  * [textScale] carries the app's own font-size setting on top of the system font scale, so Compose
  * screens honour it the same way the XML screens do.
  */
+/**
+ * The shape scale. Material slots carry the app's corners; extraSmall and extraLarge are set
+ * explicitly so they stay at the values the app has always drawn.
+ */
+val AfshShapes = Shapes(
+    extraSmall = RoundedCornerShape(4.dp),
+    small = RoundedCornerShape(12.dp),
+    medium = RoundedCornerShape(16.dp),
+    large = RoundedCornerShape(22.dp),
+    extraLarge = RoundedCornerShape(28.dp),
+)
+
+/** Corners that have no Material slot. Each value is the one the app has always drawn. */
+object AfshCorners {
+    /** Message bubble corners, and the tail corner of a bubble. */
+    private val Bubble = 16.dp
+    private val BubbleTail = 4.dp
+
+    /** Dialog frame, see `AfshDialog`. */
+    val Dialog: Shape = RoundedCornerShape(24.dp)
+
+    /** Top of the bottom sheet that holds the attachment and thread actions. */
+    val Sheet: Shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+
+    /** The SIM badge: square-ish with a cut top-right corner, which tells SIM 1 from SIM 2 without colour. */
+    val SimTile: Shape = AbsoluteRoundedCornerShape(topLeft = 2.dp, topRight = 5.dp, bottomRight = 2.dp, bottomLeft = 2.dp)
+
+    /**
+     * A message bubble. The tail corner sits at the bottom on the sender's side; a bubble followed
+     * by one from the same sender drops the tail.
+     */
+    fun bubble(incoming: Boolean, groupedBelow: Boolean = false): Shape {
+        val corner = Bubble
+        val tail = if (groupedBelow) corner else BubbleTail
+        return if (incoming) {
+            RoundedCornerShape(corner, corner, corner, tail)
+        } else {
+            RoundedCornerShape(corner, corner, tail, corner)
+        }
+    }
+}
+
 @Composable
 fun AfshTheme(dark: Boolean, textScale: Float = 1f, content: @Composable () -> Unit) {
     val density = LocalDensity.current
@@ -253,6 +309,7 @@ fun AfshTheme(dark: Boolean, textScale: Float = 1f, content: @Composable () -> U
         ),
         inverseAccent = colorResource(if (dark) R.color.afsh_pine else R.color.afsh_lime),
         scrim = colorResource(if (dark) R.color.afsh_scrim_dark else R.color.afsh_scrim),
+        liftScrim = colorResource(R.color.afsh_lift_scrim),
         focusRing = colorResource(if (dark) R.color.afsh_lime else R.color.afsh_pine),
         header = pine,
         sentBubble = pine,
@@ -260,15 +317,15 @@ fun AfshTheme(dark: Boolean, textScale: Float = 1f, content: @Composable () -> U
         swipeAction = pine,
         selected = pine,
         badge = pine,
+        themePreview = ThemePreview(
+            light = ColorRole(colorResource(R.color.surface_light), colorResource(R.color.afsh_pine)),
+            dark = ColorRole(colorResource(R.color.surface_dark), colorResource(R.color.afsh_lime)),
+        ),
     )
     MaterialTheme(
         colorScheme = scheme,
         typography = typography(rtl),
-        shapes = Shapes(
-            small = RoundedCornerShape(12.dp),
-            medium = RoundedCornerShape(16.dp),
-            large = RoundedCornerShape(22.dp),
-        ),
+        shapes = AfshShapes,
     ) {
         CompositionLocalProvider(
             LocalAfshColors provides extras,

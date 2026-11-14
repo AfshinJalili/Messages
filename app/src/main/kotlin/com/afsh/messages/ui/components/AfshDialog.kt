@@ -1,5 +1,6 @@
 package com.afsh.messages.ui.components
 
+import com.afsh.messages.ui.AfshCorners
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -7,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -22,7 +22,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 
-private val DialogShape = RoundedCornerShape(24.dp)
 private val DialogMaxWidth = 400.dp
 private val DialogPadding = 24.dp
 
@@ -61,7 +60,7 @@ fun AfshDialog(
                 .then(if (wide) Modifier.padding(horizontal = WideDialogMargin) else Modifier)
                 .widthIn(max = if (wide) WideDialogMaxWidth else DialogMaxWidth)
                 .semantics { paneTitle = title },
-            shape = DialogShape,
+            shape = AfshCorners.Dialog,
             color = MaterialTheme.colorScheme.surfaceContainer,
         ) {
             Column(
