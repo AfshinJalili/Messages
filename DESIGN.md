@@ -38,9 +38,9 @@ In the app, the reusable parts of board `00b` live in `ui/components/`: primary 
 
 ### Dialogs
 
-Every dialog, popup and picker in the app is drawn by one component, `AfshDialog` in `ui/components/AfshDialog.kt`; the archive confirmation is the reference. The frame is a 24dp-cornered `surfaceContainer` card at most 400dp wide, 24dp padding, a `headlineSmall` title, body text in `bodyLarge`, 16dp between parts, and the actions last, stacked full width through `DialogActions`: the confirming button above (SECONDARY for an ordinary decision, PRIMARY when the dialog collects a value, DANGER for a permanent action), then a QUIET dismiss button. Pickers pass `wide = true`, which keeps 12dp at the sides so the 360dp calendar fits.
+Every dialog, popup and picker in the app is drawn by one component, `AfshDialog` in `ui/components/AfshDialog.kt`, which is the stock Material 3 `AlertDialog` with its theme roles: a `surfaceContainerHigh` card in the `extraLarge` shape (28dp), 24dp padding, a `headlineSmall` title and `bodyLarge` text, 16dp between parts of the content, and the content scrolling when short of room. The actions are Material text buttons at the end: the dismiss label, then the confirming action passed as a `DialogConfirm` (painted in the `error` role when `destructive`, disabled until the dialog has a valid value). Fields in a dialog are the stock `OutlinedTextField`, with the explanation or the error as its supporting text. The calendar is `AfshDatePickerDialog`, the stock Material 3 `DatePickerDialog` with the same actions; the clock is a `TimePicker` inside `AfshDialog`.
 
-Use the dialog that fits before writing a new one: `ConfirmationDialog` (decide), `MessageDialog` (inform), `ChoiceDialog` (pick one), `RenameDialog` and `TextInputDialog` (type a value). An activity outside one Compose tree calls `confirm`, `inform`, `choose` or `showAfshDialog` from `DialogHost.kt`. Never use Compose `Dialog`, `AlertDialog`, `DatePickerDialog`, Android or Material dialog builders, or a Fossify Commons dialog. `tests/check_dialogs.py` fails on any of them; the one exception is Commons' `SecurityDialog` for app lock, until it has an AFSH version.
+Use the dialog that fits before writing a new one: `ConfirmationDialog` (decide), `MessageDialog` (inform), `ChoiceDialog` (pick one), `RenameDialog` and `TextInputDialog` (type a value). An activity outside one Compose tree calls `confirm`, `inform`, `choose` or `showAfshDialog` from `DialogHost.kt`. Never use Compose `Dialog`, `AlertDialog`, `DatePickerDialog`, `TimePickerDialog`, Android or Material dialog builders outside `AfshDialog.kt`, or a Fossify Commons dialog. `tests/check_dialogs.py` fails on any of them, and on a hand-built frame (window `Dialog`, `Surface` card or fixed corner) inside `AfshDialog.kt`; the one exception is Commons' `SecurityDialog` for app lock, until it has an AFSH version.
 
 System bar icons follow the theme, never a constant. Each activity calls `AfshSystemBars(window)` (`ui/SystemBars.kt`) inside its `AfshTheme`: the status bar icons take whichever of black or white has more contrast on the `header` role, and the navigation bar icons do the same on `surface`. Recoloring the header needs no status bar change.
 
@@ -121,14 +121,14 @@ One scale for gaps and padding, read through the theme as `Afsh.spacing.<step>` 
 | `md` | 12dp | Standard gap between items in a row or list, and inner padding of small cards |
 | `lg` | 16dp | Page side padding, default card padding, and gaps between groups |
 | `xl` | 20dp | Roomy row padding and gaps between sections |
-| `xxl` | 24dp | Dialog padding and gaps between major blocks |
+| `xxl` | 24dp | Gaps between major blocks |
 | `xxxl` | 32dp | Empty-state and onboarding breathing room |
 
 ### Components
 
 Keep surface-colored app bars, one filled icon family, letter avatars for individual contacts, and group icons for groups. Reserve accent for actions, unread indicators, selected filters and sent messages. Attachment actions share a neutral tinted background.
 
-Corners come from the theme's shape scale, never a literal `RoundedCornerShape` in UI code (`tests/check_design_tokens.py` fails on one). Use `MaterialTheme.shapes` (extraSmall 4dp, small 12dp, medium 16dp, large 22dp, extraLarge 28dp) for Material roles, and `AfshCorners` for corners without a slot: message bubbles (16dp, 4dp tail), the dialog frame (24dp), the thread sheet top (28dp) and the SIM badge. Commons still reads `message_bubble_radius` in `dimens.xml` for its own thread drawing. Use the shared minimum touch target for composer actions, and the shared attachment action dimensions. Component-local constraint geometry can remain in its layout; reusable sizes belong in resources.
+Corners come from the theme's shape scale, never a literal `RoundedCornerShape` in UI code (`tests/check_design_tokens.py` fails on one). Use `MaterialTheme.shapes` (extraSmall 4dp, small 12dp, medium 16dp, large 22dp, extraLarge 28dp) for Material roles, and `AfshCorners` for corners without a slot: message bubbles (16dp, 4dp tail), the thread sheet top (28dp) and the SIM badge. Commons still reads `message_bubble_radius` in `dimens.xml` for its own thread drawing. Use the shared minimum touch target for composer actions, and the shared attachment action dimensions. Component-local constraint geometry can remain in its layout; reusable sizes belong in resources.
 
 Keep system typography and the user's font-size choice. List primary, secondary and metadata text use the multipliers in `design_values.xml`. Read and unread rows share their geometry; unread emphasis changes weight and opacity.
 
