@@ -1,6 +1,5 @@
 package com.afsh.messages
 
-import androidx.compose.ui.test.and
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size

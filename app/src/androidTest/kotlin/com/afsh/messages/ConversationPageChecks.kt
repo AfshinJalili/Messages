@@ -1,6 +1,5 @@
 package com.afsh.messages
 
-import androidx.compose.ui.test.and
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasText
 import android.provider.Telephony
