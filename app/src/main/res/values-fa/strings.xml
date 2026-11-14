@@ -360,6 +360,7 @@
     <string name="text_size_value">%s · همراه با اندازهٔ نوشتهٔ گوشی</string>
     <string name="date_and_time">تاریخ و ساعت</string>
     <string name="use_24_hour_time">ساعت ۲۴ ساعته</string>
+    <string name="show_inbox_unread_count">شمار پیام‌های خوانده‌نشده روی صندوق</string>
     <string name="settings_composer">نوار نوشتن</string>
     <string name="setting_on">روشن</string>
     <string name="setting_off">خاموش</string>
