@@ -49,6 +49,7 @@ data class SettingsUiState(
     val useEnglish: Boolean? = null,
     val dateFormat: String = "",
     val use24Hour: Boolean = false,
+    val inboxUnreadCount: Boolean = false,
     val sendOnEnter: Boolean = false,
     val characterCounter: Boolean = false,
     val simpleCharacters: Boolean = false,
@@ -84,6 +85,7 @@ sealed interface SettingsEvent {
     data class SetUseEnglish(val enabled: Boolean) : SettingsEvent
     data class SetDateFormat(val format: String) : SettingsEvent
     data class SetUse24Hour(val enabled: Boolean) : SettingsEvent
+    data class SetInboxUnreadCount(val enabled: Boolean) : SettingsEvent
     data class SetSendOnEnter(val enabled: Boolean) : SettingsEvent
     data class SetCharacterCounter(val enabled: Boolean) : SettingsEvent
     data class SetSimpleCharacters(val enabled: Boolean) : SettingsEvent
