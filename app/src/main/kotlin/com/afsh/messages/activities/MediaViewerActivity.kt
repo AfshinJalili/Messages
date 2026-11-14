@@ -9,7 +9,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.core.content.IntentCompat
 import androidx.core.net.toUri
-import androidx.core.view.WindowCompat
 import org.fossify.commons.extensions.getMyFileUri
 import org.fossify.commons.extensions.showErrorToast
 import org.fossify.commons.extensions.toast
@@ -41,11 +40,6 @@ class MediaViewerActivity : ComposePageActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (items.isEmpty()) finish()
-    }
-
-    override fun onResume() {
-        super.onResume()
-        WindowCompat.getInsetsController(window, window.decorView).isAppearanceLightNavigationBars = false
     }
 
     @Composable
