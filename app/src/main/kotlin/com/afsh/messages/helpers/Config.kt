@@ -2,42 +2,48 @@ package com.afsh.messages.helpers
 
 import android.content.Context
 import androidx.core.content.ContextCompat
-import org.fossify.commons.extensions.getProperBackgroundColor
 import org.fossify.commons.extensions.trimToComparableNumber
-import org.fossify.commons.helpers.ACCENT_COLOR
 import org.fossify.commons.helpers.BACKGROUND_COLOR
 import org.fossify.commons.helpers.BaseConfig
 import org.fossify.commons.helpers.IS_SYSTEM_THEME_ENABLED
-import org.fossify.commons.helpers.PRIMARY_COLOR
 import org.fossify.commons.helpers.TEXT_COLOR
 import com.afsh.messages.R
 import com.afsh.messages.extensions.getDefaultKeyboardHeight
 import com.afsh.messages.models.Conversation
+import com.afsh.messages.ui.afshDark
 
 class Config(context: Context) : BaseConfig(context) {
     companion object {
         fun newInstance(context: Context) = Config(context)
     }
 
-    fun applyCobaltDefaults() {
-        if (prefs.getBoolean("cobalt_defaults_applied", false)) return
-        val background = context.getProperBackgroundColor()
-        val cobalt = context.cobaltColorFor(background)
-        val legacyGreen = ContextCompat.getColor(context, org.fossify.commons.R.color.md_green_900)
-        if (!prefs.contains(PRIMARY_COLOR) || primaryColor == legacyGreen) primaryColor = cobalt
-        if (!prefs.contains(ACCENT_COLOR) || accentColor == legacyGreen) accentColor = cobalt
-        // Adopt the brand by default; keep explicit theme and custom-color choices.
-        if (!prefs.contains(IS_SYSTEM_THEME_ENABLED)) {
-            val light = cobalt == ContextCompat.getColor(context, R.color.brand_cobalt)
-            if (!prefs.contains(BACKGROUND_COLOR)) {
-                backgroundColor = ContextCompat.getColor(context, if (light) R.color.surface_light else R.color.surface_dark)
+    /**
+     * Runs at every start. The first run opts implicit system-theme defaults into the app's own
+     * light or dark theme; every run points Commons' stored accent at the theme's primary role,
+     * so nothing (app lock, Commons widgets) keeps an older palette.
+     */
+    fun applyThemeDefaults() {
+        if (!prefs.getBoolean(THEME_DEFAULTS_APPLIED, false)) {
+            if (!prefs.contains(IS_SYSTEM_THEME_ENABLED)) {
+                val light = !context.afshDark()
+                if (!prefs.contains(BACKGROUND_COLOR)) {
+                    backgroundColor = ContextCompat.getColor(context, if (light) R.color.surface_light else R.color.surface_dark)
+                }
+                if (!prefs.contains(TEXT_COLOR)) {
+                    textColor = ContextCompat.getColor(context, if (light) R.color.on_surface_light else R.color.on_surface_dark)
+                }
+                isSystemThemeEnabled = false
             }
-            if (!prefs.contains(TEXT_COLOR)) {
-                textColor = ContextCompat.getColor(context, if (light) R.color.on_surface_light else R.color.on_surface_dark)
-            }
-            isSystemThemeEnabled = false
+            prefs.edit().putBoolean(THEME_DEFAULTS_APPLIED, true).apply()
         }
-        prefs.edit().putBoolean("cobalt_defaults_applied", true).apply()
+        syncAccentWithTheme()
+    }
+
+    /** Commons' accent follows the theme's primary role; call after the light or dark choice changes. */
+    fun syncAccentWithTheme() {
+        val primary = context.primaryRoleColor()
+        if (primaryColor != primary) primaryColor = primary
+        if (accentColor != primary) accentColor = primary
     }
 
     fun saveUseSIMIdAtNumber(number: String, SIMId: Int) {

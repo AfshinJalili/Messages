@@ -1,44 +1,44 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
 
-    <style name="AppTheme" parent="AppTheme.Cobalt.Dark" />
+    <style name="AppTheme" parent="AppTheme.Afsh.Dark" />
 
-    <style name="AppTheme.Cobalt.Dark" parent="AppTheme.Base">
-        <item name="colorPrimary">@color/brand_cobalt_dark</item>
-        <item name="colorOnPrimary">@color/design_ink</item>
-        <item name="colorPrimaryDark">@color/brand_cobalt_dark</item>
-        <item name="colorAccent">@color/brand_cobalt_dark</item>
-        <item name="colorSecondary">@color/brand_cobalt_dark</item>
-        <item name="colorOnSecondary">@color/design_ink</item>
-        <item name="colorPrimaryContainer">@color/brand_container_dark</item>
-        <item name="colorOnPrimaryContainer">@color/brand_on_container_dark</item>
-        <item name="colorSecondaryContainer">@color/brand_container_dark</item>
-        <item name="colorOnSecondaryContainer">@color/brand_on_container_dark</item>
-        <item name="colorSurface">@color/surface_dark</item>
-        <item name="colorOnSurface">@color/on_surface_dark</item>
-        <item name="android:colorBackground">@color/surface_dark</item>
-        <item name="android:colorControlActivated">@color/brand_cobalt_dark</item>
-        <item name="colorControlActivated">@color/brand_cobalt_dark</item>
+    <!-- XML widgets and Commons screens (app lock). Each item mirrors a role in afshColorScheme (ui/AfshTheme.kt). -->
+    <style name="AppTheme.Afsh.Dark" parent="AppTheme.Base">
+        <item name="colorPrimary">@color/afsh_primary_dark</item>
+        <item name="colorOnPrimary">@color/afsh_ink</item>
+        <item name="colorPrimaryDark">@color/afsh_primary_dark</item>
+        <item name="colorAccent">@color/afsh_primary_dark</item>
+        <item name="colorSecondary">@color/afsh_primary_dark</item>
+        <item name="colorOnSecondary">@color/afsh_ink</item>
+        <item name="colorPrimaryContainer">@color/afsh_pine_2</item>
+        <item name="colorOnPrimaryContainer">@color/design_white</item>
+        <item name="colorSecondaryContainer">@color/afsh_lilac_dark</item>
+        <item name="colorOnSecondaryContainer">@color/afsh_lilac</item>
+        <item name="colorSurface">@color/afsh_night</item>
+        <item name="colorOnSurface">@color/afsh_paper</item>
+        <item name="android:colorBackground">@color/afsh_night</item>
+        <item name="android:colorControlActivated">@color/afsh_primary_dark</item>
+        <item name="colorControlActivated">@color/afsh_primary_dark</item>
     </style>
 
-    <style name="AppTheme.Cobalt.Light" parent="Theme.Material3.Light.NoActionBar">
-        <item name="colorPrimary">@color/brand_cobalt</item>
-        <item name="colorOnPrimary">@color/on_action</item>
-        <item name="colorPrimaryDark">@color/brand_cobalt</item>
-        <item name="colorAccent">@color/brand_cobalt</item>
-        <item name="colorSecondary">@color/brand_cobalt</item>
-        <item name="colorOnSecondary">@color/on_action</item>
-        <item name="colorPrimaryContainer">@color/brand_container</item>
-        <item name="colorOnPrimaryContainer">@color/brand_on_container</item>
-        <item name="colorSecondaryContainer">@color/brand_container</item>
-        <item name="colorOnSecondaryContainer">@color/brand_on_container</item>
-        <item name="colorSurface">@color/surface_light</item>
-        <item name="colorOnSurface">@color/on_surface_light</item>
-        <item name="android:colorBackground">@color/surface_light</item>
-        <item name="android:colorControlActivated">@color/brand_cobalt</item>
-        <item name="colorControlActivated">@color/brand_cobalt</item>
+    <style name="AppTheme.Afsh.Light" parent="Theme.Material3.Light.NoActionBar">
+        <item name="colorPrimary">@color/afsh_pine</item>
+        <item name="colorOnPrimary">@color/design_white</item>
+        <item name="colorPrimaryDark">@color/afsh_pine</item>
+        <item name="colorAccent">@color/afsh_pine</item>
+        <item name="colorSecondary">@color/afsh_pine</item>
+        <item name="colorOnSecondary">@color/design_white</item>
+        <item name="colorPrimaryContainer">@color/afsh_pine</item>
+        <item name="colorOnPrimaryContainer">@color/design_white</item>
+        <item name="colorSecondaryContainer">@color/afsh_lilac</item>
+        <item name="colorOnSecondaryContainer">@color/afsh_ink</item>
+        <item name="colorSurface">@color/afsh_paper</item>
+        <item name="colorOnSurface">@color/afsh_ink</item>
+        <item name="android:colorBackground">@color/afsh_paper</item>
+        <item name="android:colorControlActivated">@color/afsh_pine</item>
+        <item name="colorControlActivated">@color/afsh_pine</item>
         <item name="android:forceDarkAllowed" tools:targetApi="29">false</item>
         <item name="windowActionModeOverlay">true</item>
     </style>
 
-    <!-- Google Messages details pills: icon over a short verb, four across -->
 </resources>
