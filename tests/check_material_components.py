@@ -5,6 +5,10 @@
   they use `TextField`, `Surface`, `IconButton` and `FilledIconButton` instead.
 - Every bubble is a `MessageBubble` (a Material 3 `Surface`), and only `MessageBubble.kt` reads the
   sent-bubble color role, so a screen cannot paint a bubble by hand.
+- No shared component in `ui/components/` draws its own surface or field: no `BasicTextField`,
+  `.background(` or `.border(`. They sit on `Card`, `Surface`, `ListItem`, `TextField`, `Badge`,
+  `HorizontalDivider` and the like. The one exception is the round selection check, which Material 3
+  has no stock part for (see Components in DESIGN.md).
 """
 from pathlib import Path
 import re
@@ -36,5 +40,12 @@ for path in root.rglob('*.kt'):
     for number, line in enumerate(path.read_text().splitlines(), 1):
         if 'sentBubble' in line:
             violations.append(f'{path.relative_to(root)}:{number}: sent-bubble role outside MessageBubble')
+custom_surfaces = {'SelectionBar.kt'}
+for path in sorted((root / 'ui/components').glob('*.kt')):
+    if path.name in custom_surfaces:
+        continue
+    for number, line in enumerate(path.read_text().splitlines(), 1):
+        if hand_built.search(line):
+            violations.append(f'{path.relative_to(root)}:{number}: hand-built surface in a shared component; use a Material 3 component')
 assert not violations, '\n'.join(violations)
 print('Material component checks passed')
