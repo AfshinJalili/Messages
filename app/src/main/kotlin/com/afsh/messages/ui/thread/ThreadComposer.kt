@@ -1,13 +1,14 @@
 package com.afsh.messages.ui.thread
 
 import com.afsh.messages.ui.AfshCorners
+import com.afsh.messages.ui.components.AfshSheet
+import com.afsh.messages.ui.components.AfshSheetItem
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.ListItem
 import androidx.compose.material3.Surface
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -40,17 +41,13 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -81,7 +78,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -196,10 +192,7 @@ fun ThreadComposer(
         }
     }
     if (attaching) {
-        AttachSheet(onDismiss = { attaching = false }) {
-            attaching = false
-            onEvent(ComposerEvent.Attach(it))
-        }
+        AttachSheet(onDismiss = { attaching = false }) { onEvent(ComposerEvent.Attach(it)) }
     }
 }
 
@@ -540,41 +533,18 @@ private fun RemoveBadge(modifier: Modifier, onClick: () -> Unit) {
 }
 
 /** Design 11, as a sheet over the conversation rather than a page. */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AttachSheet(onDismiss: () -> Unit, onPick: (AttachOption) -> Unit) {
-    val colors = MaterialTheme.colorScheme
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = colors.surface) {
-        Column(
-            Modifier
-                .verticalScroll(rememberScrollState())
-                .padding(bottom = 16.dp),
-        ) {
-            Text(
-                stringResource(R.string.attach_title),
-                style = MaterialTheme.typography.titleLarge,
-                color = colors.onSurface,
-                modifier = Modifier
-                    .padding(horizontal = 24.dp, vertical = 8.dp)
-                    .semantics { heading() },
+    AfshSheet(title = stringResource(R.string.attach_title), onDismiss = onDismiss) {
+        AttachOption.entries.forEach { option ->
+            AfshSheetItem(
+                label = stringResource(option.title),
+                icon = option.icon,
+                supporting = stringResource(option.subtitle),
+                tile = true,
+                // The picker, camera or contact list opens once the sheet is gone.
+                onClick = { dismissThen { onPick(option) } },
             )
-            AttachOption.entries.forEach { option ->
-                ListItem(
-                    headlineContent = { Text(stringResource(option.title), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = colors.onSurface) },
-                    supportingContent = { Text(stringResource(option.subtitle), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant) },
-                    leadingContent = {
-                        Surface(Modifier.size(TargetSize), shape = MaterialTheme.shapes.small, color = colors.secondaryContainer, contentColor = colors.primary) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(painterResource(option.icon), contentDescription = null, modifier = Modifier.size(24.dp))
-                            }
-                        }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onPick(option) }
-                        .padding(horizontal = 8.dp),
-                )
-            }
         }
     }
 }
