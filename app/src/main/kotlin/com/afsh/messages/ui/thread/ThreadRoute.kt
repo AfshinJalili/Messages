@@ -27,14 +27,14 @@ import com.afsh.messages.ui.components.SELECTION_EXIT_MS
 /** How far, as a share of its height, the composer sinks while the selection bar rises over it. */
 private const val COMPOSER_SINK = 0.5f
 
-/** The whole conversation screen: header, timeline (with Manage people over it) and the composer frame. */
+/** The whole conversation screen: top bar, timeline (with Manage people over it) and the composer frame. */
 @Composable
 fun ThreadRoute(model: ThreadScreenModel, snackbarHost: SnackbarHostState, sendOnEnter: Boolean) {
     val ui = model.ui
     // The timeline's lift scrim also dims the header above it.
     val scrim = Afsh.colors.liftScrim
     Column(Modifier.fillMaxSize()) {
-        ThreadHeader(ui, model::onEvent, Modifier.drawWithContent {
+        ThreadTopBar(ui, model::onEvent, Modifier.drawWithContent {
             drawContent()
             drawRect(scrim, alpha = model.headerDim)
         })
