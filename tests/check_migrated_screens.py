@@ -17,6 +17,12 @@ MIGRATED = [
     'library/LibraryScreen.kt', 'library/ArchiveScreen.kt', 'library/RecycleBinScreen.kt',
     'library/StarredScreen.kt', 'library/LibraryState.kt', 'library/LibraryPreviewData.kt',
     'spam/SpamScreen.kt',
+    'settings/SettingsScreen.kt', 'settings/SettingsPages.kt', 'settings/BackupPages.kt', 'settings/SettingsState.kt',
+    'firstrun/FirstRunScreen.kt',
+    'spam/AddRuleScreen.kt', 'spam/BlockRulesScreen.kt', 'spam/BlockedNumbersScreen.kt', 'spam/MoveRulesScreen.kt',
+    'spam/SpamPatternsScreen.kt',
+    'schedule/ScheduleScreens.kt',
+    'media/MediaViewerScreen.kt',
 ]
 
 SPACING_CALL = re.compile(r'\b(padding|spacedBy|PaddingValues)\(')
