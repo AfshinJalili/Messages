@@ -23,11 +23,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.afsh.messages.R
 import com.afsh.messages.ui.Afsh
 
 private val MarkSize = 46.dp
@@ -42,7 +40,7 @@ private val CompactPanelPadding = PaddingValues(horizontal = 16.dp, vertical = 1
  */
 @Composable
 fun DestinationCard(
-    icon: Int,
+    icon: AfshIcon,
     label: String,
     description: String,
     onClick: () -> Unit,
@@ -64,14 +62,14 @@ fun DestinationCard(
             leadingContent = {
                 Surface(Modifier.size(MarkSize), shape = MaterialTheme.shapes.medium, color = colors.secondaryContainer, contentColor = colors.primary) {
                     Box(contentAlignment = Alignment.Center) {
-                        Icon(painterResource(icon), contentDescription = null, modifier = Modifier.size(MarkIconSize))
+                        Icon(icon.painter(), contentDescription = null, modifier = Modifier.size(MarkIconSize))
                     }
                 }
             },
             trailingContent = {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     if (badge > 0) CountBadge(badge)
-                    Icon(painterResource(R.drawable.ic_lucide_chevron_right), contentDescription = null, modifier = Modifier.size(18.dp))
+                    Icon(AfshIcon.ChevronForward.painter(), contentDescription = null, modifier = Modifier.size(18.dp))
                 }
             },
             colors = ListItemDefaults.colors(
@@ -138,7 +136,7 @@ fun InfoPanel(
 
 /** Component / empty state, on a Material 3 [Card]. */
 @Composable
-fun EmptyState(icon: Int, title: String, modifier: Modifier = Modifier, text: String? = null) {
+fun EmptyState(icon: AfshIcon, title: String, modifier: Modifier = Modifier, text: String? = null) {
     val colors = MaterialTheme.colorScheme
     PanelCard(
         colors.secondaryContainer,
@@ -147,7 +145,7 @@ fun EmptyState(icon: Int, title: String, modifier: Modifier = Modifier, text: St
         padding = PaddingValues(horizontal = 16.dp, vertical = 20.dp),
         spacing = 8.dp,
     ) {
-        Icon(painterResource(icon), contentDescription = null, tint = colors.primary, modifier = Modifier.size(34.dp))
+        Icon(icon.painter(), contentDescription = null, tint = colors.primary, modifier = Modifier.size(34.dp))
         Text(title, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold))
         if (text != null) {
             Text(text, style = MaterialTheme.typography.bodyMedium, color = Afsh.colors.onSecondaryContainerVariant)
@@ -157,11 +155,11 @@ fun EmptyState(icon: Int, title: String, modifier: Modifier = Modifier, text: St
 
 /** Component / attention notice and validation notice, on a Material 3 [Card]: coral container, title and detail. */
 @Composable
-fun AttentionNotice(title: String, detail: String, modifier: Modifier = Modifier, icon: Int? = null) {
+fun AttentionNotice(title: String, detail: String, modifier: Modifier = Modifier, icon: AfshIcon? = null) {
     val colors = MaterialTheme.colorScheme
     PanelCard(colors.errorContainer, colors.onErrorContainer, modifier, spacing = if (icon != null) 8.dp else 4.dp) {
         if (icon != null) {
-            Icon(painterResource(icon), contentDescription = null, tint = colors.error, modifier = Modifier.size(26.dp))
+            Icon(icon.painter(), contentDescription = null, tint = colors.error, modifier = Modifier.size(26.dp))
         }
         Text(title, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold))
         Text(detail, style = MaterialTheme.typography.bodyMedium)

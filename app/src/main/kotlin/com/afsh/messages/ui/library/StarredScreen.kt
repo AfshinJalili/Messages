@@ -1,5 +1,6 @@
 package com.afsh.messages.ui.library
 
+import com.afsh.messages.ui.Afsh
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -19,7 +20,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -31,6 +31,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.afsh.messages.R
 import com.afsh.messages.ui.AfshTheme
+import com.afsh.messages.ui.components.AfshIcon
 import com.afsh.messages.ui.components.EmptyState
 import com.afsh.messages.ui.components.PageContentPadding
 import com.afsh.messages.ui.components.PageNavigation
@@ -59,13 +60,13 @@ fun StarredScreen(
     ) {
         LazyColumn(
             contentPadding = PageContentPadding,
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(Afsh.spacing.md),
         ) {
             when {
                 state.loading -> item(key = "loading") { LinearProgressIndicator(Modifier.fillMaxWidth()) }
                 state.messages.isEmpty() -> item(key = "empty") {
                     EmptyState(
-                        icon = R.drawable.ic_lucide_star,
+                        icon = AfshIcon.Star,
                         title = stringResource(R.string.no_starred_messages),
                         text = stringResource(R.string.starred_empty_text),
                     )
@@ -93,8 +94,8 @@ private fun StarredCard(message: StarredMessage, onClick: () -> Unit) {
             .semantics(mergeDescendants = true) {
                 contentDescription = listOf(message.sender, message.body, stamp, starred).joinToString(", ")
             }
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+            .padding(horizontal = Afsh.spacing.lg, vertical = Afsh.spacing.md),
+        verticalArrangement = Arrangement.spacedBy(Afsh.spacing.xs),
     ) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(
@@ -107,7 +108,7 @@ private fun StarredCard(message: StarredMessage, onClick: () -> Unit) {
                 modifier = Modifier.weight(1f),
             )
             Icon(
-                painterResource(R.drawable.ic_lucide_star),
+                AfshIcon.Star.painter(),
                 contentDescription = null,
                 tint = colors.primary,
                 modifier = Modifier.size(17.dp),

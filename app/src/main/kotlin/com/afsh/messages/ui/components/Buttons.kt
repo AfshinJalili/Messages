@@ -17,7 +17,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -107,7 +106,7 @@ fun TextAction(label: String, onClick: () -> Unit, modifier: Modifier = Modifier
  */
 @Composable
 fun FloatingButton(
-    icon: Int,
+    icon: AfshIcon,
     description: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -122,7 +121,7 @@ fun FloatingButton(
         shape = if (secondary) CircleShape else MaterialTheme.shapes.medium,
         containerColor = if (secondary) Afsh.colors.secondaryButton.container else Afsh.colors.accent,
         contentColor = if (secondary) Afsh.colors.secondaryButton.content else Afsh.colors.onAccent,
-        icon = { Icon(painterResource(icon), contentDescription = null, modifier = Modifier.size(ButtonIconSize)) },
+        icon = { Icon(icon.painter(), contentDescription = null, modifier = Modifier.size(ButtonIconSize)) },
         text = { Text(text.orEmpty(), style = MaterialTheme.typography.labelLarge, modifier = Modifier.clearAndSetSemantics {}) },
     )
 }
@@ -130,7 +129,7 @@ fun FloatingButton(
 /** Component / send button: a Material 3 [FilledIconButton] in the accent role, named by [description]. */
 @Composable
 fun SendButton(
-    icon: Int,
+    icon: AfshIcon,
     description: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -148,6 +147,6 @@ fun SendButton(
             disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
         ),
     ) {
-        Icon(painterResource(icon), contentDescription = null, modifier = Modifier.size(ButtonIconSize))
+        Icon(icon.painter(), contentDescription = null, modifier = Modifier.size(ButtonIconSize))
     }
 }

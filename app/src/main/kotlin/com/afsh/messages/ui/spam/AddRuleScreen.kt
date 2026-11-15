@@ -29,6 +29,7 @@ import com.afsh.messages.R
 import com.afsh.messages.ui.Afsh
 import com.afsh.messages.ui.forContent
 import com.afsh.messages.ui.withContentFonts
+import com.afsh.messages.ui.components.AfshIcon
 import com.afsh.messages.ui.components.AttentionNotice
 import com.afsh.messages.ui.components.AfshButton
 import com.afsh.messages.ui.components.PageContentPadding
@@ -100,7 +101,7 @@ fun AddRuleScreen(
                 AttentionNotice(
                     title = stringResource(error),
                     detail = stringResource(if (phrase) R.string.phrase_error_detail else R.string.number_error_detail),
-                    icon = R.drawable.ic_lucide_triangle_alert,
+                    icon = AfshIcon.Warning,
                 )
             }
             if (phrase && state.value.isNotBlank()) {

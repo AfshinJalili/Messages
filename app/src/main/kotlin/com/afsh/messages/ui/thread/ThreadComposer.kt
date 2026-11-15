@@ -305,9 +305,9 @@ private fun ComposerSendButton(composer: ComposerState, text: String, onEvent: (
         else -> stringResource(R.string.send_message)
     }
     val icon = when {
-        dictate -> org.fossify.commons.R.drawable.ic_microphone_vector
-        composer.scheduledAt != null -> R.drawable.ic_schedule_send_vector
-        else -> R.drawable.ic_arrow_up_right_vector
+        dictate -> AfshIcon.Microphone
+        composer.scheduledAt != null -> AfshIcon.ScheduleSend
+        else -> AfshIcon.SendArrow
     }
     SendButton(
         icon = icon,

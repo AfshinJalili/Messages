@@ -86,14 +86,14 @@ internal fun ExportPage(state: SettingsUiState, onEvent: (SettingsEvent) -> Unit
         stringResource(R.string.export_sms),
         checked = state.exportSms,
         onCheckedChange = { onEvent(SettingsEvent.SetExportSms(it)) },
-        icon = R.drawable.ic_lucide_messages_square,
+        icon = AfshIcon.Conversations,
         enabled = !state.busy,
     )
     SwitchSetting(
         stringResource(R.string.export_mms),
         checked = state.exportMms,
         onCheckedChange = { onEvent(SettingsEvent.SetExportMms(it)) },
-        icon = R.drawable.ic_lucide_paperclip,
+        icon = AfshIcon.Attach,
         value = stringResource(R.string.export_mms_detail),
         enabled = !state.busy,
     )
@@ -149,7 +149,7 @@ internal fun ImportReviewPage(state: SettingsUiState, onEvent: (SettingsEvent) -
         stringResource(R.string.import_sms),
         checked = review.restoreSms,
         onCheckedChange = { onEvent(SettingsEvent.SetRestoreSms(it)) },
-        icon = R.drawable.ic_lucide_messages_square,
+        icon = AfshIcon.Conversations,
         value = pluralStringResource(R.plurals.backup_messages, review.sms, String.format(locale, "%,d", review.sms)),
         enabled = !state.busy && review.sms > 0,
     )
@@ -157,7 +157,7 @@ internal fun ImportReviewPage(state: SettingsUiState, onEvent: (SettingsEvent) -
         stringResource(R.string.import_mms),
         checked = review.restoreMms,
         onCheckedChange = { onEvent(SettingsEvent.SetRestoreMms(it)) },
-        icon = R.drawable.ic_lucide_paperclip,
+        icon = AfshIcon.Attach,
         value = pluralStringResource(R.plurals.backup_messages, review.mms, String.format(locale, "%,d", review.mms)),
         enabled = !state.busy && review.mms > 0,
     )

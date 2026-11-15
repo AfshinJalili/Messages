@@ -1,5 +1,6 @@
 package com.afsh.messages
 
+import com.afsh.messages.ui.components.AfshIcon
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -55,7 +56,7 @@ class PageScaffoldChecks {
                     subtitle = "Kept out of the inbox",
                     onBack = onBack,
                     selection = if (selected > 0) {
-                        PageSelection(selected, onClear = onClear, actions = listOf(BarAction("Unarchive", R.drawable.ic_lucide_inbox) {}), onSelectAll = onSelectAll)
+                        PageSelection(selected, onClear = onClear, actions = listOf(BarAction("Unarchive", AfshIcon.Inbox) {}), onSelectAll = onSelectAll)
                     } else {
                         null
                     },

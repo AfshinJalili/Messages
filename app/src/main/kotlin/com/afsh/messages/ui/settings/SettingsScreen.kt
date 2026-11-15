@@ -19,6 +19,7 @@ import androidx.compose.ui.res.stringResource
 import com.afsh.messages.R
 import com.afsh.messages.helpers.SwipeAction
 import com.afsh.messages.ui.Afsh
+import com.afsh.messages.ui.components.AfshIcon
 import com.afsh.messages.ui.components.Choice
 import com.afsh.messages.ui.components.ChoiceDialog
 import com.afsh.messages.ui.components.InfoPanel
@@ -89,50 +90,50 @@ private fun ColumnScope.Overview(onEvent: (SettingsEvent) -> Unit) {
     NavigationSetting(
         stringResource(R.string.settings_appearance),
         onClick = { open(SettingsPage.APPEARANCE) },
-        icon = R.drawable.ic_lucide_languages,
+        icon = AfshIcon.Language,
         value = stringResource(R.string.settings_appearance_summary),
     )
     NavigationSetting(
         stringResource(org.fossify.commons.R.string.notifications),
         onClick = { open(SettingsPage.NOTIFICATIONS) },
-        icon = R.drawable.ic_lucide_bell,
+        icon = AfshIcon.Notifications,
         value = stringResource(R.string.settings_notifications_summary),
     )
     NavigationSetting(
         stringResource(R.string.settings_writing),
         onClick = { open(SettingsPage.WRITING) },
-        icon = R.drawable.ic_lucide_send,
+        icon = AfshIcon.Send,
         value = stringResource(R.string.settings_writing_summary),
     )
     NavigationSetting(
         stringResource(R.string.settings_interactions),
         onClick = { open(SettingsPage.INTERACTIONS) },
-        icon = R.drawable.ic_lucide_hand,
+        icon = AfshIcon.Stop,
         value = stringResource(R.string.settings_interactions_summary),
     )
     SectionHeading(stringResource(R.string.settings_control))
     NavigationSetting(
         stringResource(R.string.block_rules),
         onClick = { onEvent(SettingsEvent.OpenBlockRules) },
-        icon = R.drawable.ic_lucide_shield_ban,
+        icon = AfshIcon.SpamShield,
         value = stringResource(R.string.settings_block_rules_summary),
     )
     NavigationSetting(
         stringResource(R.string.settings_privacy),
         onClick = { open(SettingsPage.PRIVACY) },
-        icon = R.drawable.ic_lucide_lock_keyhole,
+        icon = AfshIcon.Lock,
         value = stringResource(R.string.settings_privacy_summary),
     )
     NavigationSetting(
         stringResource(R.string.settings_backup),
         onClick = { open(SettingsPage.BACKUP) },
-        icon = R.drawable.ic_lucide_database_backup,
+        icon = AfshIcon.Backup,
         value = stringResource(R.string.settings_backup_summary),
     )
     NavigationSetting(
         stringResource(R.string.about_app),
         onClick = { open(SettingsPage.ABOUT) },
-        icon = R.drawable.ic_lucide_info,
+        icon = AfshIcon.Info,
         value = stringResource(R.string.about_summary),
     )
 }
@@ -145,13 +146,13 @@ private fun InteractionsPage(state: SettingsUiState, onEvent: (SettingsEvent) ->
     NavigationSetting(
         stringResource(R.string.swipe_right),
         onClick = { choosing = true },
-        icon = R.drawable.ic_lucide_arrow_right,
+        icon = AfshIcon.ArrowForward,
         value = stringResource(state.swipeRight.label),
     )
     NavigationSetting(
         stringResource(R.string.swipe_left),
         onClick = { choosing = false },
-        icon = R.drawable.ic_lucide_arrow_left,
+        icon = AfshIcon.ArrowBack,
         value = stringResource(state.swipeLeft.label),
     )
     SectionHeading(stringResource(R.string.archive_behavior))
@@ -159,7 +160,7 @@ private fun InteractionsPage(state: SettingsUiState, onEvent: (SettingsEvent) ->
         stringResource(R.string.keep_conversations_archived),
         checked = state.keepArchived,
         onCheckedChange = { onEvent(SettingsEvent.SetKeepArchived(it)) },
-        icon = R.drawable.ic_lucide_archive,
+        icon = AfshIcon.Archive,
         value = stringResource(if (state.keepArchived) R.string.keep_archived_on else R.string.keep_archived_off),
     )
     choosing?.let { towardsRight ->
@@ -196,30 +197,30 @@ private fun AboutPage(state: SettingsUiState, onEvent: (SettingsEvent) -> Unit) 
     NavigationSetting(
         stringResource(R.string.help_and_support),
         onClick = { onEvent(SettingsEvent.OpenHelp) },
-        icon = R.drawable.ic_lucide_circle_help,
+        icon = AfshIcon.Help,
         disclosure = false,
     )
     NavigationSetting(
         stringResource(R.string.privacy_information),
         onClick = { privacyOpen = true },
-        icon = R.drawable.ic_lucide_eye_off,
+        icon = AfshIcon.Hidden,
         disclosure = false,
     )
     NavigationSetting(
         stringResource(R.string.open_source_licenses),
         onClick = { licensesOpen = true },
-        icon = R.drawable.ic_lucide_file_text,
+        icon = AfshIcon.Document,
         disclosure = false,
     )
     SectionHeading(stringResource(R.string.about_updates))
-    SettingItem(stringResource(org.fossify.commons.R.string.app_version), icon = R.drawable.ic_lucide_info, value = ltr(state.version))
+    SettingItem(stringResource(org.fossify.commons.R.string.app_version), icon = AfshIcon.Info, value = ltr(state.version))
     // The app stays offline (#214): the browser fetches the release and Android installs it.
     NavigationSetting(
         stringResource(R.string.check_for_updates),
         onClick = { onEvent(SettingsEvent.CheckForUpdates) },
-        icon = R.drawable.ic_lucide_refresh_cw,
+        icon = AfshIcon.Refresh,
         value = stringResource(R.string.check_for_updates_summary),
-        disclosureIcon = R.drawable.ic_lucide_external_link,
+        disclosureIcon = AfshIcon.OpenExternal,
     )
     if (privacyOpen) {
         MessageDialog(

@@ -350,7 +350,7 @@ private fun InvalidNumberPage(number: String, onNumber: (String) -> Unit, onEdit
             AttentionNotice(
                 title = stringResource(R.string.enter_a_valid_number),
                 detail = stringResource(R.string.enter_a_valid_number_text),
-                icon = R.drawable.ic_lucide_triangle_alert,
+                icon = AfshIcon.Warning,
             )
             TextFieldSlab(
                 value = number,

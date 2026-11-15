@@ -108,14 +108,14 @@ internal fun AppearancePage(state: SettingsUiState, onEvent: (SettingsEvent) -> 
     NavigationSetting(
         stringResource(R.string.text_size),
         onClick = { picker = Picker.FONT_SIZE },
-        icon = R.drawable.ic_lucide_type,
+        icon = AfshIcon.TextSize,
         value = stringResource(R.string.text_size_value, stringResource(fontSizeLabel(state.fontSize))),
     )
     if (state.languagePicker) {
         NavigationSetting(
             stringResource(org.fossify.commons.R.string.language),
             onClick = { onEvent(SettingsEvent.ChangeLanguage) },
-            icon = R.drawable.ic_lucide_languages,
+            icon = AfshIcon.Language,
             value = state.language,
         )
     }
@@ -124,26 +124,26 @@ internal fun AppearancePage(state: SettingsUiState, onEvent: (SettingsEvent) -> 
             stringResource(org.fossify.commons.R.string.use_english_language),
             checked = useEnglish,
             onCheckedChange = { onEvent(SettingsEvent.SetUseEnglish(it)) },
-            icon = R.drawable.ic_lucide_languages,
+            icon = AfshIcon.Language,
         )
     }
     NavigationSetting(
         stringResource(R.string.date_and_time),
         onClick = { picker = Picker.DATE_FORMAT },
-        icon = R.drawable.ic_lucide_calendar,
+        icon = AfshIcon.Calendar,
         value = formatSample(state.dateFormat, today),
     )
     SwitchSetting(
         stringResource(R.string.use_24_hour_time),
         checked = state.use24Hour,
         onCheckedChange = { onEvent(SettingsEvent.SetUse24Hour(it)) },
-        icon = R.drawable.ic_lucide_clock,
+        icon = AfshIcon.Schedule,
     )
     SwitchSetting(
         stringResource(R.string.show_inbox_unread_count),
         checked = state.inboxUnreadCount,
         onCheckedChange = { onEvent(SettingsEvent.SetInboxUnreadCount(it)) },
-        icon = R.drawable.ic_lucide_hash,
+        icon = AfshIcon.Number,
     )
     when (picker) {
         Picker.FONT_SIZE -> ChoiceDialog(
@@ -265,21 +265,21 @@ internal fun WritingPage(state: SettingsUiState, onEvent: (SettingsEvent) -> Uni
         stringResource(R.string.send_on_enter),
         state.sendOnEnter,
         { onEvent(SettingsEvent.SetSendOnEnter(it)) },
-        icon = R.drawable.ic_lucide_corner_down_left,
+        icon = AfshIcon.Return,
         value = onOff(state.sendOnEnter),
     )
     SwitchSetting(
         stringResource(R.string.show_character_counter),
         state.characterCounter,
         { onEvent(SettingsEvent.SetCharacterCounter(it)) },
-        icon = R.drawable.ic_lucide_hash,
+        icon = AfshIcon.Number,
         value = onOff(state.characterCounter),
     )
     SwitchSetting(
         stringResource(R.string.use_simple_characters),
         state.simpleCharacters,
         { onEvent(SettingsEvent.SetSimpleCharacters(it)) },
-        icon = R.drawable.ic_lucide_type,
+        icon = AfshIcon.TextSize,
         value = onOff(state.simpleCharacters),
     )
     SectionHeading(stringResource(R.string.settings_delivery))
@@ -287,21 +287,21 @@ internal fun WritingPage(state: SettingsUiState, onEvent: (SettingsEvent) -> Uni
         stringResource(R.string.enable_delivery_reports),
         state.deliveryReports,
         { onEvent(SettingsEvent.SetDeliveryReports(it)) },
-        icon = R.drawable.ic_lucide_check_check,
+        icon = AfshIcon.CheckAll,
         value = onOff(state.deliveryReports),
     )
     SwitchSetting(
         stringResource(R.string.send_long_message_mms),
         state.longAsMms,
         { onEvent(SettingsEvent.SetLongAsMms(it)) },
-        icon = R.drawable.ic_lucide_message_square_text,
+        icon = AfshIcon.Message,
         value = onOff(state.longAsMms),
     )
     SwitchSetting(
         stringResource(R.string.group_message_mms),
         state.groupAsMms,
         { onEvent(SettingsEvent.SetGroupAsMms(it)) },
-        icon = R.drawable.ic_lucide_users,
+        icon = AfshIcon.People,
         value = onOff(state.groupAsMms),
     )
     val limits = listOf(
@@ -316,7 +316,7 @@ internal fun WritingPage(state: SettingsUiState, onEvent: (SettingsEvent) -> Uni
     NavigationSetting(
         stringResource(R.string.mms_file_size_limit),
         onClick = { picker = Picker.MMS_LIMIT },
-        icon = R.drawable.ic_lucide_image,
+        icon = AfshIcon.Image,
         value = stringResource(limits.firstOrNull { it.first == state.mmsLimit }?.second ?: R.string.mms_file_size_limit_none),
     )
     if (picker == Picker.MMS_LIMIT) {
@@ -347,13 +347,13 @@ internal fun NotificationsPage(state: SettingsUiState, onEvent: (SettingsEvent) 
     NavigationSetting(
         stringResource(R.string.new_message_alerts),
         onClick = { onEvent(SettingsEvent.OpenAlertSettings) },
-        icon = R.drawable.ic_lucide_bell,
+        icon = AfshIcon.Notifications,
         value = stringResource(if (state.alertsEnabled) R.string.setting_on else R.string.setting_off),
     )
     NavigationSetting(
         stringResource(R.string.sound_and_vibration),
         onClick = { onEvent(SettingsEvent.OpenSoundSettings) },
-        icon = R.drawable.ic_lucide_volume_2,
+        icon = AfshIcon.Volume,
         value = stringResource(R.string.sound_and_vibration_value),
     )
     SectionHeading(stringResource(R.string.settings_lock_screen))
@@ -361,12 +361,12 @@ internal fun NotificationsPage(state: SettingsUiState, onEvent: (SettingsEvent) 
     NavigationSetting(
         stringResource(R.string.lock_screen_visibility),
         onClick = { picker = Picker.LOCK_SCREEN },
-        icon = R.drawable.ic_lucide_eye,
+        icon = AfshIcon.Visible,
         value = stringResource(lockLabels[state.lockScreen] ?: org.fossify.commons.R.string.nothing),
     )
     SettingItem(
         stringResource(R.string.per_conversation_alerts),
-        icon = R.drawable.ic_lucide_bell,
+        icon = AfshIcon.Notifications,
         value = stringResource(R.string.per_conversation_alerts_value),
     )
     if (picker == Picker.LOCK_SCREEN) {
@@ -424,7 +424,7 @@ internal fun PrivacyPage(state: SettingsUiState, onEvent: (SettingsEvent) -> Uni
         stringResource(R.string.app_lock),
         checked = state.appLock,
         onCheckedChange = { onEvent(SettingsEvent.ToggleAppLock) },
-        icon = R.drawable.ic_lucide_lock_keyhole,
+        icon = AfshIcon.Lock,
         value = stringResource(if (state.appLock) R.string.app_lock_on else R.string.app_lock_off),
     )
     SectionHeading(stringResource(R.string.settings_data))
@@ -432,14 +432,14 @@ internal fun PrivacyPage(state: SettingsUiState, onEvent: (SettingsEvent) -> Uni
         stringResource(org.fossify.commons.R.string.move_items_into_recycle_bin),
         checked = state.useRecycleBin,
         onCheckedChange = { onEvent(SettingsEvent.SetUseRecycleBin(it)) },
-        icon = R.drawable.ic_lucide_trash_2,
+        icon = AfshIcon.Delete,
         value = stringResource(R.string.recycle_bin_setting_value),
     )
     if (state.useRecycleBin) {
         NavigationSetting(
             stringResource(org.fossify.commons.R.string.empty_recycle_bin),
             onClick = { if (state.recycleBinMessages > 0) picker = Picker.EMPTY_BIN },
-            icon = R.drawable.ic_lucide_trash_2,
+            icon = AfshIcon.Delete,
             value = pluralStringResource(R.plurals.delete_messages, state.recycleBinMessages, state.recycleBinMessages),
             disclosure = false,
             destructive = state.recycleBinMessages > 0,
@@ -448,7 +448,7 @@ internal fun PrivacyPage(state: SettingsUiState, onEvent: (SettingsEvent) -> Uni
     NavigationSetting(
         stringResource(R.string.clear_recent_searches),
         onClick = { if (state.recentSearches > 0) picker = Picker.CLEAR_SEARCHES },
-        icon = R.drawable.ic_lucide_search,
+        icon = AfshIcon.Search,
         value = pluralStringResource(R.plurals.recent_search_count, state.recentSearches, state.recentSearches),
         disclosure = false,
     )

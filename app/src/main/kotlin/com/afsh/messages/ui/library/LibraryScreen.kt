@@ -1,5 +1,6 @@
 package com.afsh.messages.ui.library
 
+import com.afsh.messages.ui.Afsh
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -45,7 +46,7 @@ fun LibraryScreen(
                 .weight(1f)
                 .verticalScroll(rememberScrollState())
                 .padding(PageContentPadding),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(Afsh.spacing.md),
         ) {
             destinations.forEach { destination ->
                 DestinationCard(

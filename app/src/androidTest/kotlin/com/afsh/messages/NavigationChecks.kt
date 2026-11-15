@@ -1,5 +1,6 @@
 package com.afsh.messages
 
+import com.afsh.messages.ui.components.AfshIcon
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
@@ -145,8 +146,8 @@ class NavigationChecks {
     fun selectionBarStandsInForTheNavigation() {
         var rtl by mutableStateOf(false)
         var clicked: String? = null
-        val actions = listOf("Archive", "Pin", "Delete").map { label -> BarAction(label, R.drawable.ic_lucide_check, label == "Delete") { clicked = label } }
-        val overflow = listOf(BarAction("Block", R.drawable.ic_lucide_check) { clicked = "Block" })
+        val actions = listOf("Archive", "Pin", "Delete").map { label -> BarAction(label, AfshIcon.Check, label == "Delete") { clicked = label } }
+        val overflow = listOf(BarAction("Block", AfshIcon.Check) { clicked = "Block" })
         compose.setContent {
             CompositionLocalProvider(LocalLayoutDirection provides if (rtl) LayoutDirection.Rtl else LayoutDirection.Ltr) {
                 AfshTheme(dark = false) {

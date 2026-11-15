@@ -29,12 +29,13 @@ SYMBOLS = {
     "refresh": None, "rotate_left": None, "search": None, "send": None, "settings": None, "share": None,
     "gpp_bad": None, "star": None, "star_filled": "star_fill1", "text_fields": None, "delete": None,
     "warning": None, "title": None, "upload": None, "person": None, "person_add": None, "group": None,
-    "volume_up": None, "close": None, "play_circle": None, "audio_file": None, "picture_as_pdf": None,
-    "folder_zip": None,
+    "volume_up": None, "close": None, "photo_camera": None, "video_library": None, "videocam": None, "mic": None,
+    "schedule_send": None, "arrow_downward": None, "arrow_outward": None, "play_circle": None, "audio_file": None,
+    "picture_as_pdf": None, "folder_zip": None,
 }
 
 # Direction-bearing glyphs flip under RTL, matching the Lucide icons they replace.
-MIRRORED = {"arrow_back", "arrow_forward", "chevron_right", "forward"}
+MIRRORED = {"arrow_back", "arrow_forward", "chevron_right", "forward", "arrow_outward"}
 
 OUT = Path(__file__).resolve().parents[1] / "app/src/main/res/drawable"
 

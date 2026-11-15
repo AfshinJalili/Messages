@@ -1,5 +1,6 @@
 package com.afsh.messages.ui.search
 
+import com.afsh.messages.ui.components.AfshIcon
 import com.afsh.messages.ui.Afsh
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
@@ -40,7 +41,6 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -61,9 +61,6 @@ import com.afsh.messages.ui.AfshTheme
 import com.afsh.messages.ui.forContent
 import com.afsh.messages.ui.withContentFonts
 
-private val PagePadding = 20.dp
-private val ContentGap = 12.dp
-private val SmallGap = 4.dp
 private val ControlHeight = 56.dp
 private val TouchTarget = 48.dp
 private val ContentWidth = 640.dp
@@ -95,7 +92,7 @@ fun SearchInput(
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) {
                 Icon(
-                    painterResource(org.fossify.commons.R.drawable.ic_arrow_left_vector),
+                    AfshIcon.ArrowBack.painter(),
                     stringResource(R.string.search_back),
                     tint = colors.onSurface,
                 )
@@ -109,7 +106,7 @@ fun SearchInput(
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                 keyboardActions = KeyboardActions(onSearch = { keyboard?.hide() }),
                 modifier = Modifier.weight(1f)
-                    .padding(vertical = ContentGap)
+                    .padding(vertical = Afsh.spacing.md)
                     .focusRequester(focus)
                     .semantics { contentDescription = searchLabel },
                 decorationBox = { input ->
@@ -132,7 +129,7 @@ fun SearchInput(
                     keyboard?.show()
                 }) {
                     Icon(
-                        painterResource(org.fossify.commons.R.drawable.ic_cross_vector),
+                        AfshIcon.Close.painter(),
                         stringResource(R.string.search_clear),
                         tint = colors.onSurfaceVariant,
                     )
@@ -157,8 +154,8 @@ fun SearchContent(
     LazyColumn(
         modifier = modifier,
         state = listState,
-        contentPadding = PaddingValues(PagePadding),
-        verticalArrangement = Arrangement.spacedBy(ContentGap),
+        contentPadding = PaddingValues(Afsh.spacing.xl),
+        verticalArrangement = Arrangement.spacedBy(Afsh.spacing.md),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         item(key = "filters") { SearchFilters(state, onFilter) }
@@ -220,7 +217,7 @@ private fun SearchFilters(state: SearchUiState, onFilter: (SearchFilter) -> Unit
     }
     Row(
         Modifier.widthIn(max = ContentWidth).fillMaxWidth().horizontalScroll(rememberScrollState()).selectableGroup(),
-        horizontalArrangement = Arrangement.spacedBy(ContentGap),
+        horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.md),
     ) {
         filters.forEach { filter ->
             val active = filter == state.filter
@@ -237,7 +234,7 @@ private fun SearchFilters(state: SearchUiState, onFilter: (SearchFilter) -> Unit
                 modifier = Modifier.heightIn(min = TouchTarget).semantics { selected = active },
             ) {
                 Box(
-                    Modifier.padding(horizontal = PagePadding, vertical = ContentGap),
+                    Modifier.padding(horizontal = Afsh.spacing.xl, vertical = Afsh.spacing.md),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(stringResource(label), style = MaterialTheme.typography.labelMedium)
@@ -261,7 +258,7 @@ private fun SearchHeading(text: String) {
 private fun SearchEmpty(query: String) {
     Column(
         Modifier.widthIn(max = ContentWidth).fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(ContentGap),
+        verticalArrangement = Arrangement.spacedBy(Afsh.spacing.md),
     ) {
         SearchHeading(stringResource(R.string.search_no_matches))
         Surface(
@@ -270,8 +267,8 @@ private fun SearchEmpty(query: String) {
             contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
         ) {
             Column(
-                Modifier.fillMaxWidth().padding(PagePadding),
-                verticalArrangement = Arrangement.spacedBy(ContentGap),
+                Modifier.fillMaxWidth().padding(Afsh.spacing.xl),
+                verticalArrangement = Arrangement.spacedBy(Afsh.spacing.md),
             ) {
                 val title = if (query.isBlank()) {
                     stringResource(R.string.search_nothing_yet)
@@ -290,10 +287,10 @@ private fun SearchResultRow(result: SearchResult, query: String, onOpen: (Search
     Column(
         Modifier.widthIn(max = ContentWidth).fillMaxWidth()
             .clickable { onOpen(result) }
-            .padding(vertical = ContentGap, horizontal = SmallGap),
-        verticalArrangement = Arrangement.spacedBy(SmallGap),
+            .padding(vertical = Afsh.spacing.md, horizontal = Afsh.spacing.xs),
+        verticalArrangement = Arrangement.spacedBy(Afsh.spacing.xs),
     ) {
-        Row(horizontalArrangement = Arrangement.spacedBy(ContentGap), verticalAlignment = Alignment.CenterVertically) {
+        Row(horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.md), verticalAlignment = Alignment.CenterVertically) {
             HighlightedText(result.title, query, Modifier.weight(1f), title = true)
             Text(
                 result.date,
@@ -354,10 +351,10 @@ private fun RecentSearchRow(query: String, onQuery: (String) -> Unit) {
         Modifier.widthIn(max = ContentWidth).fillMaxWidth().heightIn(min = ControlHeight)
             .clickable(role = Role.Button) { onQuery(query) },
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(ContentGap),
+        horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.md),
     ) {
         Icon(
-            painterResource(org.fossify.commons.R.drawable.ic_clock_vector),
+            AfshIcon.Schedule.painter(),
             contentDescription = null,
             tint = MaterialTheme.colorScheme.primary,
         )

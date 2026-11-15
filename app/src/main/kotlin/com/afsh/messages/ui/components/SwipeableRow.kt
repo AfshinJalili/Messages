@@ -1,6 +1,5 @@
 package com.afsh.messages.ui.components
 
-import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
@@ -35,7 +34,6 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.LayoutDirection
 import com.afsh.messages.ui.Afsh
@@ -52,7 +50,7 @@ enum class SwipeTone { PRIMARY, QUIET, DESTRUCTIVE }
 
 /** What a swipe in one direction does, as the row's panel shows it. */
 @Immutable
-data class SwipeGesture(@StringRes val label: Int, @DrawableRes val icon: Int, val tone: SwipeTone)
+data class SwipeGesture(@StringRes val label: Int, val icon: AfshIcon, val tone: SwipeTone)
 
 /** Whether releasing a drag at [offset] commits the action on a row [width] wide. */
 internal fun swipeCommits(offset: Float, width: Float): Boolean = width > 0f && abs(offset) >= width * SWIPE_COMMIT_FRACTION
@@ -153,7 +151,7 @@ private fun SwipeBackground(gesture: SwipeGesture, armed: Boolean, alignStart: B
             horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.md, if (alignStart) Alignment.Start else Alignment.End),
         ) {
             Icon(
-                painterResource(gesture.icon),
+                gesture.icon.painter(),
                 contentDescription = stringResource(gesture.label),
                 modifier = Modifier.graphicsLayer {
                     scaleX = scale

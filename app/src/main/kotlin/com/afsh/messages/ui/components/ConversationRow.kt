@@ -25,7 +25,6 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
@@ -132,7 +131,7 @@ private fun RowAvatar(row: InboxRow, selected: Boolean) {
     val colors = MaterialTheme.colorScheme
     if (selected) {
         Surface(Modifier.size(AvatarSize), shape = CircleShape, color = colors.primary, contentColor = colors.onPrimary) {
-            Box(contentAlignment = Alignment.Center) { Icon(painterResource(R.drawable.ic_lucide_check), null) }
+            Box(contentAlignment = Alignment.Center) { Icon(AfshIcon.Check.painter(), null) }
         }
     } else {
         val conversation = row.conversation
@@ -184,7 +183,7 @@ internal fun SnippetText(row: InboxRow, unread: Boolean) {
             val time = android.text.format.DateFormat.format("EEE HH:mm", conversation.date * 1000L).toString()
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 Icon(
-                    painterResource(R.drawable.ic_lucide_clock),
+                    AfshIcon.Schedule.painter(),
                     contentDescription = null,
                     tint = colors.primary,
                     modifier = Modifier.size(16.dp),
@@ -217,8 +216,8 @@ private fun RowMetadata(row: InboxRow, time: String, inline: Boolean = false) {
     val unread = !row.conversation.read
     val signals: @Composable () -> Unit = {
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-            if (row.pinned) SignalIcon(R.drawable.ic_lucide_pin)
-            if (row.muted) SignalIcon(R.drawable.ic_lucide_bell_off)
+            if (row.pinned) SignalIcon(AfshIcon.Pin)
+            if (row.muted) SignalIcon(AfshIcon.NotificationsOff)
             if (unread) UnreadSignal(row.conversation.unreadCount)
         }
     }
@@ -239,8 +238,8 @@ private fun RowMetadata(row: InboxRow, time: String, inline: Boolean = false) {
 }
 
 @Composable
-private fun SignalIcon(icon: Int) = Icon(
-    painterResource(icon),
+private fun SignalIcon(icon: AfshIcon) = Icon(
+    icon.painter(),
     contentDescription = null,
     tint = MaterialTheme.colorScheme.onSurfaceVariant,
     modifier = Modifier.size(16.dp),
