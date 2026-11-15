@@ -24,6 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.afsh.messages.R
+import com.afsh.messages.ui.components.AfshIcon
 import com.afsh.messages.ui.components.EmptyState
 import com.afsh.messages.ui.components.AfshButton
 import com.afsh.messages.ui.components.PageContentPadding
@@ -68,7 +69,7 @@ fun BlockedNumbersScreen(
                 state.loading -> item(key = "loading") { LinearProgressIndicator(Modifier.fillMaxWidth()) }
                 state.senders.isEmpty() -> item(key = "empty") {
                     EmptyState(
-                        icon = R.drawable.ic_lucide_shield_ban,
+                        icon = AfshIcon.SpamShield,
                         title = stringResource(R.string.no_blocked_numbers),
                         text = stringResource(R.string.no_blocked_numbers_text),
                     )

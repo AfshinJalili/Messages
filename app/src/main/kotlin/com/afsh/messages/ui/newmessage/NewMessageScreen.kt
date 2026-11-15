@@ -64,6 +64,7 @@ import org.fossify.commons.extensions.normalizeString
 import com.afsh.messages.R
 import com.afsh.messages.ui.Avatar
 import com.afsh.messages.ui.ltr
+import com.afsh.messages.ui.components.AfshIcon
 import com.afsh.messages.ui.components.AttentionNotice
 import com.afsh.messages.ui.components.Choice
 import com.afsh.messages.ui.components.DisabledComposer
@@ -349,7 +350,7 @@ private fun InvalidNumberPage(number: String, onNumber: (String) -> Unit, onEdit
             AttentionNotice(
                 title = stringResource(R.string.enter_a_valid_number),
                 detail = stringResource(R.string.enter_a_valid_number_text),
-                icon = R.drawable.ic_lucide_triangle_alert,
+                icon = AfshIcon.Warning,
             )
             TextFieldSlab(
                 value = number,

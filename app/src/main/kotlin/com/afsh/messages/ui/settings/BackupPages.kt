@@ -17,13 +17,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.afsh.messages.R
+import com.afsh.messages.ui.components.AfshIcon
 import com.afsh.messages.ui.components.InfoPanel
 import com.afsh.messages.ui.components.AfshButton
 import com.afsh.messages.ui.components.SectionHeading
@@ -37,13 +37,13 @@ private val ActionIconSize = 24.dp
 internal fun BackupPage(onEvent: (SettingsEvent) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(top = 4.dp)) {
         BackupAction(
-            icon = R.drawable.ic_lucide_download,
+            icon = AfshIcon.Download,
             title = stringResource(R.string.export_messages),
             detail = stringResource(R.string.export_messages_detail),
             onClick = { onEvent(SettingsEvent.Open(SettingsPage.EXPORT)) },
         )
         BackupAction(
-            icon = R.drawable.ic_lucide_upload,
+            icon = AfshIcon.Upload,
             title = stringResource(R.string.import_messages),
             detail = stringResource(R.string.import_messages_detail),
             onClick = { onEvent(SettingsEvent.ChooseBackup) },
@@ -58,7 +58,7 @@ internal fun BackupPage(onEvent: (SettingsEvent) -> Unit) {
 
 /** A white tile with an icon, a heading and what it does. */
 @Composable
-private fun BackupAction(icon: Int, title: String, detail: String, onClick: () -> Unit) {
+private fun BackupAction(icon: AfshIcon, title: String, detail: String, onClick: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     Row(
         Modifier
@@ -70,7 +70,7 @@ private fun BackupAction(icon: Int, title: String, detail: String, onClick: () -
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.Top,
     ) {
-        Icon(painterResource(icon), contentDescription = null, tint = colors.primary, modifier = Modifier.size(ActionIconSize))
+        Icon(icon.painter(), contentDescription = null, tint = colors.primary, modifier = Modifier.size(ActionIconSize))
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(title, style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
             Text(detail, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
@@ -85,14 +85,14 @@ internal fun ExportPage(state: SettingsUiState, onEvent: (SettingsEvent) -> Unit
         stringResource(R.string.export_sms),
         checked = state.exportSms,
         onCheckedChange = { onEvent(SettingsEvent.SetExportSms(it)) },
-        icon = R.drawable.ic_lucide_messages_square,
+        icon = AfshIcon.Conversations,
         enabled = !state.busy,
     )
     SwitchSetting(
         stringResource(R.string.export_mms),
         checked = state.exportMms,
         onCheckedChange = { onEvent(SettingsEvent.SetExportMms(it)) },
-        icon = R.drawable.ic_lucide_paperclip,
+        icon = AfshIcon.Attach,
         value = stringResource(R.string.export_mms_detail),
         enabled = !state.busy,
     )
@@ -148,7 +148,7 @@ internal fun ImportReviewPage(state: SettingsUiState, onEvent: (SettingsEvent) -
         stringResource(R.string.import_sms),
         checked = review.restoreSms,
         onCheckedChange = { onEvent(SettingsEvent.SetRestoreSms(it)) },
-        icon = R.drawable.ic_lucide_messages_square,
+        icon = AfshIcon.Conversations,
         value = pluralStringResource(R.plurals.backup_messages, review.sms, String.format(locale, "%,d", review.sms)),
         enabled = !state.busy && review.sms > 0,
     )
@@ -156,7 +156,7 @@ internal fun ImportReviewPage(state: SettingsUiState, onEvent: (SettingsEvent) -
         stringResource(R.string.import_mms),
         checked = review.restoreMms,
         onCheckedChange = { onEvent(SettingsEvent.SetRestoreMms(it)) },
-        icon = R.drawable.ic_lucide_paperclip,
+        icon = AfshIcon.Attach,
         value = pluralStringResource(R.plurals.backup_messages, review.mms, String.format(locale, "%,d", review.mms)),
         enabled = !state.busy && review.mms > 0,
     )

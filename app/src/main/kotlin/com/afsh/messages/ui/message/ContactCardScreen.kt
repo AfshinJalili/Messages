@@ -17,6 +17,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.afsh.messages.R
 import com.afsh.messages.ui.ltr
+import com.afsh.messages.ui.components.AfshIcon
 import com.afsh.messages.ui.components.EmptyState
 import com.afsh.messages.ui.components.IdentityCard
 import com.afsh.messages.ui.components.LabeledField
@@ -58,7 +59,7 @@ fun ContactCardScreen(
         when {
             cards == null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
             cards.isEmpty() -> EmptyState(
-                icon = R.drawable.ic_lucide_user,
+                icon = AfshIcon.Person,
                 title = stringResource(R.string.contact_card_unreadable),
                 modifier = Modifier.fillMaxSize(),
             )

@@ -65,7 +65,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -101,6 +100,7 @@ import com.afsh.messages.ui.components.SwipeTone
 import com.afsh.messages.ui.components.SwipeableRow
 import com.afsh.messages.ui.components.TopDestination
 import com.afsh.messages.ui.components.BottomBarSwitch
+import com.afsh.messages.ui.components.AfshIcon
 import com.afsh.messages.ui.components.BarAction
 import com.afsh.messages.ui.components.SelectionBar
 import com.afsh.messages.ui.components.selectionTitle
@@ -114,6 +114,9 @@ import com.afsh.messages.ui.AfshTheme
 import java.util.Calendar
 
 private val TargetSize = 48.dp
+
+// Room under the last row for the extended new-message button; geometry, not a spacing step.
+private val FabClearance = 88.dp
 private const val COMPACT_HEIGHT_DP = 480
 private const val EXPANDED_WIDTH_DP = 600
 
@@ -252,7 +255,7 @@ private fun InboxList(
         state.rows.groupBy { it.section(now) }
     }
     // Clears the extended FAB so the last row stays reachable.
-    LazyColumn(state = listState, contentPadding = PaddingValues(bottom = 88.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+    LazyColumn(state = listState, contentPadding = PaddingValues(bottom = FabClearance), horizontalAlignment = Alignment.CenterHorizontally) {
         item(key = "filters", contentType = "filters") {
             FilterRow(state.filter, onFilter)
         }
@@ -263,7 +266,7 @@ private fun InboxList(
         }
         state.importProgress?.let { progress ->
             item(key = "import", contentType = "notice") {
-                ImportNotice(progress, Modifier.widthIn(max = 640.dp).fillMaxWidth().animateItem().padding(horizontal = 20.dp, vertical = 8.dp))
+                ImportNotice(progress, Modifier.widthIn(max = 640.dp).fillMaxWidth().animateItem().padding(horizontal = Afsh.spacing.xl, vertical = Afsh.spacing.sm))
             }
         }
         when {
@@ -344,7 +347,7 @@ private fun IdentityBand(
                 Modifier
                     .layoutId(BandBody)
                     .graphicsLayer { alpha = 1f - header.state.collapsedFraction }
-                    .padding(start = 20.dp, end = 20.dp, bottom = 20.dp),
+                    .padding(start = Afsh.spacing.xl, end = Afsh.spacing.xl, bottom = Afsh.spacing.xl),
             ) {
                 AnimatedVisibility(
                     visible = showSubtitle && !search.open,
@@ -355,7 +358,7 @@ private fun IdentityBand(
                         subtitle,
                         style = MaterialTheme.typography.bodyMedium,
                         color = Afsh.colors.onBandVariant,
-                        modifier = Modifier.padding(bottom = 12.dp),
+                        modifier = Modifier.padding(bottom = Afsh.spacing.md),
                     )
                 }
                 when {
@@ -376,7 +379,7 @@ private fun IdentityBand(
                             .fillMaxWidth()
                             .background(Afsh.colors.header.container)
                             .heightIn(min = 64.dp)
-                            .padding(start = 20.dp, end = 8.dp),
+                            .padding(start = Afsh.spacing.xl, end = Afsh.spacing.sm),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
@@ -405,7 +408,7 @@ private fun IdentityBand(
                                 // Not announced while it isn't there to tap.
                                 .then(if (searchShown && !state.selecting) Modifier else Modifier.clearAndSetSemantics {}),
                         ) {
-                            Icon(painterResource(R.drawable.ic_lucide_search), stringResource(R.string.inbox_search_hint), tint = Afsh.colors.header.content)
+                            Icon(AfshIcon.Search.painter(), stringResource(R.string.inbox_search_hint), tint = Afsh.colors.header.content)
                         }
                     }
                 }
@@ -438,13 +441,13 @@ private fun StaticBar(
     modifier: Modifier,
 ) {
     Row(
-        modifier.heightIn(min = minHeight).padding(horizontal = 20.dp, vertical = 8.dp),
+        modifier.heightIn(min = minHeight).padding(horizontal = Afsh.spacing.xl, vertical = Afsh.spacing.sm),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(20.dp),
+        horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.xl),
     ) {
         if (state.selecting) {
             IconButton(onClick = onClearSelection) {
-                Icon(painterResource(org.fossify.commons.R.drawable.ic_cross_vector), stringResource(org.fossify.commons.R.string.close), tint = Afsh.colors.header.content)
+                Icon(AfshIcon.Close.painter(), stringResource(org.fossify.commons.R.string.close), tint = Afsh.colors.header.content)
             }
         }
         Text(
@@ -463,7 +466,7 @@ private fun StaticBar(
             }
         } else {
             IconButton(onClick = onSearch) {
-                Icon(painterResource(org.fossify.commons.R.drawable.ic_search_vector), stringResource(R.string.inbox_search_hint), tint = Afsh.colors.header.content)
+                Icon(AfshIcon.Search.painter(), stringResource(R.string.inbox_search_hint), tint = Afsh.colors.header.content)
             }
         }
     }
@@ -481,12 +484,12 @@ private fun SearchField(onClick: () -> Unit) {
             .heightIn(min = BandControlHeight * LocalDensity.current.fontScale.coerceAtLeast(1f)),
     ) {
         Row(
-            Modifier.padding(horizontal = 16.dp),
+            Modifier.padding(horizontal = Afsh.spacing.lg),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.md),
         ) {
             Icon(
-                painterResource(org.fossify.commons.R.drawable.ic_search_vector),
+                AfshIcon.Search.painter(),
                 contentDescription = null,
                 tint = colors.onSurfaceVariant,
                 modifier = Modifier.size(24.dp),
@@ -507,7 +510,7 @@ private fun SelectionControls(onSelectAll: () -> Unit, onClearSelection: () -> U
     ) {
         IconButton(onClick = onClearSelection) {
             Icon(
-                painterResource(org.fossify.commons.R.drawable.ic_cross_vector),
+                AfshIcon.Close.painter(),
                 contentDescription = stringResource(org.fossify.commons.R.string.close),
                 tint = onBand,
             )
@@ -526,9 +529,9 @@ private fun FilterRow(current: InboxFilter, onFilter: (InboxFilter) -> Unit) {
         Modifier
             .fillMaxWidth()
             .horizontalScroll(rememberScrollState())
-            .padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 4.dp)
+            .padding(start = Afsh.spacing.xl, end = Afsh.spacing.xl, top = Afsh.spacing.xl, bottom = Afsh.spacing.xs)
             .selectableGroup(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.sm),
     ) {
         InboxFilter.entries.forEach { filter ->
             val selected = filter == current
@@ -538,7 +541,7 @@ private fun FilterRow(current: InboxFilter, onFilter: (InboxFilter) -> Unit) {
                     .clip(CircleShape)
                     .background(if (selected) Afsh.colors.selected.container else colors.surfaceContainer)
                     .selectable(selected = selected, role = Role.Tab, onClick = { onFilter(filter) })
-                    .padding(horizontal = 16.dp),
+                    .padding(horizontal = Afsh.spacing.lg),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
@@ -558,7 +561,7 @@ private fun SectionHeader(section: InboxSection, modifier: Modifier = Modifier) 
         style = MaterialTheme.typography.labelMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = modifier
-            .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 4.dp)
+            .padding(start = Afsh.spacing.xl, end = Afsh.spacing.xl, top = Afsh.spacing.lg, bottom = Afsh.spacing.xs)
             .semantics { heading() },
     )
 }
@@ -566,9 +569,9 @@ private fun SectionHeader(section: InboxSection, modifier: Modifier = Modifier) 
 /** The panel a configured swipe reveals; [SwipeAction.NONE] reveals nothing. */
 private fun SwipeAction.gesture(): SwipeGesture? = when (this) {
     SwipeAction.NONE -> null
-    SwipeAction.DELETE -> SwipeGesture(label, icon, SwipeTone.DESTRUCTIVE)
-    SwipeAction.MUTE -> SwipeGesture(label, icon, SwipeTone.QUIET)
-    SwipeAction.ARCHIVE -> SwipeGesture(label, icon, SwipeTone.PRIMARY)
+    SwipeAction.DELETE -> SwipeGesture(label, AfshIcon.Delete, SwipeTone.DESTRUCTIVE)
+    SwipeAction.MUTE -> SwipeGesture(label, AfshIcon.NotificationsOff, SwipeTone.QUIET)
+    SwipeAction.ARCHIVE -> SwipeGesture(label, AfshIcon.Archive, SwipeTone.PRIMARY)
 }
 
 /** TalkBack equivalents of the swipe actions, available whatever the swipe settings are. */
@@ -590,15 +593,15 @@ private fun RefreshFailedNotice(onRetry: () -> Unit, modifier: Modifier = Modifi
     val colors = MaterialTheme.colorScheme
     Row(
         modifier
-            .padding(horizontal = 20.dp, vertical = 8.dp)
+            .padding(horizontal = Afsh.spacing.xl, vertical = Afsh.spacing.sm)
             .clip(MaterialTheme.shapes.medium)
             .background(colors.errorContainer)
-            .padding(start = 16.dp, top = 8.dp, end = 8.dp, bottom = 8.dp),
+            .padding(start = Afsh.spacing.lg, top = Afsh.spacing.sm, end = Afsh.spacing.sm, bottom = Afsh.spacing.sm),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.md),
     ) {
-        Icon(painterResource(R.drawable.ic_lucide_cloud_off), contentDescription = null, tint = colors.error, modifier = Modifier.size(20.dp))
-        Column(Modifier.weight(1f).semantics(mergeDescendants = true) {}, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Icon(AfshIcon.CloudOff.painter(), contentDescription = null, tint = colors.error, modifier = Modifier.size(20.dp))
+        Column(Modifier.weight(1f).semantics(mergeDescendants = true) {}, verticalArrangement = Arrangement.spacedBy(Afsh.spacing.xxs)) {
             Text(stringResource(R.string.refresh_failed_title), style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold), color = colors.onErrorContainer)
             Text(stringResource(R.string.refresh_failed_text), style = MaterialTheme.typography.bodySmall, color = colors.onErrorContainer)
         }
@@ -607,7 +610,7 @@ private fun RefreshFailedNotice(onRetry: () -> Unit, modifier: Modifier = Modifi
             modifier = Modifier.heightIn(min = 48.dp),
             shape = CircleShape,
             colors = ButtonDefaults.textButtonColors(containerColor = colors.surfaceContainer, contentColor = colors.primary),
-            contentPadding = PaddingValues(horizontal = 16.dp),
+            contentPadding = PaddingValues(horizontal = Afsh.spacing.lg),
         ) {
             Text(stringResource(R.string.retry), style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
         }
@@ -616,7 +619,7 @@ private fun RefreshFailedNotice(onRetry: () -> Unit, modifier: Modifier = Modifi
 
 @Composable
 private fun LoadingState() {
-    Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(Modifier.padding(Afsh.spacing.xl), verticalArrangement = Arrangement.spacedBy(Afsh.spacing.md)) {
         LinearProgressIndicator(
             modifier = Modifier.fillMaxWidth(),
             color = MaterialTheme.colorScheme.primary,
@@ -635,15 +638,15 @@ private fun EmptyState(filter: InboxFilter) {
     val colors = MaterialTheme.colorScheme
     Column(
         Modifier
-            .padding(20.dp)
+            .padding(Afsh.spacing.xl)
             .fillMaxWidth()
             .clip(MaterialTheme.shapes.medium)
             .background(colors.secondaryContainer)
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+            .padding(Afsh.spacing.lg),
+        verticalArrangement = Arrangement.spacedBy(Afsh.spacing.sm),
     ) {
         Icon(
-            painterResource(if (filter == InboxFilter.UNREAD) R.drawable.ic_check_double_vector else R.drawable.ic_message_bubble),
+            (if (filter == InboxFilter.UNREAD) AfshIcon.CheckAll else AfshIcon.Chat).painter(),
             contentDescription = null,
             tint = colors.primary,
             modifier = Modifier.size(34.dp),
@@ -662,7 +665,7 @@ private fun EmptyState(filter: InboxFilter) {
 @Composable
 private fun NewMessageButton(expanded: Boolean, onClick: () -> Unit) {
     val label = stringResource(R.string.new_message)
-    FloatingButton(R.drawable.ic_message_bubble, description = label, onClick = onClick, text = label, expanded = expanded)
+    FloatingButton(AfshIcon.Chat, description = label, onClick = onClick, text = label, expanded = expanded)
 }
 
 @Composable

@@ -1,5 +1,6 @@
 package com.afsh.messages
 
+import com.afsh.messages.ui.components.AfshIcon
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.CompositionLocalProvider
@@ -40,8 +41,8 @@ class SheetChecks {
                 Box(Modifier.fillMaxSize()) {
                     if (open) {
                         AfshSheet(title = "Fixture sheet", onDismiss = { calls += "dismiss"; open = false }, showTitle = showTitle) {
-                            AfshSheetItem("First", org.fossify.commons.R.drawable.ic_person_vector, onClick = { dismissThen { calls += "first" } }, supporting = "Supporting line", tile = true)
-                            AfshSheetItem("Remove", org.fossify.commons.R.drawable.ic_delete_vector, onClick = { dismissThen { calls += "remove" } }, danger = true)
+                            AfshSheetItem("First", AfshIcon.Person, onClick = { dismissThen { calls += "first" } }, supporting = "Supporting line", tile = true)
+                            AfshSheetItem("Remove", AfshIcon.Delete, onClick = { dismissThen { calls += "remove" } }, danger = true)
                         }
                     }
                 }

@@ -33,7 +33,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -46,6 +45,7 @@ import com.afsh.messages.R
 import com.afsh.messages.ui.Avatar
 import com.afsh.messages.ui.Afsh
 import com.afsh.messages.ui.components.ActionTile
+import com.afsh.messages.ui.components.AfshIcon
 import com.afsh.messages.ui.components.Choice
 import com.afsh.messages.ui.components.ChoiceDialog
 import com.afsh.messages.ui.components.IdentityCard
@@ -109,8 +109,8 @@ fun ConversationDetailsScreen(state: ConversationDetailsUiState, onEvent: (Detai
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
                 .windowInsetsPadding(WindowInsets.navigationBars.union(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)))
-                .padding(start = 20.dp, top = 20.dp, end = 20.dp, bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+                .padding(start = Afsh.spacing.xl, top = Afsh.spacing.xl, end = Afsh.spacing.xl, bottom = Afsh.spacing.xxl),
+            verticalArrangement = Arrangement.spacedBy(Afsh.spacing.lg),
         ) {
             val single = state.members.singleOrNull()
             IdentityCard(
@@ -132,14 +132,14 @@ fun ConversationDetailsScreen(state: ConversationDetailsUiState, onEvent: (Detai
                     Modifier
                 },
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.md)) {
                 val tile = Modifier.weight(1f)
                 if (state.canDial) {
-                    ActionTile(R.drawable.ic_lucide_phone, stringResource(org.fossify.commons.R.string.call), { onEvent(DetailsEvent.Call) }, tile)
+                    ActionTile(AfshIcon.Call, stringResource(org.fossify.commons.R.string.call), { onEvent(DetailsEvent.Call) }, tile)
                 }
-                ActionTile(R.drawable.ic_lucide_search, stringResource(org.fossify.commons.R.string.search), { onEvent(DetailsEvent.Search) }, tile)
+                ActionTile(AfshIcon.Search, stringResource(org.fossify.commons.R.string.search), { onEvent(DetailsEvent.Search) }, tile)
                 ActionTile(
-                    if (state.muted) R.drawable.ic_lucide_bell else R.drawable.ic_lucide_bell_off,
+                    if (state.muted) AfshIcon.Notifications else AfshIcon.NotificationsOff,
                     stringResource(if (state.muted) R.string.unmute else R.string.mute),
                     { onEvent(DetailsEvent.ToggleMute) },
                     tile,
@@ -150,13 +150,13 @@ fun ConversationDetailsScreen(state: ConversationDetailsUiState, onEvent: (Detai
                     stringResource(R.string.conversation_name),
                     onClick = { onEvent(DetailsEvent.Rename) },
                     value = state.title,
-                    icon = R.drawable.ic_lucide_pencil,
+                    icon = AfshIcon.Edit,
                 )
                 SwitchSetting(
                     stringResource(R.string.custom_notifications),
                     checked = state.customNotifications,
                     onCheckedChange = { onEvent(DetailsEvent.SetCustomNotifications(it)) },
-                    icon = R.drawable.ic_lucide_bell,
+                    icon = AfshIcon.Notifications,
                     value = stringResource(if (state.customNotifications) R.string.custom_notifications_on else R.string.custom_notifications_off),
                 )
                 if (state.customNotifications) {
@@ -164,7 +164,7 @@ fun ConversationDetailsScreen(state: ConversationDetailsUiState, onEvent: (Detai
                         stringResource(R.string.sound_and_vibration),
                         onClick = { onEvent(DetailsEvent.OpenNotificationSettings) },
                         value = stringResource(R.string.sound_and_vibration_value),
-                        icon = R.drawable.ic_lucide_volume_2,
+                        icon = AfshIcon.Volume,
                     )
                 }
                 if (state.sims.size > 1) {
@@ -173,7 +173,7 @@ fun ConversationDetailsScreen(state: ConversationDetailsUiState, onEvent: (Detai
                         onClick = { choosingSim = true },
                         value = state.sims.firstOrNull { it.subscriptionId == state.sim }?.label
                             ?: stringResource(R.string.sim_default),
-                        icon = R.drawable.ic_lucide_card_sim,
+                        icon = AfshIcon.SimCard,
                     )
                 }
             }
@@ -209,15 +209,15 @@ private fun DetailsHeader(state: ConversationDetailsUiState, onEvent: (DetailsEv
                 .fillMaxWidth()
                 .windowInsetsPadding(WindowInsets.statusBars.union(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)))
                 .heightIn(min = HeaderMinHeight)
-                .padding(horizontal = 8.dp, vertical = 8.dp),
+                .padding(horizontal = Afsh.spacing.sm, vertical = Afsh.spacing.sm),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.sm),
         ) {
             val back = stringResource(org.fossify.commons.R.string.back)
             IconButton(onClick = { onEvent(DetailsEvent.Back) }, modifier = Modifier.semantics { contentDescription = back }) {
-                Icon(painterResource(R.drawable.ic_lucide_arrow_left), contentDescription = null)
+                Icon(AfshIcon.ArrowBack.painter(), contentDescription = null)
             }
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Afsh.spacing.xs)) {
                 Text(
                     state.title,
                     style = MaterialTheme.typography.titleLarge,
@@ -234,7 +234,7 @@ private fun DetailsHeader(state: ConversationDetailsUiState, onEvent: (DetailsEv
             if (state.canDial) {
                 val call = stringResource(org.fossify.commons.R.string.call)
                 IconButton(onClick = { onEvent(DetailsEvent.Call) }, modifier = Modifier.semantics { contentDescription = call }) {
-                    Icon(painterResource(R.drawable.ic_lucide_phone), contentDescription = null)
+                    Icon(AfshIcon.Call.painter(), contentDescription = null)
                 }
             }
         }
@@ -249,12 +249,12 @@ private fun MemberRow(member: Member, onClick: () -> Unit) {
             .fillMaxWidth()
             .clip(MaterialTheme.shapes.small)
             .clickable(role = Role.Button, onClick = onClick)
-            .padding(horizontal = 4.dp, vertical = 8.dp),
+            .padding(horizontal = Afsh.spacing.xs, vertical = Afsh.spacing.sm),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.md),
     ) {
         Avatar(member.name, member.photoUri, isGroup = false, size = MemberAvatarSize)
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Afsh.spacing.xxs)) {
             Text(member.name, style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
             if (member.number != member.name) {
                 Text(ltr(member.number), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)

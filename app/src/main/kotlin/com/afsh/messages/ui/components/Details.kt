@@ -17,7 +17,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -68,7 +67,7 @@ fun IdentityCard(
 
 /** 09's quick actions: an icon over a short label on a surfaceContainer tile. Share a row with weight. */
 @Composable
-fun ActionTile(icon: Int, label: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun ActionTile(icon: AfshIcon, label: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val colors = MaterialTheme.colorScheme
     Column(
         modifier
@@ -79,7 +78,7 @@ fun ActionTile(icon: Int, label: String, onClick: () -> Unit, modifier: Modifier
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Icon(painterResource(icon), contentDescription = null, tint = colors.primary, modifier = Modifier.size(ActionIconSize))
+        Icon(icon.painter(), contentDescription = null, tint = colors.primary, modifier = Modifier.size(ActionIconSize))
         Text(label, style = MaterialTheme.typography.labelMedium, color = colors.onSurface, textAlign = TextAlign.Center)
     }
 }

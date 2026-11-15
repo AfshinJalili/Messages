@@ -1,5 +1,6 @@
 package com.afsh.messages
 
+import com.afsh.messages.ui.components.AfshIcon
 import android.content.Context
 import android.content.ContextWrapper
 import androidx.room.Room
@@ -291,7 +292,7 @@ class InboxChecks {
     fun swipeRowDirectionsAndFlicks() {
         var rtl by mutableStateOf(false)
         val swipes = mutableListOf<Boolean>()
-        val gesture = SwipeGesture(R.string.archive, R.drawable.ic_archive_vector, SwipeTone.PRIMARY)
+        val gesture = SwipeGesture(R.string.archive, AfshIcon.Archive, SwipeTone.PRIMARY)
         compose.setContent {
             CompositionLocalProvider(LocalLayoutDirection provides if (rtl) LayoutDirection.Rtl else LayoutDirection.Ltr) {
                 AfshTheme(dark = false) {

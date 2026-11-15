@@ -18,11 +18,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.afsh.messages.R
 import com.afsh.messages.ui.Afsh
 
 private val MarkSize = 46.dp
@@ -34,7 +32,7 @@ private val CompactPanelPadding = PaddingValues(horizontal = 16.dp, vertical = 1
 /** Library row: a lilac mark, a label with its description, and a disclosure chevron. */
 @Composable
 fun DestinationCard(
-    icon: Int,
+    icon: AfshIcon,
     label: String,
     description: String,
     onClick: () -> Unit,
@@ -61,7 +59,7 @@ fun DestinationCard(
             contentAlignment = Alignment.Center,
         ) {
             Icon(
-                painterResource(icon),
+                icon.painter(),
                 contentDescription = null,
                 tint = colors.primary,
                 modifier = Modifier.size(MarkIconSize),
@@ -73,7 +71,7 @@ fun DestinationCard(
         }
         if (badge > 0) CountBadge(badge)
         Icon(
-            painterResource(R.drawable.ic_lucide_chevron_right),
+            AfshIcon.ChevronForward.painter(),
             contentDescription = null,
             tint = colors.onSurfaceVariant,
             modifier = Modifier.size(18.dp),
@@ -117,7 +115,7 @@ fun InfoPanel(
 
 /** Component / empty state. */
 @Composable
-fun EmptyState(icon: Int, title: String, modifier: Modifier = Modifier, text: String? = null) {
+fun EmptyState(icon: AfshIcon, title: String, modifier: Modifier = Modifier, text: String? = null) {
     val colors = MaterialTheme.colorScheme
     Column(
         modifier
@@ -127,7 +125,7 @@ fun EmptyState(icon: Int, title: String, modifier: Modifier = Modifier, text: St
             .padding(horizontal = 16.dp, vertical = 20.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Icon(painterResource(icon), contentDescription = null, tint = colors.primary, modifier = Modifier.size(34.dp))
+        Icon(icon.painter(), contentDescription = null, tint = colors.primary, modifier = Modifier.size(34.dp))
         Text(
             title,
             style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
@@ -141,7 +139,7 @@ fun EmptyState(icon: Int, title: String, modifier: Modifier = Modifier, text: St
 
 /** Component / attention notice and validation notice: coral container, title and detail. */
 @Composable
-fun AttentionNotice(title: String, detail: String, modifier: Modifier = Modifier, icon: Int? = null) {
+fun AttentionNotice(title: String, detail: String, modifier: Modifier = Modifier, icon: AfshIcon? = null) {
     val colors = MaterialTheme.colorScheme
     Column(
         modifier
@@ -152,7 +150,7 @@ fun AttentionNotice(title: String, detail: String, modifier: Modifier = Modifier
         verticalArrangement = Arrangement.spacedBy(if (icon != null) 8.dp else 4.dp),
     ) {
         if (icon != null) {
-            Icon(painterResource(icon), contentDescription = null, tint = colors.error, modifier = Modifier.size(26.dp))
+            Icon(icon.painter(), contentDescription = null, tint = colors.error, modifier = Modifier.size(26.dp))
         }
         Text(
             title,

@@ -107,7 +107,7 @@ fun BlockRulesScreen(
             item(key = "numbers") {
                 val numbers = state.blockedNumbers
                 DestinationCard(
-                    icon = R.drawable.ic_lucide_shield_ban,
+                    icon = AfshIcon.SpamShield,
                     label = stringResource(org.fossify.commons.R.string.blocked_numbers),
                     description = pluralStringResource(R.plurals.blocked_senders, numbers, numbers),
                     onClick = { onEvent(BlockRulesEvent.OpenNumbers) },
@@ -116,7 +116,7 @@ fun BlockRulesScreen(
             item(key = "phrases-card") {
                 val phrases = state.phrases.size
                 DestinationCard(
-                    icon = R.drawable.ic_lucide_shield_ban,
+                    icon = AfshIcon.SpamShield,
                     label = stringResource(R.string.blocked_phrases),
                     description = pluralStringResource(R.plurals.blocked_phrase_count, phrases, phrases),
                     onClick = { scope.launch { listState.animateScrollToItem(PHRASES_HEADING_INDEX) } },
@@ -125,7 +125,7 @@ fun BlockRulesScreen(
             item(key = "filter") { FilterToggle(state.filterEnabled) { onEvent(BlockRulesEvent.SetFilter(it)) } }
             item(key = "patterns") {
                 DestinationCard(
-                    icon = R.drawable.ic_lucide_shield_ban,
+                    icon = AfshIcon.SpamShield,
                     label = stringResource(R.string.spam_patterns),
                     description = stringResource(R.string.spam_patterns_card),
                     onClick = { onEvent(BlockRulesEvent.OpenPatterns) },

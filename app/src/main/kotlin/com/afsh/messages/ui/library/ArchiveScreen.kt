@@ -1,5 +1,6 @@
 package com.afsh.messages.ui.library
 
+import com.afsh.messages.ui.Afsh
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -34,8 +35,6 @@ import com.afsh.messages.ui.components.SwipeTone
 import com.afsh.messages.ui.components.SwipeableRow
 import com.afsh.messages.ui.inbox.InboxRow
 
-private val SideMargin = 20.dp
-
 /** Everything 19 · Archive can ask its activity to do. */
 sealed interface ArchiveEvent {
     data object Back : ArchiveEvent
@@ -60,7 +59,7 @@ fun ArchiveScreen(
     onEvent: (ArchiveEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val unarchive = SwipeGesture(R.string.unarchive, R.drawable.ic_lucide_inbox, SwipeTone.PRIMARY)
+    val unarchive = SwipeGesture(R.string.unarchive, AfshIcon.Inbox, SwipeTone.PRIMARY)
     PageScaffold(
         title = stringResource(R.string.archived_conversations),
         modifier = modifier,
@@ -75,8 +74,8 @@ fun ArchiveScreen(
                 onClear = { onEvent(ArchiveEvent.ClearSelection) },
                 onSelectAll = { onEvent(ArchiveEvent.SelectAll) },
                 actions = listOf(
-                    BarAction(stringResource(R.string.unarchive), R.drawable.ic_lucide_inbox) { onEvent(ArchiveEvent.Unarchive(selected)) },
-                    BarAction(stringResource(org.fossify.commons.R.string.delete), R.drawable.ic_lucide_trash_2, destructive = true) {
+                    BarAction(stringResource(R.string.unarchive), AfshIcon.Inbox) { onEvent(ArchiveEvent.Unarchive(selected)) },
+                    BarAction(stringResource(org.fossify.commons.R.string.delete), AfshIcon.Delete, destructive = true) {
                         onEvent(ArchiveEvent.Delete(selected))
                     },
                 ),
@@ -95,27 +94,27 @@ fun ArchiveScreen(
         },
     ) {
         LazyColumn(
-            contentPadding = PaddingValues(top = SideMargin, bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(top = Afsh.spacing.xl, bottom = Afsh.spacing.xxl),
+            verticalArrangement = Arrangement.spacedBy(Afsh.spacing.md),
         ) {
             item(key = "hint") {
                 Text(
                     stringResource(R.string.archive_hint),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = SideMargin),
+                    modifier = Modifier.padding(horizontal = Afsh.spacing.xl),
                 )
             }
             when {
                 state.loading -> item(key = "loading") {
-                    LinearProgressIndicator(Modifier.fillMaxWidth().padding(horizontal = SideMargin))
+                    LinearProgressIndicator(Modifier.fillMaxWidth().padding(horizontal = Afsh.spacing.xl))
                 }
 
                 state.rows.isEmpty() -> item(key = "empty") {
                     EmptyState(
-                        icon = R.drawable.ic_lucide_archive,
+                        icon = AfshIcon.Archive,
                         title = stringResource(R.string.no_archived_conversations),
-                        modifier = Modifier.padding(horizontal = SideMargin),
+                        modifier = Modifier.padding(horizontal = Afsh.spacing.xl),
                     )
                 }
 
@@ -128,7 +127,7 @@ fun ArchiveScreen(
                     InfoPanel(
                         title = stringResource(R.string.archive_action_title),
                         body = stringResource(R.string.archive_action_text),
-                        modifier = Modifier.padding(horizontal = SideMargin),
+                        modifier = Modifier.padding(horizontal = Afsh.spacing.xl),
                         prominent = true,
                     )
                 }

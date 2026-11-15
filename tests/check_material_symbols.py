@@ -17,6 +17,9 @@ problems = []
 source = entry.read_text()
 pairs = re.findall(r'R\.drawable\.ic_lucide_(\w+),\s*R\.drawable\.ic_msym_(\w+)', source)
 mapped = {lucide for lucide, _ in pairs}
+# Meanings Lucide has no icon for keep today's vector (app or Commons) in the Lucide slot.
+legacy = re.findall(r'(org\.fossify\.commons\.)?R\.drawable\.((?!ic_lucide_)\w+),\s*R\.drawable\.ic_msym_(\w+)', source)
+commons_drawables = root / 'commons/src/main/res/drawable'
 
 for lucide in sorted(p.stem.removeprefix('ic_lucide_') for p in drawables.glob('ic_lucide_*.xml')):
     if aliases.get(lucide, lucide) not in mapped:
@@ -33,7 +36,18 @@ for lucide, symbol in pairs:
     if len(set(mirrored.values())) != 1:
         problems.append(f'ic_lucide_{lucide} and ic_msym_{symbol} disagree on RTL mirroring')
 
-used = {symbol for _, symbol in pairs}
+for commons, name, symbol in legacy:
+    folder = commons_drawables if commons else drawables
+    for path in (folder / f'{name}.xml', drawables / f'ic_msym_{symbol}.xml'):
+        if not path.exists():
+            problems.append(f'AfshIcon.kt references missing drawable {path.stem}')
+    if (folder / f'{name}.xml').exists() and (drawables / f'ic_msym_{symbol}.xml').exists():
+        flips = {ET.parse(path).getroot().get(ANDROID + 'autoMirrored') == 'true'
+                 for path in (folder / f'{name}.xml', drawables / f'ic_msym_{symbol}.xml')}
+        if len(flips) != 1:
+            problems.append(f'{name} and ic_msym_{symbol} disagree on RTL mirroring')
+
+used = {symbol for _, symbol in pairs} | {symbol for _, _, symbol in legacy}
 for path in sorted(drawables.glob('ic_msym_*.xml')):
     name = path.stem.removeprefix('ic_msym_')
     text = path.read_text()
@@ -49,4 +63,4 @@ for path in kotlin.rglob('*.kt'):
         problems.append(f'{path.relative_to(kotlin)} names a Material Symbols drawable; request an AfshIcon instead')
 
 assert not problems, '\n'.join(problems)
-print(f'Material Symbols checks passed ({len(pairs)} icons mapped)')
+print(f'Material Symbols checks passed ({len(pairs) + len(legacy)} icons mapped)')

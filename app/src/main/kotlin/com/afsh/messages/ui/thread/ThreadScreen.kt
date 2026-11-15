@@ -2,6 +2,7 @@ package com.afsh.messages.ui.thread
 
 import com.afsh.messages.ui.components.FloatingButton
 import com.afsh.messages.ui.components.UnreadDivider
+import com.afsh.messages.ui.components.AfshIcon
 import com.afsh.messages.ui.components.AfshSheet
 import com.afsh.messages.ui.components.AfshSheetItem
 import android.content.res.Configuration
@@ -946,7 +947,7 @@ private fun JumpToLatest(state: ThreadUiState, newestFirst: List<ThreadItem>, li
     }
     AnimatedVisibility(show && !state.selecting, modifier.padding(16.dp), enter = fadeIn(), exit = fadeOut()) {
         FloatingButton(
-            R.drawable.ic_arrow_down_vector,
+            AfshIcon.ArrowDown,
             description = description,
             onClick = { onEvent(ThreadEvent.JumpToLatest) },
             modifier = Modifier.testTag(THREAD_JUMP_TAG),

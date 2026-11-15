@@ -21,13 +21,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.layout
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.afsh.messages.R
 
 private val RowMinHeight = 48.dp
 private val SettingIconSize = 24.dp
@@ -55,7 +53,7 @@ fun SectionHeading(label: String, modifier: Modifier = Modifier) {
 fun SettingItem(
     label: String,
     modifier: Modifier = Modifier,
-    icon: Int? = null,
+    icon: AfshIcon? = null,
     value: String? = null,
     enabled: Boolean = true,
     destructive: Boolean = false,
@@ -75,7 +73,7 @@ fun SettingItem(
             .heightIn(min = RowMinHeight),
         supportingContent = value?.let { { Text(it, style = MaterialTheme.typography.bodySmall) } },
         leadingContent = icon?.let {
-            { Icon(painterResource(it), contentDescription = null, modifier = Modifier.size(SettingIconSize)) }
+            { Icon(it.painter(), contentDescription = null, modifier = Modifier.size(SettingIconSize)) }
         },
         trailingContent = trailing,
         colors = ListItemDefaults.colors(
@@ -110,11 +108,11 @@ fun NavigationSetting(
     label: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    icon: Int? = null,
+    icon: AfshIcon? = null,
     value: String? = null,
     disclosure: Boolean = true,
     destructive: Boolean = false,
-    disclosureIcon: Int = R.drawable.ic_lucide_chevron_right,
+    disclosureIcon: AfshIcon = AfshIcon.ChevronForward,
 ) {
     SettingItem(
         label = label,
@@ -125,7 +123,7 @@ fun NavigationSetting(
         value = value,
         destructive = destructive,
         trailing = if (disclosure) {
-            { Icon(painterResource(disclosureIcon), contentDescription = null, modifier = Modifier.size(SettingIconSize)) }
+            { Icon(disclosureIcon.painter(), contentDescription = null, modifier = Modifier.size(SettingIconSize)) }
         } else {
             null
         },
@@ -139,7 +137,7 @@ fun SwitchSetting(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
-    icon: Int? = null,
+    icon: AfshIcon? = null,
     value: String? = null,
     enabled: Boolean = true,
 ) {

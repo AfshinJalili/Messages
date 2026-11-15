@@ -1,6 +1,5 @@
 package com.afsh.messages.ui.components
 
-import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -29,7 +28,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.paneTitle
@@ -136,7 +134,7 @@ fun AfshSheet(
 @Composable
 fun AfshSheetItem(
     label: String,
-    @DrawableRes icon: Int,
+    icon: AfshIcon,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     supporting: String? = null,
@@ -164,10 +162,10 @@ fun AfshSheetItem(
                         .background(colors.secondaryContainer),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Icon(painterResource(icon), contentDescription = null, tint = iconTint, modifier = Modifier.size(ItemIconSize))
+                    Icon(icon.painter(), contentDescription = null, tint = iconTint, modifier = Modifier.size(ItemIconSize))
                 }
             } else {
-                Icon(painterResource(icon), contentDescription = null, tint = iconTint, modifier = Modifier.size(ItemIconSize))
+                Icon(icon.painter(), contentDescription = null, tint = iconTint, modifier = Modifier.size(ItemIconSize))
             }
         },
         colors = ListItemDefaults.colors(

@@ -19,6 +19,15 @@ val LocalIconSet = staticCompositionLocalOf { IconSet.Lucide }
  * `tests/check_material_symbols.py` keeps the two sets paired; `tools/export_material_symbols.py` writes the symbols.
  */
 enum class AfshIcon(@DrawableRes private val lucide: Int, @DrawableRes private val symbol: Int) {
+    // Meanings Lucide has no icon for keep the vector the app draws today in the Lucide slot.
+    Camera(org.fossify.commons.R.drawable.ic_camera_vector, R.drawable.ic_msym_photo_camera),
+    Video(R.drawable.ic_videocam_vector, R.drawable.ic_msym_video_library),
+    RecordVideo(R.drawable.ic_video_camera_vector, R.drawable.ic_msym_videocam),
+    Microphone(org.fossify.commons.R.drawable.ic_microphone_vector, R.drawable.ic_msym_mic),
+    ScheduleSend(R.drawable.ic_schedule_send_vector, R.drawable.ic_msym_schedule_send),
+    SendArrow(R.drawable.ic_arrow_up_right_vector, R.drawable.ic_msym_arrow_outward),
+    ArrowDown(R.drawable.ic_arrow_down_vector, R.drawable.ic_msym_arrow_downward),
+
     Archive(R.drawable.ic_lucide_archive, R.drawable.ic_msym_archive),
     ArrowBack(R.drawable.ic_lucide_arrow_left, R.drawable.ic_msym_arrow_back),
     ArrowForward(R.drawable.ic_lucide_arrow_right, R.drawable.ic_msym_arrow_forward),

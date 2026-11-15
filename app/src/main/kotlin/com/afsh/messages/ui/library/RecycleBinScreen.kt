@@ -1,5 +1,6 @@
 package com.afsh.messages.ui.library
 
+import com.afsh.messages.ui.Afsh
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -33,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import com.afsh.messages.R
 import com.afsh.messages.models.Conversation
 import com.afsh.messages.ui.AfshTheme
+import com.afsh.messages.ui.components.AfshIcon
 import com.afsh.messages.ui.components.ConfirmationDialog
 import com.afsh.messages.ui.components.EmptyState
 import com.afsh.messages.ui.components.PageContentPadding
@@ -84,7 +86,7 @@ fun RecycleBinScreen(
         navigation = navigation,
         snackbarHostState = snackbarHostState,
     ) {
-        LazyColumn(contentPadding = PageContentPadding, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        LazyColumn(contentPadding = PageContentPadding, verticalArrangement = Arrangement.spacedBy(Afsh.spacing.md)) {
             item(key = "note") {
                 Text(
                     stringResource(R.string.recycle_bin_note),
@@ -96,7 +98,7 @@ fun RecycleBinScreen(
                 state.loading -> item(key = "loading") { LinearProgressIndicator(Modifier.fillMaxWidth()) }
                 state.conversations.isEmpty() -> item(key = "empty") {
                     EmptyState(
-                        icon = R.drawable.ic_lucide_trash_2,
+                        icon = AfshIcon.Delete,
                         title = stringResource(R.string.no_recycle_bin_conversations),
                     )
                 }
@@ -171,8 +173,8 @@ private fun RecycledCard(
             .clip(MaterialTheme.shapes.medium)
             .background(colors.surfaceContainer)
             .clickable(role = Role.Button, onClick = onOpen)
-            .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+            .padding(start = Afsh.spacing.lg, end = Afsh.spacing.lg, top = Afsh.spacing.lg, bottom = Afsh.spacing.sm),
+        verticalArrangement = Arrangement.spacedBy(Afsh.spacing.sm),
     ) {
         Text(
             remember(title) { AnnotatedString(title).withContentFonts() },
@@ -182,7 +184,7 @@ private fun RecycledCard(
             overflow = TextOverflow.Ellipsis,
         )
         Text(recycledDetail(recycled), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
-        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.lg)) {
             TextAction(stringResource(R.string.restore), onClick = onRestore)
             TextAction(stringResource(R.string.delete_forever), onClick = onDeleteForever, destructive = true)
         }
@@ -211,7 +213,7 @@ private fun EmptyBinAction(onClick: () -> Unit) {
             .clip(MaterialTheme.shapes.medium)
             .background(colors.errorContainer)
             .clickable(role = Role.Button, onClick = onClick)
-            .padding(horizontal = 12.dp),
+            .padding(horizontal = Afsh.spacing.md),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center,
     ) {

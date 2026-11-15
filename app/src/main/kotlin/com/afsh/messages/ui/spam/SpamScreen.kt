@@ -180,12 +180,12 @@ fun SpamScreen(
                 onClear = clear,
                 onSelectAll = { selected = state.messages.mapTo(HashSet()) { it.id } },
                 actions = listOf(
-                    BarAction(stringResource(R.string.not_spam_short), R.drawable.ic_lucide_inbox) {
+                    BarAction(stringResource(R.string.not_spam_short), AfshIcon.Inbox) {
                         clear()
                         onEvent(SpamEvent.NotSpam(chosen))
                     },
-                    BarAction(stringResource(R.string.block_sender), R.drawable.ic_lucide_ban, destructive = true) { confirmBlock = chosen },
-                    BarAction(stringResource(org.fossify.commons.R.string.delete), R.drawable.ic_lucide_trash_2, destructive = true) { confirmDelete = chosen },
+                    BarAction(stringResource(R.string.block_sender), AfshIcon.Block, destructive = true) { confirmBlock = chosen },
+                    BarAction(stringResource(org.fossify.commons.R.string.delete), AfshIcon.Delete, destructive = true) { confirmDelete = chosen },
                 ),
             )
         } else {
@@ -206,14 +206,14 @@ fun SpamScreen(
             // The whole page scrolls; sized to its content, a drag beside the bubbles missed it.
             modifier = Modifier.fillMaxSize(),
             state = listState,
-            contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(start = Afsh.spacing.lg, top = Afsh.spacing.lg, end = Afsh.spacing.lg, bottom = Afsh.spacing.xl),
+            verticalArrangement = Arrangement.spacedBy(Afsh.spacing.md),
         ) {
             when {
                 state.loading -> item(key = "loading") { LinearProgressIndicator(Modifier.fillMaxWidth()) }
                 state.messages.isEmpty() -> item(key = "empty") {
                     EmptyState(
-                        icon = R.drawable.ic_lucide_shield_ban,
+                        icon = AfshIcon.SpamShield,
                         title = stringResource(R.string.no_blocked_messages),
                         text = stringResource(R.string.spam_empty_text),
                     )
@@ -344,7 +344,7 @@ private fun SpamMessage(line: SpamLine.Item, selecting: Boolean, checked: Boolea
         incoming = true,
         onToggle = onToggle,
         above = if (line.showSender) {
-            { shift -> SenderLabel(line.message.sender, MaterialTheme.colorScheme.primary, shift.padding(bottom = 12.dp)) }
+            { shift -> SenderLabel(line.message.sender, MaterialTheme.colorScheme.primary, shift.padding(bottom = Afsh.spacing.md)) }
         } else {
             null
         },

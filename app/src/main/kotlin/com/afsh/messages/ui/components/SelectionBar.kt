@@ -28,7 +28,6 @@ import androidx.compose.material3.TooltipBox
 import androidx.compose.material3.TooltipDefaults
 import androidx.compose.material3.rememberTooltipState
 import androidx.compose.ui.semantics.clearAndSetSemantics
-import com.afsh.messages.R
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
@@ -60,7 +59,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 
 private val CheckSize = 24.dp
@@ -116,7 +114,7 @@ fun <T : Any> keptWhileLeaving(value: T, empty: Boolean): T {
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SelectionIconAction(icon: Int, label: String, destructive: Boolean = false, onClick: () -> Unit) {
+fun SelectionIconAction(icon: AfshIcon, label: String, destructive: Boolean = false, onClick: () -> Unit) {
     TooltipBox(
         positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
         tooltip = { PlainTooltip { Text(label) } },
@@ -124,7 +122,7 @@ fun SelectionIconAction(icon: Int, label: String, destructive: Boolean = false, 
     ) {
         IconButton(onClick = onClick, modifier = Modifier.size(TargetSize)) {
             Icon(
-                painterResource(icon),
+                icon.painter(),
                 contentDescription = label,
                 tint = if (destructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -151,14 +149,14 @@ fun SelectionCheck(checked: Boolean, modifier: Modifier = Modifier) {
         contentAlignment = Alignment.Center,
     ) {
         AnimatedVisibility(checked, enter = fadeIn(enterSpec()), exit = fadeOut(exitSpec())) {
-            Icon(painterResource(R.drawable.ic_lucide_check), contentDescription = null, tint = colors.onPrimary, modifier = Modifier.size(16.dp))
+            Icon(AfshIcon.Check.painter(), contentDescription = null, tint = colors.onPrimary, modifier = Modifier.size(16.dp))
         }
     }
 }
 
 /** One action of a [SelectionBar]. [destructive] paints it coral. */
 @Immutable
-data class BarAction(val label: String, val icon: Int, val destructive: Boolean = false, val onClick: () -> Unit)
+data class BarAction(val label: String, val icon: AfshIcon, val destructive: Boolean = false, val onClick: () -> Unit)
 
 /**
  * The bar that replaces the navigation (or the composer) while rows are selected (41 · selection mode).
@@ -188,12 +186,12 @@ fun SelectionBar(
             if (overflow.isNotEmpty()) {
                 var open by remember { mutableStateOf(false) }
                 Box {
-                    SelectionIconAction(R.drawable.ic_lucide_ellipsis_vertical, stringResource(org.fossify.commons.R.string.more_options)) { open = true }
+                    SelectionIconAction(AfshIcon.More, stringResource(org.fossify.commons.R.string.more_options)) { open = true }
                     DropdownMenu(expanded = open, onDismissRequest = { open = false }, containerColor = colors.surfaceContainer, shape = MaterialTheme.shapes.medium) {
                         overflow.forEach { action ->
                             DropdownMenuItem(
                                 text = { Text(action.label, style = MaterialTheme.typography.bodyMedium) },
-                                leadingIcon = { Icon(painterResource(action.icon), contentDescription = null, modifier = Modifier.size(20.dp)) },
+                                leadingIcon = { Icon(action.icon.painter(), contentDescription = null, modifier = Modifier.size(20.dp)) },
                                 modifier = Modifier.heightIn(min = TargetSize),
                                 colors = MenuDefaults.itemColors(
                                     textColor = if (action.destructive) colors.error else colors.onSurface,
