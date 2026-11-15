@@ -108,9 +108,11 @@ The theme is the one color source. `colors.xml` holds the palette values (paper,
 | `onSurfaceVariant`, `outlineVariant` | muted, line | muted dark, line dark | Secondary text, dividers |
 | `error`, `errorContainer` | `afsh_error`, `afsh_error_container` | coral, `afsh_error_container_dark` | Destructive actions and failures |
 | `inverseSurface`, `inversePrimary` | ink, lime | paper, pine | Snackbar |
-| `Afsh.colors.accent` / `onAccent` | lime / ink | lime / ink | New activity, unread |
+| `Afsh.colors.accent` / `onAccent` | lime / ink | lime / ink | The accent role: primary button, send, new message, selected schedule chip, new activity. Under dynamic color it is `tertiaryContainer` / `onTertiaryContainer` (`accentRole()`) |
 | `Afsh.colors.header`, `sentBubble`, `secondaryButton`, `swipeAction`, `selected`, `badge` | each a `ColorRole`, today all the pine container | each the dark pine container | One job each; recolor a job by giving its role its own value |
 | `Afsh.colors.onSecondaryContainerVariant`, `inverseAccent`, `scrim`, `focusRing`, `avatars`, `onAvatar`, `onBandVariant` | see `AfshTheme` | see `AfshTheme` | Secondary text on lilac, snackbar action, scrims, focus outline, avatars, band text |
+
+**Dynamic color.** `DynamicColor` in `ui/AfshTheme.kt` is the one switch for Material You, and it is off until the default look is approved. `colorSource()` picks `Dynamic` only when the switch is on and the phone runs Android 12 (API 31) or later, otherwise `Static`; `afshColorScheme(dark, source)` then returns the system's `dynamicLightColorScheme` / `dynamicDarkColorScheme` or the static scheme in the table above, and `AfshTheme` derives the accent from the same source. The job roles follow the scheme's `primaryContainer`, so they recolor with it. The remaining lime and lilac extras (`inverseAccent`, `focusRing`, `avatars`, `themePreview`) and the XML themes stay static for now; route them through the scheme before turning the switch on. `ColorSourceTest` covers the selection below and above API 31 and the accent under both sources.
 
 Light or dark follows the app's background setting (`afshDark()`), not the system night mode. `tests/check_design_tokens.py` rejects inline colors and opacities, and `primaryContainer` outside the theme. `DesignChecks` asserts that the XML themes, Commons' accent and the Commons screens' theme match these roles. White icon paths are tint masks, not palette choices.
 
