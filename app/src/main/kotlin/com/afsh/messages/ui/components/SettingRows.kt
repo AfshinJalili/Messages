@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.toggleable
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
@@ -171,26 +170,6 @@ fun RadioSetting(
         value = value,
     ) {
         RadioButton(selected = selected, onClick = null)
-    }
-}
-
-/** A multi-choice item with Component / checkbox. */
-@Composable
-fun CheckboxSetting(
-    label: String,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-    modifier: Modifier = Modifier,
-    value: String? = null,
-) {
-    SettingItem(
-        label = label,
-        modifier = modifier
-            .clip(MaterialTheme.shapes.small)
-            .toggleable(value = checked, role = Role.Checkbox, onValueChange = onCheckedChange),
-        value = value,
-    ) {
-        Checkbox(checked = checked, onCheckedChange = null)
     }
 }
 

@@ -1,6 +1,5 @@
 package com.afsh.messages.ui.thread
 
-import com.afsh.messages.ui.components.AfshIcon
 import com.afsh.messages.ui.components.FloatingButton
 import com.afsh.messages.ui.components.UnreadDivider
 import com.afsh.messages.ui.components.AfshIcon
