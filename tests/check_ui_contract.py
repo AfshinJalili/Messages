@@ -88,9 +88,9 @@ for path in sorted(kotlin.rglob('*.kt')):
 
 # Lucide outside Kotlin: drawables, other resources, Gradle files and tools.
 others = [p for p in (root / 'app/src').rglob('*') if p.is_file() and p.suffix != '.kt']
-others += list(root.glob('*.gradle*')) + list(root.glob('app/*.gradle*')) + list((root / 'gradle').rglob('*.toml'))
+others += list(root.glob('*.gradle.kts')) + list(root.glob('app/*.gradle.kts')) + list((root / 'gradle').rglob('*.toml'))
 others += [p for p in (root / 'tools').rglob('*') if p.is_file()]
-for path in sorted(others):
+for path in sorted(p for p in others if p.is_file()):
     if LUCIDE.search(path.name):
         problems.append(f'{path.relative_to(root)} {RULES["lucide"]}')
         continue
