@@ -46,7 +46,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -247,7 +246,7 @@ private fun MediaPage(item: MediaItem, onZoomChange: (Boolean) -> Unit, onPlay: 
         if (video) {
             val play = stringResource(R.string.play_video)
             Icon(
-                painterResource(org.fossify.commons.R.drawable.ic_play_outline_vector),
+                AfshIcon.Play.painter(),
                 contentDescription = null,
                 tint = Color.Unspecified,
                 modifier = Modifier
