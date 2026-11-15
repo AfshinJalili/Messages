@@ -23,6 +23,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.afsh.messages.R
+import com.afsh.messages.ui.Afsh
 import com.afsh.messages.ui.components.AfshIcon
 import com.afsh.messages.ui.components.InfoPanel
 import com.afsh.messages.ui.components.AfshButton
@@ -35,7 +36,7 @@ private val ActionIconSize = 24.dp
 /** 29 · Settings / backup and restore. */
 @Composable
 internal fun BackupPage(onEvent: (SettingsEvent) -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(top = 4.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(Afsh.spacing.md), modifier = Modifier.padding(top = Afsh.spacing.xs)) {
         BackupAction(
             icon = AfshIcon.Download,
             title = stringResource(R.string.export_messages),
@@ -66,12 +67,12 @@ private fun BackupAction(icon: AfshIcon, title: String, detail: String, onClick:
             .clip(MaterialTheme.shapes.medium)
             .background(colors.surfaceContainer)
             .clickable(role = Role.Button, onClick = onClick)
-            .padding(16.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+            .padding(Afsh.spacing.lg),
+        horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.md),
         verticalAlignment = Alignment.Top,
     ) {
         Icon(icon.painter(), contentDescription = null, tint = colors.primary, modifier = Modifier.size(ActionIconSize))
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(Afsh.spacing.xs)) {
             Text(title, style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
             Text(detail, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
         }
@@ -106,9 +107,9 @@ internal fun ExportPage(state: SettingsUiState, onEvent: (SettingsEvent) -> Unit
         stringResource(R.string.export_destination),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(vertical = 8.dp),
+        modifier = Modifier.padding(vertical = Afsh.spacing.sm),
     )
-    if (state.busy) LinearProgressIndicator(Modifier.fillMaxWidth().padding(vertical = 8.dp))
+    if (state.busy) LinearProgressIndicator(Modifier.fillMaxWidth().padding(vertical = Afsh.spacing.sm))
     AfshButton(
         stringResource(R.string.create_backup),
         onClick = { onEvent(SettingsEvent.CreateBackup) },
@@ -126,11 +127,11 @@ internal fun ImportReviewPage(state: SettingsUiState, onEvent: (SettingsEvent) -
     Column(
         Modifier
             .fillMaxWidth()
-            .padding(top = 4.dp, bottom = 8.dp)
+            .padding(top = Afsh.spacing.xs, bottom = Afsh.spacing.sm)
             .clip(MaterialTheme.shapes.medium)
             .background(colors.surfaceContainer)
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+            .padding(Afsh.spacing.lg),
+        verticalArrangement = Arrangement.spacedBy(Afsh.spacing.xs),
     ) {
         Text(review.fileName, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold), color = colors.onSurface)
         Text(
@@ -163,10 +164,10 @@ internal fun ImportReviewPage(state: SettingsUiState, onEvent: (SettingsEvent) -
     InfoPanel(
         title = stringResource(R.string.nothing_is_removed),
         body = stringResource(R.string.nothing_is_removed_text),
-        modifier = Modifier.padding(vertical = 12.dp),
+        modifier = Modifier.padding(vertical = Afsh.spacing.md),
         prominent = true,
     )
-    if (state.busy) LinearProgressIndicator(Modifier.fillMaxWidth().padding(bottom = 12.dp))
+    if (state.busy) LinearProgressIndicator(Modifier.fillMaxWidth().padding(bottom = Afsh.spacing.md))
     AfshButton(
         stringResource(R.string.restore_messages),
         onClick = { onEvent(SettingsEvent.Restore) },

@@ -30,13 +30,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.afsh.messages.ui.Afsh
 import kotlinx.coroutines.launch
 import com.afsh.messages.R
 import com.afsh.messages.ui.components.DestinationCard
@@ -102,7 +102,7 @@ fun BlockRulesScreen(
         LazyColumn(
             state = listState,
             contentPadding = PageContentPadding,
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(Afsh.spacing.md),
         ) {
             item(key = "numbers") {
                 val numbers = state.blockedNumbers
@@ -184,7 +184,7 @@ private fun PhraseRow(phrase: String, onEdit: () -> Unit, onRemove: () -> Unit) 
         )
         IconButton(onClick = onRemove) {
             Icon(
-                painterResource(R.drawable.ic_lucide_x),
+                AfshIcon.Close.painter(),
                 contentDescription = stringResource(R.string.remove_phrase, phrase),
                 tint = colors.error,
                 modifier = Modifier.size(17.dp),
@@ -203,12 +203,12 @@ private fun AddRule(onPhrase: () -> Unit, onNumber: () -> Unit) {
                 .heightIn(min = PhraseRowHeight)
                 .clip(MaterialTheme.shapes.small)
                 .clickable(role = Role.Button) { open = true }
-                .padding(end = 8.dp),
+                .padding(end = Afsh.spacing.sm),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.sm),
         ) {
             Icon(
-                painterResource(R.drawable.ic_lucide_plus),
+                AfshIcon.Add.painter(),
                 contentDescription = null,
                 tint = colors.primary,
                 modifier = Modifier.size(20.dp),

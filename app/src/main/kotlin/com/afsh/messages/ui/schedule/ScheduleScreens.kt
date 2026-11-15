@@ -1,5 +1,7 @@
 package com.afsh.messages.ui.schedule
 
+import com.afsh.messages.ui.Afsh
+import com.afsh.messages.ui.components.AfshIcon
 import com.afsh.messages.ui.forUserText
 import android.text.format.DateFormat
 import androidx.compose.foundation.background
@@ -38,7 +40,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
@@ -47,7 +48,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import org.fossify.commons.extensions.getTimeFormat
 import com.afsh.messages.R
-import com.afsh.messages.ui.Afsh
 import com.afsh.messages.ui.components.AfshButton
 import com.afsh.messages.ui.components.AfshDatePickerDialog
 import com.afsh.messages.ui.components.AfshDialog
@@ -101,8 +101,8 @@ fun SendLaterScreen(
         Column(
             Modifier
                 .verticalScroll(rememberScrollState())
-                .padding(start = 20.dp, top = 20.dp, end = 20.dp, bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+                .padding(start = Afsh.spacing.xl, top = Afsh.spacing.xl, end = Afsh.spacing.xl, bottom = Afsh.spacing.xxl),
+            verticalArrangement = Arrangement.spacedBy(Afsh.spacing.md),
         ) {
             if (target.text.isNotEmpty()) {
                 SectionHeading(stringResource(R.string.message_label))
@@ -137,8 +137,8 @@ private fun MessagePreview(target: ScheduleTarget) {
             .fillMaxWidth()
             .clip(MaterialTheme.shapes.medium)
             .background(colors.surfaceContainer)
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+            .padding(Afsh.spacing.lg),
+        verticalArrangement = Arrangement.spacedBy(Afsh.spacing.sm),
     ) {
         Text(target.text, style = MaterialTheme.typography.bodyLarge.forUserText(target.text), color = colors.onSurface)
         Text(target.recipient, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
@@ -165,8 +165,8 @@ private fun DateChoice(millis: Long, now: Long, onChange: (Long) -> Unit) {
             .fillMaxWidth()
             .clip(MaterialTheme.shapes.medium)
             .background(colors.surfaceContainer)
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+            .padding(Afsh.spacing.lg),
+        verticalArrangement = Arrangement.spacedBy(Afsh.spacing.md),
     ) {
         Text(
             DateFormat.format("LLLL yyyy", millis).toString(),
@@ -175,7 +175,7 @@ private fun DateChoice(millis: Long, now: Long, onChange: (Long) -> Unit) {
             modifier = Modifier.semantics { heading() },
         )
         val listState = rememberLazyListState(initialFirstVisibleItemIndex = selectedIndex.coerceAtLeast(0))
-        LazyRow(Modifier.selectableGroup(), state = listState, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        LazyRow(Modifier.selectableGroup(), state = listState, horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.sm)) {
             items(days, key = { it.timeInMillis / MILLIS_PER_MINUTE }) { day ->
                 DateChip(DateFormat.format("EEE d", day).toString(), selected = day.sameDay(millis)) {
                     onChange(withDate(millis, day))
@@ -223,7 +223,7 @@ private fun DateChoice(millis: Long, now: Long, onChange: (Long) -> Unit) {
         ) {
             DatePicker(
                 pickerState,
-                title = { Text(otherDate, Modifier.padding(start = 24.dp, end = 12.dp, top = 16.dp).semantics { heading() }) },
+                title = { Text(otherDate, Modifier.padding(start = Afsh.spacing.xxl, end = Afsh.spacing.md, top = Afsh.spacing.lg).semantics { heading() }) },
                 showModeToggle = false,
             )
         }
@@ -240,7 +240,7 @@ private fun DateChip(label: String, selected: Boolean, onClick: () -> Unit) {
             .clip(MaterialTheme.shapes.small)
             .background(if (selected) Afsh.colors.accent else colors.surface)
             .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
-            .padding(horizontal = 8.dp, vertical = 12.dp),
+            .padding(horizontal = Afsh.spacing.sm, vertical = Afsh.spacing.md),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -267,7 +267,7 @@ private fun TimeChoice(millis: Long, onChange: (Long) -> Unit) {
             .clip(MaterialTheme.shapes.medium)
             .background(colors.surfaceContainer)
             .clickable(role = Role.Button, onClickLabel = changeTime) { clockOpen = true }
-            .padding(16.dp),
+            .padding(Afsh.spacing.lg),
     ) {
         Text(
             DateFormat.format(context.getTimeFormat(), millis).toString(),
@@ -336,8 +336,8 @@ fun ScheduledMessageScreen(
         Column(
             Modifier
                 .verticalScroll(rememberScrollState())
-                .padding(start = 20.dp, top = 20.dp, end = 20.dp, bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+                .padding(start = Afsh.spacing.xl, top = Afsh.spacing.xl, end = Afsh.spacing.xl, bottom = Afsh.spacing.xxl),
+            verticalArrangement = Arrangement.spacedBy(Afsh.spacing.md),
         ) {
             val changeTime = stringResource(R.string.change_time)
             Column(
@@ -346,8 +346,8 @@ fun ScheduledMessageScreen(
                     .clip(MaterialTheme.shapes.medium)
                     .background(colors.secondaryContainer)
                     .clickable(role = Role.Button, onClickLabel = changeTime) { onEvent(ScheduledEvent.ChangeTime) }
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                    .padding(horizontal = Afsh.spacing.lg, vertical = Afsh.spacing.md),
+                verticalArrangement = Arrangement.spacedBy(Afsh.spacing.xs),
             ) {
                 Text(
                     remember(millis) { upcomingDayAndTime(context, millis) },
@@ -369,15 +369,15 @@ fun ScheduledMessageScreen(
                 modifier = Modifier.fillMaxWidth(),
                 enabled = text.isNotBlank() && (timeChanged || text.trim() != target.text),
             )
-            MenuItem(R.drawable.ic_lucide_send, stringResource(R.string.send_now)) { onEvent(ScheduledEvent.SendNow) }
-            MenuItem(R.drawable.ic_lucide_x, stringResource(R.string.cancel_scheduled_message)) { onEvent(ScheduledEvent.Cancel) }
+            MenuItem(AfshIcon.Send, stringResource(R.string.send_now)) { onEvent(ScheduledEvent.SendNow) }
+            MenuItem(AfshIcon.Close, stringResource(R.string.cancel_scheduled_message)) { onEvent(ScheduledEvent.Cancel) }
         }
     }
 }
 
 /** Component / menu item: a primary icon and a bold label, 48dp tall. */
 @Composable
-private fun MenuItem(icon: Int, label: String, onClick: () -> Unit) {
+private fun MenuItem(icon: AfshIcon, label: String, onClick: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     Row(
         Modifier
@@ -385,11 +385,11 @@ private fun MenuItem(icon: Int, label: String, onClick: () -> Unit) {
             .heightIn(min = 48.dp)
             .clip(MaterialTheme.shapes.small)
             .clickable(role = Role.Button, onClick = onClick)
-            .padding(horizontal = 4.dp, vertical = 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+            .padding(horizontal = Afsh.spacing.xs, vertical = Afsh.spacing.md),
+        horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.md),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(painterResource(icon), contentDescription = null, tint = colors.primary, modifier = Modifier.size(MenuIconSize))
+        Icon(icon.painter(), contentDescription = null, tint = colors.primary, modifier = Modifier.size(MenuIconSize))
         Text(label, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold), color = colors.onSurface)
     }
 }

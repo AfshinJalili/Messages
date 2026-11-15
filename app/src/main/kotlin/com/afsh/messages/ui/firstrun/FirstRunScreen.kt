@@ -15,7 +15,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -23,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.afsh.messages.R
 import com.afsh.messages.ui.Afsh
+import com.afsh.messages.ui.components.AfshIcon
 import com.afsh.messages.ui.components.AfshButton
 import com.afsh.messages.ui.components.PageScaffold
 
@@ -62,10 +62,10 @@ private fun DefaultAppPage(onEvent: (FirstRunEvent) -> Unit, modifier: Modifier)
                     .fillMaxWidth()
                     .clip(MaterialTheme.shapes.medium)
                     .background(colors.secondaryContainer)
-                    .padding(horizontal = 20.dp, vertical = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                    .padding(horizontal = Afsh.spacing.xl, vertical = Afsh.spacing.xxl),
+                verticalArrangement = Arrangement.spacedBy(Afsh.spacing.lg),
             ) {
-                Icon(painterResource(R.drawable.ic_lucide_messages_square), contentDescription = null, tint = colors.primary, modifier = Modifier.size(MotifIconSize))
+                Icon(AfshIcon.Conversations.painter(), contentDescription = null, tint = colors.primary, modifier = Modifier.size(MotifIconSize))
                 Text(
                     stringResource(R.string.welcome_statement),
                     style = MaterialTheme.typography.titleLarge.copy(
@@ -97,9 +97,9 @@ private fun PermissionsPage(onEvent: (FirstRunEvent) -> Unit, modifier: Modifier
         modifier = modifier,
     ) {
         PageColumn {
-            PermissionCard(R.drawable.ic_lucide_contact, stringResource(R.string.contacts), stringResource(R.string.contacts_permission_text))
+            PermissionCard(AfshIcon.Contact, stringResource(R.string.contacts), stringResource(R.string.contacts_permission_text))
             PermissionCard(
-                R.drawable.ic_lucide_bell,
+                AfshIcon.Notifications,
                 stringResource(org.fossify.commons.R.string.notifications),
                 stringResource(R.string.notifications_permission_text),
             )
@@ -114,7 +114,7 @@ private fun PermissionsPage(onEvent: (FirstRunEvent) -> Unit, modifier: Modifier
 }
 
 @Composable
-private fun PermissionCard(icon: Int, title: String, detail: String) {
+private fun PermissionCard(icon: AfshIcon, title: String, detail: String) {
     val colors = MaterialTheme.colorScheme
     Column(
         Modifier
@@ -122,10 +122,10 @@ private fun PermissionCard(icon: Int, title: String, detail: String) {
             .clip(MaterialTheme.shapes.medium)
             .background(colors.surfaceContainer)
             .semantics(mergeDescendants = true) {}
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+            .padding(Afsh.spacing.lg),
+        verticalArrangement = Arrangement.spacedBy(Afsh.spacing.sm),
     ) {
-        Icon(painterResource(icon), contentDescription = null, tint = colors.primary, modifier = Modifier.size(PermissionIconSize))
+        Icon(icon.painter(), contentDescription = null, tint = colors.primary, modifier = Modifier.size(PermissionIconSize))
         Text(title, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold), color = colors.onSurface)
         Text(detail, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
     }
@@ -136,7 +136,7 @@ private fun PageColumn(content: @Composable () -> Unit) {
     Column(
         Modifier
             .verticalScroll(rememberScrollState())
-            .padding(start = 20.dp, top = 20.dp, end = 20.dp, bottom = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+            .padding(start = Afsh.spacing.xl, top = Afsh.spacing.xl, end = Afsh.spacing.xl, bottom = Afsh.spacing.xxl),
+        verticalArrangement = Arrangement.spacedBy(Afsh.spacing.md),
     ) { content() }
 }

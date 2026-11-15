@@ -25,7 +25,6 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.unit.dp
 import com.afsh.messages.R
 import com.afsh.messages.ui.Afsh
 import com.afsh.messages.ui.forContent
@@ -79,7 +78,7 @@ fun AddRuleScreen(
                 .verticalScroll(rememberScrollState())
                 .imePadding()
                 .padding(PageContentPadding),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(Afsh.spacing.md),
         ) {
             val fieldLabel = stringResource(if (phrase) R.string.phrase else R.string.phone_number_label)
             Text(
@@ -138,8 +137,8 @@ private fun ExampleMatch(example: String?) {
             .fillMaxWidth()
             .clip(MaterialTheme.shapes.medium)
             .background(colors.secondaryContainer)
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+            .padding(Afsh.spacing.lg),
+        verticalArrangement = Arrangement.spacedBy(Afsh.spacing.xs),
     ) {
         Text(
             stringResource(R.string.example_match),
