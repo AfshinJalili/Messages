@@ -16,9 +16,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import com.afsh.messages.R
 import com.afsh.messages.helpers.SwipeAction
+import com.afsh.messages.ui.Afsh
 import com.afsh.messages.ui.components.Choice
 import com.afsh.messages.ui.components.ChoiceDialog
 import com.afsh.messages.ui.components.InfoPanel
@@ -32,9 +32,8 @@ import com.afsh.messages.ui.components.SwitchSetting
 import com.afsh.messages.ui.ltr
 
 /** Settings bodies use a 16dp top and 4dp between rows (24); the rows carry their own padding. */
-private val SettingsBodyPadding = PaddingValues(
-    start = 20.dp, top = 16.dp, end = 20.dp, bottom = 24.dp,
-)
+private val SettingsBodyPadding: PaddingValues
+    @Composable get() = with(Afsh.spacing) { PaddingValues(start = xl, top = lg, end = xl, bottom = xxl) }
 
 /**
  * Settings: the overview (24) and its pages, one at a time. [page] and [onPage] keep the stack in
@@ -64,7 +63,7 @@ fun SettingsScreen(
             Modifier
                 .verticalScroll(rememberScrollState())
                 .padding(SettingsBodyPadding),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            verticalArrangement = Arrangement.spacedBy(Afsh.spacing.xs),
         ) {
             when (page) {
                 SettingsPage.OVERVIEW -> Overview(onEvent)
@@ -192,7 +191,7 @@ private fun AboutPage(state: SettingsUiState, onEvent: (SettingsEvent) -> Unit) 
         title = stringResource(R.string.app_launcher_name),
         body = stringResource(R.string.about_description),
         prominent = true,
-        modifier = Modifier.padding(bottom = 8.dp),
+        modifier = Modifier.padding(bottom = Afsh.spacing.sm),
     )
     NavigationSetting(
         stringResource(R.string.help_and_support),

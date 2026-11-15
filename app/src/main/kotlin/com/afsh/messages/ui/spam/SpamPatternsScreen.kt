@@ -28,7 +28,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.AnnotatedString
@@ -47,6 +46,8 @@ import com.afsh.messages.helpers.FilterVerdict
 import com.afsh.messages.helpers.SpamPatternGroup
 import com.afsh.messages.helpers.SpamPatterns
 import com.afsh.messages.helpers.RuleBasedFilter
+import com.afsh.messages.ui.Afsh
+import com.afsh.messages.ui.components.AfshIcon
 import com.afsh.messages.ui.components.AfshButton
 import com.afsh.messages.ui.components.AttentionNotice
 import com.afsh.messages.ui.components.ButtonKind
@@ -125,7 +126,7 @@ fun SpamPatternsScreen(
         LazyColumn(
             Modifier.imePadding(),
             contentPadding = PageContentPadding,
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(Afsh.spacing.md),
         ) {
             if (!state.filterEnabled) {
                 item(key = "off") {
@@ -138,7 +139,7 @@ fun SpamPatternsScreen(
             item(key = "try") { TryMessage(state.patterns) }
             SpamPatternGroup.entries.forEach { group ->
                 item(key = "h:${group.key}") {
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(Afsh.spacing.xs)) {
                         SectionHeading(stringResource(group.title()))
                         Text(
                             stringResource(group.description()),
@@ -157,7 +158,7 @@ fun SpamPatternsScreen(
                 item(key = "a:${group.key}") { AddPattern { editing = Editing(group, null, "") } }
             }
             item(key = "actions") {
-                Column(Modifier.padding(top = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(Modifier.padding(top = Afsh.spacing.md), verticalArrangement = Arrangement.spacedBy(Afsh.spacing.sm)) {
                     AfshButton(
                         stringResource(if (state.rechecking) R.string.spam_patterns_rechecking else R.string.spam_patterns_recheck),
                         onClick = { confirmRecheck = true },
@@ -226,7 +227,7 @@ private fun TryMessage(patterns: SpamPatterns) {
     var body by rememberSaveable { mutableStateOf("") }
     var sender by rememberSaveable { mutableStateOf("") }
     val colors = MaterialTheme.colorScheme
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(Afsh.spacing.sm)) {
         SectionHeading(stringResource(R.string.spam_patterns_try))
         TextFieldSlab(
             value = body,
@@ -253,8 +254,8 @@ private fun TryMessage(patterns: SpamPatterns) {
                     .fillMaxWidth()
                     .clip(MaterialTheme.shapes.medium)
                     .background(colors.surfaceContainer)
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                    .padding(Afsh.spacing.lg),
+                verticalArrangement = Arrangement.spacedBy(Afsh.spacing.sm),
             ) {
                 Text(
                     stringResource(result.label()),
@@ -303,7 +304,7 @@ private fun PatternRow(pattern: String, onEdit: () -> Unit, onRemove: () -> Unit
         )
         IconButton(onClick = onRemove) {
             Icon(
-                painterResource(R.drawable.ic_lucide_x),
+                AfshIcon.Close.painter(),
                 contentDescription = stringResource(R.string.spam_patterns_remove, pattern),
                 tint = colors.error,
                 modifier = Modifier.size(17.dp),
@@ -320,11 +321,11 @@ private fun AddPattern(onClick: () -> Unit) {
             .heightIn(min = PatternRowHeight)
             .clip(MaterialTheme.shapes.small)
             .clickable(role = Role.Button, onClick = onClick)
-            .padding(end = 8.dp),
+            .padding(end = Afsh.spacing.sm),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.sm),
     ) {
-        Icon(painterResource(R.drawable.ic_lucide_plus), contentDescription = null, tint = colors.primary, modifier = Modifier.size(20.dp))
+        Icon(AfshIcon.Add.painter(), contentDescription = null, tint = colors.primary, modifier = Modifier.size(20.dp))
         Text(
             stringResource(R.string.spam_patterns_add),
             style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),

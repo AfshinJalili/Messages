@@ -19,8 +19,8 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import com.afsh.messages.R
+import com.afsh.messages.ui.Afsh
 import com.afsh.messages.ui.components.InfoPanel
 import com.afsh.messages.ui.components.AfshButton
 import com.afsh.messages.ui.components.PageContentPadding
@@ -52,15 +52,15 @@ fun MoveRulesScreen(
             Modifier
                 .verticalScroll(rememberScrollState())
                 .padding(PageContentPadding),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(Afsh.spacing.md),
         ) {
             Column(
                 Modifier
                     .fillMaxWidth()
                     .clip(MaterialTheme.shapes.medium)
                     .background(colors.surfaceContainer)
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                    .padding(Afsh.spacing.lg),
+                verticalArrangement = Arrangement.spacedBy(Afsh.spacing.sm),
             ) {
                 Text(
                     stringResource(R.string.what_will_be_exported),
@@ -95,7 +95,7 @@ fun MoveRulesScreen(
                     .clip(MaterialTheme.shapes.medium)
                     .clickable(role = Role.Button, onClick = onImport),
                 prominent = true,
-                contentPadding = PaddingValues(16.dp),
+                contentPadding = PaddingValues(Afsh.spacing.lg),
             )
         }
     }

@@ -116,7 +116,7 @@ Light or dark follows the app's background setting (`afshDark()`), not the syste
 
 ### Spacing
 
-One scale for gaps and padding, read through the theme as `Afsh.spacing.<step>` (defined in `ui/AfshTheme.kt`, like `Afsh.colors`). The steps are the values the screens already use, so adopting them changes nothing visible. Existing literals migrate screen by screen; components built new use the tokens from the start. Sizes (icons, touch targets, avatars) and corner radii are not spacing.
+One scale for gaps and padding, read through the theme as `Afsh.spacing.<step>` (defined in `ui/AfshTheme.kt`, like `Afsh.colors`). The steps are the values the screens already use, so adopting them changes nothing visible. Existing literals migrate screen by screen, and `tests/check_spacing_tokens.py` lists the migrated screens and fails on a literal dp in their `padding`, `spacedBy` or `PaddingValues`; components built new use the tokens from the start. A geometry value off the scale inside a drawn miniature (such as the theme swatch) is a named size, not spacing. Sizes (icons, touch targets, avatars) and corner radii are not spacing.
 
 | Step | Value | Use |
 | --- | --- | --- |
