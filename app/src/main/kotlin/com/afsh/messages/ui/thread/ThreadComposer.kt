@@ -1,5 +1,6 @@
 package com.afsh.messages.ui.thread
 
+import com.afsh.messages.ui.Afsh
 import com.afsh.messages.ui.AfshCorners
 import com.afsh.messages.ui.components.AfshIcon
 import com.afsh.messages.ui.components.AfshSheet
@@ -72,7 +73,6 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -96,7 +96,7 @@ import com.afsh.messages.ui.components.DisabledComposerText
 import com.afsh.messages.extensions.isImageMimeType
 import com.afsh.messages.extensions.isVCardMimeType
 import com.afsh.messages.extensions.isVideoMimeType
-import com.afsh.messages.helpers.getIconResourceForMimeType
+import com.afsh.messages.helpers.attachmentIcon
 import com.afsh.messages.models.AttachmentSelection
 import com.afsh.messages.ui.components.SendButton
 import com.afsh.messages.ui.forContent
@@ -148,8 +148,8 @@ fun ThreadComposer(
             Modifier
                 .widthIn(max = 720.dp)
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+                .padding(horizontal = Afsh.spacing.lg, vertical = Afsh.spacing.md),
+            verticalArrangement = Arrangement.spacedBy(Afsh.spacing.sm),
         ) {
             // A sender that takes no replies gets only the notice, full width: no +, SIM or send.
             if (!composer.canReply) {
@@ -167,9 +167,9 @@ fun ThreadComposer(
             Row(verticalAlignment = Alignment.Bottom) {
                 val attachLabel = stringResource(R.string.attachment)
                 IconButton(onClick = { attaching = true }, modifier = Modifier.size(TargetSize, RowHeight)) {
-                    Icon(painterResource(org.fossify.commons.R.drawable.ic_plus_vector), contentDescription = attachLabel, tint = colors.primary)
+                    Icon(AfshIcon.Add.painter(), contentDescription = attachLabel, tint = colors.primary)
                 }
-                Spacer(Modifier.width(8.dp))
+                Spacer(Modifier.width(Afsh.spacing.sm))
                 // R6-42: collapses on the first character and the field grows into its place.
                 AnimatedVisibility(
                     visible = composer.sims.size > 1 && text.text.isEmpty(),
@@ -178,12 +178,12 @@ fun ThreadComposer(
                 ) {
                     val sim = composer.sims.getOrNull(composer.simIndex)
                     if (sim != null) {
-                        SimSwitcher(sim.slot, sim.label, expanded = false, onClick = { onEvent(ComposerEvent.NextSim) }, modifier = Modifier.padding(end = 8.dp))
+                        SimSwitcher(sim.slot, sim.label, expanded = false, onClick = { onEvent(ComposerEvent.NextSim) }, modifier = Modifier.padding(end = Afsh.spacing.sm))
                     }
                 }
                 EntryField(composer, firstName, text, sendOnEnter, onTextChange, onEvent, Modifier.weight(1f))
-                Spacer(Modifier.width(8.dp))
-                Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Spacer(Modifier.width(Afsh.spacing.sm))
+                Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Afsh.spacing.sm)) {
                     LengthPill(composer)
                     ComposerSendButton(composer, text.text, onEvent)
                 }
@@ -286,7 +286,7 @@ private fun ReplyDisabledField(onEvent: (ComposerEvent) -> Unit, modifier: Modif
         shape = shape,
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
     ) {
-        Box(Modifier.padding(horizontal = 16.dp, vertical = 15.dp), contentAlignment = Alignment.CenterStart) {
+        Box(Modifier.padding(horizontal = Afsh.spacing.lg, vertical = Afsh.spacing.md), contentAlignment = Alignment.CenterStart) {
             DisabledComposerText(stringResource(R.string.composer_cant_reply))
         }
     }
@@ -338,7 +338,7 @@ private fun LengthPill(composer: ComposerState) {
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
         contentColor = MaterialTheme.colorScheme.primary,
     ) {
-        Box(Modifier.padding(horizontal = 4.dp), contentAlignment = Alignment.Center) {
+        Box(Modifier.padding(horizontal = Afsh.spacing.xs), contentAlignment = Alignment.Center) {
             // Latin digits keep Latin order: RTL would turn "1 · 150" into "150 · 1".
             Text(text, style = MaterialTheme.typography.bodySmall.copy(textDirection = TextDirection.Ltr), fontWeight = FontWeight.Bold, maxLines = 1)
         }
@@ -397,10 +397,10 @@ internal fun SimSwitcher(slot: Int, carrier: String, expanded: Boolean, onClick:
             modifier = modifier.heightIn(min = TargetSize).then(semantics),
             shape = MaterialTheme.shapes.medium,
             colors = ButtonDefaults.filledTonalButtonColors(containerColor = colors.surfaceContainer, contentColor = colors.primary),
-            contentPadding = PaddingValues(horizontal = 16.dp),
+            contentPadding = PaddingValues(horizontal = Afsh.spacing.lg),
         ) {
             SimGlyph(slot)
-            Spacer(Modifier.width(8.dp))
+            Spacer(Modifier.width(Afsh.spacing.sm))
             Text(simName, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.ExtraBold, maxLines = 1)
         }
     } else {
@@ -422,15 +422,15 @@ private fun ScheduledChip(scheduledAt: String, onEvent: (ComposerEvent) -> Unit,
                 Modifier
                     .heightIn(min = TargetSize)
                     .clickable(onClickLabel = sendLater) { onEvent(ComposerEvent.Schedule) }
-                    .padding(start = 12.dp, end = 4.dp),
+                    .padding(start = Afsh.spacing.md, end = Afsh.spacing.xs),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.xs),
             ) {
-                Icon(painterResource(org.fossify.commons.R.drawable.ic_clock_vector), contentDescription = null, modifier = Modifier.size(16.dp))
+                Icon(AfshIcon.Schedule.painter(), contentDescription = null, modifier = Modifier.size(16.dp))
                 Text(scheduledAt, style = MaterialTheme.typography.labelMedium, maxLines = 1)
             }
             IconButton(onClick = { onEvent(ComposerEvent.CancelSchedule) }) {
-                Icon(painterResource(org.fossify.commons.R.drawable.ic_cross_vector), contentDescription = cancel, modifier = Modifier.size(18.dp))
+                Icon(AfshIcon.Close.painter(), contentDescription = cancel, modifier = Modifier.size(18.dp))
             }
         }
     }
@@ -441,7 +441,7 @@ private fun AttachmentTray(attachments: List<AttachmentSelection>, onEvent: (Com
     LazyRow(
         // Room for the remove targets that reach past the tiles' top end.
         contentPadding = PaddingValues(start = FieldInset, top = BadgeOverhang, end = BadgeOverhang),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.sm),
         modifier = Modifier.fillMaxWidth(),
     ) {
         items(attachments, key = { it.id }) { attachment ->
@@ -451,11 +451,11 @@ private fun AttachmentTray(attachments: List<AttachmentSelection>, onEvent: (Com
                     attachment.mimetype.isImageMimeType() || attachment.mimetype.isVideoMimeType() -> MediaTile(attachment, open)
                     attachment.mimetype.isVCardMimeType() -> {
                         val (name, subtitle) = rememberVCardSummary(attachment.uri)
-                        FileTile(org.fossify.commons.R.drawable.ic_person_vector, name, subtitle, open)
+                        FileTile(AfshIcon.Person, name, subtitle, open)
                     }
 
                     else -> FileTile(
-                        getIconResourceForMimeType(attachment.mimetype),
+                        attachmentIcon(attachment.mimetype),
                         attachment.filename.ifEmpty { attachment.mimetype },
                         rememberFileSize(attachment.uri),
                         open,
@@ -482,24 +482,24 @@ private fun MediaTile(attachment: AttachmentSelection, open: Modifier) {
                 bitmap != null -> Image(bitmap, contentDescription = attachment.filename.ifEmpty { null }, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
             }
             if (bitmap != null && attachment.mimetype.isVideoMimeType()) {
-                Icon(painterResource(org.fossify.commons.R.drawable.ic_play_outline_vector), contentDescription = null, tint = Color.Unspecified, modifier = Modifier.size(32.dp))
+                Icon(AfshIcon.Play.painter(), contentDescription = null, tint = Color.Unspecified, modifier = Modifier.size(32.dp))
             }
         }
     }
 }
 
 @Composable
-private fun FileTile(icon: Int, title: String, subtitle: String, open: Modifier) {
+private fun FileTile(icon: AfshIcon, title: String, subtitle: String, open: Modifier) {
     val colors = MaterialTheme.colorScheme
     val shape = MaterialTheme.shapes.small
     Surface(Modifier.width(160.dp).heightIn(min = TileSize).clip(shape).then(open), shape = shape, color = colors.surface) {
         Row(
             // Room at the end for the remove badge.
-            Modifier.padding(start = 12.dp, end = 24.dp, top = 8.dp, bottom = 8.dp),
+            Modifier.padding(start = Afsh.spacing.md, end = Afsh.spacing.xxl, top = Afsh.spacing.sm, bottom = Afsh.spacing.sm),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.sm),
         ) {
-            Icon(painterResource(icon), contentDescription = null, tint = colors.primary, modifier = Modifier.size(22.dp))
+            Icon(icon.painter(), contentDescription = null, tint = colors.primary, modifier = Modifier.size(22.dp))
             Column {
                 Text(title, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = colors.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 if (subtitle.isNotEmpty()) Text(subtitle, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant, maxLines = 1)
@@ -516,7 +516,7 @@ private fun RemoveBadge(modifier: Modifier, onClick: () -> Unit) {
     IconButton(onClick = onClick, modifier = modifier.size(TargetSize)) {
         Surface(Modifier.size(22.dp), shape = CircleShape, color = colors.inverseSurface, contentColor = colors.inverseOnSurface) {
             Box(contentAlignment = Alignment.Center) {
-                Icon(painterResource(org.fossify.commons.R.drawable.ic_cross_vector), contentDescription = label, modifier = Modifier.size(14.dp))
+                Icon(AfshIcon.Close.painter(), contentDescription = label, modifier = Modifier.size(14.dp))
             }
         }
     }

@@ -10,7 +10,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.unit.dp
 import com.afsh.messages.ui.Afsh
 import com.afsh.messages.ui.ColorRole
 
@@ -45,7 +44,8 @@ fun BubbleTone.role(): ColorRole {
 }
 
 /** A bubble's inner padding, the same in the conversation, Spam and message details. */
-val BubblePadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)
+val BubblePadding: PaddingValues
+    @Composable get() = PaddingValues(horizontal = Afsh.spacing.lg, vertical = Afsh.spacing.md)
 
 /**
  * Component / incoming and outgoing message: a Material 3 [Surface] in the [tone]'s color role and
@@ -63,6 +63,6 @@ fun MessageBubble(
 ) {
     val role = tone.role()
     Surface(modifier, shape = shape, color = role.container, contentColor = role.content) {
-        Column(Modifier.padding(contentPadding), verticalArrangement = Arrangement.spacedBy(8.dp), content = content)
+        Column(Modifier.padding(contentPadding), verticalArrangement = Arrangement.spacedBy(Afsh.spacing.sm), content = content)
     }
 }

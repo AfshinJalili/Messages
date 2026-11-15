@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the Material Symbols (Outlined, weight 400, 24dp) vector drawables mapped from Lucide.
+"""Generate the Material Symbols (Outlined, weight 400, 24dp) vector drawables mapped from today's icons.
 
 Material Symbols (Apache 2.0, google/material-design-icons) is fetched here at development time only; the app stays
 offline and ships just the icons listed in SYMBOLS. Each becomes res/drawable/ic_msym_<name>.xml, filled with
@@ -30,7 +30,8 @@ SYMBOLS = {
     "gpp_bad": None, "star": None, "star_filled": "star_fill1", "text_fields": None, "delete": None,
     "warning": None, "title": None, "upload": None, "person": None, "person_add": None, "group": None,
     "volume_up": None, "close": None, "photo_camera": None, "video_library": None, "videocam": None, "mic": None,
-    "schedule_send": None, "arrow_downward": None, "arrow_outward": None,
+    "schedule_send": None, "arrow_downward": None, "arrow_outward": None, "play_circle": None, "audio_file": None,
+    "picture_as_pdf": None, "folder_zip": None,
 }
 
 # Direction-bearing glyphs flip under RTL, matching the Lucide icons they replace.
