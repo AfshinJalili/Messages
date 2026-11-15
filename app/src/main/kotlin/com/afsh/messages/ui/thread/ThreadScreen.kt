@@ -70,26 +70,17 @@ import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.material3.SnackbarHost
@@ -106,7 +97,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.withFrameNanos
@@ -114,16 +104,8 @@ import androidx.compose.ui.AbsoluteAlignment
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.key
-import androidx.compose.ui.input.key.onPreviewKeyEvent
-import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
@@ -133,7 +115,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
@@ -143,7 +124,6 @@ import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.text.style.TextOverflow
@@ -219,160 +199,6 @@ private val TargetSize = 48.dp
 const val THREAD_LIST_TAG = "thread_list"
 const val THREAD_JUMP_TAG = "thread_jump_to_latest"
 const val THREAD_STICKY_DATE_TAG = "thread_sticky_date"
-
-@Composable
-fun ThreadHeader(state: ThreadUiState, onEvent: (ThreadEvent) -> Unit, modifier: Modifier = Modifier) {
-    val header = state.header
-    val compact = LocalConfiguration.current.screenHeightDp < 480
-    Surface(color = Afsh.colors.header.container, contentColor = Afsh.colors.header.content, modifier = modifier.fillMaxWidth()) {
-        Row(
-            Modifier
-                .windowInsetsPadding(WindowInsets.statusBars.union(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)))
-                .heightIn(min = if (compact) 56.dp else 72.dp)
-                .padding(horizontal = 8.dp, vertical = if (compact) 4.dp else 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            when {
-                state.selecting -> {
-                    LabeledIconButton(stringResource(org.fossify.commons.R.string.close), onClick = { onEvent(ThreadEvent.ClearSelection) }) {
-                        Icon(painterResource(org.fossify.commons.R.drawable.ic_cross_vector), contentDescription = null)
-                    }
-                    Identity(header, selectionTitle(state.selected.size), Modifier.weight(1f))
-                }
-
-                state.searching -> {
-                    LabeledIconButton(stringResource(org.fossify.commons.R.string.close), onClick = { onEvent(ThreadEvent.SearchClose) }) {
-                        Icon(painterResource(org.fossify.commons.R.drawable.ic_arrow_left_vector), contentDescription = null)
-                    }
-                    SearchField(onEvent, Modifier.weight(1f))
-                }
-
-                else -> {
-                    LabeledIconButton(stringResource(org.fossify.commons.R.string.back), onClick = { onEvent(ThreadEvent.Back) }) {
-                        Icon(painterResource(org.fossify.commons.R.drawable.ic_arrow_left_vector), contentDescription = null)
-                    }
-                    Row(
-                        Modifier
-                            .weight(1f)
-                            .clip(MaterialTheme.shapes.small)
-                            .clickable(enabled = ThreadMenuAction.DETAILS in header.actions) { onEvent(ThreadEvent.OpenDetails) }
-                            .padding(vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        Avatar(header.title, header.photoUri, header.isGroup, size = 44.dp)
-                        Identity(header, if (compact) "" else header.subtitle, Modifier.weight(1f))
-                    }
-                    if (header.canDial) {
-                        LabeledIconButton(stringResource(org.fossify.commons.R.string.dial_number), onClick = { onEvent(ThreadEvent.Dial) }) {
-                            Icon(painterResource(org.fossify.commons.R.drawable.ic_phone_vector), contentDescription = null)
-                        }
-                    }
-                    if (header.actions.isNotEmpty()) {
-                        OverflowMenu(header.actions, onEvent)
-                    }
-                }
-            }
-        }
-    }
-}
-
-/** The label sits on the 48 dp button, not the 24 dp icon, so accessibility tools see one labelled target. */
-@Composable
-private fun LabeledIconButton(label: String, onClick: () -> Unit, icon: @Composable () -> Unit) {
-    IconButton(onClick = onClick, modifier = Modifier.semantics { contentDescription = label }, content = icon)
-}
-
-@Composable
-private fun Identity(header: ThreadHeaderState, subtitle: String, modifier: Modifier = Modifier) {
-    Column(modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        Text(
-            header.title,
-            style = MaterialTheme.typography.titleLarge,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.semantics { heading() },
-        )
-        if (subtitle.isNotEmpty()) {
-            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = Afsh.colors.onBandVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        }
-    }
-}
-
-@Composable
-private fun OverflowMenu(actions: List<ThreadMenuAction>, onEvent: (ThreadEvent) -> Unit) {
-    var open by remember { mutableStateOf(false) }
-    Box {
-        LabeledIconButton(stringResource(org.fossify.commons.R.string.more_options), onClick = { open = true }) {
-            Icon(painterResource(org.fossify.commons.R.drawable.ic_three_dots_vector), contentDescription = null)
-        }
-        DropdownMenu(expanded = open, onDismissRequest = { open = false }, containerColor = MaterialTheme.colorScheme.surfaceContainer, shape = MaterialTheme.shapes.medium) {
-            actions.forEach { action ->
-                DropdownMenuItem(
-                    text = { Text(stringResource(action.label), style = MaterialTheme.typography.bodyMedium) },
-                    leadingIcon = { Icon(painterResource(action.icon), contentDescription = null) },
-                    colors = if (action == ThreadMenuAction.DELETE || action == ThreadMenuAction.BLOCK) {
-                        androidx.compose.material3.MenuDefaults.itemColors(
-                            textColor = MaterialTheme.colorScheme.error,
-                            leadingIconColor = MaterialTheme.colorScheme.error,
-                        )
-                    } else {
-                        androidx.compose.material3.MenuDefaults.itemColors()
-                    },
-                    onClick = {
-                        open = false
-                        onEvent(ThreadEvent.Menu(action))
-                    },
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun SearchField(onEvent: (ThreadEvent) -> Unit, modifier: Modifier = Modifier) {
-    val colors = MaterialTheme.colorScheme
-    var query by rememberSaveable { mutableStateOf("") }
-    val focus = remember { FocusRequester() }
-    LaunchedEffect(Unit) { focus.requestFocus() }
-    Surface(shape = MaterialTheme.shapes.medium, color = colors.surfaceContainer, modifier = modifier.height(TargetSize)) {
-        Row(Modifier.padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Icon(painterResource(org.fossify.commons.R.drawable.ic_search_vector), contentDescription = null, tint = colors.onSurfaceVariant)
-            Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
-                if (query.isEmpty()) {
-                    Text(stringResource(R.string.search_in_conversation), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, maxLines = 1)
-                }
-                BasicTextField(
-                    value = query,
-                    onValueChange = {
-                        query = it
-                        onEvent(ThreadEvent.SearchChanged)
-                    },
-                    singleLine = true,
-                    textStyle = MaterialTheme.typography.bodyMedium.copy(color = colors.onSurface),
-                    cursorBrush = SolidColor(colors.primary),
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                    keyboardActions = KeyboardActions(onSearch = { if (query.isNotBlank()) onEvent(ThreadEvent.SearchSubmit(query)) }),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .focusRequester(focus)
-                        // Hardware keyboards and some IMEs send Enter instead of the search action.
-                        .onPreviewKeyEvent {
-                            val enter = it.key == Key.Enter || it.key == Key.NumPadEnter
-                            if (enter && it.type == KeyEventType.KeyUp && query.isNotBlank()) onEvent(ThreadEvent.SearchSubmit(query))
-                            enter
-                        },
-                )
-            }
-            if (query.isNotEmpty()) {
-                LabeledIconButton(stringResource(R.string.thread_search_next), onClick = { onEvent(ThreadEvent.SearchSubmit(query)) }) {
-                    Icon(painterResource(org.fossify.commons.R.drawable.ic_chevron_up_vector), contentDescription = null, tint = colors.onSurface)
-                }
-            }
-        }
-    }
-}
 
 /**
  * The list is laid out newest-first from the bottom (reverseLayout), so it opens at the latest
@@ -1238,7 +1064,7 @@ private val previewState = ThreadUiState(
 private fun ThreadPreviewContent(state: ThreadUiState, dark: Boolean) {
     AfshTheme(dark = dark) {
         Column(Modifier.fillMaxSize()) {
-            ThreadHeader(state, {})
+            ThreadTopBar(state, {})
             ThreadTimeline(state, remember { SnackbarHostState() }, {}, Modifier.weight(1f))
         }
     }
