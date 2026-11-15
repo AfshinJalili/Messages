@@ -1,7 +1,6 @@
 package com.afsh.messages.ui.components
 
 import androidx.annotation.DrawableRes
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,6 +19,7 @@ import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -27,7 +27,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
@@ -157,14 +156,10 @@ fun AfshSheetItem(
         supportingContent = supporting?.let { { Text(it, style = MaterialTheme.typography.bodySmall) } },
         leadingContent = {
             if (tile) {
-                Box(
-                    Modifier
-                        .size(ItemIconTileSize)
-                        .clip(MaterialTheme.shapes.small)
-                        .background(colors.secondaryContainer),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(painterResource(icon), contentDescription = null, tint = iconTint, modifier = Modifier.size(ItemIconSize))
+                Surface(Modifier.size(ItemIconTileSize), shape = MaterialTheme.shapes.small, color = colors.secondaryContainer) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(painterResource(icon), contentDescription = null, tint = iconTint, modifier = Modifier.size(ItemIconSize))
+                    }
                 }
             } else {
                 Icon(painterResource(icon), contentDescription = null, tint = iconTint, modifier = Modifier.size(ItemIconSize))

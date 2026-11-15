@@ -75,12 +75,6 @@ private fun <T> exitSpec() = tween<T>(SELECTION_EXIT_MS, easing = FastOutLinearI
 val BarEnter: EnterTransition = expandVertically(enterSpec(), expandFrom = Alignment.Top) + fadeIn(enterSpec())
 val BarExit: ExitTransition = shrinkVertically(exitSpec(), shrinkTowards = Alignment.Top) + fadeOut(exitSpec())
 
-/** Shows a bottom bar with [BarEnter] and hides it with [BarExit]. */
-@Composable
-fun AnimatedBottomBar(visible: Boolean, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
-    AnimatedVisibility(visible, modifier, enter = BarEnter, exit = BarExit) { content() }
-}
-
 /** Swaps one bottom bar for another (navigation for selection): the new one rises while the old one sinks. */
 @Composable
 fun <T> BottomBarSwitch(bar: T, modifier: Modifier = Modifier, content: @Composable (T) -> Unit) {
