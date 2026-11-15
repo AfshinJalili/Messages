@@ -1,13 +1,12 @@
-package com.afsh.messages
+package com.afsh.messages.ui
 
 import androidx.compose.ui.unit.dp
-import com.afsh.messages.ui.AfshSpacing
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-class SpacingChecks {
+class AfshSpacingTest {
     @Test
-    fun scaleReproducesTheValuesScreensUseToday() {
+    fun `the scale runs from 2 to 32 dp`() {
         val s = AfshSpacing()
         assertEquals(
             listOf(2.dp, 4.dp, 8.dp, 12.dp, 16.dp, 20.dp, 24.dp, 32.dp),

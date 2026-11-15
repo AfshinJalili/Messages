@@ -25,7 +25,6 @@ import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import com.afsh.messages.models.Message
 import com.afsh.messages.ui.AfshTheme
 import com.afsh.messages.ui.thread.MessageAction
 import com.afsh.messages.ui.thread.ThreadEvent
@@ -52,8 +51,10 @@ class MessageActionChecks {
     val compose = createComposeRule()
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
 
-    private fun message(id: Long, body: String, scheduled: Boolean = false) =
-        Message(id, body, Telephony.Sms.MESSAGE_TYPE_SENT, 0, arrayListOf(), 1700000000, true, 987654321, false, null, "", "Fixture", "", -1, isScheduled = scheduled)
+    private fun message(id: Long, body: String, scheduled: Boolean = false) = fixtureMessage(
+        id, body, threadId = 987654321, date = 1_700_000_000, type = Telephony.Sms.MESSAGE_TYPE_SENT, status = 0,
+        address = "", senderName = "Fixture", scheduled = scheduled,
+    )
 
     private fun show(state: ThreadUiState, textScale: Float = 1f, onEvent: (ThreadEvent) -> Unit) = compose.setContent {
         AfshTheme(dark = false, textScale = textScale) {

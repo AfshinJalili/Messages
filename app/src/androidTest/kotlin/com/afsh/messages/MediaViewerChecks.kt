@@ -66,15 +66,10 @@ class MediaViewerChecks {
 
     @Test
     fun mediaViewerIsCaptured() {
-        var variant by mutableStateOf(DesignVariant.LIGHT)
         val media = items()
-        compose.setContent {
-            DesignVariantContent(variant) { AfshTheme(dark = true) { MediaViewerScreen(media, 0, {}) } }
-        }
-        listOf(DesignVariant.LIGHT, DesignVariant.PERSIAN).forEach {
-            variant = it
-            compose.waitForIdle()
-            Screenshots.capture("45-media" + it.suffix)
-        }
+        val capture = VariantCapture(compose)
+        // The viewer is always dark; light and Persian set only the language and direction.
+        capture.show { AfshTheme(dark = true) { MediaViewerScreen(media, 0, {}) } }
+        capture.capture("45-media", listOf(DesignVariant.LIGHT, DesignVariant.PERSIAN))
     }
 }

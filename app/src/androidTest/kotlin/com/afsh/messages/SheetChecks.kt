@@ -3,21 +3,16 @@ package com.afsh.messages
 import com.afsh.messages.ui.components.AfshIcon
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.semantics.SemanticsProperties
-import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isHeading
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.unit.LayoutDirection
-import com.afsh.messages.ui.AfshTheme
 import com.afsh.messages.ui.components.AfshSheet
 import com.afsh.messages.ui.components.AfshSheetItem
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -36,14 +31,12 @@ class SheetChecks {
     private var open by mutableStateOf(true)
 
     private fun show(rtl: Boolean = false, showTitle: Boolean = true) = compose.setContent {
-        AfshTheme(dark = false) {
-            CompositionLocalProvider(LocalLayoutDirection provides if (rtl) LayoutDirection.Rtl else LayoutDirection.Ltr) {
-                Box(Modifier.fillMaxSize()) {
-                    if (open) {
-                        AfshSheet(title = "Fixture sheet", onDismiss = { calls += "dismiss"; open = false }, showTitle = showTitle) {
-                            AfshSheetItem("First", AfshIcon.Person, onClick = { dismissThen { calls += "first" } }, supporting = "Supporting line", tile = true)
-                            AfshSheetItem("Remove", AfshIcon.Delete, onClick = { dismissThen { calls += "remove" } }, danger = true)
-                        }
+        TestTheme(rtl = rtl) {
+            Box(Modifier.fillMaxSize()) {
+                if (open) {
+                    AfshSheet(title = "Fixture sheet", onDismiss = { calls += "dismiss"; open = false }, showTitle = showTitle) {
+                        AfshSheetItem("First", AfshIcon.Person, onClick = { dismissThen { calls += "first" } }, supporting = "Supporting line", tile = true)
+                        AfshSheetItem("Remove", AfshIcon.Delete, onClick = { dismissThen { calls += "remove" } }, danger = true)
                     }
                 }
             }
@@ -53,7 +46,7 @@ class SheetChecks {
     @Test fun titleIsTheHeadingAndPaneTitle() {
         show()
         compose.onNode(isSheet("Fixture sheet")).assertExists()
-        compose.onNode(hasText("Fixture sheet") and SemanticsMatcher.keyIsDefined(SemanticsProperties.Heading)).assertIsDisplayed()
+        compose.onNode(hasText("Fixture sheet") and isHeading()).assertIsDisplayed()
         compose.onNode(sheetAction("First", "Fixture sheet")).assertIsDisplayed()
         compose.onNode(sheetAction("Remove", "Fixture sheet")).assertIsDisplayed()
     }

@@ -9,7 +9,6 @@ import com.afsh.messages.activities.MainActivity
 import com.afsh.messages.extensions.conversationsDB
 import com.afsh.messages.helpers.refreshConversations
 import com.afsh.messages.helpers.UndoDeletion
-import com.afsh.messages.models.Conversation
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.util.concurrent.CountDownLatch
@@ -25,40 +24,31 @@ class DeletionChecks {
         val context = instrumentation.targetContext
         val room = RoomOnlyThread(
             context,
-            Conversation(Long.MAX_VALUE - 123, "Fixture", 1, true, "Fixture", "", false, "5550100987654", isScheduled = true),
+            fixtureConversation(Long.MAX_VALUE - 123, "Fixture", snippet = "Fixture", phone = "5550100987654", scheduled = true),
         )
         val fixture = room.conversation
         fun MainActivity.shows() = inboxRows.any { it.threadId == fixture.threadId }
-        fun ActivityScenario<MainActivity>.await(message: String, timeoutMs: Long = 5000, condition: (MainActivity) -> Boolean) {
-            val deadline = SystemClock.elapsedRealtime() + timeoutMs
-            var met = false
-            while (!met && SystemClock.elapsedRealtime() < deadline) {
-                onActivity { met = condition(it) }
-                if (!met) SystemClock.sleep(50)
-            }
-            check(met) { message }
-        }
         room.insert()
         try {
             ActivityScenario.launch<MainActivity>(Intent(context, MainActivity::class.java)).use { scenario ->
                 // A cold start loads the owner's whole inbox first, which can take longer than the undo window.
-                scenario.await("Fixture reaches the inbox", timeoutMs = 20_000) { it.shows() }
+                scenario.awaitUntil("Fixture reaches the inbox", timeoutMs = 20_000) { it.shows() }
                 scenario.onActivity { it.deleteWithUndo(listOf(fixture)) }
-                scenario.onActivity { check(!it.shows()) { "Deleted conversation must disappear immediately" } }
+                check(!scenario.read { it.shows() }) { "Deleted conversation must disappear immediately" }
                 // Recreate first: the whole check has to fit inside the 5 s undo window.
                 scenario.recreate()
                 // Undo must survive recreation: the new activity re-shows it a frame after resume. The M3
                 // snackbar hides its action from the unmerged semantics tree, so press it through the host.
-                scenario.await("Undo is offered again after recreation") { it.snackbarHost.currentSnackbarData != null }
+                scenario.awaitUntil("Undo is offered again after recreation") { it.snackbarHost.currentSnackbarData != null }
                 refreshConversations()
                 instrumentation.waitForIdleSync()
-                scenario.onActivity { check(!it.shows()) { "Refresh resurrected a pending deletion" } }
+                check(!scenario.read { it.shows() }) { "Refresh resurrected a pending deletion" }
                 scenario.onActivity { activity ->
                     val undo = activity.snackbarHost.currentSnackbarData
                     check(undo?.visuals?.actionLabel == activity.getString(org.fossify.commons.R.string.undo))
                     undo?.performAction()
                 }
-                scenario.await("Undo restores the row") { fixture.threadId !in UndoDeletion.threads && it.shows() }
+                scenario.awaitUntil("Undo restores the row") { fixture.threadId !in UndoDeletion.threads && it.shows() }
                 Thread.sleep(5200)
                 check(context.conversationsDB.getConversationWithThreadId(fixture.threadId) != null) { "Undo must prevent the delete" }
             }
@@ -78,17 +68,11 @@ class DeletionChecks {
                     UndoDeletion.offer(activity, undo = { undone.incrementAndGet() }, commit = { committed.incrementAndGet() })
                 }
             }
-            val deadline = SystemClock.elapsedRealtime() + 3000
-            var shown = false
-            while (!shown && SystemClock.elapsedRealtime() < deadline) {
-                scenario.onActivity { shown = it.snackbarHost.currentSnackbarData != null }
-                if (!shown) SystemClock.sleep(50)
-            }
-            check(shown) { "Undo must be offered" }
+            scenario.awaitUntil("Undo must be offered", timeoutMs = 3000) { it.snackbarHost.currentSnackbarData != null }
             scenario.onActivity { it.snackbarHost.currentSnackbarData?.performAction() }
             instrumentation.waitForIdleSync()
             SystemClock.sleep(300)
-            scenario.onActivity { check(it.snackbarHost.currentSnackbarData == null) { "Undo must not reveal a queued second snackbar" } }
+            check(scenario.read { it.snackbarHost.currentSnackbarData } == null) { "Undo must not reveal a queued second snackbar" }
             check(undone.get() == 2) { "Undo must reverse both merged deletions, got ${undone.get()}" }
             Thread.sleep(5500)
             check(committed.get() == 0) { "Undo must cancel the pending commits" }

@@ -122,10 +122,10 @@ class NewMessageChecks {
         show { events += it }
         compose.onNodeWithText(text(R.string.start_a_group)).performClick()
         compose.onNodeWithText("Nadia").performClick()
-        val next = compose.onNodeWithText(compose.activity.resources.getQuantityString(R.plurals.continue_with_people, 1, 1))
+        val next = compose.onNodeWithText(compose.activity.quantity(R.plurals.continue_with_people, 1))
         next.assertIsNotEnabled()
         compose.onNodeWithText("Amir Shah").performClick()
-        compose.onNodeWithText(compose.activity.resources.getQuantityString(R.plurals.continue_with_people, 2, 2))
+        compose.onNodeWithText(compose.activity.quantity(R.plurals.continue_with_people, 2))
             .assertIsEnabled()
             .performClick()
         check(
@@ -135,26 +135,16 @@ class NewMessageChecks {
 
     @Test
     fun newMessagePagesAreCapturedInEveryVariant() {
-        var variant by mutableStateOf(DesignVariant.LIGHT)
-        compose.setContent { DesignVariantContent(variant) { NewMessageScreen(state, {}) } }
-        // Ends back in light English, so the next step can find its labels.
-        fun captureAll(name: String) {
-            DesignVariant.entries.forEach {
-                variant = it
-                compose.waitForIdle()
-                Screenshots.capture(name + it.suffix)
-            }
-            variant = DesignVariant.LIGHT
-            compose.waitForIdle()
-        }
-        captureAll("05-new-message")
+        val capture = VariantCapture(compose)
+        capture.show { NewMessageScreen(state, {}) }
+        capture.capture("05-new-message")
         compose.onNodeWithText(text(R.string.start_a_group)).performClick()
         compose.onNodeWithText("Nadia").performClick()
         compose.onNodeWithText("Amir Shah").performClick()
-        captureAll("16-new-group")
+        capture.capture("16-new-group")
         compose.activity.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() }
         search.performTextInput("+1 555 01#*")
         search.performImeAction()
-        captureAll("42-invalid-number")
+        capture.capture("42-invalid-number")
     }
 }

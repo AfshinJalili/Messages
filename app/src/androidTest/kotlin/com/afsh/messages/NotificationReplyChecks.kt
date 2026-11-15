@@ -1,8 +1,6 @@
 package com.afsh.messages
 
 import android.app.NotificationManager
-import android.content.Context
-import android.content.ContextWrapper
 import android.os.SystemClock
 import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -16,14 +14,11 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class NotificationReplyChecks {
+    /** The lock-screen setting is written to throwaway settings; the app's real one stays as it is. */
     @Test
-    fun senderOnlyNotificationHasQuickReply() {
-        val instrumentation = InstrumentationRegistry.getInstrumentation()
-        val target = instrumentation.targetContext
-        val context = object : ContextWrapper(target) {
-            override fun getSharedPreferences(name: String?, mode: Int) =
-                target.getSharedPreferences("notification-reply-check", mode)
-        }
+    fun senderOnlyNotificationHasQuickReply() = IsolatedPreferences("notification-reply-check").use { prefs ->
+        val target = InstrumentationRegistry.getInstrumentation().targetContext
+        val context = prefs.context
         context.config.lockScreenVisibilitySetting = LOCK_SCREEN_SENDER
         val threadId = Long.MAX_VALUE - 76543
         val manager = target.getSystemService(NotificationManager::class.java)
@@ -52,7 +47,6 @@ class NotificationReplyChecks {
                 ShortcutManagerCompat.removeDynamicShortcuts(target, listOf(threadId.toString()))
                 ShortcutManagerCompat.removeLongLivedShortcuts(target, listOf(threadId.toString()))
             }
-            target.deleteSharedPreferences("notification-reply-check")
         }
     }
 }

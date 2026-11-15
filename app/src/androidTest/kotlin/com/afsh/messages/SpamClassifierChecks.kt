@@ -1,9 +1,6 @@
 package com.afsh.messages
 
-import android.content.Context
-import android.content.ContextWrapper
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.platform.app.InstrumentationRegistry
 import com.afsh.messages.extensions.config
 import com.afsh.messages.helpers.BLOCK_REASON_KEYWORD
 import com.afsh.messages.helpers.BLOCK_REASON_NUMBER
@@ -23,19 +20,11 @@ import org.junit.runner.RunWith
 /** Runs against throwaway preferences; the app's real allowlist and keywords are untouched. */
 @RunWith(AndroidJUnit4::class)
 class SpamClassifierChecks {
-    private val targetContext: Context = InstrumentationRegistry.getInstrumentation().targetContext
-    private val prefsName = "spam-classifier-checks"
-    private val context = object : ContextWrapper(targetContext) {
-        override fun getApplicationContext(): Context = this
-        override fun getSharedPreferences(name: String?, mode: Int) = targetContext.getSharedPreferences(prefsName, mode)
-    }
+    private val prefs = IsolatedPreferences("spam-classifier-checks")
+    private val context = prefs.context
 
     @After
-    fun clear() {
-        // Config writes with apply(); commit first so a pending write cannot recreate the file.
-        targetContext.getSharedPreferences(prefsName, Context.MODE_PRIVATE).edit().clear().commit()
-        targetContext.deleteSharedPreferences(prefsName)
-    }
+    fun clear() = prefs.clear()
 
     private fun reason(address: String, body: String = "hello") = IncomingSpamClassifier.silenceReason(context, address, body)
 

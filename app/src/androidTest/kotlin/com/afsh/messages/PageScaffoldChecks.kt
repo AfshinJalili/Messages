@@ -6,9 +6,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Text
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasText
@@ -23,7 +21,6 @@ import androidx.compose.ui.test.swipeUp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.afsh.messages.ui.AfshTheme
 import com.afsh.messages.ui.components.BarAction
 import com.afsh.messages.ui.components.PageScaffold
 import com.afsh.messages.ui.components.PageSelection
@@ -49,20 +46,18 @@ class PageScaffoldChecks {
         onClear: () -> Unit = {},
         onSelectAll: () -> Unit = {},
     ) = compose.setContent {
-        CompositionLocalProvider(LocalLayoutDirection provides direction) {
-            AfshTheme(dark = false) {
-                PageScaffold(
-                    title = "Archive",
-                    subtitle = "Kept out of the inbox",
-                    onBack = onBack,
-                    selection = if (selected > 0) {
-                        PageSelection(selected, onClear = onClear, actions = listOf(BarAction("Unarchive", AfshIcon.Inbox) {}), onSelectAll = onSelectAll)
-                    } else {
-                        null
-                    },
-                ) {
-                    LazyColumn { items(60) { Text("Row $it", Modifier.fillMaxWidth().padding(16.dp)) } }
-                }
+        TestTheme(rtl = direction == LayoutDirection.Rtl) {
+            PageScaffold(
+                title = "Archive",
+                subtitle = "Kept out of the inbox",
+                onBack = onBack,
+                selection = if (selected > 0) {
+                    PageSelection(selected, onClear = onClear, actions = listOf(BarAction("Unarchive", AfshIcon.Inbox) {}), onSelectAll = onSelectAll)
+                } else {
+                    null
+                },
+            ) {
+                LazyColumn { items(60) { Text("Row $it", Modifier.fillMaxWidth().padding(16.dp)) } }
             }
         }
     }
@@ -82,7 +77,7 @@ class PageScaffoldChecks {
         var clears = 0
         var selectAlls = 0
         page(selected = 2, onClear = { clears++ }, onSelectAll = { selectAlls++ })
-        heading(resourcesPlural(R.plurals.inbox_selected, 2)).assertIsDisplayed()
+        heading(compose.activity.quantity(R.plurals.inbox_selected, 2)).assertIsDisplayed()
         check(compose.onAllNodes(hasText("Archive")).fetchSemanticsNodes().isEmpty()) { "The page title gives way to the count" }
         compose.onNodeWithContentDescription(selectAll).performClick()
         check(selectAlls == 1) { "Select all: $selectAlls" }
@@ -119,6 +114,4 @@ class PageScaffoldChecks {
         val title = heading("Archive").getUnclippedBoundsInRoot()
         check(up.left > title.right) { "In RTL Back sits right of the title: back=$up title=$title" }
     }
-
-    private fun resourcesPlural(id: Int, count: Int) = compose.activity.resources.getQuantityString(id, count, count)
 }
