@@ -56,6 +56,7 @@ import androidx.compose.ui.unit.dp
 import com.afsh.messages.R
 import com.afsh.messages.extensions.isVideoMimeType
 import com.afsh.messages.ui.Afsh
+import com.afsh.messages.ui.components.AfshIcon
 import com.afsh.messages.ui.forUserText
 import com.afsh.messages.ui.message.MessageFacts
 import com.afsh.messages.ui.rememberBitmap
@@ -144,7 +145,7 @@ fun MediaViewerScreen(items: List<MediaItem>, initial: Int, onEvent: (MediaEvent
         ) { page ->
             MediaPage(items[page], onZoomChange = { if (page == pager.currentPage) zoomed = it }, onPlay = { onEvent(MediaEvent.OpenElsewhere(items[page])) })
         }
-        Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Column(Modifier.fillMaxWidth().padding(horizontal = Afsh.spacing.xl, vertical = Afsh.spacing.lg), verticalArrangement = Arrangement.spacedBy(Afsh.spacing.xs)) {
             Text(current.sender, style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
             Text(current.time, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
             if (current.caption.isNotEmpty()) {
@@ -156,12 +157,12 @@ fun MediaViewerScreen(items: List<MediaItem>, initial: Int, onEvent: (MediaEvent
                 .fillMaxWidth()
                 .background(colors.surfaceContainer)
                 .windowInsetsPadding(WindowInsets.navigationBars)
-                .padding(horizontal = 20.dp, vertical = 8.dp),
+                .padding(horizontal = Afsh.spacing.xl, vertical = Afsh.spacing.sm),
             horizontalArrangement = Arrangement.SpaceAround,
         ) {
-            MediaAction(R.drawable.ic_lucide_download, stringResource(R.string.save)) { onEvent(MediaEvent.Save(current)) }
-            MediaAction(R.drawable.ic_lucide_share_2, stringResource(org.fossify.commons.R.string.share)) { onEvent(MediaEvent.Share(current)) }
-            MediaAction(R.drawable.ic_lucide_info, stringResource(R.string.media_details)) { onEvent(MediaEvent.Details(current)) }
+            MediaAction(AfshIcon.Download, stringResource(R.string.save)) { onEvent(MediaEvent.Save(current)) }
+            MediaAction(AfshIcon.Share, stringResource(org.fossify.commons.R.string.share)) { onEvent(MediaEvent.Share(current)) }
+            MediaAction(AfshIcon.Info, stringResource(R.string.media_details)) { onEvent(MediaEvent.Details(current)) }
         }
     }
 }
@@ -173,12 +174,12 @@ private fun TopControls(page: Int, count: Int, current: MediaItem, onEvent: (Med
     Row(
         Modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 8.dp),
+            .padding(horizontal = Afsh.spacing.sm, vertical = Afsh.spacing.sm),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         val close = stringResource(org.fossify.commons.R.string.close)
         IconButton(onClick = { onEvent(MediaEvent.Close) }, modifier = Modifier.semantics { contentDescription = close }) {
-            Icon(painterResource(R.drawable.ic_lucide_x), contentDescription = null, tint = colors.onSurface)
+            Icon(AfshIcon.Close.painter(), contentDescription = null, tint = colors.onSurface)
         }
         Text(
             stringResource(R.string.media_position, page + 1, count),
@@ -190,7 +191,7 @@ private fun TopControls(page: Int, count: Int, current: MediaItem, onEvent: (Med
         Box {
             val more = stringResource(org.fossify.commons.R.string.more_options)
             IconButton(onClick = { menu = true }, modifier = Modifier.semantics { contentDescription = more }) {
-                Icon(painterResource(R.drawable.ic_lucide_ellipsis_vertical), contentDescription = null, tint = colors.onSurface)
+                Icon(AfshIcon.More.painter(), contentDescription = null, tint = colors.onSurface)
             }
             DropdownMenu(expanded = menu, onDismissRequest = { menu = false }, containerColor = colors.surfaceContainer, shape = MaterialTheme.shapes.medium) {
                 DropdownMenuItem(
@@ -258,16 +259,16 @@ private fun MediaPage(item: MediaItem, onZoomChange: (Boolean) -> Unit, onPlay: 
 }
 
 @Composable
-private fun MediaAction(icon: Int, label: String, onClick: () -> Unit) {
+private fun MediaAction(icon: AfshIcon, label: String, onClick: () -> Unit) {
     Column(
         Modifier
             .widthIn(min = 90.dp)
             .clickable(role = Role.Button, onClick = onClick)
-            .padding(vertical = 8.dp),
+            .padding(vertical = Afsh.spacing.sm),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+        verticalArrangement = Arrangement.spacedBy(Afsh.spacing.xs),
     ) {
-        Icon(painterResource(icon), contentDescription = null, tint = Afsh.colors.accent, modifier = Modifier.size(ActionIconSize))
+        Icon(icon.painter(), contentDescription = null, tint = Afsh.colors.accent, modifier = Modifier.size(ActionIconSize))
         Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurface)
     }
 }

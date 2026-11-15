@@ -29,12 +29,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.afsh.messages.ui.Afsh
+import com.afsh.messages.ui.components.AfshIcon
 import org.fossify.commons.helpers.DATE_FORMAT_EIGHT
 import org.fossify.commons.helpers.DATE_FORMAT_FIVE
 import org.fossify.commons.helpers.DATE_FORMAT_FOUR
@@ -58,7 +59,6 @@ import com.afsh.messages.helpers.FILE_SIZE_NONE
 import com.afsh.messages.helpers.LOCK_SCREEN_NOTHING
 import com.afsh.messages.helpers.LOCK_SCREEN_SENDER
 import com.afsh.messages.helpers.LOCK_SCREEN_SENDER_MESSAGE
-import com.afsh.messages.ui.Afsh
 import com.afsh.messages.ui.components.Choice
 import com.afsh.messages.ui.components.ChoiceDialog
 import com.afsh.messages.ui.components.ConfirmationDialog
@@ -73,6 +73,9 @@ private val PreviewLineWidth = 62.dp
 private val PreviewLineHeight = 8.dp
 private val SwatchHeight = 28.dp
 private val LockPreviewIconSize = 20.dp
+
+/** Inset of the miniature page drawn inside a theme swatch; swatch geometry, not page spacing. */
+private val PreviewPageInset = 6.dp
 
 private val dateFormats = listOf(
     DATE_FORMAT_ONE, DATE_FORMAT_TWO, DATE_FORMAT_THREE, DATE_FORMAT_FOUR,
@@ -95,7 +98,7 @@ internal fun AppearancePage(state: SettingsUiState, onEvent: (SettingsEvent) -> 
         Modifier
             .fillMaxWidth()
             .selectableGroup(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.sm),
     ) {
         ThemeChoice.entries.forEach { theme ->
             ThemeCard(theme, selected = theme == state.theme, onClick = { onEvent(SettingsEvent.SetTheme(theme)) }, Modifier.weight(1f))
@@ -192,8 +195,8 @@ private fun ThemeCard(theme: ThemeChoice, selected: Boolean, onClick: () -> Unit
             .clip(MaterialTheme.shapes.medium)
             .background(if (selected) colors.secondaryContainer else colors.surface)
             .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
-            .padding(12.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+            .padding(Afsh.spacing.md),
+        verticalArrangement = Arrangement.spacedBy(Afsh.spacing.sm),
     ) {
         Text(
             stringResource(theme.label),
@@ -202,7 +205,7 @@ private fun ThemeCard(theme: ThemeChoice, selected: Boolean, onClick: () -> Unit
         )
         ThemeSwatch(theme)
         if (selected) {
-            Icon(painterResource(R.drawable.ic_lucide_check), contentDescription = null, tint = colors.primary)
+            Icon(AfshIcon.Check.painter(), contentDescription = null, tint = colors.primary)
         }
     }
 }
@@ -221,7 +224,7 @@ private fun ThemeSwatch(theme: ThemeChoice) {
             modifier
                 .fillMaxHeight()
                 .background(preview.container)
-                .padding(horizontal = 6.dp),
+                .padding(horizontal = PreviewPageInset),
             contentAlignment = Alignment.CenterStart,
         ) {
             Box(
@@ -392,20 +395,20 @@ private fun LockScreenPreview(visibility: Int) {
     Row(
         Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp)
+            .padding(vertical = Afsh.spacing.xs)
             .clip(MaterialTheme.shapes.medium)
             .background(colors.surfaceContainer)
-            .padding(16.dp),
+            .padding(Afsh.spacing.lg),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.md),
     ) {
         Icon(
-            painterResource(R.drawable.ic_lucide_message_circle),
+            AfshIcon.Chat.painter(),
             contentDescription = null,
             tint = colors.primary,
             modifier = Modifier.size(LockPreviewIconSize),
         )
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(Afsh.spacing.xs)) {
             Text(sender, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold), color = colors.onSurface)
             Text(body, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
         }
@@ -452,7 +455,7 @@ internal fun PrivacyPage(state: SettingsUiState, onEvent: (SettingsEvent) -> Uni
     InfoPanel(
         title = stringResource(R.string.no_account_required),
         body = stringResource(R.string.no_account_required_text),
-        modifier = Modifier.padding(top = 12.dp),
+        modifier = Modifier.padding(top = Afsh.spacing.md),
         prominent = true,
     )
     when (picker) {

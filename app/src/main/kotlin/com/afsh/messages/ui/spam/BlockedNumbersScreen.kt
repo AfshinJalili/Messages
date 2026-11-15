@@ -24,6 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.afsh.messages.R
+import com.afsh.messages.ui.Afsh
 import com.afsh.messages.ui.components.EmptyState
 import com.afsh.messages.ui.components.AfshButton
 import com.afsh.messages.ui.components.PageContentPadding
@@ -63,7 +64,7 @@ fun BlockedNumbersScreen(
         onBack = onBack,
         navigation = navigation,
     ) {
-        LazyColumn(contentPadding = PageContentPadding, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        LazyColumn(contentPadding = PageContentPadding, verticalArrangement = Arrangement.spacedBy(Afsh.spacing.md)) {
             when {
                 state.loading -> item(key = "loading") { LinearProgressIndicator(Modifier.fillMaxWidth()) }
                 state.senders.isEmpty() -> item(key = "empty") {
@@ -75,7 +76,7 @@ fun BlockedNumbersScreen(
                 }
 
                 else -> items(state.senders, key = { it.key }) { sender ->
-                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(Afsh.spacing.md)) {
                         SenderRow(sender, onUnblock = { onUnblock(sender) })
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                     }
