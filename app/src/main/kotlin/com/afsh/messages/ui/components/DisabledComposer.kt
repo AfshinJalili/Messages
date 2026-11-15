@@ -13,11 +13,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.afsh.messages.R
+import com.afsh.messages.ui.Afsh
 
 private val IconSize = 24.dp
 private val TargetSize = 48.dp
@@ -34,20 +34,20 @@ fun DisabledComposer(reason: String, modifier: Modifier = Modifier) {
     Surface(modifier.fillMaxWidth(), color = colors.surfaceContainer, contentColor = colors.onSurfaceVariant) {
         Row(
             Modifier
-                .padding(horizontal = 16.dp, vertical = 12.dp)
+                .padding(horizontal = Afsh.spacing.lg, vertical = Afsh.spacing.md)
                 .semantics(mergeDescendants = true) {},
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.sm),
         ) {
             Box(Modifier.size(TargetSize), contentAlignment = Alignment.Center) {
-                Icon(painterResource(R.drawable.ic_lucide_plus), contentDescription = null, modifier = Modifier.size(IconSize))
+                Icon(AfshIcon.Add.painter(), contentDescription = null, modifier = Modifier.size(IconSize))
             }
             Surface(Modifier.weight(1f), shape = MaterialTheme.shapes.medium, color = colors.surface) {
-                DisabledComposerText(reason, Modifier.padding(12.dp))
+                DisabledComposerText(reason, Modifier.padding(Afsh.spacing.md))
             }
             Surface(Modifier.size(SendSlabWidth, TargetSize), shape = MaterialTheme.shapes.medium, color = colors.surfaceContainerHigh, contentColor = colors.onSurfaceVariant) {
                 Box(contentAlignment = Alignment.Center) {
-                    Icon(painterResource(R.drawable.ic_lucide_send), contentDescription = null, modifier = Modifier.size(IconSize))
+                    Icon(AfshIcon.Send.painter(), contentDescription = null, modifier = Modifier.size(IconSize))
                 }
             }
         }

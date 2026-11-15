@@ -14,8 +14,9 @@ enum class IconSet { Lucide, MaterialSymbols }
 val LocalIconSet = staticCompositionLocalOf { IconSet.Lucide }
 
 /**
- * Every interface icon by meaning, with its Lucide drawable and the Material Symbols (Outlined, 400) one that replaces
- * it. Call sites ask for a meaning, never a raw vector. Arrows and chevrons mirror under RTL in both sets.
+ * Every interface icon by meaning, with the drawable the app draws today (Lucide, or for a few file and media glyphs the
+ * older Material vector) and the Material Symbols (Outlined, 400) one that replaces it. Call sites ask for a meaning,
+ * never a raw vector. Arrows and chevrons mirror under RTL in both sets.
  * `tests/check_material_symbols.py` keeps the two sets paired; `tools/export_material_symbols.py` writes the symbols.
  */
 enum class AfshIcon(@DrawableRes private val lucide: Int, @DrawableRes private val symbol: Int) {
@@ -84,7 +85,11 @@ enum class AfshIcon(@DrawableRes private val lucide: Int, @DrawableRes private v
     PersonAdd(R.drawable.ic_lucide_user_plus, R.drawable.ic_msym_person_add),
     People(R.drawable.ic_lucide_users, R.drawable.ic_msym_group),
     Volume(R.drawable.ic_lucide_volume_2, R.drawable.ic_msym_volume_up),
-    Close(R.drawable.ic_lucide_x, R.drawable.ic_msym_close);
+    Close(R.drawable.ic_lucide_x, R.drawable.ic_msym_close),
+    Play(org.fossify.commons.R.drawable.ic_play_outline_vector, R.drawable.ic_msym_play_circle),
+    AudioFile(R.drawable.ic_vector_audio_file, R.drawable.ic_msym_audio_file),
+    Pdf(R.drawable.ic_vector_pdf, R.drawable.ic_msym_picture_as_pdf),
+    ZipFile(R.drawable.ic_vector_folder_zip, R.drawable.ic_msym_folder_zip);
 
     @DrawableRes
     fun resource(set: IconSet): Int = if (set == IconSet.Lucide) lucide else symbol

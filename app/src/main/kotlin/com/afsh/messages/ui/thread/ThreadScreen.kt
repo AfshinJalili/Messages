@@ -1,5 +1,6 @@
 package com.afsh.messages.ui.thread
 
+import com.afsh.messages.ui.components.AfshIcon
 import com.afsh.messages.ui.components.FloatingButton
 import com.afsh.messages.ui.components.UnreadDivider
 import com.afsh.messages.ui.components.AfshSheet
@@ -108,7 +109,6 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -162,7 +162,7 @@ import com.afsh.messages.helpers.THREAD_DATE_TIME
 import com.afsh.messages.helpers.THREAD_UNREAD_SEPARATOR
 import com.afsh.messages.helpers.ThreadDates
 import com.afsh.messages.helpers.generateStableId
-import com.afsh.messages.helpers.getIconResourceForMimeType
+import com.afsh.messages.helpers.attachmentIcon
 import com.afsh.messages.helpers.parseNameFromVCard
 import com.afsh.messages.helpers.parseVCardFromUri
 import com.afsh.messages.ui.components.upcomingDayAndTime
@@ -191,7 +191,6 @@ private const val STICKY_DATE_FADE_MS = 180
 // leave together, in about the 250-300 ms the app's other panels and screens take. It was 400, which trailed the sheet.
 private const val LIFT_STIFFNESS = 700f
 private val LiftSpring = spring<Float>(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = LIFT_STIFFNESS, visibilityThreshold = 0.001f)
-private val LiftGap = 12.dp
 private val LiftElevation = 6.dp
 private val LiftFade = 32.dp
 private val TargetSize = 48.dp
@@ -234,7 +233,7 @@ fun ThreadTimeline(
             LazyColumn(
                 state = listState,
                 reverseLayout = true,
-                contentPadding = PaddingValues(vertical = 12.dp),
+                contentPadding = PaddingValues(vertical = Afsh.spacing.md),
                 modifier = Modifier
                     .widthIn(max = 720.dp)
                     .fillMaxSize()
@@ -247,7 +246,7 @@ fun ThreadTimeline(
                     val newer = newestFirst.getOrNull(index - 1)
                     when (item) {
                         is Message -> MessageRow(item, older, newer, state, onEvent, lifted?.message?.getStableId(), openSheet)
-                        is ThreadItem.ThreadDateTime -> DatePill(item.date, Modifier.padding(vertical = 12.dp))
+                        is ThreadItem.ThreadDateTime -> DatePill(item.date, Modifier.padding(vertical = Afsh.spacing.md))
                         is ThreadItem.ThreadUnreadSeparator -> UnreadDivider()
                         else -> Unit
                     }
@@ -284,6 +283,7 @@ private fun LiftOverlay(lift: LiftedBubble, up: Boolean, sheetTop: Float, state:
         if (!up) onGone()
     }
     val density = LocalDensity.current
+    val liftGap = Afsh.spacing.md
     val scrim = Afsh.colors.liftScrim
     var origin by remember { mutableStateOf<Offset?>(null) }
     Box(
@@ -298,7 +298,7 @@ private fun LiftOverlay(lift: LiftedBubble, up: Boolean, sheetTop: Float, state:
         val at = origin ?: return@Box
         val slot = lift.bounds.top - at.y
         val full = lift.bounds.height
-        val gap = with(density) { LiftGap.toPx() }
+        val gap = with(density) { liftGap.toPx() }
         // sheetTop is where the sheet comes to rest, not its moving edge. Until it is known, the bubble stays in its slot.
         val free = if (sheetTop.isNaN()) slot + full else sheetTop - at.y - gap
         val shown = minOf(full, free.coerceAtLeast(0f))
@@ -368,8 +368,8 @@ private fun MessageSheet(message: Message, state: ThreadUiState, onRestingTop: (
             onRestingTop(window.positionOnScreen().y + window.size.height - it.size.height)
         },
     ) {
-        Text(info, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant, modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp))
-        HorizontalDivider(Modifier.padding(horizontal = 20.dp), color = colors.outlineVariant)
+        Text(info, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant, modifier = Modifier.padding(horizontal = Afsh.spacing.xxl, vertical = Afsh.spacing.md))
+        HorizontalDivider(Modifier.padding(horizontal = Afsh.spacing.xl), color = colors.outlineVariant)
         tapActions(message, state).forEach { action ->
             AfshSheetItem(
                 label = stringResource(action.label),
@@ -388,11 +388,11 @@ private fun EmptyConversation(firstName: String) {
     Column(
         Modifier
             .semantics(mergeDescendants = true) {}
-            .padding(32.dp),
+            .padding(Afsh.spacing.xxxl),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(Afsh.spacing.sm),
     ) {
-        Icon(painterResource(R.drawable.ic_message_circle_vector), contentDescription = null, tint = colors.primary, modifier = Modifier.size(32.dp))
+        Icon(AfshIcon.Chat.painter(), contentDescription = null, tint = colors.primary, modifier = Modifier.size(32.dp))
         Text(stringResource(R.string.thread_empty_title), style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
         if (firstName.isNotEmpty()) {
             Text(stringResource(R.string.thread_empty_text, firstName), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
@@ -525,15 +525,15 @@ private fun MessageRow(
     val groupedAbove = groupedWith(message, older)
     val topGap = when {
         older is ThreadItem.ThreadDateTime -> 0.dp
-        groupedAbove -> 4.dp
-        else -> 12.dp
+        groupedAbove -> Afsh.spacing.xs
+        else -> Afsh.spacing.md
     }
     SelectableBubbleRow(
         selecting = state.selecting,
         checked = message.getStableId() in state.selected,
         incoming = incoming,
         onToggle = { onEvent(ThreadEvent.ToggleSelection(message)) },
-        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = topGap),
+        modifier = Modifier.padding(start = Afsh.spacing.lg, end = Afsh.spacing.lg, top = topGap),
         above = if (incoming && state.isGroup && !groupedAbove && message.senderName.isNotEmpty()) {
             { shift ->
                 Text(
@@ -542,7 +542,7 @@ private fun MessageRow(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = shift.padding(start = 4.dp, bottom = 4.dp),
+                    modifier = shift.padding(start = Afsh.spacing.xs, bottom = Afsh.spacing.xs),
                 )
             }
         } else {
@@ -618,7 +618,7 @@ private fun Bubble(
             }
             if (failed) {
                 // R6-46: Retry sends on the SIM shown; the switcher beside it only changes that SIM.
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Row(horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.sm), verticalAlignment = Alignment.CenterVertically) {
                     Button(
                         onClick = { onEvent(ThreadEvent.Retry(message)) },
                         colors = ButtonDefaults.buttonColors(containerColor = colors.surfaceContainerLowest, contentColor = colors.primary),
@@ -721,14 +721,14 @@ private fun Metadata(message: Message, state: ThreadUiState, content: Color, mod
         modifier.semantics(mergeDescendants = true) { contentDescription = description },
         // Top, so the warning stays beside the first line when the failure line wraps.
         verticalAlignment = if (failed) Alignment.Top else Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.xs),
     ) {
-        if (starred) Icon(painterResource(org.fossify.commons.R.drawable.ic_star_vector), null, tint = metaColor, modifier = Modifier.size(14.dp))
+        if (starred) Icon(AfshIcon.StarFilled.painter(), null, tint = metaColor, modifier = Modifier.size(14.dp))
         when {
             message.isScheduled ->
-                Icon(painterResource(org.fossify.commons.R.drawable.ic_clock_vector), null, tint = metaColor, modifier = Modifier.size(14.dp))
+                Icon(AfshIcon.Schedule.painter(), null, tint = metaColor, modifier = Modifier.size(14.dp))
 
-            failed -> Icon(painterResource(R.drawable.ic_alert_triangle_vector), null, tint = colors.error, modifier = Modifier.size(16.dp))
+            failed -> Icon(AfshIcon.Warning.painter(), null, tint = colors.error, modifier = Modifier.size(16.dp))
         }
         if (parts.isNotEmpty()) {
             Text(
@@ -740,10 +740,10 @@ private fun Metadata(message: Message, state: ThreadUiState, content: Color, mod
             )
         }
         if (sending) {
-            Icon(painterResource(org.fossify.commons.R.drawable.ic_clock_vector), null, tint = metaColor, modifier = Modifier.size(14.dp))
+            Icon(AfshIcon.Schedule.painter(), null, tint = metaColor, modifier = Modifier.size(14.dp))
         } else if (sent) {
-            val icon = if (delivered) R.drawable.ic_check_double_vector else org.fossify.commons.R.drawable.ic_check_vector
-            Icon(painterResource(icon), null, tint = metaColor, modifier = Modifier.size(16.dp))
+            val icon = if (delivered) AfshIcon.CheckAll else AfshIcon.Check
+            Icon(icon.painter(), null, tint = metaColor, modifier = Modifier.size(16.dp))
         }
     }
 }
@@ -786,7 +786,7 @@ private fun ImageAttachment(attachment: Attachment, clickable: Modifier) {
                 }
                 if (attachment.mimetype.isVideoMimeType()) {
                     Icon(
-                        painterResource(org.fossify.commons.R.drawable.ic_play_outline_vector),
+                        AfshIcon.Play.painter(),
                         contentDescription = null,
                         tint = Color.Unspecified,
                         modifier = Modifier.size(56.dp),
@@ -828,17 +828,17 @@ internal fun rememberFileSize(uri: Uri): String {
 @Composable
 private fun VCardAttachment(attachment: Attachment, clickable: Modifier) {
     val (name, subtitle) = rememberVCardSummary(attachment.getUri())
-    AttachmentTile(org.fossify.commons.R.drawable.ic_person_vector, name, subtitle, clickable)
+    AttachmentTile(AfshIcon.Person, name, subtitle, clickable)
 }
 
 @Composable
 private fun FileAttachment(attachment: Attachment, clickable: Modifier) {
     val size = rememberFileSize(attachment.getUri())
-    AttachmentTile(getIconResourceForMimeType(attachment.mimetype), attachment.filename.ifEmpty { attachment.mimetype }, size, clickable)
+    AttachmentTile(attachmentIcon(attachment.mimetype), attachment.filename.ifEmpty { attachment.mimetype }, size, clickable)
 }
 
 @Composable
-private fun AttachmentTile(icon: Int, title: String, subtitle: String, clickable: Modifier) {
+private fun AttachmentTile(icon: AfshIcon, title: String, subtitle: String, clickable: Modifier) {
     val colors = MaterialTheme.colorScheme
     Surface(
         Modifier
@@ -850,13 +850,13 @@ private fun AttachmentTile(icon: Int, title: String, subtitle: String, clickable
         color = colors.surfaceContainerHigh,
     ) {
         Row(
-            Modifier.padding(8.dp),
+            Modifier.padding(Afsh.spacing.sm),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.md),
         ) {
             Surface(Modifier.size(40.dp), shape = CircleShape, color = Afsh.colors.badge.container, contentColor = Afsh.colors.badge.content) {
                 Box(contentAlignment = Alignment.Center) {
-                    Icon(painterResource(icon), contentDescription = null, modifier = Modifier.size(22.dp))
+                    Icon(icon.painter(), contentDescription = null, modifier = Modifier.size(22.dp))
                 }
             }
             Column(Modifier.weight(1f)) {
@@ -882,7 +882,7 @@ private fun DatePill(seconds: Int, modifier: Modifier = Modifier) {
 @Composable
 private fun StickyDate(newestFirst: List<ThreadItem>, listState: LazyListState, modifier: Modifier = Modifier) {
     var pillHeight by remember { mutableIntStateOf(0) }
-    val margin = with(LocalDensity.current) { 8.dp.roundToPx() }
+    val margin = with(LocalDensity.current) { Afsh.spacing.sm.roundToPx() }
     val sticky by remember(newestFirst) {
         derivedStateOf {
             val info = listState.layoutInfo
@@ -921,7 +921,7 @@ private fun StickyDate(newestFirst: List<ThreadItem>, listState: LazyListState, 
         DatePill(
             remember(date) { ThreadDates.label(date) },
             Modifier
-                .padding(top = 8.dp)
+                .padding(top = Afsh.spacing.sm)
                 .onSizeChanged { pillHeight = it.height }
                 .graphicsLayer { translationY = push.toFloat() }
                 .testTag(THREAD_STICKY_DATE_TAG),
@@ -944,7 +944,7 @@ private fun JumpToLatest(state: ThreadUiState, newestFirst: List<ThreadItem>, li
     } else {
         stringResource(R.string.scroll_to_latest_message)
     }
-    AnimatedVisibility(show && !state.selecting, modifier.padding(16.dp), enter = fadeIn(), exit = fadeOut()) {
+    AnimatedVisibility(show && !state.selecting, modifier.padding(Afsh.spacing.lg), enter = fadeIn(), exit = fadeOut()) {
         FloatingButton(
             R.drawable.ic_arrow_down_vector,
             description = description,

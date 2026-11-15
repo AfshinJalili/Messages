@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.afsh.messages.R
+import com.afsh.messages.ui.Afsh
 import com.afsh.messages.ui.ltr
 import com.afsh.messages.ui.components.EmptyState
 import com.afsh.messages.ui.components.IdentityCard
@@ -66,8 +67,8 @@ fun ContactCardScreen(
             else -> Column(
                 Modifier
                     .verticalScroll(rememberScrollState())
-                    .padding(start = 20.dp, top = 20.dp, end = 20.dp, bottom = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                    .padding(start = Afsh.spacing.xl, top = Afsh.spacing.xl, end = Afsh.spacing.xl, bottom = Afsh.spacing.xxl),
+                verticalArrangement = Arrangement.spacedBy(Afsh.spacing.md),
             ) {
                 cards.forEach { card ->
                     IdentityCard(

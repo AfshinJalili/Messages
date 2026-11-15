@@ -50,7 +50,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -62,8 +61,10 @@ import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.dp
 import org.fossify.commons.extensions.normalizeString
 import com.afsh.messages.R
+import com.afsh.messages.ui.Afsh
 import com.afsh.messages.ui.Avatar
 import com.afsh.messages.ui.ltr
+import com.afsh.messages.ui.components.AfshIcon
 import com.afsh.messages.ui.components.AttentionNotice
 import com.afsh.messages.ui.components.Choice
 import com.afsh.messages.ui.components.DisabledComposer
@@ -205,14 +206,14 @@ private fun PickPage(
         bottomBar = { WaitingComposer() },
         modifier = modifier,
     ) {
-        LazyColumn(contentPadding = PaddingValues(start = 20.dp, top = 20.dp, end = 20.dp, bottom = 24.dp)) {
+        LazyColumn(contentPadding = PaddingValues(start = Afsh.spacing.xl, top = Afsh.spacing.xl, end = Afsh.spacing.xl, bottom = Afsh.spacing.xxl)) {
             item(key = "search") {
                 SearchField(
                     query = query,
                     onQuery = onQuery,
                     hint = stringResource(R.string.name_or_phone_number),
                     modifier = Modifier
-                        .padding(bottom = 4.dp)
+                        .padding(bottom = Afsh.spacing.xs)
                         .focusRequester(focus),
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
                     keyboardActions = KeyboardActions(onGo = { onSubmitTyped() }),
@@ -254,7 +255,7 @@ private fun GroupPage(
                 Modifier
                     .background(colors.surface)
                     .windowInsetsPadding(WindowInsets.navigationBars.union(WindowInsets.ime))
-                    .padding(horizontal = 20.dp, vertical = 12.dp),
+                    .padding(horizontal = Afsh.spacing.xl, vertical = Afsh.spacing.md),
             ) {
                 AfshButton(
                     pluralStringResource(R.plurals.continue_with_people, chosen.size, chosen.size),
@@ -297,15 +298,15 @@ fun PeoplePicker(
     canRemove: (Recipient) -> Boolean = { true },
     onAllowContacts: () -> Unit = {},
     fieldModifier: Modifier = Modifier,
-    contentPadding: PaddingValues = PaddingValues(start = 20.dp, top = 20.dp, end = 20.dp, bottom = 24.dp),
+    contentPadding: PaddingValues = PaddingValues(start = Afsh.spacing.xl, top = Afsh.spacing.xl, end = Afsh.spacing.xl, bottom = Afsh.spacing.xxl),
 ) {
     LazyColumn(modifier, contentPadding = contentPadding) {
         if (chosen.isNotEmpty()) {
             item(key = "chosen") {
                 FlowRow(
-                    Modifier.padding(bottom = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    Modifier.padding(bottom = Afsh.spacing.md),
+                    horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.sm),
+                    verticalArrangement = Arrangement.spacedBy(Afsh.spacing.sm),
                 ) {
                     chosen.forEach { recipient -> ChosenChip(recipient, if (canRemove(recipient)) ({ onRemove(recipient) }) else null) }
                 }
@@ -316,7 +317,7 @@ fun PeoplePicker(
                 query = query,
                 onQuery = onQuery,
                 hint = stringResource(R.string.add_someone_else),
-                modifier = fieldModifier.padding(bottom = 4.dp),
+                modifier = fieldModifier.padding(bottom = Afsh.spacing.xs),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 keyboardActions = KeyboardActions(onDone = { onSubmitTyped() }),
             )
@@ -343,8 +344,8 @@ private fun InvalidNumberPage(number: String, onNumber: (String) -> Unit, onEdit
         Column(
             Modifier
                 .verticalScroll(rememberScrollState())
-                .padding(start = 20.dp, top = 20.dp, end = 20.dp, bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+                .padding(start = Afsh.spacing.xl, top = Afsh.spacing.xl, end = Afsh.spacing.xl, bottom = Afsh.spacing.xxl),
+            verticalArrangement = Arrangement.spacedBy(Afsh.spacing.md),
         ) {
             AttentionNotice(
                 title = stringResource(R.string.enter_a_valid_number),
@@ -375,11 +376,11 @@ private fun LazyListScope.typedNumberRow(query: String, label: Int, onSubmit: ()
                 .heightIn(min = 52.dp)
                 .clip(MaterialTheme.shapes.small)
                 .clickable(role = Role.Button, onClick = onSubmit)
-                .padding(horizontal = 4.dp, vertical = 12.dp),
+                .padding(horizontal = Afsh.spacing.xs, vertical = Afsh.spacing.md),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.md),
         ) {
-            Icon(painterResource(R.drawable.ic_lucide_send), contentDescription = null, tint = colors.primary, modifier = Modifier.size(22.dp))
+            Icon(AfshIcon.Send.painter(), contentDescription = null, tint = colors.primary, modifier = Modifier.size(22.dp))
             Text(stringResource(label, ltr(typed)), style = MaterialTheme.typography.titleMedium, color = colors.primary)
         }
     }
@@ -395,7 +396,7 @@ private fun LazyListScope.contactRows(
 ) {
     if (!state.canReadContacts) {
         item(key = "permission") {
-            Column(Modifier.padding(top = 12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(Modifier.padding(top = Afsh.spacing.md), verticalArrangement = Arrangement.spacedBy(Afsh.spacing.md)) {
                 InfoPanel(
                     title = stringResource(R.string.contacts_access_title),
                     body = stringResource(R.string.contacts_access_text),
@@ -412,7 +413,7 @@ private fun LazyListScope.contactRows(
     val contacts = state.contacts
     if (contacts == null) {
         item(key = "loading") {
-            Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+            Box(Modifier.fillMaxWidth().padding(Afsh.spacing.xxl), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
         }
         return
     }
@@ -425,7 +426,7 @@ private fun LazyListScope.contactRows(
                 stringResource(R.string.no_contacts_match),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 4.dp, vertical = 16.dp),
+                modifier = Modifier.padding(horizontal = Afsh.spacing.xs, vertical = Afsh.spacing.lg),
             )
         }
     }
@@ -445,12 +446,12 @@ private fun PersonRow(person: Person, onClick: () -> Unit) {
             .fillMaxWidth()
             .clip(MaterialTheme.shapes.small)
             .clickable(role = Role.Button, onClick = onClick)
-            .padding(horizontal = 4.dp, vertical = 12.dp),
+            .padding(horizontal = Afsh.spacing.xs, vertical = Afsh.spacing.md),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.md),
     ) {
         Avatar(person.name, person.photoUri, isGroup = false, size = RowAvatarSize)
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Afsh.spacing.xs)) {
             Text(person.name, style = MaterialTheme.typography.titleMedium.copy(textDirection = TextDirection.Content), color = colors.onSurface)
             if (detail.isNotEmpty()) Text(detail, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
         }
@@ -465,11 +466,11 @@ private fun StartGroupRow(onClick: () -> Unit) {
             .heightIn(min = 52.dp)
             .clip(MaterialTheme.shapes.small)
             .clickable(role = Role.Button, onClick = onClick)
-            .padding(horizontal = 4.dp),
+            .padding(horizontal = Afsh.spacing.xs),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.sm),
     ) {
-        Icon(painterResource(R.drawable.ic_lucide_users), contentDescription = null, tint = colors.primary, modifier = Modifier.size(22.dp))
+        Icon(AfshIcon.People.painter(), contentDescription = null, tint = colors.primary, modifier = Modifier.size(22.dp))
         Text(stringResource(R.string.start_a_group), style = MaterialTheme.typography.titleMedium, color = colors.primary)
     }
 }
@@ -483,13 +484,13 @@ private fun ChosenChip(recipient: Recipient, onRemove: (() -> Unit)?) {
             .clip(CircleShape)
             .background(colors.secondaryContainer)
             .heightIn(min = ChipMinHeight)
-            .padding(start = 12.dp, end = if (onRemove == null) 12.dp else 0.dp),
+            .padding(start = Afsh.spacing.md, end = if (onRemove == null) Afsh.spacing.md else 0.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(recipient.name, style = MaterialTheme.typography.labelMedium, color = colors.onSecondaryContainer)
         if (onRemove != null) {
             IconButton(onClick = onRemove, modifier = Modifier.semantics { contentDescription = remove }) {
-                Icon(painterResource(R.drawable.ic_lucide_x), contentDescription = null, tint = colors.primary, modifier = Modifier.size(ChipRemoveSize))
+                Icon(AfshIcon.Close.painter(), contentDescription = null, tint = colors.primary, modifier = Modifier.size(ChipRemoveSize))
             }
         }
     }
