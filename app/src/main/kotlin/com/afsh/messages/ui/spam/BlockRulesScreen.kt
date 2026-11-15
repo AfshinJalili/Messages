@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import com.afsh.messages.R
 import com.afsh.messages.ui.components.DestinationCard
+import com.afsh.messages.ui.components.AfshIcon
 import com.afsh.messages.ui.components.PageAppBarAction
 import com.afsh.messages.ui.components.PageContentPadding
 import com.afsh.messages.ui.components.PageNavigation
@@ -93,7 +94,7 @@ fun BlockRulesScreen(
         onBack = { onEvent(BlockRulesEvent.Back) },
         navigation = navigation,
         actions = {
-            PageAppBarAction(R.drawable.ic_lucide_share_2, stringResource(R.string.move_block_rules), onClick = {
+            PageAppBarAction(AfshIcon.Share, stringResource(R.string.move_block_rules), onClick = {
                 onEvent(BlockRulesEvent.MoveRules)
             })
         },
