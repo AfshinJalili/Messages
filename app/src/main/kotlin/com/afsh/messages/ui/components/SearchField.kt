@@ -11,7 +11,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -44,12 +43,12 @@ fun SearchField(
         textStyle = MaterialTheme.typography.bodyMedium,
         placeholder = { Text(hint, style = MaterialTheme.typography.bodyMedium) },
         leadingIcon = {
-            Icon(painterResource(R.drawable.ic_lucide_search), contentDescription = null, modifier = Modifier.size(SearchIconSize))
+            Icon(AfshIcon.Search.painter(), contentDescription = null, modifier = Modifier.size(SearchIconSize))
         },
         trailingIcon = if (query.isEmpty()) null else ({
             val clear = stringResource(R.string.search_clear)
             IconButton(onClick = { onQuery("") }, modifier = Modifier.semantics { contentDescription = clear }) {
-                Icon(painterResource(R.drawable.ic_lucide_x), contentDescription = null, tint = colors.onSurfaceVariant)
+                Icon(AfshIcon.Close.painter(), contentDescription = null, tint = colors.onSurfaceVariant)
             }
         }),
         singleLine = true,

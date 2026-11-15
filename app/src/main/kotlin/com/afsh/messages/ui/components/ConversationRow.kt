@@ -181,7 +181,7 @@ internal fun SnippetText(row: InboxRow, unread: Boolean) {
 
         conversation.isScheduled -> {
             val time = android.text.format.DateFormat.format("EEE HH:mm", conversation.date * 1000L).toString()
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.xs)) {
                 Icon(
                     AfshIcon.Schedule.painter(),
                     contentDescription = null,
@@ -215,7 +215,7 @@ private fun RowMetadata(row: InboxRow, time: String, inline: Boolean = false) {
     val colors = MaterialTheme.colorScheme
     val unread = !row.conversation.read
     val signals: @Composable () -> Unit = {
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.xs), verticalAlignment = Alignment.CenterVertically) {
             if (row.pinned) SignalIcon(AfshIcon.Pin)
             if (row.muted) SignalIcon(AfshIcon.NotificationsOff)
             if (unread) UnreadSignal(row.conversation.unreadCount)
@@ -225,12 +225,12 @@ private fun RowMetadata(row: InboxRow, time: String, inline: Boolean = false) {
         Text(time, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant, maxLines = 1)
     }
     if (inline) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.sm)) {
             timeText()
             signals()
         }
     } else {
-        Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(Afsh.spacing.sm)) {
             timeText()
             signals()
         }

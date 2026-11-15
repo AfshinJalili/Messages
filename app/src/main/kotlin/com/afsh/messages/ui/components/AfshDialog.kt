@@ -19,6 +19,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.afsh.messages.ui.Afsh
 
 /**
  * The confirming action of a dialog. [destructive] paints it in the error role, for a permanent
@@ -61,7 +62,7 @@ fun AfshDialog(
         text = {
             Column(
                 if (scroll) Modifier.verticalScroll(rememberScrollState()) else Modifier,
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(Afsh.spacing.lg),
                 content = content,
             )
         },

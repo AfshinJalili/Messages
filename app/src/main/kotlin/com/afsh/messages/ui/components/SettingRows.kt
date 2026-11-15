@@ -25,6 +25,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.afsh.messages.ui.Afsh
 
 private val RowMinHeight = 48.dp
 private val SettingIconSize = 24.dp
@@ -38,7 +39,7 @@ fun SectionHeading(label: String, modifier: Modifier = Modifier) {
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = modifier
             .fillMaxWidth()
-            .padding(start = 4.dp, end = 4.dp, top = 12.dp, bottom = 4.dp)
+            .padding(start = Afsh.spacing.xs, end = Afsh.spacing.xs, top = Afsh.spacing.md, bottom = Afsh.spacing.xs)
             .semantics { heading() },
     )
 }

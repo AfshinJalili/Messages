@@ -24,7 +24,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.afsh.messages.ui.Afsh
 
-private val ButtonPadding = PaddingValues(16.dp)
+private val ButtonPadding: PaddingValues
+    @Composable get() = PaddingValues(Afsh.spacing.lg)
 private val MinTarget = 48.dp
 private val ButtonIconSize = 24.dp
 
@@ -92,7 +93,7 @@ fun TextAction(label: String, onClick: () -> Unit, modifier: Modifier = Modifier
         onClick = onClick,
         modifier = modifier.defaultMinSize(minHeight = MinTarget),
         shape = MaterialTheme.shapes.small,
-        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+        contentPadding = PaddingValues(horizontal = Afsh.spacing.sm, vertical = Afsh.spacing.xs),
         colors = ButtonDefaults.textButtonColors(contentColor = color),
     ) {
         Text(label, style = MaterialTheme.typography.labelMedium)
