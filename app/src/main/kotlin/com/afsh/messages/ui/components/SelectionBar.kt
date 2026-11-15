@@ -34,12 +34,11 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
+import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
@@ -55,7 +54,6 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -160,51 +158,59 @@ data class BarAction(val label: String, val icon: AfshIcon, val destructive: Boo
 
 /**
  * The bar that replaces the navigation (or the composer) while rows are selected (41 · selection mode).
- * The one selection bar for every screen. Icon-only: each action names itself to TalkBack and in a
- * long-press tooltip. [overflow] actions sit behind a "More options" menu. At its default [minHeight]
- * it is exactly as tall as the navigation bar, so swapping the two never moves the list above.
+ * The one selection bar for every screen, built on Material 3's bottom app bar. Icon-only: each action
+ * names itself to TalkBack and in a long-press tooltip. [overflow] actions sit behind a "More options"
+ * menu. The stock bar is [BottomBarHeight] tall, the same as the navigation bar, so swapping the two never
+ * moves the list above; laid over a shorter frame (the composer) it takes the frame's height instead.
  */
 @Composable
 fun SelectionBar(
     actions: List<BarAction>,
     modifier: Modifier = Modifier,
     overflow: List<BarAction> = emptyList(),
-    minHeight: Dp = BottomBarHeight,
 ) {
     val colors = MaterialTheme.colorScheme
-    Surface(modifier, color = colors.surfaceContainer) {
+    BottomAppBar(
+        modifier = modifier,
+        containerColor = colors.surfaceContainer,
+        contentColor = colors.onSurfaceVariant,
+        tonalElevation = 0.dp,
+        contentPadding = PaddingValues(horizontal = 8.dp),
+        windowInsets = WindowInsets.navigationBars.union(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)),
+    ) {
         Row(
-            Modifier
-                .fillMaxWidth()
-                .windowInsetsPadding(WindowInsets.navigationBars.union(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)))
-                .heightIn(min = minHeight)
-                .padding(horizontal = 8.dp),
+            Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically,
         ) {
             actions.forEach { action -> SelectionIconAction(action.icon, action.label, action.destructive, action.onClick) }
-            if (overflow.isNotEmpty()) {
-                var open by remember { mutableStateOf(false) }
-                Box {
-                    SelectionIconAction(AfshIcon.More, stringResource(org.fossify.commons.R.string.more_options)) { open = true }
-                    DropdownMenu(expanded = open, onDismissRequest = { open = false }, containerColor = colors.surfaceContainer, shape = MaterialTheme.shapes.medium) {
-                        overflow.forEach { action ->
-                            DropdownMenuItem(
-                                text = { Text(action.label, style = MaterialTheme.typography.bodyMedium) },
-                                leadingIcon = { Icon(action.icon.painter(), contentDescription = null, modifier = Modifier.size(20.dp)) },
-                                modifier = Modifier.heightIn(min = TargetSize),
-                                colors = MenuDefaults.itemColors(
-                                    textColor = if (action.destructive) colors.error else colors.onSurface,
-                                    leadingIconColor = if (action.destructive) colors.error else colors.onSurfaceVariant,
-                                ),
-                                onClick = {
-                                    open = false
-                                    action.onClick()
-                                },
-                            )
-                        }
-                    }
-                }
+            if (overflow.isNotEmpty()) SelectionOverflow(overflow)
+        }
+    }
+}
+
+/** The "More options" action of a [SelectionBar] and its menu of [actions]. */
+@Composable
+private fun SelectionOverflow(actions: List<BarAction>) {
+    val colors = MaterialTheme.colorScheme
+    var open by remember { mutableStateOf(false) }
+    Box {
+        SelectionIconAction(AfshIcon.More, stringResource(org.fossify.commons.R.string.more_options)) { open = true }
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }, containerColor = colors.surfaceContainer, shape = MaterialTheme.shapes.medium) {
+            actions.forEach { action ->
+                DropdownMenuItem(
+                    text = { Text(action.label, style = MaterialTheme.typography.bodyMedium) },
+                    leadingIcon = { Icon(action.icon.painter(), contentDescription = null, modifier = Modifier.size(20.dp)) },
+                    modifier = Modifier.heightIn(min = TargetSize),
+                    colors = MenuDefaults.itemColors(
+                        textColor = if (action.destructive) colors.error else colors.onSurface,
+                        leadingIconColor = if (action.destructive) colors.error else colors.onSurfaceVariant,
+                    ),
+                    onClick = {
+                        open = false
+                        action.onClick()
+                    },
+                )
             }
         }
     }

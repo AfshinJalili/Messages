@@ -127,7 +127,6 @@ import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.text.util.LinkifyCompat
 import kotlinx.coroutines.Dispatchers
@@ -142,7 +141,6 @@ import com.afsh.messages.R
 import com.afsh.messages.ui.components.DatePill
 import com.afsh.messages.ui.components.BarEnter
 import com.afsh.messages.ui.components.BarExit
-import com.afsh.messages.ui.components.BottomBarHeight
 import com.afsh.messages.ui.components.SELECTION_ENTER_MS
 import com.afsh.messages.ui.components.SELECTION_EXIT_MS
 import com.afsh.messages.ui.components.BarAction
@@ -967,17 +965,17 @@ fun ThreadSelectionBar(state: ThreadUiState, overComposer: Boolean, onEvent: (Th
     val enter = if (overComposer) slideInVertically(tween(SELECTION_ENTER_MS)) { it } + fadeIn(tween(SELECTION_ENTER_MS)) else BarEnter
     val exit = if (overComposer) slideOutVertically(tween(SELECTION_EXIT_MS)) { it } + fadeOut(tween(SELECTION_EXIT_MS)) else BarExit
     AnimatedVisibility(state.selecting, modifier, enter = enter, exit = exit) {
-        MessageSelectionBar(state, onEvent, minHeight = if (overComposer) 0.dp else BottomBarHeight)
+        MessageSelectionBar(state, onEvent)
     }
 }
 
 @Composable
-private fun MessageSelectionBar(state: ThreadUiState, onEvent: (ThreadEvent) -> Unit, minHeight: Dp) {
+private fun MessageSelectionBar(state: ThreadUiState, onEvent: (ThreadEvent) -> Unit) {
     val actions = remember(state.selected, state.items, state.starred) { selectionActions(state).splitForBar() }
     val (bar, overflow) = keptWhileLeaving(actions, empty = state.selected.isEmpty())
     val selected = state.selectedMessages
     val act = { action: MessageAction -> onEvent(ThreadEvent.Act(action, selected)) }
-    SelectionBar(bar.map { it.toBarAction(act) }, overflow = overflow.map { it.toBarAction(act) }, minHeight = minHeight)
+    SelectionBar(bar.map { it.toBarAction(act) }, overflow = overflow.map { it.toBarAction(act) })
 }
 
 @Composable

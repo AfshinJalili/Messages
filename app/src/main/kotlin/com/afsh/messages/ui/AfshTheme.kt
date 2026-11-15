@@ -2,6 +2,7 @@ package com.afsh.messages.ui
 
 import androidx.compose.ui.text.style.TextDirection
 import android.content.Context
+import android.os.Build
 import androidx.compose.foundation.shape.AbsoluteRoundedCornerShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Shape
@@ -11,6 +12,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -62,6 +65,7 @@ data class ColorRole(val container: Color, val content: Color) {
  */
 @Immutable
 data class AfshColors(
+    /** The accent role and its on-color: lime under static color, tertiary container under dynamic; see [accentRole]. */
     val accent: Color,
     val onAccent: Color,
     val onBandVariant: Color,
@@ -184,10 +188,42 @@ private fun typography(rtl: Boolean): Typography {
 }
 
 /**
+ * The one switch for Material You. While false the app draws its own static scheme everywhere;
+ * set it to true to take the scheme, accent included, from the wallpaper on Android 12 and up.
+ * It stays off until the owner approves the default look.
+ */
+const val DynamicColor = false
+
+/** Where the color scheme comes from: the app's own palette or the system's wallpaper colors. */
+enum class ColorSource { Static, Dynamic }
+
+/** Dynamic color exists from Android 12 (API 31); older phones always get the static scheme. */
+fun colorSource(dynamicColor: Boolean = DynamicColor, sdkInt: Int = Build.VERSION.SDK_INT): ColorSource =
+    if (dynamicColor && sdkInt >= Build.VERSION_CODES.S) ColorSource.Dynamic else ColorSource.Static
+
+/**
+ * The accent role (main button, send, new message, selected chips). Static color keeps lime;
+ * dynamic color has no lime, so the accent takes Material's tertiary container, its own
+ * contrast-safe pair, which keeps it apart from the primary-driven header and bubbles.
+ */
+fun accentRole(source: ColorSource, scheme: ColorScheme, static: ColorRole): ColorRole = when (source) {
+    ColorSource.Static -> static
+    ColorSource.Dynamic -> ColorRole(scheme.tertiaryContainer, scheme.onTertiaryContainer)
+}
+
+/**
  * The one palette: Compose screens read it through [AfshTheme], and the XML theme, Commons'
  * stored accent and notifications read the same roles through [com.afsh.messages.helpers.primaryRoleColor].
+ * [source] picks the system's dynamic scheme or the app's static one; see [DynamicColor].
  */
-fun Context.afshColorScheme(dark: Boolean): ColorScheme {
+fun Context.afshColorScheme(dark: Boolean, source: ColorSource = colorSource()): ColorScheme {
+    if (source == ColorSource.Dynamic && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        return if (dark) dynamicDarkColorScheme(this) else dynamicLightColorScheme(this)
+    }
+    return afshStaticColorScheme(dark)
+}
+
+private fun Context.afshStaticColorScheme(dark: Boolean): ColorScheme {
     fun color(id: Int) = Color(getColor(id))
     val paper = color(R.color.afsh_paper)
     val ink = color(R.color.afsh_ink)
@@ -292,12 +328,14 @@ fun AfshTheme(dark: Boolean, textScale: Float = 1f, content: @Composable () -> U
     val density = LocalDensity.current
     val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     val context = LocalContext.current
-    val scheme = remember(context, dark) { context.afshColorScheme(dark) }
+    val source = colorSource()
+    val scheme = remember(context, dark, source) { context.afshColorScheme(dark, source) }
+    val accent = accentRole(source, scheme, ColorRole(colorResource(R.color.afsh_lime), colorResource(R.color.afsh_ink)))
     // Every role resolves to today's pine container; give a role its own value to recolor only that job.
     val pine = ColorRole(scheme.primaryContainer, scheme.onPrimaryContainer)
     val extras = AfshColors(
-        accent = colorResource(R.color.afsh_lime),
-        onAccent = colorResource(R.color.afsh_ink),
+        accent = accent.container,
+        onAccent = accent.content,
         onBandVariant = colorResource(R.color.afsh_band_variant),
         avatars = listOf(colorResource(R.color.afsh_lilac), colorResource(R.color.afsh_lime)),
         onAvatar = colorResource(R.color.afsh_pine),

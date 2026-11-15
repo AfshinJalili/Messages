@@ -5,6 +5,7 @@
   they use `TextField`, `Surface`, `IconButton` and `FilledIconButton` instead.
 - Every bubble is a `MessageBubble` (a Material 3 `Surface`), and only `MessageBubble.kt` reads the
   sent-bubble color role, so a screen cannot paint a bubble by hand.
+- The selection bar is Material 3's `BottomAppBar`, with no hand-built `Surface` frame or inset padding.
 """
 from pathlib import Path
 import re
@@ -36,5 +37,12 @@ for path in root.rglob('*.kt'):
     for number, line in enumerate(path.read_text().splitlines(), 1):
         if 'sentBubble' in line:
             violations.append(f'{path.relative_to(root)}:{number}: sent-bubble role outside MessageBubble')
+selection_bar = root / 'ui/components/SelectionBar.kt'
+selection_text = selection_bar.read_text()
+if 'BottomAppBar(' not in selection_text:
+    violations.append(f'{selection_bar.relative_to(root)}: the selection bar is not a Material 3 BottomAppBar')
+for number, line in enumerate(selection_text.splitlines(), 1):
+    if re.search(r'\bSurface\(|\.windowInsetsPadding\(', line):
+        violations.append(f'{selection_bar.relative_to(root)}:{number}: hand-built bar frame; let BottomAppBar draw it')
 assert not violations, '\n'.join(violations)
 print('Material component checks passed')
