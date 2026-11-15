@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.graphics.Shape
+import com.afsh.messages.ui.Afsh
 import com.afsh.messages.ui.AfshCorners
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -30,7 +31,7 @@ fun DatePill(label: String, modifier: Modifier = Modifier) {
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
         contentColor = MaterialTheme.colorScheme.onSurface,
     ) {
-        Text(label, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp))
+        Text(label, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = Afsh.spacing.md, vertical = Afsh.spacing.xs))
     }
 }
 
@@ -41,9 +42,9 @@ fun UnreadDivider() {
     Row(
         Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = Afsh.spacing.lg, vertical = Afsh.spacing.md),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.md),
     ) {
         HorizontalDivider(Modifier.weight(1f), color = colors.outlineVariant)
         Text(stringResource(R.string.new_messages), style = MaterialTheme.typography.labelMedium, color = colors.onSurfaceVariant)

@@ -9,6 +9,7 @@
   `.background(` or `.border(`. They sit on `Card`, `Surface`, `ListItem`, `TextField`, `Badge`,
   `HorizontalDivider` and the like. The one exception is the round selection check, which Material 3
   has no stock part for (see Components in DESIGN.md).
+- The selection bar is Material 3's `BottomAppBar`, with no hand-built `Surface` frame or inset padding.
 """
 from pathlib import Path
 import re
@@ -47,5 +48,12 @@ for path in sorted((root / 'ui/components').glob('*.kt')):
     for number, line in enumerate(path.read_text().splitlines(), 1):
         if hand_built.search(line):
             violations.append(f'{path.relative_to(root)}:{number}: hand-built surface in a shared component; use a Material 3 component')
+selection_bar = root / 'ui/components/SelectionBar.kt'
+selection_text = selection_bar.read_text()
+if 'BottomAppBar(' not in selection_text:
+    violations.append(f'{selection_bar.relative_to(root)}: the selection bar is not a Material 3 BottomAppBar')
+for number, line in enumerate(selection_text.splitlines(), 1):
+    if re.search(r'\bSurface\(|\.windowInsetsPadding\(', line):
+        violations.append(f'{selection_bar.relative_to(root)}:{number}: hand-built bar frame; let BottomAppBar draw it')
 assert not violations, '\n'.join(violations)
 print('Material component checks passed')

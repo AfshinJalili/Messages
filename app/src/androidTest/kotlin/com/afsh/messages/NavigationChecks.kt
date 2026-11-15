@@ -20,7 +20,10 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.Density
@@ -30,7 +33,9 @@ import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.afsh.messages.ui.AfshTheme
 import androidx.compose.ui.platform.testTag
+import com.afsh.messages.ui.components.BarAction
 import com.afsh.messages.ui.components.BottomBarHeight
+import com.afsh.messages.ui.components.SelectionBar
 import com.afsh.messages.ui.components.NavCounts
 import com.afsh.messages.ui.components.PrimaryNavigation
 import com.afsh.messages.ui.components.navCounts
@@ -130,6 +135,41 @@ class NavigationChecks {
         shown = true
         compose.waitForIdle()
         compose.onNodeWithText(five, useUnmergedTree = true).assertExists()
+    }
+
+    /**
+     * The selection bar (Material 3's bottom app bar) is exactly as tall as the navigation bar it replaces;
+     * its actions are found by their labels, run in reading order in LTR and RTL, and extras open from More options.
+     */
+    @Test
+    fun selectionBarStandsInForTheNavigation() {
+        var rtl by mutableStateOf(false)
+        var clicked: String? = null
+        val actions = listOf("Archive", "Pin", "Delete").map { label -> BarAction(label, R.drawable.ic_lucide_check, label == "Delete") { clicked = label } }
+        val overflow = listOf(BarAction("Block", R.drawable.ic_lucide_check) { clicked = "Block" })
+        compose.setContent {
+            CompositionLocalProvider(LocalLayoutDirection provides if (rtl) LayoutDirection.Rtl else LayoutDirection.Ltr) {
+                AfshTheme(dark = false) {
+                    Box(Modifier.width(360.dp).consumeWindowInsets(WindowInsets.systemBars)) {
+                        SelectionBar(actions, Modifier.testTag(BAR), overflow = overflow)
+                    }
+                }
+            }
+        }
+        val bar = compose.onAllNodesWithTag(BAR).fetchSemanticsNodes().single().let { with(compose.density) { it.size.height.toDp() } }
+        check((bar - BottomBarHeight).value in -0.5f..0.5f) { "The selection bar is $bar tall, BottomBarHeight is $BottomBarHeight" }
+        for (direction in listOf(false, true)) {
+            rtl = direction
+            compose.waitForIdle()
+            val archive = compose.onNodeWithContentDescription("Archive").getUnclippedBoundsInRoot()
+            val delete = compose.onNodeWithContentDescription("Delete").getUnclippedBoundsInRoot()
+            check(if (direction) archive.left > delete.left else archive.left < delete.left) { "Actions out of reading order (rtl=$direction)" }
+        }
+        compose.onNodeWithContentDescription("Pin").performClick()
+        check(clicked == "Pin") { "Pin did not act" }
+        compose.onNodeWithContentDescription(compose.activity.getString(org.fossify.commons.R.string.more_options)).performClick()
+        compose.onNodeWithText("Block").assertIsDisplayed().performClick()
+        check(clicked == "Block") { "Block did not act" }
     }
 
     private companion object {
