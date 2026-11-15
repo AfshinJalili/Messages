@@ -2,12 +2,12 @@ package com.afsh.messages.ui
 
 import android.graphics.Bitmap
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -46,22 +46,23 @@ fun Avatar(title: String, photoUri: String, isGroup: Boolean, size: Dp = 50.dp) 
         return
     }
     val initials = remember(title) { initials(title) }
-    Box(
-        Modifier
-            .size(size)
-            .clip(CircleShape)
-            .background(extras.avatars[Math.floorMod(title.hashCode(), extras.avatars.size)]),
-        contentAlignment = Alignment.Center,
+    Surface(
+        Modifier.size(size),
+        shape = CircleShape,
+        color = extras.avatars[Math.floorMod(title.hashCode(), extras.avatars.size)],
+        contentColor = extras.onAvatar,
     ) {
-        if (initials != null && !isGroup) {
-            Text(initials, style = MaterialTheme.typography.labelLarge.copy(fontSize = (size.value * 0.34f).sp), color = extras.onAvatar)
-        } else {
-            val icon = if (isGroup) {
-                org.fossify.commons.R.drawable.ic_groups_outline_vector
+        Box(contentAlignment = Alignment.Center) {
+            if (initials != null && !isGroup) {
+                Text(initials, style = MaterialTheme.typography.labelLarge.copy(fontSize = (size.value * 0.34f).sp))
             } else {
-                org.fossify.commons.R.drawable.ic_person_vector
+                val icon = if (isGroup) {
+                    org.fossify.commons.R.drawable.ic_groups_outline_vector
+                } else {
+                    org.fossify.commons.R.drawable.ic_person_vector
+                }
+                Icon(painterResource(icon), contentDescription = null)
             }
-            Icon(painterResource(icon), contentDescription = null, tint = extras.onAvatar)
         }
     }
 }

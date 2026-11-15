@@ -24,6 +24,7 @@ import com.afsh.messages.ui.components.BarAction
 import com.afsh.messages.ui.components.ConversationRow
 import com.afsh.messages.ui.components.EmptyState
 import com.afsh.messages.ui.components.InfoPanel
+import com.afsh.messages.ui.components.AfshIcon
 import com.afsh.messages.ui.components.PageAppBarAction
 import com.afsh.messages.ui.components.PageNavigation
 import com.afsh.messages.ui.components.PageScaffold
@@ -86,7 +87,7 @@ fun ArchiveScreen(
         actions = {
             if (state.rows.isNotEmpty()) {
                 PageAppBarAction(
-                    R.drawable.ic_lucide_trash_2,
+                    AfshIcon.Delete,
                     stringResource(R.string.empty_archive),
                     onClick = { onEvent(ArchiveEvent.DeleteAll) },
                 )
