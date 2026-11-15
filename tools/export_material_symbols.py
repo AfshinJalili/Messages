@@ -20,7 +20,7 @@ BASE = "https://raw.githubusercontent.com/google/material-design-icons/master/sy
 SYMBOLS = {
     "archive": None, "arrow_back": None, "arrow_forward": None, "block": None, "notifications": None,
     "notifications_off": None, "calendar_month": None, "sim_card": None, "check": None, "done_all": None,
-    "chevron_right": None, "check_circle": None, "help": None, "schedule": None, "cloud_off": None,
+    "chevron_right": None, "keyboard_arrow_up": None, "check_circle": None, "help": None, "schedule": None, "cloud_off": None,
     "contacts": None, "content_copy": None, "keyboard_return": None, "backup": None, "download": None,
     "more_vert": None, "open_in_new": None, "visibility": None, "visibility_off": None, "description": None,
     "forward": None, "pan_tool": None, "tag": None, "image": None, "inbox": None, "info": None, "translate": None,
