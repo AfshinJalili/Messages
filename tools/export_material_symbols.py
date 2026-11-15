@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Generate the Material Symbols (Outlined, weight 400, 24dp) vector drawables mapped from today's icons.
+"""Generate the Material Symbols (Outlined, weight 400, 24dp) vector drawables the app's icons are drawn from.
 
 Material Symbols (Apache 2.0, google/material-design-icons) is fetched here at development time only; the app stays
 offline and ships just the icons listed in SYMBOLS. Each becomes res/drawable/ic_msym_<name>.xml, filled with
-@color/icon_mask so Compose tints it. Icons in MIRRORED flip under RTL. ui/components/AfshIcon.kt pairs each with its
-Lucide icon; tests/check_material_symbols.py keeps the two in step.
+@color/icon_mask so Compose tints it. Icons in MIRRORED flip under RTL. ui/components/AfshIcon.kt names each by
+meaning; tests/check_material_symbols.py keeps the two in step.
 
     python3 tools/export_material_symbols.py            # fetch and write
     python3 tools/export_material_symbols.py --check    # verify the committed drawables match upstream
@@ -34,7 +34,7 @@ SYMBOLS = {
     "picture_as_pdf": None, "folder_zip": None,
 }
 
-# Direction-bearing glyphs flip under RTL, matching the Lucide icons they replace.
+# Direction-bearing glyphs flip under RTL.
 MIRRORED = {"arrow_back", "arrow_forward", "chevron_right", "forward", "arrow_outward"}
 
 OUT = Path(__file__).resolve().parents[1] / "app/src/main/res/drawable"

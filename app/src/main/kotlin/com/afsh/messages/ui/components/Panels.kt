@@ -31,8 +31,10 @@ import com.afsh.messages.ui.Afsh
 private val MarkSize = 46.dp
 private val MarkIconSize = 21.dp
 private val DestinationHeight = 75.dp
-private val ProminentPanelPadding = PaddingValues(horizontal = 12.dp, vertical = 16.dp)
-private val CompactPanelPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)
+private val ProminentPanelPadding: PaddingValues
+    @Composable get() = PaddingValues(horizontal = Afsh.spacing.md, vertical = Afsh.spacing.lg)
+private val CompactPanelPadding: PaddingValues
+    @Composable get() = PaddingValues(horizontal = Afsh.spacing.lg, vertical = Afsh.spacing.md)
 
 /**
  * Library row, on a Material 3 [Card] holding a [ListItem]: a lilac mark, a label with its description, an
@@ -67,7 +69,7 @@ fun DestinationCard(
                 }
             },
             trailingContent = {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.md)) {
                     if (badge > 0) CountBadge(badge)
                     Icon(AfshIcon.ChevronForward.painter(), contentDescription = null, modifier = Modifier.size(18.dp))
                 }
@@ -89,7 +91,7 @@ internal fun PanelCard(
     contentColor: Color,
     modifier: Modifier = Modifier,
     shape: Shape = MaterialTheme.shapes.medium,
-    padding: PaddingValues = PaddingValues(16.dp),
+    padding: PaddingValues = PaddingValues(Afsh.spacing.lg),
     spacing: Dp = 4.dp,
     content: @Composable ColumnScope.() -> Unit,
 ) {
@@ -142,7 +144,7 @@ fun EmptyState(icon: AfshIcon, title: String, modifier: Modifier = Modifier, tex
         colors.secondaryContainer,
         colors.onSecondaryContainer,
         modifier,
-        padding = PaddingValues(horizontal = 16.dp, vertical = 20.dp),
+        padding = PaddingValues(horizontal = Afsh.spacing.lg, vertical = Afsh.spacing.xl),
         spacing = 8.dp,
     ) {
         Icon(icon.painter(), contentDescription = null, tint = colors.primary, modifier = Modifier.size(34.dp))

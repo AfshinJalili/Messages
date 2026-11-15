@@ -36,7 +36,8 @@ private const val COMPACT_HEIGHT_DP = 480
 private const val EXPANDED_WIDTH_DP = 600
 
 /** Content padding of every page body: 20dp sides, 20dp top, 24dp bottom. */
-val PageContentPadding = PaddingValues(start = 20.dp, top = 20.dp, end = 20.dp, bottom = 24.dp)
+val PageContentPadding: PaddingValues
+    @Composable get() = PaddingValues(start = Afsh.spacing.xl, top = Afsh.spacing.xl, end = Afsh.spacing.xl, bottom = Afsh.spacing.xxl)
 
 /**
  * Where a page sits in the primary navigation, or null for a page outside it (a flow step). Badges

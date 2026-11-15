@@ -26,6 +26,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.afsh.messages.ui.Afsh
 import com.afsh.messages.ui.Avatar
 
 private val ActionIconSize = 22.dp
@@ -46,7 +47,7 @@ fun IdentityCard(
         colors.surfaceContainer,
         colors.onSurface,
         modifier,
-        padding = PaddingValues(horizontal = 16.dp, vertical = 20.dp),
+        padding = PaddingValues(horizontal = Afsh.spacing.lg, vertical = Afsh.spacing.xl),
         spacing = 8.dp,
     ) {
         Avatar(name, photoUri, isGroup, size = avatarSize)
@@ -81,9 +82,9 @@ fun ActionTile(icon: AfshIcon, label: String, onClick: () -> Unit, modifier: Mod
         Column(
             Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 12.dp),
+                .padding(horizontal = Afsh.spacing.sm, vertical = Afsh.spacing.md),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(Afsh.spacing.sm),
         ) {
             Icon(icon.painter(), contentDescription = null, tint = colors.primary, modifier = Modifier.size(ActionIconSize))
             Text(label, style = MaterialTheme.typography.labelMedium, textAlign = TextAlign.Center)
@@ -103,7 +104,7 @@ fun DetailRow(label: String, value: String, modifier: Modifier = Modifier) {
             .fillMaxWidth()
             .heightIn(min = DetailRowHeight)
             .semantics(mergeDescendants = true) {},
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.lg),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(label, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
@@ -131,8 +132,8 @@ fun LabeledField(label: String, value: String, modifier: Modifier = Modifier, on
             .clip(MaterialTheme.shapes.small)
             .then(if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick) else Modifier)
             .semantics(mergeDescendants = true) {}
-            .padding(horizontal = 4.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+            .padding(horizontal = Afsh.spacing.xs, vertical = Afsh.spacing.md),
+        verticalArrangement = Arrangement.spacedBy(Afsh.spacing.xs),
     ) {
         Text(label.uppercase(), style = MaterialTheme.typography.labelMedium, color = colors.onSurfaceVariant)
         Text(value, style = MaterialTheme.typography.titleMedium.copy(textDirection = TextDirection.Content), color = colors.onSurface)

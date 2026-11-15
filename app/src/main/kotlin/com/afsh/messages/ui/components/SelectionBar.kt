@@ -58,6 +58,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
+import com.afsh.messages.ui.Afsh
 
 private val CheckSize = 24.dp
 private val TargetSize = 48.dp
@@ -169,7 +170,7 @@ fun SelectionBar(
         containerColor = colors.surfaceContainer,
         contentColor = colors.onSurfaceVariant,
         tonalElevation = 0.dp,
-        contentPadding = PaddingValues(horizontal = 8.dp),
+        contentPadding = PaddingValues(horizontal = Afsh.spacing.sm),
         windowInsets = WindowInsets.navigationBars.union(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)),
     ) {
         Row(
