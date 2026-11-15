@@ -1,6 +1,8 @@
 package com.afsh.messages.ui.thread
 
 import com.afsh.messages.ui.AfshCorners
+import com.afsh.messages.ui.components.AfshSheet
+import com.afsh.messages.ui.components.AfshSheetItem
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandHorizontally
@@ -39,11 +41,9 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -208,10 +208,7 @@ fun ThreadComposer(
         }
     }
     if (attaching) {
-        AttachSheet(onDismiss = { attaching = false }) {
-            attaching = false
-            onEvent(ComposerEvent.Attach(it))
-        }
+        AttachSheet(onDismiss = { attaching = false }) { onEvent(ComposerEvent.Attach(it)) }
     }
 }
 
@@ -560,48 +557,18 @@ private fun RemoveBadge(modifier: Modifier, onClick: () -> Unit) {
 }
 
 /** Design 11, as a sheet over the conversation rather than a page. */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AttachSheet(onDismiss: () -> Unit, onPick: (AttachOption) -> Unit) {
-    val colors = MaterialTheme.colorScheme
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = colors.surface) {
-        Column(
-            Modifier
-                .verticalScroll(rememberScrollState())
-                .padding(bottom = 16.dp),
-        ) {
-            Text(
-                stringResource(R.string.attach_title),
-                style = MaterialTheme.typography.titleLarge,
-                color = colors.onSurface,
-                modifier = Modifier
-                    .padding(horizontal = 24.dp, vertical = 8.dp)
-                    .semantics { heading() },
+    AfshSheet(title = stringResource(R.string.attach_title), onDismiss = onDismiss) {
+        AttachOption.entries.forEach { option ->
+            AfshSheetItem(
+                label = stringResource(option.title),
+                icon = option.icon,
+                supporting = stringResource(option.subtitle),
+                tile = true,
+                // The picker, camera or contact list opens once the sheet is gone.
+                onClick = { dismissThen { onPick(option) } },
             )
-            AttachOption.entries.forEach { option ->
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .clickable { onPick(option) }
-                        .padding(horizontal = 24.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                ) {
-                    Box(
-                        Modifier
-                            .size(TargetSize)
-                            .clip(MaterialTheme.shapes.small)
-                            .background(colors.secondaryContainer),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(painterResource(option.icon), contentDescription = null, tint = colors.primary, modifier = Modifier.size(24.dp))
-                    }
-                    Column(Modifier.weight(1f)) {
-                        Text(stringResource(option.title), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = colors.onSurface)
-                        Text(stringResource(option.subtitle), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
-                    }
-                }
-            }
         }
     }
 }
