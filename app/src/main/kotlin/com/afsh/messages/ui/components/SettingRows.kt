@@ -1,11 +1,6 @@
 package com.afsh.messages.ui.components
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -13,22 +8,24 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
-import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.afsh.messages.R
 
@@ -50,8 +47,9 @@ fun SectionHeading(label: String, modifier: Modifier = Modifier) {
 }
 
 /**
- * Component / setting list item. The row is the touch target; [trailing] holds the disclosure,
- * a switch or nothing.
+ * Component / setting list item, on a Material 3 [ListItem]. The row is the touch target; [trailing] holds the
+ * disclosure, a switch, a radio, a checkbox or nothing. Rows reach [SettingRowBleed] past their parent on each
+ * side so the ripple fills the page while the label stays where the 4dp-inset rows put it.
  */
 @Composable
 fun SettingItem(
@@ -61,7 +59,8 @@ fun SettingItem(
     value: String? = null,
     enabled: Boolean = true,
     destructive: Boolean = false,
-    trailing: @Composable RowScope.() -> Unit = {},
+    bleed: Boolean = true,
+    trailing: (@Composable () -> Unit)? = null,
 ) {
     val colors = MaterialTheme.colorScheme
     val labelColor = when {
@@ -69,30 +68,40 @@ fun SettingItem(
         destructive -> colors.error
         else -> colors.onSurface
     }
-    Row(
-        modifier
-            .fillMaxWidth()
-            .heightIn(min = RowMinHeight)
-            .padding(horizontal = 4.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        if (icon != null) {
-            Icon(
-                painterResource(icon),
-                contentDescription = null,
-                tint = if (destructive) colors.error else colors.primary,
-                modifier = Modifier.size(SettingIconSize),
-            )
-        }
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(label, style = MaterialTheme.typography.titleMedium, color = labelColor)
-            if (value != null) {
-                Text(value, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
-            }
-        }
-        trailing()
+    ListItem(
+        headlineContent = { Text(label, style = MaterialTheme.typography.titleMedium) },
+        modifier = (if (bleed) Modifier.bleed(SettingRowBleed) else Modifier)
+            .then(modifier)
+            .heightIn(min = RowMinHeight),
+        supportingContent = value?.let { { Text(it, style = MaterialTheme.typography.bodySmall) } },
+        leadingContent = icon?.let {
+            { Icon(painterResource(it), contentDescription = null, modifier = Modifier.size(SettingIconSize)) }
+        },
+        trailingContent = trailing,
+        colors = ListItemDefaults.colors(
+            containerColor = Color.Transparent,
+            headlineColor = labelColor,
+            supportingColor = colors.onSurfaceVariant,
+            leadingIconColor = if (destructive) colors.error else colors.primary,
+            trailingIconColor = colors.onSurfaceVariant,
+        ),
+    )
+}
+
+/** How far a row reaches past its parent: [ListItem]'s 16dp inset minus the old rows' 4dp. */
+private val SettingRowBleed = 12.dp
+
+/** Lays the content out [horizontal] wider on each side than its parent allows, centred on the same spot. */
+private fun Modifier.bleed(horizontal: Dp) = layout { measurable, constraints ->
+    val extra = (horizontal * 2).roundToPx()
+    val wider = if (constraints.hasBoundedWidth) {
+        constraints.copy(minWidth = constraints.minWidth + extra, maxWidth = constraints.maxWidth + extra)
+    } else {
+        constraints
     }
+    val placeable = measurable.measure(wider)
+    val width = (placeable.width - extra).coerceAtLeast(0)
+    layout(width, placeable.height) { placeable.placeRelative(-(horizontal.roundToPx()), 0) }
 }
 
 /** A setting that opens a page or dialog. */
@@ -115,16 +124,12 @@ fun NavigationSetting(
         icon = icon,
         value = value,
         destructive = destructive,
-    ) {
-        if (disclosure) {
-            Icon(
-                painterResource(disclosureIcon),
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(SettingIconSize),
-            )
-        }
-    }
+        trailing = if (disclosure) {
+            { Icon(painterResource(disclosureIcon), contentDescription = null, modifier = Modifier.size(SettingIconSize)) }
+        } else {
+            null
+        },
+    )
 }
 
 /** A setting with Component / switch. The whole row toggles. */
@@ -167,16 +172,7 @@ fun RadioSetting(
             .selectable(selected = selected, role = Role.RadioButton, onClick = onClick),
         value = value,
     ) {
-        Box(Modifier.size(RowMinHeight), contentAlignment = Alignment.Center) {
-            RadioButton(
-                selected = selected,
-                onClick = null,
-                colors = RadioButtonDefaults.colors(
-                    selectedColor = MaterialTheme.colorScheme.primary,
-                    unselectedColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                ),
-            )
-        }
+        RadioButton(selected = selected, onClick = null)
     }
 }
 
@@ -196,17 +192,7 @@ fun CheckboxSetting(
             .toggleable(value = checked, role = Role.Checkbox, onValueChange = onCheckedChange),
         value = value,
     ) {
-        Box(Modifier.size(RowMinHeight), contentAlignment = Alignment.Center) {
-            Checkbox(
-                checked = checked,
-                onCheckedChange = null,
-                colors = CheckboxDefaults.colors(
-                    checkedColor = MaterialTheme.colorScheme.primary,
-                    checkmarkColor = MaterialTheme.colorScheme.onPrimary,
-                    uncheckedColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                ),
-            )
-        }
+        Checkbox(checked = checked, onCheckedChange = null)
     }
 }
 

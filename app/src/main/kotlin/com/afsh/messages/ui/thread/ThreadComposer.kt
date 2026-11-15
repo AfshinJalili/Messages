@@ -6,9 +6,7 @@ import com.afsh.messages.ui.components.AfshSheetItem
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -99,7 +97,7 @@ import com.afsh.messages.extensions.isVCardMimeType
 import com.afsh.messages.extensions.isVideoMimeType
 import com.afsh.messages.helpers.getIconResourceForMimeType
 import com.afsh.messages.models.AttachmentSelection
-import com.afsh.messages.ui.Afsh
+import com.afsh.messages.ui.components.SendButton
 import com.afsh.messages.ui.forContent
 import com.afsh.messages.ui.rememberBitmap
 import com.afsh.messages.ui.withContentFonts
@@ -186,7 +184,7 @@ fun ThreadComposer(
                 Spacer(Modifier.width(8.dp))
                 Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     LengthPill(composer)
-                    SendButton(composer, text.text, onEvent)
+                    ComposerSendButton(composer, text.text, onEvent)
                 }
             }
         }
@@ -294,13 +292,11 @@ private fun ReplyDisabledField(onEvent: (ComposerEvent) -> Unit, modifier: Modif
 }
 
 @Composable
-private fun SendButton(composer: ComposerState, text: String, onEvent: (ComposerEvent) -> Unit) {
-    val colors = MaterialTheme.colorScheme
+private fun ComposerSendButton(composer: ComposerState, text: String, onEvent: (ComposerEvent) -> Unit) {
     val canSend = composer.hasContent(text)
     // Mic while the field is empty and nothing is ready to send; dictation inserts, it never sends. A picked send time keeps
     // the schedule-send icon, disabled until there is content.
     val dictate = text.isEmpty() && !canSend && composer.scheduledAt == null
-    val enabled = dictate || canSend
     val label = when {
         dictate -> stringResource(R.string.speak_message)
         composer.scheduledAt != null -> stringResource(R.string.schedule_message)
@@ -312,22 +308,15 @@ private fun SendButton(composer: ComposerState, text: String, onEvent: (Composer
         composer.scheduledAt != null -> R.drawable.ic_schedule_send_vector
         else -> R.drawable.ic_arrow_up_right_vector
     }
-    FilledIconButton(
+    SendButton(
+        icon = icon,
+        description = label,
         onClick = { onEvent(if (dictate) ComposerEvent.Dictate else ComposerEvent.Send) },
-        enabled = enabled,
+        enabled = dictate || canSend,
         modifier = Modifier
             .size(SendWidth, RowHeight)
             .testTag(COMPOSER_SEND_TAG),
-        shape = MaterialTheme.shapes.medium,
-        colors = IconButtonDefaults.filledIconButtonColors(
-            containerColor = Afsh.colors.accent,
-            contentColor = Afsh.colors.onAccent,
-            disabledContainerColor = colors.surfaceContainerHigh,
-            disabledContentColor = colors.onSurfaceVariant,
-        ),
-    ) {
-        Icon(painterResource(icon), contentDescription = label, modifier = Modifier.size(24.dp))
-    }
+    )
 }
 
 /** R6-45: "2 · 18" (SMS parts · characters left) near the limit, or "MMS". Always Latin digits, never wider than send. */
