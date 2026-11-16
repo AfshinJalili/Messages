@@ -392,6 +392,9 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
     override fun onDestroy() {
         super.onDestroy()
         bus?.unregister(this)
+        // Clear any pending page load completion to prevent awaits that never resume
+        data.pageLoadCompletion?.complete(Unit)
+        data.pageLoadCompletion = null
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -956,14 +959,17 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         }
 
         lifecycleScope.launch {
-            // Wait for any in-flight older-page load to complete before starting our own.
-            data.pageLoadCompletion?.await()
+            // Wait for all in-flight older-page loads to complete before starting our own.
+            while (data.pageLoadCompletion != null) {
+                data.pageLoadCompletion?.await()
+            }
+            
+            // Claim the load slot synchronously on the main thread to prevent races.
+            data.loadingOlder = true
+            val completion = CompletableDeferred<Unit>()
+            data.pageLoadCompletion = completion
             
             ensureBackgroundThread {
-                data.loadingOlder = true
-                val completion = CompletableDeferred<Unit>()
-                data.pageLoadCompletion = completion
-                
                 val items = try {
                     var cutoff = data.oldestDate() ?: Int.MAX_VALUE
                     var found = data.contains(messageId, isMms)
