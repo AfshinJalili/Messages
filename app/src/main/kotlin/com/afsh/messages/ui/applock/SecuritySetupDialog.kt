@@ -1,10 +1,12 @@
 package com.afsh.messages.ui.applock
 
-import android.app.Activity
+import android.os.Build
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
@@ -56,7 +58,13 @@ fun SecuritySetupDialog(
         add(PROTECTION_PATTERN to stringResource(CommonsR.string.pattern))
         add(PROTECTION_PIN to stringResource(CommonsR.string.pin))
         if (biometricAvailable) {
-            add(PROTECTION_FINGERPRINT to if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) stringResource(CommonsR.string.biometrics) else stringResource(CommonsR.string.fingerprint))
+            add(
+                PROTECTION_FINGERPRINT to if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    stringResource(CommonsR.string.biometrics)
+                } else {
+                    stringResource(CommonsR.string.fingerprint)
+                },
+            )
         }
     }
 
@@ -71,7 +79,7 @@ fun SecuritySetupDialog(
         onDismiss = { onResult("", 0, false); onDismiss() },
         dismissLabel = stringResource(android.R.string.cancel),
     ) {
-        Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(Afsh.spacing.lg)) {
+        Column(verticalArrangement = Arrangement.spacedBy(Afsh.spacing.lg)) {
             if (showAllTabs) {
                 TabRow(selectedTab) {
                     tabs.forEachIndexed { index, (_, label) ->
@@ -81,9 +89,9 @@ fun SecuritySetupDialog(
             }
 
             when (selectedType) {
-                PROTECTION_PIN -> PinSecurityTab(requiredHash, onResult, onDismiss)
-                PROTECTION_PATTERN -> PatternSecurityTab(requiredHash, onResult, onDismiss)
-                PROTECTION_FINGERPRINT -> BiometricSecurityTab(activity, requiredHash, onResult, onDismiss)
+                PROTECTION_PIN -> PinSecurityTab(requiredHash, onResult)
+                PROTECTION_PATTERN -> PatternSecurityTab(requiredHash, onResult)
+                PROTECTION_FINGERPRINT -> BiometricSecurityTab(activity, requiredHash, onResult)
             }
         }
     }
@@ -93,7 +101,6 @@ fun SecuritySetupDialog(
 private fun PinSecurityTab(
     requiredHash: String,
     onResult: (String, Int, Boolean) -> Unit,
-    onDismiss: () -> Unit,
 ) {
     val context = LocalContext.current
     var pin by remember { mutableStateOf("") }
@@ -126,8 +133,9 @@ private fun PinSecurityTab(
             }
             computedHash == newHash -> {
                 lockout.onCorrect()
+                // Success: caller dismisses via onResult. Do not call onDismiss — AppLockActivity's
+                // onDismiss re-locks and finishes the task.
                 onResult(computedHash, PROTECTION_PIN, true)
-                onDismiss()
             }
             else -> {
                 pin = ""
@@ -155,7 +163,6 @@ private fun PinSecurityTab(
 private fun PatternSecurityTab(
     requiredHash: String,
     onResult: (String, Int, Boolean) -> Unit,
-    onDismiss: () -> Unit,
 ) {
     val context = LocalContext.current
     var computedHash by remember { mutableStateOf(requiredHash) }
@@ -175,7 +182,6 @@ private fun PatternSecurityTab(
                 patternState = PatternState.Correct
                 lockout.onCorrect()
                 onResult(computedHash, PROTECTION_PATTERN, true)
-                onDismiss()
             }
             else -> {
                 patternState = PatternState.Wrong
@@ -203,7 +209,6 @@ private fun BiometricSecurityTab(
     activity: FragmentActivity?,
     requiredHash: String,
     onResult: (String, Int, Boolean) -> Unit,
-    onDismiss: () -> Unit,
 ) {
     val context = LocalContext.current
 
@@ -213,7 +218,6 @@ private fun BiometricSecurityTab(
             val callback = object : BiometricPrompt.AuthenticationCallback() {
                 override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
                     onResult(requiredHash.ifEmpty { "biometric" }, PROTECTION_FINGERPRINT, true)
-                    onDismiss()
                 }
                 override fun onAuthenticationFailed() {}
                 override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
@@ -233,7 +237,7 @@ private fun BiometricSecurityTab(
         onDispose {}
     }
 
-    Text(stringResource(CommonsR.string.fingerprint_setup_successfully))
+    Text(stringResource(CommonsR.string.place_finger))
 }
 
 @Composable
@@ -244,5 +248,5 @@ private fun LockoutTitle(title: String, countdown: Int, isLockedOut: Boolean) {
     } else {
         title
     }
-    Text(displayTitle, style = androidx.compose.material3.MaterialTheme.typography.titleMedium, modifier = Modifier.fillMaxWidth())
+    Text(displayTitle, style = MaterialTheme.typography.titleMedium, modifier = Modifier.fillMaxWidth())
 }

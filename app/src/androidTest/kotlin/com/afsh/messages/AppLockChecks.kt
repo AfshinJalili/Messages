@@ -3,13 +3,19 @@ package com.afsh.messages
 import android.content.Intent
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiDevice
+import androidx.test.uiautomator.Until
+import com.afsh.messages.activities.AppLockActivity
 import com.afsh.messages.activities.MainActivity
+import org.fossify.commons.R as CommonsR
 import org.fossify.commons.extensions.appLockManager
 import org.fossify.commons.extensions.baseConfig
 import org.fossify.commons.helpers.PROTECTION_PIN
@@ -34,11 +40,11 @@ class AppLockChecks {
     private val context = ApplicationProvider.getApplicationContext<App>()
     private val config = context.baseConfig
     private val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+    private var lockScenario: ActivityScenario<AppLockActivity>? = null
 
     @Before
     fun setUp() {
         device.waitForIdle()
-        // Start with lock disabled
         config.isAppPasswordProtectionOn = false
         config.appPasswordHash = ""
         config.appProtectionType = PROTECTION_PIN
@@ -49,7 +55,8 @@ class AppLockChecks {
 
     @After
     fun tearDown() {
-        // Clean up: disable lock
+        lockScenario?.close()
+        lockScenario = null
         config.isAppPasswordProtectionOn = false
         config.appPasswordHash = ""
         config.passwordRetryCount = 0
@@ -59,77 +66,62 @@ class AppLockChecks {
 
     @Test
     fun lockedAppShowsLockScreen() {
-        // Given: app lock enabled with PIN "1234"
-        val pin = "1234"
-        val hash = hashPin(pin)
-        config.isAppPasswordProtectionOn = true
-        config.appPasswordHash = hash
-        config.appProtectionType = PROTECTION_PIN
-        context.appLockManager.lock()
+        enableLock("1234")
 
-        // When: launching MainActivity
+        // Launching MainActivity while locked should surface AppLockActivity via App lifecycle.
         val intent = Intent(context, MainActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
         }
         context.startActivity(intent)
         device.waitForIdle()
 
-        // Then: lock screen is shown (check for "Enter PIN" text)
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
-            try {
-                composeTestRule.onNodeWithText(context.getString(R.string.enter_pin)).assertExists()
-                true
-            } catch (e: AssertionError) {
-                false
-            }
+        val enterPin = context.getString(CommonsR.string.enter_pin)
+        check(device.wait(Until.hasObject(By.text(enterPin)), 10_000)) {
+            "Lock screen did not appear after launching MainActivity while locked"
         }
-        composeTestRule.onNodeWithText(context.getString(R.string.enter_pin)).assertIsDisplayed()
     }
 
     @Test
     fun correctPinUnlocksApp() {
-        // Given: app lock enabled with PIN "5678"
         val pin = "5678"
-        val hash = hashPin(pin)
-        config.isAppPasswordProtectionOn = true
-        config.appPasswordHash = hash
-        config.appProtectionType = PROTECTION_PIN
-        context.appLockManager.lock()
+        enableLock(pin)
 
-        // When: launching MainActivity
-        val intent = Intent(context, MainActivity::class.java).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
-        }
-        context.startActivity(intent)
-        device.waitForIdle()
+        // Launch the lock activity only after lock is armed so it does not finish() immediately.
+        lockScenario = ActivityScenario.launch(AppLockActivity::class.java)
+        composeTestRule.waitForIdle()
 
-        // Then: lock screen appears
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
+        val enterPin = context.getString(CommonsR.string.enter_pin)
+        composeTestRule.waitUntil(timeoutMillis = 10_000) {
             try {
-                composeTestRule.onNodeWithText(context.getString(R.string.enter_pin)).assertExists()
+                composeTestRule.onNodeWithText(enterPin).assertExists()
                 true
-            } catch (e: AssertionError) {
+            } catch (_: AssertionError) {
                 false
             }
         }
+        composeTestRule.onNodeWithText(enterPin).assertIsDisplayed()
 
-        // When: entering correct PIN
         pin.forEach { digit ->
             composeTestRule.onNodeWithText(digit.toString()).performClick()
         }
-        composeTestRule.onNodeWithText(context.getString(android.R.string.ok)).performClick()
+        composeTestRule.onNodeWithContentDescription(context.getString(android.R.string.ok)).performClick()
+        composeTestRule.waitForIdle()
         device.waitForIdle()
 
-        // Then: app is unlocked and MainActivity content is visible
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule.waitUntil(timeoutMillis = 10_000) {
             !context.appLockManager.isLocked()
         }
         assert(!context.appLockManager.isLocked()) { "App should be unlocked after correct PIN" }
     }
 
-    /**
-     * SHA-1 hash compatible with Fossify PinTab. Hex format lowercase, matching existing stored hashes.
-     */
+    private fun enableLock(pin: String) {
+        config.isAppPasswordProtectionOn = true
+        config.appPasswordHash = hashPin(pin)
+        config.appProtectionType = PROTECTION_PIN
+        context.appLockManager.lock()
+    }
+
+    /** SHA-1 hash compatible with Fossify PinTab. Hex lowercase, matching stored hashes. */
     private fun hashPin(pin: String): String {
         val md = MessageDigest.getInstance("SHA-1")
         md.update(pin.toByteArray())

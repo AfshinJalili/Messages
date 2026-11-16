@@ -3,7 +3,6 @@ package com.afsh.messages.activities
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Box
@@ -15,21 +14,20 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.fragment.app.FragmentActivity
+import com.afsh.messages.ui.Afsh
 import com.afsh.messages.ui.AfshSystemBars
 import com.afsh.messages.ui.AfshTheme
-import com.afsh.messages.ui.Afsh
+import com.afsh.messages.ui.afshDark
 import com.afsh.messages.ui.applock.SecuritySetupDialog
 import org.fossify.commons.extensions.appLockManager
 import org.fossify.commons.extensions.baseConfig
-import org.fossify.commons.extensions.isSystemInDarkMode
-import org.fossify.commons.helpers.PROTECTION_FINGERPRINT
-import org.fossify.commons.helpers.isRPlus
 
 /**
  * Lock screen that blocks app access when app lock is enabled. Shows PIN/pattern/biometric verification.
- * Unlocks on success; exits app on back press.
+ * Unlocks on success; exits app on back press. Extends [FragmentActivity] so BiometricPrompt can host.
  */
-class AppLockActivity : ComponentActivity() {
+class AppLockActivity : FragmentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,11 +41,10 @@ class AppLockActivity : ComponentActivity() {
         })
 
         setContent {
-            AfshTheme(dark = !isSystemInDarkMode()) {
+            AfshTheme(dark = afshDark()) {
                 AfshSystemBars(window)
                 Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
                     val config = baseConfig
-                    val showBiometric = config.appProtectionType == PROTECTION_FINGERPRINT && isRPlus()
 
                     LaunchedEffect(Unit) {
                         if (!appLockManager.isLocked()) {
