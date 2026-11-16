@@ -271,9 +271,9 @@ abstract class BaseSimpleActivity : EdgeToEdgeActivity() {
         val contrastColor = topBarColor.getContrastColor()
         if (navigationIcon != NavigationIcon.None) {
             val drawableId = if (navigationIcon == NavigationIcon.Cross) {
-                R.drawable.ic_cross_vector
+                R.drawable.ic_msym_close
             } else {
-                R.drawable.ic_arrow_left_vector
+                R.drawable.ic_msym_arrow_back
             }
 
             topAppBar.toolbar?.navigationIcon =

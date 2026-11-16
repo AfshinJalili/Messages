@@ -41,7 +41,7 @@
             android:background="?selectableItemBackgroundBorderless"
             android:contentDescription="@string/previous"
             android:padding="@dimen/medium_margin"
-            android:src="@drawable/ic_chevron_left_vector" />
+            android:src="@drawable/ic_msym_chevron_left" />
 
         <ImageView
             android:id="@+id/search_next"
@@ -51,7 +51,7 @@
             android:background="?selectableItemBackgroundBorderless"
             android:contentDescription="@string/next"
             android:padding="@dimen/medium_margin"
-            android:src="@drawable/ic_chevron_right_vector" />
+            android:src="@drawable/ic_msym_chevron_right" />
 
         <ImageView
             android:id="@+id/search_clear"
@@ -61,7 +61,7 @@
             android:background="?selectableItemBackgroundBorderless"
             android:contentDescription="@string/close"
             android:padding="@dimen/medium_margin"
-            android:src="@drawable/ic_cross_vector" />
+            android:src="@drawable/ic_msym_close" />
 
     </LinearLayout>
 </FrameLayout>

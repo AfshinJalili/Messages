@@ -27,7 +27,7 @@ open class MyMaterialSwitch : MaterialSwitch {
         if (showCheckmark) {
             setOnCheckedChangeListener { _, isChecked ->
                 thumbIconDrawable = if (isChecked) {
-                    AppCompatResources.getDrawable(context, R.drawable.ic_check_vector)
+                    AppCompatResources.getDrawable(context, R.drawable.ic_msym_check)
                 } else {
                     null
                 }

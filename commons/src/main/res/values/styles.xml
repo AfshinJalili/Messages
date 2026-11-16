@@ -14,7 +14,7 @@
         <item name="android:colorControlHighlight">@color/activated_item_foreground</item>
         <item name="colorControlHighlight">@color/activated_item_foreground</item>
         <item name="bottomSheetDialogTheme">@style/BottomSheetDialogTheme</item>
-        <item name="android:actionModeCloseDrawable">@drawable/ic_arrow_left_vector</item>
+        <item name="android:actionModeCloseDrawable">@drawable/ic_msym_arrow_back</item>
         <item name="actionModeStyle">@style/AppCompat.ActionMode</item>
         <item name="android:forceDarkAllowed">false</item>
         <item name="windowActionModeOverlay">true</item>    <!-- replace casual top menu with contextual menu after long pressing an item -->
@@ -332,7 +332,7 @@
     </style>
 
     <style name="OverflowMenuIconStyle">
-        <item name="srcCompat">@drawable/ic_three_dots_vector</item>
+        <item name="srcCompat">@drawable/ic_msym_more_vert</item>
         <item name="android:background">?attr/selectableItemBackgroundBorderless</item>
         <item name="android:paddingStart">@dimen/activity_margin</item>
         <item name="android:paddingTop">@dimen/normal_margin</item>
@@ -497,7 +497,7 @@
     </style>
 
     <style name="DragHandleIconStyle">
-        <item name="android:src">@drawable/ic_drag_handle_vector</item>
+        <item name="android:src">@drawable/ic_msym_drag_handle</item>
         <item name="android:layout_width">@dimen/normal_icon_size</item>
         <item name="android:layout_height">@dimen/normal_icon_size</item>
         <item name="android:paddingTop">@dimen/normal_margin</item>

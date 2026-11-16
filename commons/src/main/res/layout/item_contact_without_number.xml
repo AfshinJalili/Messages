@@ -18,7 +18,7 @@
         android:layout_width="@dimen/list_icon_size_medium"
         android:layout_height="@dimen/list_icon_size_medium"
         android:padding="@dimen/tiny_margin"
-        android:src="@drawable/ic_person_vector"
+        android:src="@drawable/ic_msym_person"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
@@ -44,7 +44,7 @@
         android:layout_height="@dimen/list_touch_target_min"
         android:paddingTop="@dimen/normal_margin"
         android:paddingBottom="@dimen/normal_margin"
-        android:src="@drawable/ic_drag_handle_vector"
+        android:src="@drawable/ic_msym_drag_handle"
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"

@@ -3,9 +3,10 @@
 
 Material Symbols (Apache 2.0, google/material-design-icons) is fetched here at development time only; the app stays
 offline and ships just the icons listed in SYMBOLS. Each becomes res/drawable/ic_msym_<name>.xml, filled with
-@color/icon_mask so Compose tints it. Icons in MIRRORED flip under RTL. Icons ending in _fill use FILL 1 for
-selected/active states (filled variants); everything else is FILL 0. ui/components/AfshIcon.kt names each by
-meaning; tests/check_material_symbols.py keeps the two in step.
+@color/icon_mask so Compose tints it. The same files are written into the commons module so remaining XML menus and
+layouts can reference them. Icons in MIRRORED flip under RTL. Icons ending in _fill use FILL 1 for selected/active
+states; everything else is FILL 0. ui/components/AfshIcon.kt names each by meaning; tests/check_material_symbols.py
+keeps the two in step.
 
     python3 tools/export_material_symbols.py            # fetch and write
     python3 tools/export_material_symbols.py --check    # verify the committed drawables match upstream
@@ -22,7 +23,8 @@ STYLE = "materialsymbolsrounded"  # Rounded style, not Outlined
 SYMBOLS = {
     "archive": None, "arrow_back": None, "arrow_forward": None, "block": None, "notifications": None,
     "notifications_off": None, "calendar_month": None, "sim_card": None, "check": None, "done_all": None,
-    "chevron_right": None, "keyboard_arrow_up": None, "check_circle": None, "help": None, "schedule": None, "cloud_off": None,
+    "chevron_right": None, "chevron_left": None, "keyboard_arrow_up": None, "check_circle": None, "help": None,
+    "schedule": None, "cloud_off": None,
     "contacts": None, "content_copy": None, "keyboard_return": None, "backup": None, "download": None,
     "more_vert": None, "open_in_new": None, "visibility": None, "visibility_off": None, "description": None,
     "forward": None, "pan_tool": None, "tag": None, "image": None, "inbox": None, "info": None, "translate": None,
@@ -34,22 +36,30 @@ SYMBOLS = {
     "volume_up": None, "close": None, "photo_camera": None, "video_library": None, "videocam": None, "mic": None,
     "schedule_send": None, "arrow_downward": None, "arrow_outward": None, "play_circle": None, "audio_file": None,
     "picture_as_pdf": None, "folder_zip": None,
+    # Commons / remaining-surface symbols
+    "apps": None, "article": None, "bug_report": None, "code": None, "contact_support": None,
+    "drag_handle": None, "fingerprint": None, "folder": None, "favorite": None, "do_not_disturb_on": None,
+    "policy": None, "volunteer_activism": None,
     # Filled variants (FILL 1) for selected/active states
     "star_fill": "star", "keep_fill": "keep", "forum_fill": "forum", "layers_fill": "layers", "settings_fill": "settings",
 }
 
 # Direction-bearing glyphs flip under RTL.
-MIRRORED = {"arrow_back", "arrow_forward", "chevron_right", "forward", "arrow_outward"}
+MIRRORED = {
+    "arrow_back", "arrow_forward", "chevron_right", "chevron_left", "forward", "arrow_outward",
+}
 
-OUT = Path(__file__).resolve().parents[1] / "app/src/main/res/drawable"
+ROOT = Path(__file__).resolve().parents[1]
+OUTS = [
+    ROOT / "app/src/main/res/drawable",
+    ROOT / "commons/src/main/res/drawable",
+]
 
 
 def fetch(name, stem):
     """Fetch the icon from upstream. Names ending in _fill use FILL 1; others use FILL 0."""
     stem = stem or name
-    # Remove _fill suffix to get the base icon name for the URL group
     base_name = stem.removesuffix("_fill")
-    # Use _fill1 suffix for filled variants, no suffix for FILL 0 (outline)
     fill_suffix = "_fill1" if name.endswith("_fill") else ""
     url = f"{BASE}/{base_name}/{STYLE}/{base_name}{fill_suffix}_24px.xml"
     with urllib.request.urlopen(url) as response:
@@ -61,7 +71,6 @@ def render(name, upstream):
     assert paths, f"{name}: no path in upstream"
     body = "\n".join(
         f'    <path\n        android:fillColor="@color/icon_mask"\n        android:pathData="{d}" />' for d in paths)
-    # Remove _fill suffix for mirror check (base icon determines directionality)
     base_name = name.removesuffix("_fill")
     mirror = '\n    android:autoMirrored="true"' if base_name in MIRRORED else ""
     fill_note = " FILL 1" if name.endswith("_fill") else ""
@@ -78,17 +87,19 @@ def main():
     stale = []
     for name, stem in SYMBOLS.items():
         text = render(name, fetch(name, stem))
-        target = OUT / f"ic_msym_{name}.xml"
-        if check:
-            if not target.exists() or target.read_text() != text:
-                stale.append(name)
-        else:
-            target.write_text(text)
+        for out in OUTS:
+            target = out / f"ic_msym_{name}.xml"
+            if check:
+                if not target.exists() or target.read_text() != text:
+                    stale.append(f"{target.relative_to(ROOT)}")
+            else:
+                out.mkdir(parents=True, exist_ok=True)
+                target.write_text(text)
     if check:
         assert not stale, "stale or missing: " + ", ".join(stale)
-        print("Material Symbols drawables match upstream")
+        print(f"Material Symbols Rounded drawables match upstream ({len(SYMBOLS)} icons × {len(OUTS)} modules)")
     else:
-        print(f"Wrote {len(SYMBOLS)} drawables")
+        print(f"Wrote {len(SYMBOLS)} drawables to {len(OUTS)} modules")
 
 
 if __name__ == "__main__":
