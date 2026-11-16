@@ -135,6 +135,7 @@ dependencies {
     implementation(libs.eventbus)
     implementation(libs.indicator.fast.scroll)
     implementation(libs.mmslib)
+    implementation(libs.androidx.biometric)
     implementation(libs.androidx.swiperefreshlayout)
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.documentfile)
