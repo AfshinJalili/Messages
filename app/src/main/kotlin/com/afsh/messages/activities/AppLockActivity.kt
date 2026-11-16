@@ -42,7 +42,7 @@ class AppLockActivity : ComponentActivity() {
         })
 
         setContent {
-            AfshTheme {
+            AfshTheme(dark = !isSystemInDarkMode()) {
                 AfshSystemBars(window)
                 Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
                     val config = baseConfig

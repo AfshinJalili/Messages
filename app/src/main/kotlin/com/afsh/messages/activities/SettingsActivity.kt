@@ -26,6 +26,7 @@ import org.fossify.commons.helpers.isQPlus
 import org.fossify.commons.helpers.isTiramisuPlus
 import com.afsh.messages.BuildConfig
 import com.afsh.messages.R
+import com.afsh.messages.R as AppR
 import com.afsh.messages.extensions.config
 import com.afsh.messages.extensions.emptyMessagesRecycleBin
 import com.afsh.messages.extensions.messagesDB

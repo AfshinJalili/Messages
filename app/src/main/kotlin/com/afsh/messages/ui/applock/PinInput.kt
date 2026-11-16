@@ -86,7 +86,7 @@ fun PinInput(
 }
 
 @Composable
-private fun PinButton(label: String, enabled: Boolean, onClick: () -> Unit) {
+private fun androidx.compose.foundation.layout.RowScope.PinButton(label: String, enabled: Boolean, onClick: () -> Unit) {
     if (label.isEmpty()) {
         // Spacer to keep grid alignment
         FilledTonalIconButton({}, enabled = false, modifier = Modifier.weight(1f).aspectRatio(1f), colors = IconButtonDefaults.filledTonalIconButtonColors(disabledContainerColor = MaterialTheme.colorScheme.surface)) {
