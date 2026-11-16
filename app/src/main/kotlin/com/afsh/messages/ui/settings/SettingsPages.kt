@@ -145,6 +145,12 @@ internal fun AppearancePage(state: SettingsUiState, onEvent: (SettingsEvent) -> 
         onCheckedChange = { onEvent(SettingsEvent.SetInboxUnreadCount(it)) },
         icon = AfshIcon.Number,
     )
+    SwitchSetting(
+        stringResource(R.string.show_inbox_unread_count),
+        checked = state.inboxUnreadCount,
+        onCheckedChange = { onEvent(SettingsEvent.SetInboxUnreadCount(it)) },
+        icon = R.drawable.ic_lucide_hash,
+    )
     when (picker) {
         Picker.FONT_SIZE -> ChoiceDialog(
             title = stringResource(R.string.text_size),

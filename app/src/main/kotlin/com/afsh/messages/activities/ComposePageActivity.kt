@@ -70,6 +70,11 @@ abstract class ComposePageActivity : SimpleActivity(), UndoDeletion.UndoHost {
         super.onResume()
         refreshTheme()
         NavBadges.refresh(this)
+        if (isQPlus()) window.isNavigationBarContrastEnforced = false
+        WindowCompat.getInsetsController(window, window.decorView).apply {
+            isAppearanceLightStatusBars = false
+            isAppearanceLightNavigationBars = !darkTheme
+        }
     }
 
     override fun onStop() {
