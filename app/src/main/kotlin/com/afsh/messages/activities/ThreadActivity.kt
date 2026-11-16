@@ -192,6 +192,7 @@ import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
 import org.joda.time.DateTime
 import java.io.File
+import kotlinx.coroutines.CompletableDeferred
 
 /**
  * The conversation screen's host: lifecycle, intents, permissions, and the provider and settings the
@@ -924,6 +925,8 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
     private fun loadMoreMessages() {
         if (data.isEmpty || data.allFetched || data.loadingOlder) return
         data.loadingOlder = true
+        val completion = CompletableDeferred<Unit>()
+        data.pageLoadCompletion = completion
         val cutoff = data.list.first().date
         ensureBackgroundThread {
             fetchOlderMessages(cutoff)
@@ -931,6 +934,8 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
             val items = threadItems
             runOnUiThread {
                 data.loadingOlder = false
+                data.pageLoadCompletion = null
+                completion.complete(Unit)
                 publishItems(items)
             }
         }
@@ -950,46 +955,49 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
             return
         }
 
-        ensureBackgroundThread {
+        lifecycleScope.launch {
             // Wait for any in-flight older-page load to complete before starting our own.
-            // Use exponential backoff to be more efficient than polling every 100ms.
-            var waits = 0
-            var sleepMs = JUMP_WAIT_MS
-            while (data.loadingOlder && waits++ < JUMP_WAIT_LIMIT) {
-                Thread.sleep(sleepMs)
-                sleepMs = (sleepMs * 1.5).toLong().coerceAtMost(500L)
-            }
+            data.pageLoadCompletion?.await()
             
-            data.loadingOlder = true
-            val items = try {
-                var cutoff = data.oldestDate() ?: Int.MAX_VALUE
-                var found = data.contains(messageId, isMms)
+            ensureBackgroundThread {
+                data.loadingOlder = true
+                val completion = CompletableDeferred<Unit>()
+                data.pageLoadCompletion = completion
                 
-                // Load older pages until we find the message or reach the start of the thread.
-                // Bound to MAX_JUMP_LOOPS to prevent infinite loops if the message doesn't exist.
-                var loops = 0
-                while (!found && !data.allFetched && loops < MAX_JUMP_LOOPS) {
-                    val fetched = fetchOlderMessages(cutoff)
-                    if (fetched.isEmpty()) break
-                    cutoff = data.list.first().date
-                    found = data.contains(messageId, isMms)
-                    loops++
-                }
+                val items = try {
+                    var cutoff = data.oldestDate() ?: Int.MAX_VALUE
+                    var found = data.contains(messageId, isMms)
+                    
+                    // Load older pages until we find the message or reach the start of the thread.
+                    // Bound to MAX_JUMP_LOOPS to prevent infinite loops if the message doesn't exist.
+                    var loops = 0
+                    while (!found && !data.allFetched && loops < MAX_JUMP_LOOPS) {
+                        val fetched = fetchOlderMessages(cutoff)
+                        if (fetched.isEmpty()) break
+                        cutoff = data.list.first().date
+                        found = data.contains(messageId, isMms)
+                        loops++
+                    }
 
-                threadItems = getThreadItems()
-                threadItems
-            } catch (e: Exception) {
-                // Without this, page loads stay blocked for the rest of the visit.
+                    threadItems = getThreadItems()
+                    threadItems
+                } catch (e: Exception) {
+                    // Without this, page loads stay blocked for the rest of the visit.
+                    runOnUiThread {
+                        data.loadingOlder = false
+                        data.pageLoadCompletion = null
+                        completion.complete(Unit)
+                        holder.jumpFailed()
+                    }
+                    return@ensureBackgroundThread
+                }
                 runOnUiThread {
                     data.loadingOlder = false
-                    holder.jumpFailed()
+                    data.pageLoadCompletion = null
+                    completion.complete(Unit)
+                    publishItems(items)
+                    holder.scrollToJump(messageId, isMms)
                 }
-                return@ensureBackgroundThread
-            }
-            runOnUiThread {
-                data.loadingOlder = false
-                publishItems(items)
-                holder.scrollToJump(messageId, isMms)
             }
         }
     }
@@ -1913,8 +1921,6 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
     // endregion
 
     companion object {
-        private const val JUMP_WAIT_MS = 50L
-        private const val JUMP_WAIT_LIMIT = 100
         private const val MAX_JUMP_LOOPS = 1000
         private const val SAVED_COMPOSER_TEXT = "composer_text"
         private const val SAVED_NEW_ON_OPEN = "new_on_open"

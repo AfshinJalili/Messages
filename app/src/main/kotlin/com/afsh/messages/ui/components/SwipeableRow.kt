@@ -99,8 +99,12 @@ fun SwipeableRow(
         enableDismissFromStartToEnd = enabled && gesture(SwipeToDismissBoxValue.StartToEnd) != null,
         enableDismissFromEndToStart = enabled && gesture(SwipeToDismissBoxValue.EndToStart) != null,
         onDismiss = { value ->
-            value.towardsRight(rtl)?.let(onSwipe)
-            scope.launch { state.reset() }
+            // Reset state before calling onSwipe, so if the row leaves composition and returns
+            // (e.g. archive/undo), it starts Settled instead of firing onDismiss again.
+            scope.launch {
+                state.reset()
+                value.towardsRight(rtl)?.let(onSwipe)
+            }
         },
         backgroundContent = {
             val direction = state.dismissDirection

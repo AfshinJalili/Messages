@@ -5,6 +5,10 @@ import android.os.SystemClock
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeRight
 import com.afsh.messages.activities.MainActivity
 import com.afsh.messages.extensions.conversationsDB
 import com.afsh.messages.helpers.refreshConversations
@@ -12,6 +16,7 @@ import com.afsh.messages.helpers.SwipeAction
 import com.afsh.messages.helpers.UndoDeletion
 import com.afsh.messages.helpers.testUndoDurationMs
 import org.junit.After
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.util.concurrent.CountDownLatch
@@ -26,6 +31,9 @@ import java.util.concurrent.atomic.AtomicInteger
 class DeletionChecks {
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
 
+    @get:Rule
+    val composeRule = createAndroidComposeRule<MainActivity>()
+
     @After
     fun tearDown() {
         testUndoDurationMs = null
@@ -33,58 +41,57 @@ class DeletionChecks {
 
     /**
      * Archive undo: verify that tapping Undo on the archive snackbar restores the conversation
-     * to the inbox and doesn't re-show the snackbar or re-trigger the archive.
+     * to the inbox and doesn't re-show the snackbar or re-trigger the archive. Uses a real swipe
+     * gesture to catch the SwipeToDismissBoxState bug where the row's Dismissed state persists
+     * and fires onDismiss again when the row returns after undo.
      */
     @Test
     fun archiveUndoRestoresConversation() {
         testUndoDurationMs = 15_000
         
-        val context = instrumentation.targetContext
+        val context = composeRule.activity
         val room = RoomOnlyThread(
             context,
-            fixtureConversation(Long.MAX_VALUE - 456, "Archive Test", snippet = "Test", phone = "5550100111222"),
+            fixtureConversation(Long.MAX_VALUE - 456, "Archive Test Fixture", snippet = "Test", phone = "5550100111222"),
         )
         val fixture = room.conversation
-        fun MainActivity.shows() = inboxRows.any { it.threadId == fixture.threadId }
         room.insert()
         try {
-            ActivityScenario.launch<MainActivity>(Intent(context, MainActivity::class.java)).use { scenario ->
-                scenario.awaitUntil("Fixture reaches the inbox", timeoutMs = 20_000) { it.shows() }
-                
-                // Archive the conversation
-                scenario.onActivity { activity ->
-                    activity.handleSwipe(
-                        activity.inboxRows.first { it.threadId == fixture.threadId },
-                        SwipeAction.ARCHIVE
-                    )
-                }
-                
-                // Conversation should be hidden immediately
-                check(!scenario.read { it.shows() }) { "Archived conversation must disappear immediately" }
-                
-                // Snackbar should be showing
-                scenario.awaitUntil("Archive snackbar appears", timeoutMs = 2_000) {
-                    it.snackbarHost.currentSnackbarData != null
-                }
-                
-                // Tap Undo
-                scenario.onActivity { activity ->
-                    val undo = activity.snackbarHost.currentSnackbarData
-                    check(undo != null) { "Snackbar must be showing" }
-                    undo.performAction()
-                }
-                
-                // Conversation should reappear
-                scenario.awaitUntil("Undo restores the conversation", timeoutMs = 5_000) {
-                    it.shows()
-                }
-                
-                // Wait a bit to ensure no snackbar reappears and conversation stays visible
-                Thread.sleep(500)
-                check(scenario.read { it.shows() }) { "Conversation must stay visible after undo" }
-                check(scenario.read { it.snackbarHost.currentSnackbarData == null }) {
-                    "Snackbar must not reappear after undo"
-                }
+            // Wait for fixture to appear in inbox
+            composeRule.waitUntil(timeoutMillis = 20_000) {
+                context.inboxRows.any { it.threadId == fixture.threadId }
+            }
+            
+            // Archive via real swipe gesture (right swipe in LTR)
+            composeRule.onNodeWithText(fixture.title, substring = true).performTouchInput { swipeRight() }
+            
+            // Conversation should be hidden immediately
+            composeRule.waitUntil(timeoutMillis = 2_000) {
+                context.inboxRows.none { it.threadId == fixture.threadId }
+            }
+            
+            // Snackbar should be showing
+            composeRule.waitUntil(timeoutMillis = 2_000) {
+                context.snackbarHost.currentSnackbarData != null
+            }
+            
+            // Tap Undo
+            val undo = context.snackbarHost.currentSnackbarData
+            check(undo != null) { "Snackbar must be showing" }
+            undo.performAction()
+            
+            // Conversation should reappear
+            composeRule.waitUntil(timeoutMillis = 5_000) {
+                context.inboxRows.any { it.threadId == fixture.threadId }
+            }
+            
+            // Wait to ensure no snackbar reappears and conversation stays visible
+            Thread.sleep(500)
+            check(context.inboxRows.any { it.threadId == fixture.threadId }) {
+                "Conversation must stay visible after undo"
+            }
+            check(context.snackbarHost.currentSnackbarData == null) {
+                "Snackbar must not reappear after undo"
             }
         } finally {
             room.delete()

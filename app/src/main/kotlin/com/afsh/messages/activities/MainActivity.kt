@@ -563,17 +563,7 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
 
     private fun undoSwipe(pending: PendingSwipe) {
         if (pendingSwipes.remove(pending)) {
-            // Clear the undo state before publishing to prevent the timeout callback from running
-            // if publish() triggers any new undo operations.
-            val currentJob = undoJob
-            val currentSettle = undoSettle
-            undoJob = null
-            undoSettle = null
-            
             publish()
-            
-            // Cancel the job after publish to ensure the snackbar dismisses properly
-            currentJob?.cancel()
         }
     }
 

@@ -1,6 +1,7 @@
 package com.afsh.messages.ui.thread
 
 import com.afsh.messages.models.Message
+import kotlinx.coroutines.CompletableDeferred
 import com.afsh.messages.models.ThreadItem
 import com.afsh.messages.models.buildThreadItems
 
@@ -33,6 +34,10 @@ class ThreadMessages(
 
     @Volatile
     var loadingOlder = false
+
+    /** Completes when the current older-page load finishes. Null when no load is in progress. */
+    @Volatile
+    var pageLoadCompletion: CompletableDeferred<Unit>? = null
 
     /**
      * Stable ids of the messages that were unread when this visit opened. They keep the "New messages"
