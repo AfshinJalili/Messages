@@ -220,7 +220,7 @@ abstract class BaseSimpleActivity : EdgeToEdgeActivity() {
         }
 
         updateRecentsAppIcon()
-        maybeLaunchAppUnlockActivity(requestCode = REQUEST_APP_UNLOCK)
+        // App lock is handled by the app module's ActivityLifecycleCallbacks
     }
 
     override fun onDestroy() {

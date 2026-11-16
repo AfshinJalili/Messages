@@ -131,6 +131,11 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".activities.AppLockActivity"
+            android:configChanges="orientation"
+            android:exported="false"
+            android:label="@string/app_lock" />
 
         <activity
             android:name=".activities.BlockRulesActivity"

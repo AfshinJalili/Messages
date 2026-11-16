@@ -11,7 +11,7 @@ abstract class BaseComposeActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        maybeLaunchAppUnlockActivity(REQUEST_APP_UNLOCK)
+        // App lock is handled by the app module's ActivityLifecycleCallbacks
     }
 
     override fun attachBaseContext(newBase: Context) {

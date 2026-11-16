@@ -1,16 +1,21 @@
 package com.afsh.messages
 
 import android.app.Activity
+import android.app.Application
 import android.content.res.Configuration
 import android.database.ContentObserver
 import android.net.Uri
+import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.provider.ContactsContract
 import org.fossify.commons.FossifyApp
+import org.fossify.commons.extensions.appLockManager
 import org.fossify.commons.extensions.hasPermission
 import org.fossify.commons.helpers.PERMISSION_READ_CONTACTS
+import org.fossify.commons.helpers.REQUEST_APP_UNLOCK
 import org.fossify.commons.helpers.ensureBackgroundThread
+import com.afsh.messages.activities.AppLockActivity
 import com.afsh.messages.extensions.rescheduleAllScheduledMessages
 import com.afsh.messages.extensions.config
 import com.afsh.messages.extensions.notificationHelper
@@ -35,6 +40,25 @@ class App : FossifyApp() {
             rescheduleAllScheduledMessages()
         }
         notificationHelper.createDefaultChannel()
+
+        // Register app lock lifecycle handler
+        registerActivityLifecycleCallbacks(appLockCallbacks)
+    }
+
+    private val appLockCallbacks = object : Application.ActivityLifecycleCallbacks {
+        override fun onActivityResumed(activity: Activity) {
+            // Launch lock screen if locked, but not if we're already on the lock screen
+            if (activity !is AppLockActivity && appLockManager.isLocked()) {
+                AppLockActivity.launch(activity, REQUEST_APP_UNLOCK)
+            }
+        }
+
+        override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {}
+        override fun onActivityStarted(activity: Activity) {}
+        override fun onActivityPaused(activity: Activity) {}
+        override fun onActivityStopped(activity: Activity) {}
+        override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {}
+        override fun onActivityDestroyed(activity: Activity) {}
     }
 
     // Android shows the channel name it was given last; rename it when the app language changes.
