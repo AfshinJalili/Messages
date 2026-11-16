@@ -1216,29 +1216,6 @@ abstract class BaseSimpleActivity : EdgeToEdgeActivity() {
         }
     }
 
-    fun exportSettings(configItems: LinkedHashMap<String, Any>) {
-        configItemsToExport = configItems
-        ExportSettingsDialog(
-            activity = this,
-            defaultFilename = getExportSettingsFilename(),
-            hidePath = true
-        ) { path, filename ->
-            Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
-                type = "text/plain"
-                putExtra(Intent.EXTRA_TITLE, filename)
-                addCategory(Intent.CATEGORY_OPENABLE)
-
-                try {
-                    startActivityForResult(this, SELECT_EXPORT_SETTINGS_FILE_INTENT)
-                } catch (e: ActivityNotFoundException) {
-                    toast(R.string.system_service_disabled, Toast.LENGTH_LONG)
-                } catch (e: Exception) {
-                    showErrorToast(e)
-                }
-            }
-        }
-    }
-
     private fun exportSettingsTo(
         outputStream: OutputStream?,
         configItems: LinkedHashMap<String, Any>
