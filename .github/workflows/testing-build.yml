@@ -2,16 +2,9 @@ name: Testing build
 
 on:
   # Any base, so every PR in a stack gets its own emulator run.
-  # Docs-only changes do not need the emulator; code, Gradle and workflow edits still run.
   pull_request:
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
   push:
     branches: [main, redesign-groundwork]
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
