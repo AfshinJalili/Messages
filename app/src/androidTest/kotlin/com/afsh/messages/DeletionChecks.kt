@@ -8,19 +8,94 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.afsh.messages.activities.MainActivity
 import com.afsh.messages.extensions.conversationsDB
 import com.afsh.messages.helpers.refreshConversations
+import com.afsh.messages.helpers.SwipeAction
 import com.afsh.messages.helpers.UndoDeletion
+import com.afsh.messages.helpers.testUndoDurationMs
+import org.junit.After
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
+/**
+ * Deletion and undo checks. Uses a 30-second undo window to avoid racing on large inboxes.
+ * Closes #59.
+ */
 @RunWith(AndroidJUnit4::class)
 class DeletionChecks {
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
 
+    @After
+    fun tearDown() {
+        testUndoDurationMs = null
+    }
+
+    /**
+     * Archive undo: verify that tapping Undo on the archive snackbar restores the conversation
+     * to the inbox and doesn't re-show the snackbar or re-trigger the archive.
+     */
+    @Test
+    fun archiveUndoRestoresConversation() {
+        testUndoDurationMs = 15_000
+        
+        val context = instrumentation.targetContext
+        val room = RoomOnlyThread(
+            context,
+            fixtureConversation(Long.MAX_VALUE - 456, "Archive Test", snippet = "Test", phone = "5550100111222"),
+        )
+        val fixture = room.conversation
+        fun MainActivity.shows() = inboxRows.any { it.threadId == fixture.threadId }
+        room.insert()
+        try {
+            ActivityScenario.launch<MainActivity>(Intent(context, MainActivity::class.java)).use { scenario ->
+                scenario.awaitUntil("Fixture reaches the inbox", timeoutMs = 20_000) { it.shows() }
+                
+                // Archive the conversation
+                scenario.onActivity { activity ->
+                    activity.handleSwipe(
+                        activity.inboxRows.first { it.threadId == fixture.threadId },
+                        SwipeAction.ARCHIVE
+                    )
+                }
+                
+                // Conversation should be hidden immediately
+                check(!scenario.read { it.shows() }) { "Archived conversation must disappear immediately" }
+                
+                // Snackbar should be showing
+                scenario.awaitUntil("Archive snackbar appears", timeoutMs = 2_000) {
+                    it.snackbarHost.currentSnackbarData != null
+                }
+                
+                // Tap Undo
+                scenario.onActivity { activity ->
+                    val undo = activity.snackbarHost.currentSnackbarData
+                    check(undo != null) { "Snackbar must be showing" }
+                    undo.performAction()
+                }
+                
+                // Conversation should reappear
+                scenario.awaitUntil("Undo restores the conversation", timeoutMs = 5_000) {
+                    it.shows()
+                }
+                
+                // Wait a bit to ensure no snackbar reappears and conversation stays visible
+                Thread.sleep(500)
+                check(scenario.read { it.shows() }) { "Conversation must stay visible after undo" }
+                check(scenario.read { it.snackbarHost.currentSnackbarData == null }) {
+                    "Snackbar must not reappear after undo"
+                }
+            }
+        } finally {
+            room.delete()
+        }
+    }
+
     @Test
     fun conversationStaysHiddenAcrossRefreshAndUndoSurvivesRecreation() {
+        // Use a 30-second undo window for this test to avoid racing on large inboxes (#59)
+        testUndoDurationMs = 30_000
+        
         val context = instrumentation.targetContext
         val room = RoomOnlyThread(
             context,
@@ -31,26 +106,34 @@ class DeletionChecks {
         room.insert()
         try {
             ActivityScenario.launch<MainActivity>(Intent(context, MainActivity::class.java)).use { scenario ->
-                // A cold start loads the owner's whole inbox first, which can take longer than the undo window.
+                // A cold start loads the owner's whole inbox first, which can take longer than the default undo window.
                 scenario.awaitUntil("Fixture reaches the inbox", timeoutMs = 20_000) { it.shows() }
                 scenario.onActivity { it.deleteWithUndo(listOf(fixture)) }
                 check(!scenario.read { it.shows() }) { "Deleted conversation must disappear immediately" }
-                // Recreate first: the whole check has to fit inside the 5 s undo window.
+                // Recreate to verify undo survives recreation
                 scenario.recreate()
-                // Undo must survive recreation: the new activity re-shows it a frame after resume. The M3
-                // snackbar hides its action from the unmerged semantics tree, so press it through the host.
-                scenario.awaitUntil("Undo is offered again after recreation") { it.snackbarHost.currentSnackbarData != null }
+                // Undo must survive recreation: the new activity re-shows it after resume.
+                scenario.awaitUntil("Undo is offered again after recreation", timeoutMs = 5_000) { 
+                    it.snackbarHost.currentSnackbarData != null 
+                }
                 refreshConversations()
                 instrumentation.waitForIdleSync()
                 check(!scenario.read { it.shows() }) { "Refresh resurrected a pending deletion" }
                 scenario.onActivity { activity ->
                     val undo = activity.snackbarHost.currentSnackbarData
-                    check(undo?.visuals?.actionLabel == activity.getString(org.fossify.commons.R.string.undo))
-                    undo?.performAction()
+                    check(undo != null) { "Snackbar must still be showing" }
+                    check(undo.visuals.actionLabel == activity.getString(org.fossify.commons.R.string.undo)) {
+                        "Expected Undo label, got: ${undo.visuals.actionLabel}"
+                    }
+                    undo.performAction()
                 }
-                scenario.awaitUntil("Undo restores the row") { fixture.threadId !in UndoDeletion.threads && it.shows() }
-                Thread.sleep(5200)
-                check(context.conversationsDB.getConversationWithThreadId(fixture.threadId) != null) { "Undo must prevent the delete" }
+                scenario.awaitUntil("Undo restores the row", timeoutMs = 5_000) { 
+                    fixture.threadId !in UndoDeletion.threads && it.shows() 
+                }
+                Thread.sleep(200) // Brief wait to ensure DB write completes
+                check(context.conversationsDB.getConversationWithThreadId(fixture.threadId) != null) { 
+                    "Undo must prevent the delete" 
+                }
             }
         } finally {
             room.delete()

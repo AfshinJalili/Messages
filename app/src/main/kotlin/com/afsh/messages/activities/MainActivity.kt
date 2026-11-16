@@ -475,7 +475,8 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
         inbox = inbox.copy(selected = emptySet())
     }
 
-    private fun handleSwipe(row: InboxRow, action: SwipeAction) {
+    @VisibleForTesting
+    internal fun handleSwipe(row: InboxRow, action: SwipeAction) {
         val conversation = row.conversation
         window.decorView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
         when (action) {
@@ -553,7 +554,8 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
 
     /** Honours the system "time to take action" accessibility setting on API 29+. */
     private fun undoTimeoutMs(): Long {
-        val base = SWIPE_UNDO_DURATION_MS
+        // Allow tests to override the undo duration to avoid racing the window on large inboxes
+        val base = testUndoDurationMs ?: SWIPE_UNDO_DURATION_MS
         if (!isQPlus()) return base.toLong()
         val flags = AccessibilityManager.FLAG_CONTENT_TEXT or AccessibilityManager.FLAG_CONTENT_CONTROLS
         return getSystemService(AccessibilityManager::class.java).getRecommendedTimeoutMillis(base, flags).toLong()
@@ -561,7 +563,17 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
 
     private fun undoSwipe(pending: PendingSwipe) {
         if (pendingSwipes.remove(pending)) {
+            // Clear the undo state before publishing to prevent the timeout callback from running
+            // if publish() triggers any new undo operations.
+            val currentJob = undoJob
+            val currentSettle = undoSettle
+            undoJob = null
+            undoSettle = null
+            
             publish()
+            
+            // Cancel the job after publish to ensure the snackbar dismisses properly
+            currentJob?.cancel()
         }
     }
 
@@ -728,7 +740,8 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
             try {
                 manager.dynamicShortcuts = listOf(newConversation)
                 config.lastHandledShortcutColor = appIconColor
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                android.util.Log.w(TAG, "Failed to update dynamic shortcuts", e)
             }
         }
     }
@@ -851,6 +864,7 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
     }
 
     companion object {
+        private const val TAG = "MainActivity"
         private const val TOP_DESTINATION = "top_destination"
         private const val LIBRARY_OPEN = "library_open"
         private const val SEARCH_OPEN = "search_open"

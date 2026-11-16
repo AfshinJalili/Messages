@@ -73,6 +73,9 @@ const val MAX_RECENT_SEARCHES = 5
 /** Longer than Snackbar.LENGTH_LONG (2.75s); the inbox swipe undo needs to survive a glance away. */
 const val SWIPE_UNDO_DURATION_MS = 5000
 
+/** Undo duration for instrumented tests to avoid racing the undo window on large inboxes. */
+var testUndoDurationMs: Int? = null
+
 // blocked message reasons
 const val BLOCK_REASON_KEYWORD = 1
 const val BLOCK_REASON_NUMBER = 2

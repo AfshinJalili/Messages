@@ -951,18 +951,26 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         }
 
         ensureBackgroundThread {
-            // A page the timeline asked for may still be loading; let it land rather than give up.
+            // Wait for any in-flight older-page load to complete before starting our own.
+            // Use exponential backoff to be more efficient than polling every 100ms.
             var waits = 0
-            while (data.loadingOlder && waits++ < JUMP_WAIT_LIMIT) Thread.sleep(JUMP_WAIT_MS)
+            var sleepMs = JUMP_WAIT_MS
+            while (data.loadingOlder && waits++ < JUMP_WAIT_LIMIT) {
+                Thread.sleep(sleepMs)
+                sleepMs = (sleepMs * 1.5).toLong().coerceAtMost(500L)
+            }
+            
             data.loadingOlder = true
             val items = try {
                 var cutoff = data.oldestDate() ?: Int.MAX_VALUE
                 var found = data.contains(messageId, isMms)
+                
+                // Load older pages until we find the message or reach the start of the thread.
+                // Bound to MAX_JUMP_LOOPS to prevent infinite loops if the message doesn't exist.
                 var loops = 0
-
-                // not the best solution, but this will do for now.
-                while (!found && !data.allFetched) {
-                    if (fetchOlderMessages(cutoff).isEmpty() || loops >= 1000) break
+                while (!found && !data.allFetched && loops < MAX_JUMP_LOOPS) {
+                    val fetched = fetchOlderMessages(cutoff)
+                    if (fetched.isEmpty()) break
                     cutoff = data.list.first().date
                     found = data.contains(messageId, isMms)
                     loops++
@@ -1233,9 +1241,14 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
     }
 
     private fun renameConversation() {
-        showRenameDialog(conversation!!) { title ->
+        val current = conversation
+        if (current == null) {
+            toast(R.string.unknown_error_occurred)
+            return
+        }
+        showRenameDialog(current) { title ->
             ensureBackgroundThread {
-                conversation = renameConversation(conversation!!, newTitle = title)
+                conversation = renameConversation(current, newTitle = title)
                 runOnUiThread { refreshMenuItems() }
             }
         }
@@ -1902,6 +1915,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
     companion object {
         private const val JUMP_WAIT_MS = 50L
         private const val JUMP_WAIT_LIMIT = 100
+        private const val MAX_JUMP_LOOPS = 1000
         private const val SAVED_COMPOSER_TEXT = "composer_text"
         private const val SAVED_NEW_ON_OPEN = "new_on_open"
         private const val SAVED_COMPOSER_ATTACHMENTS = "composer_attachments"

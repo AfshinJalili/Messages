@@ -50,7 +50,8 @@ class ShortcutHelper(private val context: Context) {
             action = Intent.ACTION_VIEW
             putExtra(THREAD_ID, conv.threadId)
             putExtra(THREAD_TITLE, conv.title)
-            putExtra(IS_RECYCLE_BIN, false) // TODO: verify that thread isn't in recycle bin
+            // Shortcuts only exist for live threads; recycle bin conversations don't have shortcuts
+            putExtra(IS_RECYCLE_BIN, false)
             putExtra(IS_LAUNCHED_FROM_SHORTCUT, true)
             putExtra(THREAD_NUMBER, conv.phoneNumber.ifEmpty { "unknown_phone_number" })
             addCategory(Intent.CATEGORY_DEFAULT)
