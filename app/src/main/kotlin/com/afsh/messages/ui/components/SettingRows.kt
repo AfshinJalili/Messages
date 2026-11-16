@@ -77,7 +77,7 @@ fun SettingItem(
         },
         trailingContent = trailing,
         colors = ListItemDefaults.colors(
-            containerColor = Color.Transparent,
+            containerColor = Afsh.colors.transparent,
             headlineColor = labelColor,
             supportingColor = colors.onSurfaceVariant,
             leadingIconColor = if (destructive) colors.error else colors.primary,

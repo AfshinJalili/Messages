@@ -7,7 +7,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class ColorSourceTest {
-    private val lime = ColorRole(Color(0xFFD7F36B), Color(0xFF16201B))
+    private val primary = ColorRole(Color(0xFF6750A4), Color(0xFFFFFFFF))
 
     @Test
     fun `below Android 12 the static scheme is used even with dynamic color on`() {
@@ -29,23 +29,26 @@ class ColorSourceTest {
     }
 
     @Test
-    fun `dynamic color is off until the default look is approved`() {
+    fun `dynamic color is off so the static Google palette always applies`() {
         assertEquals(false, DynamicColor)
+        assertEquals(ColorSource.Static, colorSource())
     }
 
     @Test
-    fun `the static accent is the lime role`() {
+    fun `the static accent is the primary role`() {
         val scheme = lightColorScheme()
-        assertEquals(lime, accentRole(ColorSource.Static, scheme, lime))
+        assertEquals(primary, accentRole(ColorSource.Static, scheme, primary))
     }
 
     @Test
-    fun `the dynamic accent is the scheme's tertiary container`() {
-        for (scheme in listOf(lightColorScheme(tertiaryContainer = Color.Red, onTertiaryContainer = Color.Blue),
-            darkColorScheme(tertiaryContainer = Color.Green, onTertiaryContainer = Color.Black))) {
+    fun `the dynamic accent is the scheme's primary pair`() {
+        for (scheme in listOf(
+            lightColorScheme(primary = Color.Red, onPrimary = Color.Blue),
+            darkColorScheme(primary = Color.Green, onPrimary = Color.Black),
+        )) {
             assertEquals(
-                ColorRole(scheme.tertiaryContainer, scheme.onTertiaryContainer),
-                accentRole(ColorSource.Dynamic, scheme, lime),
+                ColorRole(scheme.primary, scheme.onPrimary),
+                accentRole(ColorSource.Dynamic, scheme, primary),
             )
         }
     }

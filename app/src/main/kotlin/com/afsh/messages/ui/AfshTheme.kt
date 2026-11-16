@@ -2,6 +2,7 @@ package com.afsh.messages.ui
 
 import androidx.compose.ui.text.style.TextDirection
 import android.content.Context
+import android.content.res.Configuration
 import android.os.Build
 import androidx.compose.foundation.shape.AbsoluteRoundedCornerShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -39,14 +40,21 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
-import org.fossify.commons.extensions.getProperBackgroundColor
+import org.fossify.commons.extensions.baseConfig
 import org.fossify.commons.extensions.getTextSize
 import com.afsh.messages.R
 
 private const val DARK_LUMINANCE = 0.5
 
-/** Light or dark follows the app's background setting, not the system night mode. */
-fun Context.afshDark() = ColorUtils.calculateLuminance(getProperBackgroundColor()) < DARK_LUMINANCE
+/**
+ * Light or dark: follows the system night mode when Appearance → System is on; otherwise the
+ * stored light/dark background. Never uses wallpaper / Material You colors ([DynamicColor] is off).
+ */
+fun Context.afshDark(): Boolean = if (baseConfig.isSystemThemeEnabled) {
+    resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
+} else {
+    ColorUtils.calculateLuminance(baseConfig.backgroundColor) < DARK_LUMINANCE
+}
 
 /** The app's own font-size setting, relative to its default. */
 fun Context.afshTextScale() = getTextSize() / resources.getDimension(org.fossify.commons.R.dimen.normal_text_size)
@@ -65,35 +73,44 @@ data class ColorRole(val container: Color, val content: Color) {
  */
 @Immutable
 data class AfshColors(
-    /** The accent role and its on-color: lime under static color, tertiary container under dynamic; see [accentRole]. */
+    /**
+     * High-emphasis actions (send, FAB, primary buttons): Material primary / onPrimary, matching
+     * Google Messages’ FAB and send emphasis on the primary role.
+     */
     val accent: Color,
     val onAccent: Color,
     val onBandVariant: Color,
     val avatars: List<Color>,
     val onAvatar: Color,
-    /** Secondary text on lilac panels (`on-secondary-container-variant`). */
+    /** Secondary text on secondary-container panels. */
     val onSecondaryContainerVariant: Color = Color.Unspecified,
-    /** Actions on inverse surfaces such as the snackbar (`inverse-accent`). */
+    /** Actions on inverse surfaces such as the snackbar (`inversePrimary`). */
     val inverseAccent: Color = Color.Unspecified,
-    /** Behind a held message or a focused task (`scrim`). */
+    /** Behind a held message or a focused task (`scrim` with dim alpha). */
     val scrim: Color = Color.Unspecified,
-    /** Over the conversation and its header while a message is lifted for actions. Same in both themes. */
+    /** Over the conversation and its header while a message is lifted for actions. */
     val liftScrim: Color = Color.Unspecified,
-    /** Outline of the focused control (`focus-ring`). */
+    /** Outline of the focused control (`primary`). */
     val focusRing: Color = Color.Unspecified,
-    /** Page, inbox and conversation headers. */
+    /** Fully transparent; for “no indicator” / clear surfaces — not a brand color. */
+    val transparent: Color = Color.Unspecified,
+    /** Opaque black mask stop (`scrim`); for blend masks, not fills. */
+    val mask: Color = Color.Unspecified,
+    /** Page, inbox and conversation headers: surface / onSurface (Messages chrome is not primary-filled). */
     val header: ColorRole = ColorRole.Unspecified,
-    /** Messages the user sent, in the conversation and in message details. */
+    /** Messages the user sent: primaryContainer / onPrimaryContainer. */
     val sentBubble: ColorRole = ColorRole.Unspecified,
+    /** Received bubbles: surfaceContainerHighest / onSurface. */
+    val receivedBubble: ColorRole = ColorRole.Unspecified,
     /** Secondary buttons and the jump-to-latest button. */
     val secondaryButton: ColorRole = ColorRole.Unspecified,
     /** The panel behind a non-destructive swipe action such as Archive. */
     val swipeAction: ColorRole = ColorRole.Unspecified,
     /** The selected filter chip in the inbox and in search. */
     val selected: ColorRole = ColorRole.Unspecified,
-    /** The unread count and attachment type icons. */
+    /** The unread count and attachment type icons (`primary`). */
     val badge: ColorRole = ColorRole.Unspecified,
-    /** The theme picker's pictures of each theme, whichever theme is on: a page ([ColorRole.container]) and its line. */
+    /** The theme picker's pictures of each theme: a page ([ColorRole.container]) and its line. */
     val themePreview: ThemePreview = ThemePreview.Unspecified,
 )
 
@@ -106,7 +123,13 @@ data class ThemePreview(val light: ColorRole, val dark: ColorRole) {
 }
 
 val LocalAfshColors = staticCompositionLocalOf {
-    AfshColors(Color.Unspecified, Color.Unspecified, Color.Unspecified, emptyList(), Color.Unspecified)
+    AfshColors(
+        accent = Color.Unspecified,
+        onAccent = Color.Unspecified,
+        onBandVariant = Color.Unspecified,
+        avatars = emptyList(),
+        onAvatar = Color.Unspecified,
+    )
 }
 
 /** The shared spacing scale for gaps and padding; see Spacing in DESIGN.md for when to use each step. */
@@ -188,33 +211,31 @@ private fun typography(rtl: Boolean): Typography {
 }
 
 /**
- * The one switch for Material You. While false the app draws its own static scheme everywhere;
- * set it to true to take the scheme, accent included, from the wallpaper on Android 12 and up.
- * It stays off until the owner approves the default look.
+ * Material You wallpaper colors stay off: the app always draws the static GM3 baseline.
+ * Kept as a named switch so [colorSource] / [ColorSourceTest] stay explicit.
  */
 const val DynamicColor = false
 
-/** Where the color scheme comes from: the app's own palette or the system's wallpaper colors. */
+/** Where the color scheme comes from: the static GM3 baseline, or (unused) wallpaper colors. */
 enum class ColorSource { Static, Dynamic }
 
-/** Dynamic color exists from Android 12 (API 31); older phones always get the static scheme. */
+/** Dynamic color exists from Android 12 (API 31); with [DynamicColor] false every API gets Static. */
 fun colorSource(dynamicColor: Boolean = DynamicColor, sdkInt: Int = Build.VERSION.SDK_INT): ColorSource =
     if (dynamicColor && sdkInt >= Build.VERSION_CODES.S) ColorSource.Dynamic else ColorSource.Static
 
 /**
- * The accent role (main button, send, new message, selected chips). Static color keeps lime;
- * dynamic color has no lime, so the accent takes Material's tertiary container, its own
- * contrast-safe pair, which keeps it apart from the primary-driven header and bubbles.
+ * High-emphasis accent (send, FAB, primary buttons). Static GM3 uses primary / onPrimary;
+ * if dynamic color were ever enabled it would keep the same pair from the dynamic scheme.
  */
 fun accentRole(source: ColorSource, scheme: ColorScheme, static: ColorRole): ColorRole = when (source) {
     ColorSource.Static -> static
-    ColorSource.Dynamic -> ColorRole(scheme.tertiaryContainer, scheme.onTertiaryContainer)
+    ColorSource.Dynamic -> ColorRole(scheme.primary, scheme.onPrimary)
 }
 
 /**
  * The one palette: Compose screens read it through [AfshTheme], and the XML theme, Commons'
  * stored accent and notifications read the same roles through [com.afsh.messages.helpers.primaryRoleColor].
- * [source] picks the system's dynamic scheme or the app's static one; see [DynamicColor].
+ * [source] is always [ColorSource.Static] while [DynamicColor] is false.
  */
 fun Context.afshColorScheme(dark: Boolean, source: ColorSource = colorSource()): ColorScheme {
     if (source == ColorSource.Dynamic && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -223,59 +244,86 @@ fun Context.afshColorScheme(dark: Boolean, source: ColorSource = colorSource()):
     return afshStaticColorScheme(dark)
 }
 
+/** Full Material 3 baseline scheme from `res/values/colors.xml` (see source comment block there). */
 private fun Context.afshStaticColorScheme(dark: Boolean): ColorScheme {
     fun color(id: Int) = Color(getColor(id))
-    val paper = color(R.color.afsh_paper)
-    val ink = color(R.color.afsh_ink)
-    val pine = color(R.color.afsh_pine)
-    val white = color(R.color.design_white)
-    val lilac = color(R.color.afsh_lilac)
-    val lime = color(R.color.afsh_lime)
     return if (dark) {
         darkColorScheme(
-            primary = color(R.color.afsh_primary_dark),
-            onPrimary = ink,
-            primaryContainer = color(R.color.afsh_pine_2),
-            onPrimaryContainer = white,
-            secondaryContainer = color(R.color.afsh_lilac_dark),
-            onSecondaryContainer = lilac,
-            background = color(R.color.afsh_night),
-            surface = color(R.color.afsh_night),
-            surfaceContainer = color(R.color.afsh_night_surface),
-            surfaceContainerHigh = color(R.color.afsh_surface_high_dark),
-            onSurface = paper,
-            onSurfaceVariant = color(R.color.afsh_muted_dark),
-            outlineVariant = color(R.color.afsh_line_dark),
-            error = color(R.color.afsh_coral),
-            onError = ink,
-            errorContainer = color(R.color.afsh_error_container_dark),
-            onErrorContainer = color(R.color.afsh_error_container),
-            inverseSurface = paper,
-            inverseOnSurface = ink,
-            inversePrimary = pine,
+            primary = color(R.color.m3_primary_dark),
+            onPrimary = color(R.color.m3_on_primary_dark),
+            primaryContainer = color(R.color.m3_primary_container_dark),
+            onPrimaryContainer = color(R.color.m3_on_primary_container_dark),
+            secondary = color(R.color.m3_secondary_dark),
+            onSecondary = color(R.color.m3_on_secondary_dark),
+            secondaryContainer = color(R.color.m3_secondary_container_dark),
+            onSecondaryContainer = color(R.color.m3_on_secondary_container_dark),
+            tertiary = color(R.color.m3_tertiary_dark),
+            onTertiary = color(R.color.m3_on_tertiary_dark),
+            tertiaryContainer = color(R.color.m3_tertiary_container_dark),
+            onTertiaryContainer = color(R.color.m3_on_tertiary_container_dark),
+            background = color(R.color.m3_background_dark),
+            onBackground = color(R.color.m3_on_background_dark),
+            surface = color(R.color.m3_surface_dark),
+            onSurface = color(R.color.m3_on_surface_dark),
+            surfaceVariant = color(R.color.m3_surface_variant_dark),
+            onSurfaceVariant = color(R.color.m3_on_surface_variant_dark),
+            surfaceTint = color(R.color.m3_primary_dark),
+            inverseSurface = color(R.color.m3_inverse_surface_dark),
+            inverseOnSurface = color(R.color.m3_inverse_on_surface_dark),
+            inversePrimary = color(R.color.m3_inverse_primary_dark),
+            error = color(R.color.m3_error_dark),
+            onError = color(R.color.m3_on_error_dark),
+            errorContainer = color(R.color.m3_error_container_dark),
+            onErrorContainer = color(R.color.m3_on_error_container_dark),
+            outline = color(R.color.m3_outline_dark),
+            outlineVariant = color(R.color.m3_outline_variant_dark),
+            scrim = color(R.color.m3_scrim),
+            surfaceBright = color(R.color.m3_surface_bright_dark),
+            surfaceDim = color(R.color.m3_surface_dim_dark),
+            surfaceContainer = color(R.color.m3_surface_container_dark),
+            surfaceContainerHigh = color(R.color.m3_surface_container_high_dark),
+            surfaceContainerHighest = color(R.color.m3_surface_container_highest_dark),
+            surfaceContainerLow = color(R.color.m3_surface_container_low_dark),
+            surfaceContainerLowest = color(R.color.m3_surface_container_lowest_dark),
         )
     } else {
         lightColorScheme(
-            primary = pine,
-            onPrimary = white,
-            primaryContainer = pine,
-            onPrimaryContainer = white,
-            secondaryContainer = lilac,
-            onSecondaryContainer = ink,
-            background = paper,
-            surface = paper,
-            surfaceContainer = white,
-            surfaceContainerHigh = color(R.color.afsh_surface_high),
-            onSurface = ink,
-            onSurfaceVariant = color(R.color.afsh_muted),
-            outlineVariant = color(R.color.afsh_line),
-            error = color(R.color.afsh_error),
-            onError = white,
-            errorContainer = color(R.color.afsh_error_container),
-            onErrorContainer = ink,
-            inverseSurface = ink,
-            inverseOnSurface = white,
-            inversePrimary = lime,
+            primary = color(R.color.m3_primary),
+            onPrimary = color(R.color.m3_on_primary),
+            primaryContainer = color(R.color.m3_primary_container),
+            onPrimaryContainer = color(R.color.m3_on_primary_container),
+            secondary = color(R.color.m3_secondary),
+            onSecondary = color(R.color.m3_on_secondary),
+            secondaryContainer = color(R.color.m3_secondary_container),
+            onSecondaryContainer = color(R.color.m3_on_secondary_container),
+            tertiary = color(R.color.m3_tertiary),
+            onTertiary = color(R.color.m3_on_tertiary),
+            tertiaryContainer = color(R.color.m3_tertiary_container),
+            onTertiaryContainer = color(R.color.m3_on_tertiary_container),
+            background = color(R.color.m3_background),
+            onBackground = color(R.color.m3_on_background),
+            surface = color(R.color.m3_surface),
+            onSurface = color(R.color.m3_on_surface),
+            surfaceVariant = color(R.color.m3_surface_variant),
+            onSurfaceVariant = color(R.color.m3_on_surface_variant),
+            surfaceTint = color(R.color.m3_primary),
+            inverseSurface = color(R.color.m3_inverse_surface),
+            inverseOnSurface = color(R.color.m3_inverse_on_surface),
+            inversePrimary = color(R.color.m3_inverse_primary),
+            error = color(R.color.m3_error),
+            onError = color(R.color.m3_on_error),
+            errorContainer = color(R.color.m3_error_container),
+            onErrorContainer = color(R.color.m3_on_error_container),
+            outline = color(R.color.m3_outline),
+            outlineVariant = color(R.color.m3_outline_variant),
+            scrim = color(R.color.m3_scrim),
+            surfaceBright = color(R.color.m3_surface_bright),
+            surfaceDim = color(R.color.m3_surface_dim),
+            surfaceContainer = color(R.color.m3_surface_container),
+            surfaceContainerHigh = color(R.color.m3_surface_container_high),
+            surfaceContainerHighest = color(R.color.m3_surface_container_highest),
+            surfaceContainerLow = color(R.color.m3_surface_container_low),
+            surfaceContainerLowest = color(R.color.m3_surface_container_lowest),
         )
     }
 }
@@ -330,31 +378,31 @@ fun AfshTheme(dark: Boolean, textScale: Float = 1f, content: @Composable () -> U
     val context = LocalContext.current
     val source = colorSource()
     val scheme = remember(context, dark, source) { context.afshColorScheme(dark, source) }
-    val accent = accentRole(source, scheme, ColorRole(colorResource(R.color.afsh_lime), colorResource(R.color.afsh_ink)))
-    // Every role resolves to today's pine container; give a role its own value to recolor only that job.
-    val pine = ColorRole(scheme.primaryContainer, scheme.onPrimaryContainer)
+    val accent = accentRole(source, scheme, ColorRole(scheme.primary, scheme.onPrimary))
+    val primaryContainer = ColorRole(scheme.primaryContainer, scheme.onPrimaryContainer)
     val extras = AfshColors(
         accent = accent.container,
         onAccent = accent.content,
-        onBandVariant = colorResource(R.color.afsh_band_variant),
-        avatars = listOf(colorResource(R.color.afsh_lilac), colorResource(R.color.afsh_lime)),
-        onAvatar = colorResource(R.color.afsh_pine),
-        onSecondaryContainerVariant = colorResource(
-            if (dark) R.color.afsh_on_lilac_variant_dark else R.color.afsh_on_lilac_variant,
-        ),
-        inverseAccent = colorResource(if (dark) R.color.afsh_pine else R.color.afsh_lime),
-        scrim = colorResource(if (dark) R.color.afsh_scrim_dark else R.color.afsh_scrim),
-        liftScrim = colorResource(R.color.afsh_lift_scrim),
-        focusRing = colorResource(if (dark) R.color.afsh_lime else R.color.afsh_pine),
-        header = pine,
-        sentBubble = pine,
-        secondaryButton = pine,
-        swipeAction = pine,
-        selected = pine,
-        badge = pine,
+        onBandVariant = scheme.onSurfaceVariant,
+        avatars = listOf(scheme.secondaryContainer, scheme.tertiaryContainer, scheme.primaryContainer),
+        onAvatar = scheme.onSurface,
+        onSecondaryContainerVariant = scheme.onSecondaryContainer,
+        inverseAccent = scheme.inversePrimary,
+        scrim = colorResource(if (dark) R.color.m3_scrim_dim_dark else R.color.m3_scrim_dim),
+        liftScrim = colorResource(R.color.m3_lift_scrim),
+        focusRing = scheme.primary,
+        transparent = colorResource(R.color.design_transparent),
+        mask = scheme.scrim,
+        header = ColorRole(scheme.surface, scheme.onSurface),
+        sentBubble = primaryContainer,
+        receivedBubble = ColorRole(scheme.surfaceContainerHighest, scheme.onSurface),
+        secondaryButton = ColorRole(scheme.secondaryContainer, scheme.onSecondaryContainer),
+        swipeAction = primaryContainer,
+        selected = ColorRole(scheme.secondaryContainer, scheme.onSecondaryContainer),
+        badge = ColorRole(scheme.primary, scheme.onPrimary),
         themePreview = ThemePreview(
-            light = ColorRole(colorResource(R.color.surface_light), colorResource(R.color.afsh_pine)),
-            dark = ColorRole(colorResource(R.color.surface_dark), colorResource(R.color.afsh_lime)),
+            light = ColorRole(colorResource(R.color.m3_surface), colorResource(R.color.m3_primary)),
+            dark = ColorRole(colorResource(R.color.m3_surface_dark), colorResource(R.color.m3_primary_dark)),
         ),
     )
     MaterialTheme(

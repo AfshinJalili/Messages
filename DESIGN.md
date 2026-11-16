@@ -4,13 +4,13 @@ Personal messaging as a clear, living line between people. The inbox favors send
 
 The design source is `design/afsh.pen` (encrypted; edit only through the pen CLI or pencil MCP). PNG exports in `design/exports/` are previews only; the canvas is the truth. Screens are fixed 390 × 844 frames and the design decides open questions through issues labeled `design-gap`.
 
-Theme: `ui/AfshTheme.kt`. The palette lives in `res/values/colors.xml` (`afsh_*`) because `tests/check_design_tokens.py` rejects inline colors. Roles and type are in Kotlin, and only the theme looks up color resources: screens read `MaterialTheme.colorScheme` or `Afsh.colors` (for example `liftScrim` and `themePreview`), and `tests/check_ui_contract.py` rejects `colorResource` elsewhere. Light or dark follows the app's background setting. The Commons accent and custom colors do not apply to Compose screens. Fonts are bundled from google/fonts (OFL): Funnel Sans, Atkinson Hyperlegible, and Vazirmatn for RTL labels. Message content, previews, drafts, and search excerpts use Atkinson for Latin and Vazirmatn for Arabic-script runs regardless of app language, preserving weight and link styling. Content containing Arabic script uses 1.7em leading; other content uses 1.45em.
+Theme: `ui/AfshTheme.kt`. The palette is the Material 3 (GM3) static baseline in `res/values/colors.xml` (`m3_*`, with sources cited in that file) because `tests/check_design_tokens.py` rejects inline colors outside it. Roles and type are in Kotlin, and only the theme looks up color resources: screens read `MaterialTheme.colorScheme` or `Afsh.colors` (for example `liftScrim` and `themePreview`), and `tests/check_ui_contract.py` rejects `colorResource` elsewhere. Light or dark follows Appearance → System (device night mode) or the explicit light/dark choice; Material You wallpaper colors never apply (`DynamicColor` is off). The Commons accent and custom color pickers do not apply to Compose screens. Fonts are bundled from google/fonts (OFL): Funnel Sans, Atkinson Hyperlegible, and Vazirmatn for RTL labels. Message content, previews, drafts, and search excerpts use Atkinson for Latin and Vazirmatn for Arabic-script runs regardless of app language, preserving weight and link styling. Content containing Arabic script uses 1.7em leading; other content uses 1.45em.
 
 ## Product idea
 
 The inbox acts like an open line: sender, latest meaning, and urgency are visible in one continuous list. Conversations put message text first and leave the composer at the bottom of the phone viewport. The navigation has three destinations: Inbox, Library, and Settings. Library collects saved, archived, spam, and recently deleted conversations so those tasks stay findable without crowding the inbox.
 
-The palette uses mineral paper (`$paper`), deep pine (`$pine`, `$ink`), lime for new or active activity (`$lime`), lilac for media and retained drafts (`$lilac`), and coral for attention (`$coral`). Color also appears with words, shape, or line weight so status does not depend on hue alone. Sender initials identify contacts when a photo is unavailable.
+The palette is the Material 3 static baseline (primary purple `#6750A4` and its tonal roles). Color also appears with words, shape, or line weight so status does not depend on hue alone. Sender initials identify contacts when a photo is unavailable.
 
 ## Screen map (numbers are frames in the design file)
 
@@ -97,29 +97,30 @@ Android resources are the source of truth. This document describes how to use th
 
 ### Color
 
-The theme is the one color source. `colors.xml` holds the palette values (paper, ink, pine, lime, lilac, coral and their dark partners); screens never read them directly. `afshColorScheme(dark)` in `ui/AfshTheme.kt` maps them to roles, and everything else reads roles:
+The theme is the one color source. `colors.xml` holds the Material 3 static baseline (`m3_*` light and `m3_*_dark`); screens never read them directly. `afshColorScheme(dark)` in `ui/AfshTheme.kt` maps them to every Material slot, and everything else reads roles:
 
-- Compose screens read Material slots through `MaterialTheme.colorScheme` and the AFSH roles through `Afsh.colors`.
+- Compose screens read Material slots through `MaterialTheme.colorScheme` and the AFSH job roles through `Afsh.colors`.
 - XML widgets and Commons screens (the app-lock dialog and screen) use `AppTheme.Afsh.Light` and `AppTheme.Afsh.Dark` in `styles.xml`, whose items mirror the same roles. `SimpleActivity.setTheme()` and Commons' `getThemeId()` (through `App.themeId`) always pick one of them by `afshDark()`.
-- Notifications and Commons' stored accent use `primaryRoleColor()`. `Config.applyThemeDefaults()` points the stored accent at the primary role on every start, and Settings calls `syncAccentWithTheme()` after the light or dark choice changes. With the system theme on, `you_primary_color` is overridden to the same role, so the wallpaper never recolors the app.
+- Notifications and Commons' stored accent use `primaryRoleColor()`. `Config.applyThemeDefaults()` defaults Appearance to System and points the stored accent at the primary role on every start; Settings calls `syncAccentWithTheme()` after the light or dark choice changes. Every `you_*` resource is overridden to the static baseline, and Commons' `isDynamicTheme()` is always false, so the wallpaper never recolors the app.
 
 | Role | Light | Dark | Used for |
 | --- | --- | --- | --- |
-| `primary` / `onPrimary` | pine / white | `afsh_primary_dark` / ink | Actions, controls, notification accent, Commons accent |
-| `primaryContainer` | pine / white | `afsh_pine_2` / white | Only inside the theme; screens use the job roles below |
-| `secondaryContainer` | lilac / ink | `afsh_lilac_dark` / lilac | Media and lilac panels |
-| `surface`, `background` / `onSurface` | paper / ink | night / paper | Pages |
-| `surfaceContainer`, `surfaceContainerHigh` | white, `afsh_surface_high` | `afsh_night_surface`, `afsh_surface_high_dark` | Cards, dialogs, raised rows |
-| `onSurfaceVariant`, `outlineVariant` | muted, line | muted dark, line dark | Secondary text, dividers |
-| `error`, `errorContainer` | `afsh_error`, `afsh_error_container` | coral, `afsh_error_container_dark` | Destructive actions and failures |
-| `inverseSurface`, `inversePrimary` | ink, lime | paper, pine | Snackbar |
-| `Afsh.colors.accent` / `onAccent` | lime / ink | lime / ink | The accent role: primary button, send, new message, selected schedule chip, new activity. Under dynamic color it is `tertiaryContainer` / `onTertiaryContainer` (`accentRole()`) |
-| `Afsh.colors.header`, `sentBubble`, `secondaryButton`, `swipeAction`, `selected`, `badge` | each a `ColorRole`, today all the pine container | each the dark pine container | One job each; recolor a job by giving its role its own value |
-| `Afsh.colors.onSecondaryContainerVariant`, `inverseAccent`, `scrim`, `focusRing`, `avatars`, `onAvatar`, `onBandVariant` | see `AfshTheme` | see `AfshTheme` | Secondary text on lilac, snackbar action, scrims, focus outline, avatars, band text |
+| `primary` / `onPrimary` | `#6750A4` / `#FFFFFF` | `#D0BCFF` / `#381E72` | Actions, FAB/send accent, notification, Commons accent |
+| `primaryContainer` / `onPrimaryContainer` | `#EADDFF` / `#21005D` | `#4F378B` / `#EADDFF` | Sent bubbles, swipe archive panel (`Afsh.colors.sentBubble` / `swipeAction`) |
+| `secondary` / `secondaryContainer` | `#625B71` / `#E8DEF8` | `#CCC2DC` / `#4A4458` | Less-emphasis controls; selected chips |
+| `tertiary` / `tertiaryContainer` | `#7D5260` / `#FFD8E4` | `#EFB8C8` / `#633B48` | Accent balance; avatar fills |
+| `surface` / `onSurface` | `#FEF7FF` / `#1D1B20` | `#141218` / `#E6E0E9` | Pages, conversation list, top bars (`Afsh.colors.header`) |
+| `surfaceContainer*` | lowest→highest baseline | lowest→highest baseline | Cards, sheets, nav; received bubbles use `surfaceContainerHighest` |
+| `outline` / `outlineVariant` | `#79747E` / `#CAC4D0` | `#938F99` / `#49454F` | Borders, dividers |
+| `error` family | baseline error tones | baseline error tones | Destructive actions and failures |
+| `inverseSurface` / `inversePrimary` | `#322F35` / `#D0BCFF` | `#E6E0E9` / `#6750A4` | Snackbar |
+| `Afsh.colors.accent` / `onAccent` | primary / onPrimary | primary / onPrimary | Send, FAB, primary buttons (`accentRole`) |
+| `Afsh.colors.badge` | primary / onPrimary | primary / onPrimary | Unread count |
+| `Afsh.colors.avatars` | secondary/tertiary/primary containers | same roles | Letter avatars |
 
-**Dynamic color.** `DynamicColor` in `ui/AfshTheme.kt` is the one switch for Material You, and it is off until the default look is approved. `colorSource()` picks `Dynamic` only when the switch is on and the phone runs Android 12 (API 31) or later, otherwise `Static`; `afshColorScheme(dark, source)` then returns the system's `dynamicLightColorScheme` / `dynamicDarkColorScheme` or the static scheme in the table above, and `AfshTheme` derives the accent from the same source. The job roles follow the scheme's `primaryContainer`, so they recolor with it. The remaining lime and lilac extras (`inverseAccent`, `focusRing`, `avatars`, `themePreview`) and the XML themes stay static for now; route them through the scheme before turning the switch on. `ColorSourceTest` covers the selection below and above API 31 and the accent under both sources.
+**Dynamic color.** `DynamicColor` in `ui/AfshTheme.kt` stays false: the static GM3 baseline always applies. `ColorSourceTest` locks that switch and the accent mapping.
 
-Light or dark follows the app's background setting (`afshDark()`), not the system night mode. `tests/check_design_tokens.py` rejects inline colors and opacities, and `tests/check_ui_contract.py` rejects `primaryContainer` outside the theme. `DesignChecks` asserts that the XML themes, Commons' accent and the Commons screens' theme match these roles. White icon paths are tint masks, not palette choices.
+Light or dark: `afshDark()` follows system night mode when Appearance is System, otherwise the stored light/dark background. `tests/check_design_tokens.py` rejects hardcoded colors outside `colors.xml` / `AfshTheme.kt`, and `tests/check_ui_contract.py` rejects `primaryContainer` outside the theme. `DesignChecks` asserts that the XML themes, Commons' accent and the Commons screens' theme match these roles. White icon paths are tint masks, not palette choices.
 
 ### Spacing
 

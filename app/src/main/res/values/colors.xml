@@ -1,50 +1,117 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!--
+      Material 3 (GM3) static baseline color tokens — the one palette for light and dark.
 
-    <color name="design_white">#FFFFFF</color>
-    <color name="design_ink">#202124</color>
+      Sources (authoritative; do not invent values):
+      - Palette RGB and scheme role mappings: AndroidX Compose Material3 generated tokens
+        ColorLightTokens / ColorDarkTokens / PaletteTokens (VERSION v0_210):
+        https://raw.githubusercontent.com/androidx/androidx/androidx-main/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/PaletteTokens.kt
+        https://raw.githubusercontent.com/androidx/androidx/androidx-main/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/ColorLightTokens.kt
+        https://raw.githubusercontent.com/androidx/androidx/androidx-main/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/ColorDarkTokens.kt
+      - Role names and baseline scheme overview: https://m3.material.io/styles/color/static/baseline
+      - Token catalog cross-check (light sys roles): https://tokencatalog.dev/md3/styles/color/sets/all
+      - Messages UI role mapping (FAB / primary emphasis): https://m3.material.io/styles/color/roles
+        (Material’s own examples use Messages: FAB and starred → primary / primaryContainer).
 
-    <!-- Commons reads these names for its defaults; they point at the theme's primary role. -->
-    <color name="color_primary">@color/afsh_pine</color>
-    <color name="color_primary_dark">@color/afsh_primary_dark</color>
-    <color name="color_accent">@color/afsh_pine</color>
-    <color name="default_primary_color">@color/afsh_pine</color>
-    <color name="default_accent_color">@color/afsh_pine</color>
-    <color name="launcher_pine">@color/afsh_pine</color>
-    <color name="icon_mask">@color/design_white</color>
-    <color name="surface_light">@color/design_white</color>
-    <color name="on_surface_light">@color/design_ink</color>
-    <color name="surface_dark">@color/theme_dark_background_color</color>
-    <color name="on_surface_dark">@color/theme_dark_text_color</color>
+      Google Messages is closed-source; public AOSP Messaging is not the Play Store app.
+      Exact proprietary Messages APK hexes for custom bubble presets (Blue, etc.) were not
+      confirmed from a public Google source — UI jobs below map onto these baseline roles instead.
 
-    <!-- AFSH palette (design/afsh.pen). Compose screens map these to roles in AfshTheme. -->
-    <color name="afsh_paper">#F1F5F1</color>
-    <color name="afsh_ink">#152621</color>
-    <color name="afsh_pine">#194C43</color>
-    <color name="afsh_pine_2">#2C6258</color>
-    <color name="afsh_lime">#D9F46A</color>
-    <color name="afsh_lilac">#D5D9F5</color>
-    <color name="afsh_muted">#53665E</color>
-    <color name="afsh_line">#D7E1DA</color>
-    <color name="afsh_night">#101E1B</color>
-    <color name="afsh_night_surface">#1A302A</color>
-    <color name="afsh_primary_dark">#8FC9B8</color>
-    <color name="afsh_muted_dark">#9CB8AE</color>
-    <color name="afsh_line_dark">#2E4740</color>
-    <color name="afsh_band_variant">#CFE1D9</color>
-    <color name="afsh_lilac_dark">#2F3456</color>
-    <color name="afsh_error">#B23A2B</color>
-    <color name="afsh_coral">#ED7667</color>
-    <color name="afsh_error_container">#FBE2DC</color>
-    <color name="afsh_error_container_dark">#4A2420</color>
-    <color name="afsh_surface_high">#E5EBE7</color>
-    <color name="afsh_surface_high_dark">#24403A</color>
-    <color name="afsh_on_lilac_variant">#4E5B57</color>
-    <color name="afsh_on_lilac_variant_dark">#B9BEE3</color>
-    <!-- The design's scrim token: ink at 60%, black at 70% in dark. -->
-    <color name="afsh_scrim">#99152621</color>
-    <color name="afsh_scrim_dark">#B3000000</color>
-    <!-- Design screen 97: ink at 60% behind a lifted message, darker than the design file so the floating bubble stands out. -->
-    <color name="afsh_lift_scrim">#99152621</color>
+      Scrim alphas (32% M3 default is too light for lift; keep 60%/70% black):
+      scheme.scrim is Neutral0 (#000000) per ColorLightTokens / ColorDarkTokens.
+    -->
 
+    <!-- ===== Light scheme (ColorLightTokens → PaletteTokens) ===== -->
+    <color name="m3_primary">#6750A4</color>
+    <color name="m3_on_primary">#FFFFFF</color>
+    <color name="m3_primary_container">#EADDFF</color>
+    <color name="m3_on_primary_container">#21005D</color>
+    <color name="m3_secondary">#625B71</color>
+    <color name="m3_on_secondary">#FFFFFF</color>
+    <color name="m3_secondary_container">#E8DEF8</color>
+    <color name="m3_on_secondary_container">#1D192B</color>
+    <color name="m3_tertiary">#7D5260</color>
+    <color name="m3_on_tertiary">#FFFFFF</color>
+    <color name="m3_tertiary_container">#FFD8E4</color>
+    <color name="m3_on_tertiary_container">#31111D</color>
+    <color name="m3_error">#B3261E</color>
+    <color name="m3_on_error">#FFFFFF</color>
+    <color name="m3_error_container">#F9DEDC</color>
+    <color name="m3_on_error_container">#410E0B</color>
+    <color name="m3_background">#FEF7FF</color>
+    <color name="m3_on_background">#1D1B20</color>
+    <color name="m3_surface">#FEF7FF</color>
+    <color name="m3_on_surface">#1D1B20</color>
+    <color name="m3_surface_variant">#E7E0EC</color>
+    <color name="m3_on_surface_variant">#49454F</color>
+    <color name="m3_outline">#79747E</color>
+    <color name="m3_outline_variant">#CAC4D0</color>
+    <color name="m3_inverse_surface">#322F35</color>
+    <color name="m3_inverse_on_surface">#F5EFF7</color>
+    <color name="m3_inverse_primary">#D0BCFF</color>
+    <color name="m3_surface_bright">#FEF7FF</color>
+    <color name="m3_surface_dim">#DED8E1</color>
+    <color name="m3_surface_container_lowest">#FFFFFF</color>
+    <color name="m3_surface_container_low">#F7F2FA</color>
+    <color name="m3_surface_container">#F3EDF7</color>
+    <color name="m3_surface_container_high">#ECE6F0</color>
+    <color name="m3_surface_container_highest">#E6E0E9</color>
+    <color name="m3_scrim">#000000</color>
+    <!-- Black at 60% / 70% for modal and lift scrims (base = m3_scrim). -->
+    <color name="m3_scrim_dim">#99000000</color>
+    <color name="m3_lift_scrim">#99000000</color>
+
+    <!-- ===== Dark scheme (ColorDarkTokens → PaletteTokens) ===== -->
+    <color name="m3_primary_dark">#D0BCFF</color>
+    <color name="m3_on_primary_dark">#381E72</color>
+    <color name="m3_primary_container_dark">#4F378B</color>
+    <color name="m3_on_primary_container_dark">#EADDFF</color>
+    <color name="m3_secondary_dark">#CCC2DC</color>
+    <color name="m3_on_secondary_dark">#332D41</color>
+    <color name="m3_secondary_container_dark">#4A4458</color>
+    <color name="m3_on_secondary_container_dark">#E8DEF8</color>
+    <color name="m3_tertiary_dark">#EFB8C8</color>
+    <color name="m3_on_tertiary_dark">#492532</color>
+    <color name="m3_tertiary_container_dark">#633B48</color>
+    <color name="m3_on_tertiary_container_dark">#FFD8E4</color>
+    <color name="m3_error_dark">#F2B8B5</color>
+    <color name="m3_on_error_dark">#601410</color>
+    <color name="m3_error_container_dark">#8C1D18</color>
+    <color name="m3_on_error_container_dark">#F9DEDC</color>
+    <color name="m3_background_dark">#141218</color>
+    <color name="m3_on_background_dark">#E6E0E9</color>
+    <color name="m3_surface_dark">#141218</color>
+    <color name="m3_on_surface_dark">#E6E0E9</color>
+    <color name="m3_surface_variant_dark">#49454F</color>
+    <color name="m3_on_surface_variant_dark">#CAC4D0</color>
+    <color name="m3_outline_dark">#938F99</color>
+    <color name="m3_outline_variant_dark">#49454F</color>
+    <color name="m3_inverse_surface_dark">#E6E0E9</color>
+    <color name="m3_inverse_on_surface_dark">#322F35</color>
+    <color name="m3_inverse_primary_dark">#6750A4</color>
+    <color name="m3_surface_bright_dark">#3B383E</color>
+    <color name="m3_surface_dim_dark">#141218</color>
+    <color name="m3_surface_container_lowest_dark">#0F0D13</color>
+    <color name="m3_surface_container_low_dark">#1D1B20</color>
+    <color name="m3_surface_container_dark">#211F26</color>
+    <color name="m3_surface_container_high_dark">#2B2930</color>
+    <color name="m3_surface_container_highest_dark">#36343B</color>
+    <color name="m3_scrim_dim_dark">#B3000000</color>
+
+    <!-- Commons / launcher aliases → light primary and surfaces (dark variants chosen in theme code). -->
+    <color name="color_primary">@color/m3_primary</color>
+    <color name="color_primary_dark">@color/m3_primary_dark</color>
+    <color name="color_accent">@color/m3_primary</color>
+    <color name="default_primary_color">@color/m3_primary</color>
+    <color name="default_accent_color">@color/m3_primary</color>
+    <color name="launcher_pine">@color/m3_primary</color>
+    <color name="icon_mask">@color/m3_on_primary</color>
+    <color name="surface_light">@color/m3_surface</color>
+    <color name="on_surface_light">@color/m3_on_surface</color>
+    <color name="surface_dark">@color/m3_surface_dark</color>
+    <color name="on_surface_dark">@color/m3_on_surface_dark</color>
+    <color name="design_white">@color/m3_on_primary</color>
+    <color name="design_ink">@color/m3_on_surface</color>
+    <color name="design_transparent">#00000000</color>
 </resources>

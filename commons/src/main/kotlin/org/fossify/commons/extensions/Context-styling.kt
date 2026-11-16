@@ -37,7 +37,12 @@ import org.fossify.commons.views.MyTextInputLayout
 import org.fossify.commons.views.MyTextView
 import java.io.File
 
-fun Context.isDynamicTheme() = isSPlus() && baseConfig.isSystemThemeEnabled
+/**
+ * Wallpaper / Material You dynamic colors are disabled for AFSH Messages: the app always uses the
+ * static GM3 baseline. "System theme" still means follow light/dark via [isSystemInDarkMode], not
+ * recolor from the wallpaper (Fossify originally conflated the two).
+ */
+fun Context.isDynamicTheme() = false
 
 fun Context.isBlackAndWhiteTheme(): Boolean {
     return baseConfig.textColor == Color.WHITE

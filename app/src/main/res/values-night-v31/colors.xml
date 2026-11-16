@@ -1,5 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- With the system theme on, Commons reads its accent here instead of the wallpaper's: the app keeps its own primary role. -->
-    <color name="you_primary_color">@color/afsh_primary_dark</color>
+    <!-- Static GM3 dark baseline; see values-v31/colors.xml. Wallpaper system_* accents stay unused. -->
+    <color name="you_status_bar_color">@color/m3_surface_dark</color>
+    <color name="you_contextual_status_bar_color">@color/m3_primary_dark</color>
+    <color name="you_background_color">@color/m3_background_dark</color>
+    <color name="you_bottom_bar_color">@color/m3_surface_container_dark</color>
+    <color name="you_neutral_text_color">@color/m3_on_surface_dark</color>
+    <color name="you_primary_color">@color/m3_primary_dark</color>
+    <color name="you_primary_dark_color">@color/m3_primary_dark</color>
+    <color name="you_dialog_background_color">@color/m3_surface_container_high_dark</color>
+    <color name="you_surface_color">@color/m3_surface_container_dark</color>
+    <color name="you_selected_item_background_color">@color/m3_secondary_container_dark</color>
+    <color name="you_ripple_color">@color/m3_surface_container_highest_dark</color>
 </resources>
