@@ -789,12 +789,12 @@ abstract class BaseSimpleActivity : EdgeToEdgeActivity() {
                     securityException as? RecoverableSecurityException ?: throw securityException
                 val intentSender = recoverableSecurityException.userAction.actionIntent.intentSender
                 startIntentSenderForResult(
-                    intent = intentSender,
-                    requestCode = RECOVERABLE_SECURITY_HANDLER,
-                    fillInIntent = null,
-                    flagsMask = 0,
-                    flagsValues = 0,
-                    extraFlags = 0
+                    intentSender,
+                    RECOVERABLE_SECURITY_HANDLER,
+                    null,
+                    0,
+                    0,
+                    0
                 )
             } else {
                 callback(false)
