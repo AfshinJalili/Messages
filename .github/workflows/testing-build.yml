@@ -2,15 +2,23 @@ name: Testing build
 
 on:
   # Any base, so every PR in a stack gets its own emulator run.
+  # Docs-only changes do not need the emulator; code, Gradle and workflow edits still run.
   pull_request:
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
   push:
-    branches: [main]
+    branches: [main, redesign-groundwork]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-# The debug APK build lives in apk.yml.
+# The debug APK publish lives in apk.yml. This job builds debug + androidTest + unit
+# tests once, then runs host checks and instrumentation without rebuilding.
 jobs:
   emulator:
     runs-on: ubuntu-latest
@@ -23,7 +31,10 @@ jobs:
           distribution: temurin
           java-version: 17
 
+      # Write cache on PRs and redesign-groundwork so re-runs and the integration branch stay warm.
       - uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-read-only: false
 
       - name: Enable KVM
         run: |
@@ -31,8 +42,30 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
+      - name: AVD cache
+        uses: actions/cache@v4
+        id: avd-cache
+        with:
+          path: |
+            ~/.android/avd/*
+            ~/.android/adb*
+          key: avd-35-google_apis-x86_64-pixel_7
+
       - name: Build app and tests
         run: ./gradlew :app:assembleDebug :app:assembleDebugAndroidTest :app:testDebugUnitTest --stacktrace
+
+      - name: Create AVD and generate snapshot for caching
+        if: steps.avd-cache.outputs.cache-hit != 'true'
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_7
+          force-avd-creation: false
+          disable-animations: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: echo "Generated AVD snapshot for caching."
 
       - name: Host checks, emulator tests and screenshots
         uses: reactivecircus/android-emulator-runner@v2
@@ -41,9 +74,10 @@ jobs:
           target: google_apis
           arch: x86_64
           profile: pixel_7
+          force-avd-creation: false
           disable-animations: true
-          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
-          script: API=35 bash tools/verify.sh
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: API=35 VERIFY_SKIP_BUILD=1 bash tools/verify.sh
 
       - name: Upload screenshots and reports
         if: always()
