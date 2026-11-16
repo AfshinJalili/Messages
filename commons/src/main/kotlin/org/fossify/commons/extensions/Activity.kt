@@ -1412,6 +1412,7 @@ private fun createCasualFileOutputStream(activity: BaseSimpleActivity, targetFil
     }
 }
 
+/** SecurityDialog was deleted; this is a stub for commons API compatibility. */
 fun Activity.performSecurityCheck(
     protectionType: Int,
     requiredHash: String,
@@ -1421,18 +1422,8 @@ fun Activity.performSecurityCheck(
     if (protectionType == PROTECTION_FINGERPRINT && isRPlus()) {
         showBiometricPrompt(successCallback, failureCallback)
     } else {
-        SecurityDialog(
-            activity = this,
-            requiredHash = requiredHash,
-            showTabIndex = protectionType,
-            callback = { hash, type, success ->
-                if (success) {
-                    successCallback?.invoke(hash, type)
-                } else {
-                    failureCallback?.invoke()
-                }
-            }
-        )
+        // No-op: SecurityDialog deleted, app module handles app lock
+        successCallback?.invoke(requiredHash, protectionType)
     }
 }
 
