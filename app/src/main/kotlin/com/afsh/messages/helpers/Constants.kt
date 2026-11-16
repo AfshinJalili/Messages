@@ -74,7 +74,7 @@ const val MAX_RECENT_SEARCHES = 5
 const val SWIPE_UNDO_DURATION_MS = 5000
 
 /** Undo duration for instrumented tests to avoid racing the undo window on large inboxes. */
-var testUndoDurationMs: Int? = null
+@JvmField var testUndoDurationMs: Int? = null
 
 // blocked message reasons
 const val BLOCK_REASON_KEYWORD = 1
