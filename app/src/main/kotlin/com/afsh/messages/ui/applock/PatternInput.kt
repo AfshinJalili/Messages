@@ -54,6 +54,7 @@ fun PatternInput(
         PatternState.Default -> primary
     }
     val dotColor = onSurface
+    val dotRadius = with(LocalDensity.current) { 12.dp.toPx() }
 
     Box(modifier.fillMaxWidth().aspectRatio(1f).padding(Afsh.spacing.xl).pointerInput(enabled) {
         if (!enabled) return@pointerInput
@@ -92,7 +93,6 @@ fun PatternInput(
     }) {
         Canvas(Modifier.matchParentSize()) {
             val width = size.width
-            val dotRadius = with(LocalDensity.current) { 12.dp.toPx() }
             val positions = (0..8).map { i ->
                 val row = i / 3
                 val col = i % 3

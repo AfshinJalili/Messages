@@ -1412,69 +1412,6 @@ private fun createCasualFileOutputStream(activity: BaseSimpleActivity, targetFil
     }
 }
 
-/** SecurityDialog was deleted; this is a stub for commons API compatibility. */
-fun Activity.performSecurityCheck(
-    protectionType: Int,
-    requiredHash: String,
-    successCallback: ((String, Int) -> Unit)? = null,
-    failureCallback: (() -> Unit)? = null
-) {
-    if (protectionType == PROTECTION_FINGERPRINT && isRPlus()) {
-        showBiometricPrompt(successCallback, failureCallback)
-    } else {
-        // No-op: SecurityDialog deleted, app module handles app lock
-        successCallback?.invoke(requiredHash, protectionType)
-    }
-}
-
-fun Activity.showBiometricPrompt(
-    successCallback: ((String, Int) -> Unit)? = null,
-    failureCallback: (() -> Unit)? = null
-) {
-    Class2BiometricAuthPrompt.Builder(getText(R.string.authenticate), getText(R.string.cancel))
-        .build()
-        .startAuthentication(
-            AuthPromptHost(this as FragmentActivity),
-            object : AuthPromptCallback() {
-                override fun onAuthenticationSucceeded(activity: FragmentActivity?, result: BiometricPrompt.AuthenticationResult) {
-                    successCallback?.invoke("", PROTECTION_FINGERPRINT)
-                }
-
-                override fun onAuthenticationError(activity: FragmentActivity?, errorCode: Int, errString: CharSequence) {
-                    val isCanceledByUser = errorCode == BiometricPrompt.ERROR_NEGATIVE_BUTTON || errorCode == BiometricPrompt.ERROR_USER_CANCELED
-                    if (!isCanceledByUser) {
-                        toast(errString.toString())
-                    }
-                    failureCallback?.invoke()
-                }
-
-                override fun onAuthenticationFailed(activity: FragmentActivity?) {
-                    toast(R.string.authentication_failed)
-                    failureCallback?.invoke()
-                }
-            }
-        )
-}
-
-/** SecurityDialog was deleted; these are no-op stubs for commons API compatibility. */
-fun Activity.handleHiddenFolderPasswordProtection(callback: () -> Unit) {
-    callback()
-}
-
-/** SecurityDialog was deleted; app lock is handled by app module lifecycle callbacks. */
-fun Activity.handleAppPasswordProtection(callback: (success: Boolean) -> Unit) {
-    callback(true)
-}
-
-/** SecurityDialog was deleted; this is a no-op stub for commons API compatibility. */
-fun Activity.handleDeletePasswordProtection(callback: () -> Unit) {
-    callback()
-}
-
-/** SecurityDialog was deleted; this is a no-op stub for commons API compatibility. */
-fun Activity.handleLockedFolderOpening(path: String, callback: (success: Boolean) -> Unit) {
-    callback(true)
-}
 
 fun Activity.updateGlobalConfig(contentValues: ContentValues) {
     ensureBackgroundThread {

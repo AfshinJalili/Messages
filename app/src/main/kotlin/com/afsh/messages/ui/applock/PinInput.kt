@@ -70,7 +70,7 @@ fun PinInput(
                     enabled = enabled && pin.isNotEmpty(),
                     modifier = Modifier.weight(1f).aspectRatio(1f),
                 ) {
-                    Icon(AfshIcon.Delete.painter(), stringResource(R.string.delete))
+                    Icon(AfshIcon.Delete.painter(), contentDescription = null)
                 }
             }
         }

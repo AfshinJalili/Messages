@@ -613,21 +613,6 @@ abstract class BaseSimpleActivity : EdgeToEdgeActivity() {
         }
     }
 
-    /** AboutActivity was deleted; this is a no-op stub for commons API compatibility. */
-    fun startAboutActivity(
-        appNameId: Int,
-        licenseMask: Long,
-        versionName: String,
-        faqItems: ArrayList<FAQItem>,
-        showFAQBeforeMail: Boolean
-    ) {
-        // No-op: AboutActivity deleted
-    }
-
-    /** CustomizationActivity was deleted; this is a no-op stub for commons API compatibility. */
-    fun startCustomizationActivity() {
-        // No-op: CustomizationActivity deleted
-    }
 
     fun launchCustomizeNotificationsIntent() {
         Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {

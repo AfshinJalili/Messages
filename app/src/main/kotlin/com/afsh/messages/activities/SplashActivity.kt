@@ -23,7 +23,7 @@ class SplashActivity : ComponentActivity() {
         // Sync global config (same as BaseSplashActivity)
         syncGlobalConfig {
             baseConfig.apply {
-                if (isAutoTheme()) {
+                if (isSystemThemeEnabled) {
                     val isUsingSystemDarkTheme = isSystemInDarkMode()
                     textColor = resources.getColor(
                         if (isUsingSystemDarkTheme) CommonsR.color.theme_dark_text_color
