@@ -1,12 +1,13 @@
 package org.fossify.commons.compose.settings
 
+import org.fossify.commons.R
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
+import androidx.compose.ui.res.painterResource
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -63,7 +64,7 @@ fun SettingsSwitchComponent(
                         {
                             Icon(
                                 modifier = Modifier.size(SwitchDefaults.IconSize),
-                                imageVector = Icons.Default.Check,
+                                painter = painterResource(R.drawable.ic_msym_check),
                                 contentDescription = null,
                                 tint = SimpleTheme.colorScheme.primary
                             )

@@ -216,7 +216,7 @@ private fun RowMetadata(row: InboxRow, time: String, inline: Boolean = false) {
     val unread = !row.conversation.read
     val signals: @Composable () -> Unit = {
         Row(horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.xs), verticalAlignment = Alignment.CenterVertically) {
-            if (row.pinned) SignalIcon(AfshIcon.Pin)
+            if (row.pinned) SignalIcon(AfshIcon.Pin, filled = true)
             if (row.muted) SignalIcon(AfshIcon.NotificationsOff)
             if (unread) UnreadSignal(row.conversation.unreadCount)
         }
@@ -238,8 +238,8 @@ private fun RowMetadata(row: InboxRow, time: String, inline: Boolean = false) {
 }
 
 @Composable
-private fun SignalIcon(icon: AfshIcon) = Icon(
-    icon.painter(),
+private fun SignalIcon(icon: AfshIcon, filled: Boolean = false) = Icon(
+    icon.painter(filled = filled),
     contentDescription = null,
     tint = MaterialTheme.colorScheme.onSurfaceVariant,
     modifier = Modifier.size(16.dp),

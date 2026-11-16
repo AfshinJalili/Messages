@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
         android:id="@+id/cab_remove"
-        android:icon="@drawable/ic_minus_circle_vector"
+        android:icon="@drawable/ic_msym_do_not_disturb_on"
         android:title="@string/remove"
         app:showAsAction="ifRoom" />
 </menu>

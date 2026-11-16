@@ -155,7 +155,7 @@ private fun PreviewSettingsListItem(@PreviewParameter(BooleanPreviewParameterPro
         SettingsListItem(
             click = {},
             text = "Fossify",
-            icon = if (isImage) R.drawable.ic_telegram_vector else R.drawable.ic_dollar_vector,
+            icon = if (isImage) R.drawable.ic_msym_send else R.drawable.ic_msym_volunteer_activism,
             isImage = isImage
         )
     }

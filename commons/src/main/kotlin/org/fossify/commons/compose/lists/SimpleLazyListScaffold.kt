@@ -1,5 +1,7 @@
 package org.fossify.commons.compose.lists
 
+import org.fossify.commons.R
+
 import androidx.compose.foundation.gestures.FlingBehavior
 import androidx.compose.foundation.gestures.ScrollableDefaults
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -8,8 +10,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccessTime
+import androidx.compose.ui.res.painterResource
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -292,7 +293,7 @@ private fun SimpleLazyListScaffoldPreview() {
             item {
                 ListItem(headlineContent = { Text(text = "Some text") },
                     leadingContent = {
-                        Icon(imageVector = Icons.Filled.AccessTime, contentDescription = null)
+                        Icon(painter = painterResource(R.drawable.ic_msym_schedule), contentDescription = null)
                     })
             }
         }

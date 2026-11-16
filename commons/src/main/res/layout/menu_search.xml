@@ -30,7 +30,7 @@
                 android:contentDescription="@string/search"
                 android:paddingStart="@dimen/activity_margin"
                 android:paddingEnd="0dp"
-                android:src="@drawable/ic_search_vector" />
+                android:src="@drawable/ic_msym_search" />
 
             <EditText
                 android:id="@+id/top_toolbar_search"

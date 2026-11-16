@@ -9,3 +9,6 @@ fun token() = RoundedCornerShape(Afsh.spacing.sm)
 fun color() = colorResource(R.color.afsh_pine_2)
 fun context() = ContextCompat.getColor(context, R.color.surface_light)
 fun role() = MaterialTheme.colorScheme.onPrimaryContainer
+fun materialIcons() = Icon(Icons.Default.Search, null)
+fun imageVector() = ImageVector.Builder("x", 24.dp, 24.dp, 24f, 24f).build()
+fun painterDrawable() = painterResource(R.drawable.ic_msym_search)

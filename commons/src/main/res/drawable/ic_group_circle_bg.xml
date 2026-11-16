@@ -7,7 +7,7 @@
     </item>
     <item
         android:bottom="@dimen/activity_margin"
-        android:drawable="@drawable/ic_people_vector"
+        android:drawable="@drawable/ic_msym_group"
         android:left="@dimen/activity_margin"
         android:right="@dimen/activity_margin"
         android:top="@dimen/activity_margin" />

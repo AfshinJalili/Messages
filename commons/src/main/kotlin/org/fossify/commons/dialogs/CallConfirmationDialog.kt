@@ -9,8 +9,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Call
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -26,6 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.fossify.commons.R
+import androidx.compose.ui.res.painterResource
 import org.fossify.commons.activities.BaseSimpleActivity
 import org.fossify.commons.compose.alert_dialog.*
 import org.fossify.commons.compose.extensions.MyDevices
@@ -119,7 +118,7 @@ fun CallConfirmationAlertDialog(
                         .padding(16.dp)
                 ) {
                     Image(
-                        Icons.Filled.Call,
+                        painter = painterResource(R.drawable.ic_msym_call),
                         contentDescription = null,
                         colorFilter = ColorFilter.tint(dialogTextColor),
                         modifier = Modifier

@@ -135,7 +135,7 @@ class CopyMoveTask(
         }
 
         mNotificationBuilder.setContentTitle(title)
-            .setSmallIcon(R.drawable.ic_copy_vector)
+            .setSmallIcon(R.drawable.ic_msym_content_copy)
             .setChannelId(channelId)
     }
 

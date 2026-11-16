@@ -21,7 +21,7 @@
         android:padding="@dimen/tiny_margin"
         android:paddingHorizontal="@dimen/normal_margin"
         android:paddingTop="@dimen/medium_margin"
-        android:src="@drawable/ic_person_vector"
+        android:src="@drawable/ic_msym_person"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
@@ -50,7 +50,7 @@
         android:layout_alignParentTop="true"
         android:contentDescription="@null"
         android:paddingHorizontal="@dimen/normal_margin"
-        android:src="@drawable/ic_drag_handle_vector"
+        android:src="@drawable/ic_msym_drag_handle"
         android:visibility="visible"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent" />

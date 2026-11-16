@@ -1,8 +1,9 @@
 package org.fossify.commons.compose.settings
 
+import org.fossify.commons.R
+
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.ui.res.painterResource
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -54,7 +55,7 @@ private fun SettingsGroupPreview() {
             ListItem(
                 leadingContent = {
                     Icon(
-                        imageVector = Icons.Rounded.Settings,
+                        painter = painterResource(R.drawable.ic_msym_settings),
                         contentDescription = null
                     )
                 },
