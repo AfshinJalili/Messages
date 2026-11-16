@@ -49,50 +49,48 @@ class DeletionChecks {
     fun archiveUndoRestoresConversation() {
         testUndoDurationMs = 15_000
         
-        val context = composeRule.activity
+        val context = instrumentation.targetContext
         val room = RoomOnlyThread(
             context,
             fixtureConversation(Long.MAX_VALUE - 456, "Archive Test Fixture", snippet = "Test", phone = "5550100111222"),
         )
         val fixture = room.conversation
+        fun MainActivity.shows() = inboxRows.any { it.threadId == fixture.threadId }
         room.insert()
         try {
-            // Wait for fixture to appear in inbox
-            composeRule.waitUntil(timeoutMillis = 20_000) {
-                context.inboxRows.any { it.threadId == fixture.threadId }
-            }
-            
-            // Archive via real swipe gesture (right swipe in LTR)
-            composeRule.onNodeWithText(fixture.title, substring = true, useUnmergedTree = true)
-                .performTouchInput { swipeRight() }
-            
-            // Conversation should be hidden immediately
-            composeRule.waitUntil(timeoutMillis = 2_000) {
-                context.inboxRows.none { it.threadId == fixture.threadId }
-            }
-            
-            // Snackbar should be showing
-            composeRule.waitUntil(timeoutMillis = 2_000) {
-                context.snackbarHost.currentSnackbarData != null
-            }
-            
-            // Tap Undo
-            val undo = context.snackbarHost.currentSnackbarData
-            check(undo != null) { "Snackbar must be showing" }
-            undo.performAction()
-            
-            // Conversation should reappear
-            composeRule.waitUntil(timeoutMillis = 5_000) {
-                context.inboxRows.any { it.threadId == fixture.threadId }
-            }
-            
-            // Wait to ensure no snackbar reappears and conversation stays visible
-            Thread.sleep(500)
-            check(context.inboxRows.any { it.threadId == fixture.threadId }) {
-                "Conversation must stay visible after undo"
-            }
-            check(context.snackbarHost.currentSnackbarData == null) {
-                "Snackbar must not reappear after undo"
+            ActivityScenario.launch<MainActivity>(Intent(context, MainActivity::class.java)).use { scenario ->
+                scenario.awaitUntil("Fixture reaches the inbox", timeoutMs = 20_000) { it.shows() }
+                
+                // Archive via real swipe gesture using composeRule
+                composeRule.onNodeWithText(fixture.title, substring = true, useUnmergedTree = true)
+                    .performTouchInput { swipeRight() }
+                
+                // Conversation should be hidden immediately
+                scenario.awaitUntil("Conversation hidden after swipe", timeoutMs = 2_000) { !it.shows() }
+                
+                // Snackbar should be showing
+                scenario.awaitUntil("Archive snackbar appears", timeoutMs = 2_000) {
+                    it.snackbarHost.currentSnackbarData != null
+                }
+                
+                // Tap Undo
+                scenario.onActivity { activity ->
+                    val undo = activity.snackbarHost.currentSnackbarData
+                    check(undo != null) { "Snackbar must be showing" }
+                    undo.performAction()
+                }
+                
+                // Conversation should reappear
+                scenario.awaitUntil("Undo restores the conversation", timeoutMs = 5_000) {
+                    it.shows()
+                }
+                
+                // Wait to ensure no snackbar reappears and conversation stays visible
+                Thread.sleep(500)
+                check(scenario.read { it.shows() }) { "Conversation must stay visible after undo" }
+                check(scenario.read { it.snackbarHost.currentSnackbarData == null }) {
+                    "Snackbar must not reappear after undo"
+                }
             }
         } finally {
             room.delete()
