@@ -21,10 +21,10 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.afsh.messages.ui.components.AfshIcon
 import com.bumptech.glide.Glide
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -56,12 +56,8 @@ fun Avatar(title: String, photoUri: String, isGroup: Boolean, size: Dp = 50.dp) 
             if (initials != null && !isGroup) {
                 Text(initials, style = MaterialTheme.typography.labelLarge.copy(fontSize = (size.value * 0.34f).sp))
             } else {
-                val icon = if (isGroup) {
-                    org.fossify.commons.R.drawable.ic_groups_outline_vector
-                } else {
-                    org.fossify.commons.R.drawable.ic_person_vector
-                }
-                Icon(painterResource(icon), contentDescription = null)
+                val icon = if (isGroup) AfshIcon.People else AfshIcon.Person
+                Icon(icon.painter(), contentDescription = null)
             }
         }
     }

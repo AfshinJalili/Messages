@@ -17,8 +17,6 @@ const val EXTERNAL_STORAGE_PROVIDER_AUTHORITY = "com.android.externalstorage.doc
 const val EXTRA_SHOW_ADVANCED = "android.content.extra.SHOW_ADVANCED"
 
 const val APP_NAME = "app_name"
-const val APP_LICENSES = "app_licenses"
-const val APP_FAQ = "app_faq"
 const val APP_VERSION_NAME = "app_version_name"
 const val APP_PACKAGE_NAME = "app_package_name"
 const val APP_REPOSITORY_NAME = "app_repo_name"
@@ -230,42 +228,6 @@ const val HANGOUTS = "Hangouts"
 const val QQ = "QQ"
 const val JABBER = "Jabber"
 
-// licenses
-internal const val LICENSE_KOTLIN = 1L
-const val LICENSE_SUBSAMPLING = 2L
-const val LICENSE_GLIDE = 4L
-const val LICENSE_CROPPER = 8L
-const val LICENSE_FILTERS = 16L
-const val LICENSE_RTL = 32L
-const val LICENSE_JODA = 64L
-const val LICENSE_STETHO = 128L
-const val LICENSE_OTTO = 256L
-const val LICENSE_PHOTOVIEW = 512L
-const val LICENSE_PICASSO = 1024L
-const val LICENSE_PATTERN = 2048L
-const val LICENSE_REPRINT = 4096L
-const val LICENSE_GIF_DRAWABLE = 8192L
-const val LICENSE_AUTOFITTEXTVIEW = 16384L
-const val LICENSE_ROBOLECTRIC = 32768L
-const val LICENSE_ESPRESSO = 65536L
-const val LICENSE_GSON = 131072L
-const val LICENSE_LEAK_CANARY = 262144L
-const val LICENSE_NUMBER_PICKER = 524288L
-const val LICENSE_EXOPLAYER = 1048576L
-const val LICENSE_PANORAMA_VIEW = 2097152L
-const val LICENSE_SANSELAN = 4194304L
-const val LICENSE_GESTURE_VIEWS = 8388608L
-const val LICENSE_INDICATOR_FAST_SCROLL = 16777216L
-const val LICENSE_EVENT_BUS = 33554432L
-const val LICENSE_AUDIO_RECORD_VIEW = 67108864L
-const val LICENSE_SMS_MMS = 134217728L
-const val LICENSE_APNG = 268435456L
-const val LICENSE_PDF_VIEW_PAGER = 536870912L
-const val LICENSE_M3U_PARSER = 1073741824L
-const val LICENSE_ANDROID_LAME = 2147483648L
-const val LICENSE_PDF_VIEWER = 4294967296L
-const val LICENSE_ZIP4J = 8589934592L
-const val LICENSE_EVALEX = 17179869184L
 
 // global intents
 const val OPEN_DOCUMENT_TREE_FOR_ANDROID_DATA_OR_OBB = 1000
@@ -274,7 +236,6 @@ const val OPEN_DOCUMENT_TREE_SD = 1002
 const val OPEN_DOCUMENT_TREE_FOR_SDK_30 = 1003
 const val REQUEST_SET_AS = 1004
 const val REQUEST_EDIT_IMAGE = 1005
-const val SELECT_EXPORT_SETTINGS_FILE_INTENT = 1006
 const val REQUEST_CODE_SET_DEFAULT_DIALER = 1007
 const val CREATE_DOCUMENT_SDK_30 = 1008
 const val REQUEST_CODE_SET_DEFAULT_CALLER_ID = 1010
@@ -598,8 +559,6 @@ fun getConflictResolution(resolutions: LinkedHashMap<String, Int>, path: String)
         CONFLICT_SKIP
     }
 }
-
-val proPackages = arrayListOf<String>()
 
 fun mydebug(message: String) = Log.e("DEBUG", message)
 

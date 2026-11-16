@@ -25,6 +25,7 @@ import org.fossify.commons.compose.alert_dialog.dialogTextColor
 import org.fossify.commons.compose.alert_dialog.rememberAlertDialogState
 import org.fossify.commons.compose.components.RadioGroupDialogComponent
 import org.fossify.commons.compose.extensions.MyDevices
+import org.fossify.commons.compose.settings.SettingsCheckBoxComponent
 import org.fossify.commons.compose.settings.SettingsHorizontalDivider
 import org.fossify.commons.compose.theme.AppThemeSurface
 import org.fossify.commons.compose.theme.SimpleTheme
@@ -149,7 +150,7 @@ fun FileConflictAlertDialog(
                         SettingsHorizontalDivider()
 
                         CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
-                            DialogCheckBoxWithRadioAlignmentComponent(
+                            SettingsCheckBoxComponent(
                                 label = stringResource(id = R.string.apply_to_all),
                                 initialValue = isShowApplyForAllChecked,
                                 onChange = { isShowApplyForAllChecked = it },

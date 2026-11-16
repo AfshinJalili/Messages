@@ -21,10 +21,6 @@
     <color name="theme_light_background_color">@color/md_grey_white</color>
     <color name="theme_dark_text_color">@color/md_grey_200</color>
     <color name="theme_dark_background_color">#161616</color>
-    <color name="theme_solarized_background_color">@color/md_indigo_900_dark</color>
-    <color name="theme_solarized_text_color">@color/md_amber_700</color>
-    <color name="theme_solarized_primary_color">@color/md_indigo_900</color>
-    <color name="theme_dark_red_primary_color">@color/md_red_700</color>
 
     <!-- Default values -->
     <color name="default_text_color">@color/theme_dark_text_color</color>
@@ -36,11 +32,8 @@
     <color name="default_widget_text_color">@color/color_primary</color>
 
     <!-- SwitchCompat -->
-    <color name="thumb_deactivated">#FFECECEC</color>
-    <color name="track_deactivated">#FFB2B2B2</color>
 
     <!-- Radiobutton -->
-    <color name="radiobutton_disabled">#FF757575</color>
 
     <!-- Primary colors -->
     <color name="md_amber">#FFC107</color>
