@@ -63,7 +63,8 @@ class DeletionChecks {
             }
             
             // Archive via real swipe gesture (right swipe in LTR)
-            composeRule.onNodeWithText(fixture.title, substring = true).performTouchInput { swipeRight() }
+            composeRule.onNodeWithText(fixture.title, substring = true, useUnmergedTree = true)
+                .performTouchInput { swipeRight() }
             
             // Conversation should be hidden immediately
             composeRule.waitUntil(timeoutMillis = 2_000) {
