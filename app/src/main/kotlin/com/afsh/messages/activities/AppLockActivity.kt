@@ -21,6 +21,7 @@ import com.afsh.messages.ui.Afsh
 import com.afsh.messages.ui.applock.SecuritySetupDialog
 import org.fossify.commons.extensions.appLockManager
 import org.fossify.commons.extensions.baseConfig
+import org.fossify.commons.extensions.isSystemInDarkMode
 import org.fossify.commons.helpers.PROTECTION_FINGERPRINT
 import org.fossify.commons.helpers.isRPlus
 

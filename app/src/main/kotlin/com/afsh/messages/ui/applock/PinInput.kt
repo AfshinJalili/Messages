@@ -89,11 +89,11 @@ fun PinInput(
 private fun androidx.compose.foundation.layout.RowScope.PinButton(label: String, enabled: Boolean, onClick: () -> Unit) {
     if (label.isEmpty()) {
         // Spacer to keep grid alignment
-        FilledTonalIconButton({}, enabled = false, modifier = Modifier.weight(1f).aspectRatio(1f), colors = IconButtonDefaults.filledTonalIconButtonColors(disabledContainerColor = MaterialTheme.colorScheme.surface)) {
+        FilledTonalIconButton({}, Modifier.weight(1f).aspectRatio(1f), enabled = false, colors = IconButtonDefaults.filledTonalIconButtonColors(disabledContainerColor = MaterialTheme.colorScheme.surface)) {
             Text("")
         }
     } else {
-        FilledTonalIconButton(onClick, enabled, Modifier.weight(1f).aspectRatio(1f)) {
+        FilledTonalIconButton(onClick, Modifier.weight(1f).aspectRatio(1f), enabled) {
             Text(label, style = MaterialTheme.typography.headlineSmall)
         }
     }
