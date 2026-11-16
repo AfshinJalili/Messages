@@ -159,5 +159,6 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation("androidx.test.uiautomator:uiautomator:2.3.0")
     detektPlugins(libs.compose.detekt)
 }
