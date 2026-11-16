@@ -50,7 +50,6 @@ import org.fossify.commons.dialogs.ConfirmationDialog
 import org.fossify.commons.dialogs.CustomIntervalPickerDialog
 import org.fossify.commons.dialogs.DonateDialog
 import org.fossify.commons.dialogs.RadioGroupDialog
-import org.fossify.commons.dialogs.SecurityDialog
 import org.fossify.commons.dialogs.UpgradeToProDialog
 import org.fossify.commons.dialogs.WhatsNewDialog
 import org.fossify.commons.dialogs.WritePermissionDialog
@@ -1466,48 +1465,24 @@ fun Activity.showBiometricPrompt(
         )
 }
 
+/** SecurityDialog was deleted; these are no-op stubs for commons API compatibility. */
 fun Activity.handleHiddenFolderPasswordProtection(callback: () -> Unit) {
-    if (baseConfig.isHiddenPasswordProtectionOn) {
-        SecurityDialog(this, baseConfig.hiddenPasswordHash, baseConfig.hiddenProtectionType) { _, _, success ->
-            if (success) {
-                callback()
-            }
-        }
-    } else {
-        callback()
-    }
+    callback()
 }
 
+/** SecurityDialog was deleted; app lock is handled by app module lifecycle callbacks. */
 fun Activity.handleAppPasswordProtection(callback: (success: Boolean) -> Unit) {
-    if (baseConfig.isAppPasswordProtectionOn) {
-        SecurityDialog(this, baseConfig.appPasswordHash, baseConfig.appProtectionType) { _, _, success ->
-            callback(success)
-        }
-    } else {
-        callback(true)
-    }
+    callback(true)
 }
 
+/** SecurityDialog was deleted; this is a no-op stub for commons API compatibility. */
 fun Activity.handleDeletePasswordProtection(callback: () -> Unit) {
-    if (baseConfig.isDeletePasswordProtectionOn) {
-        SecurityDialog(this, baseConfig.deletePasswordHash, baseConfig.deleteProtectionType) { _, _, success ->
-            if (success) {
-                callback()
-            }
-        }
-    } else {
-        callback()
-    }
+    callback()
 }
 
+/** SecurityDialog was deleted; this is a no-op stub for commons API compatibility. */
 fun Activity.handleLockedFolderOpening(path: String, callback: (success: Boolean) -> Unit) {
-    if (baseConfig.isFolderProtected(path)) {
-        SecurityDialog(this, baseConfig.getFolderProtectionHash(path), baseConfig.getFolderProtectionType(path)) { _, _, success ->
-            callback(success)
-        }
-    } else {
-        callback(true)
-    }
+    callback(true)
 }
 
 fun Activity.updateGlobalConfig(contentValues: ContentValues) {
