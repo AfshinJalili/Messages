@@ -1,16 +1,16 @@
 # AFSH design system
 
-Personal messaging as a clear, living line between people. The inbox favors sender, latest meaning, and urgency over decorative conversation cards. Cool mineral paper, deep pine ink, sharp lime for new activity, lilac for media, coral for attention. A fine route line, round contact markers, flat slabs, and strong typography. No literal vintage hardware.
+Personal messaging as a clear, living line between people. The inbox favors sender, latest meaning, and urgency over decorative conversation cards. The palette is Google Material 3 (GM3) system colors — primary blue `#0B57D0` and its tonal surface and container roles — matching Google Messages when dynamic color is off. A fine route line, round contact markers, flat slabs, and strong typography.
 
 The design source is `design/afsh.pen` (encrypted; edit only through the pen CLI or pencil MCP). PNG exports in `design/exports/` are previews only; the canvas is the truth. Screens are fixed 390 × 844 frames and the design decides open questions through issues labeled `design-gap`.
 
-Theme: `ui/AfshTheme.kt`. The palette is the Material 3 (GM3) static baseline in `res/values/colors.xml` (`m3_*`, with sources cited in that file) because `tests/check_design_tokens.py` rejects inline colors outside it. Roles and type are in Kotlin, and only the theme looks up color resources: screens read `MaterialTheme.colorScheme` or `Afsh.colors` (for example `liftScrim` and `themePreview`), and `tests/check_ui_contract.py` rejects `colorResource` elsewhere. Light or dark follows Appearance → System (device night mode) or the explicit light/dark choice; Material You wallpaper colors never apply (`DynamicColor` is off). The Commons accent and custom color pickers do not apply to Compose screens. Fonts are bundled from google/fonts (OFL): Funnel Sans, Atkinson Hyperlegible, and Vazirmatn for RTL labels. Message content, previews, drafts, and search excerpts use Atkinson for Latin and Vazirmatn for Arabic-script runs regardless of app language, preserving weight and link styling. Content containing Arabic script uses 1.7em leading; other content uses 1.45em.
+Theme: `ui/AfshTheme.kt`. The palette is Google Material 3 (GM3) system colors in `res/values/colors.xml` (`m3_*`, with `--gm3-sys-color-*` sources cited in that file) because `tests/check_design_tokens.py` rejects inline colors outside it. Roles and type are in Kotlin, and only the theme looks up color resources: screens read `MaterialTheme.colorScheme` or `Afsh.colors` (for example `liftScrim` and `themePreview`), and `tests/check_ui_contract.py` rejects `colorResource` elsewhere. Light or dark follows Appearance → System (device night mode) or the explicit light/dark choice; Material You wallpaper colors never apply (`DynamicColor` is off). The Commons accent and custom color pickers do not apply to Compose screens. Fonts are bundled from google/fonts (OFL): Funnel Sans, Atkinson Hyperlegible, and Vazirmatn for RTL labels. Message content, previews, drafts, and search excerpts use Atkinson for Latin and Vazirmatn for Arabic-script runs regardless of app language, preserving weight and link styling. Content containing Arabic script uses 1.7em leading; other content uses 1.45em.
 
 ## Product idea
 
 The inbox acts like an open line: sender, latest meaning, and urgency are visible in one continuous list. Conversations put message text first and leave the composer at the bottom of the phone viewport. The navigation has three destinations: Inbox, Library, and Settings. Library collects saved, archived, spam, and recently deleted conversations so those tasks stay findable without crowding the inbox.
 
-The palette is the Material 3 static baseline (primary purple `#6750A4` and its tonal roles). Color also appears with words, shape, or line weight so status does not depend on hue alone. Sender initials identify contacts when a photo is unavailable.
+The palette is Google Material 3 (GM3) static system colors (primary blue `#0B57D0` and its tonal roles), the same tokens Google Messages / Gmail / Drive use when dynamic color is off. Color also appears with words, shape, or line weight so status does not depend on hue alone. Sender initials identify contacts when a photo is unavailable.
 
 ## Screen map (numbers are frames in the design file)
 
@@ -23,7 +23,7 @@ The palette is the Material 3 static baseline (primary purple `#6750A4` and its 
 
 ## Behavior decisions
 
-- **Attention:** unread rows use a small pine signal and remain in the Unread filter until opened or explicitly marked read. Marking a conversation unread by hand marks only its newest received message, as Google Messages does: the row shows a dot, not a count, and the thread opens with no new messages divider. The thread offers a new messages jump control when the reader is away from the latest message.
+- **Attention:** unread rows use a small primary signal and remain in the Unread filter until opened or explicitly marked read. Marking a conversation unread by hand marks only its newest received message, as Google Messages does: the row shows a dot, not a count, and the thread opens with no new messages divider. The thread offers a new messages jump control when the reader is away from the latest message.
 - **Drafts:** unfinished text stays in its conversation. View 54 shows the retained entry and a draft notice; the component board includes the compact draft treatment.
 - **Sending:** the composer distinguishes enabled and disabled states. Sending, sent/delivered, failed, and blocked each have visible text; sending and blocked also use distinct status lines. A failed message offers recovery through its attention state.
 - **Keep at top:** **Pin to the top** and **Unpin** actions persist the pinned order at the top of the inbox. Pinned conversations appear in a dedicated section above unpinned ones.
@@ -105,15 +105,15 @@ The theme is the one color source. `colors.xml` holds the Material 3 static base
 
 | Role | Light | Dark | Used for |
 | --- | --- | --- | --- |
-| `primary` / `onPrimary` | `#6750A4` / `#FFFFFF` | `#D0BCFF` / `#381E72` | Actions, FAB/send accent, notification, Commons accent |
-| `primaryContainer` / `onPrimaryContainer` | `#EADDFF` / `#21005D` | `#4F378B` / `#EADDFF` | Sent bubbles, swipe archive panel (`Afsh.colors.sentBubble` / `swipeAction`) |
-| `secondary` / `secondaryContainer` | `#625B71` / `#E8DEF8` | `#CCC2DC` / `#4A4458` | Less-emphasis controls; selected chips |
-| `tertiary` / `tertiaryContainer` | `#7D5260` / `#FFD8E4` | `#EFB8C8` / `#633B48` | Accent balance; avatar fills |
-| `surface` / `onSurface` | `#FEF7FF` / `#1D1B20` | `#141218` / `#E6E0E9` | Pages, conversation list, top bars (`Afsh.colors.header`) |
-| `surfaceContainer*` | lowest→highest baseline | lowest→highest baseline | Cards, sheets, nav; received bubbles use `surfaceContainerHighest` |
-| `outline` / `outlineVariant` | `#79747E` / `#CAC4D0` | `#938F99` / `#49454F` | Borders, dividers |
-| `error` family | baseline error tones | baseline error tones | Destructive actions and failures |
-| `inverseSurface` / `inversePrimary` | `#322F35` / `#D0BCFF` | `#E6E0E9` / `#6750A4` | Snackbar |
+| `primary` / `onPrimary` | `#0B57D0` / `#FFFFFF` | `#A8C7FA` / `#062E6F` | Actions, FAB/send accent, notification, Commons accent |
+| `primaryContainer` / `onPrimaryContainer` | `#D3E3FD` / `#0842A0` | `#0842A0` / `#D3E3FD` | Sent bubbles, swipe archive panel |
+| `secondary` / `secondaryContainer` | `#00639B` / `#C2E7FF` | `#7FCFFF` / `#004A77` | Less-emphasis controls; selected chips |
+| `tertiary` / `tertiaryContainer` | `#146C2E` / `#C4EED0` | `#6DD58C` / `#0F5223` | Accent balance; avatar fills |
+| `surface` / `onSurface` | `#FFFFFF` / `#1F1F1F` | `#131314` / `#E3E3E3` | Pages, conversation list, top bars (`Afsh.colors.header`) |
+| `surfaceContainer*` | GM3 lowest→highest | GM3 lowest→highest | Cards, sheets, nav; received bubbles use `surfaceContainerHighest` |
+| `outline` / `outlineVariant` | `#747775` / `#C4C7C5` | `#8E918F` / `#444746` | Borders, dividers |
+| `error` family | `#B3261E` … | `#F2B8B5` … | Destructive actions and failures |
+| `inverseSurface` / `inversePrimary` | `#303030` / `#A8C7FA` | `#E3E3E3` / `#0B57D0` | Snackbar |
 | `Afsh.colors.accent` / `onAccent` | primary / onPrimary | primary / onPrimary | Send, FAB, primary buttons (`accentRole`) |
 | `Afsh.colors.badge` | primary / onPrimary | primary / onPrimary | Unread count |
 | `Afsh.colors.avatars` | secondary/tertiary/primary containers | same roles | Letter avatars |

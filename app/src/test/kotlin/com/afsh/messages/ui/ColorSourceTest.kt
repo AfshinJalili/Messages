@@ -7,7 +7,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class ColorSourceTest {
-    private val primary = ColorRole(Color(0xFF6750A4), Color(0xFFFFFFFF))
+    private val primary = ColorRole(Color(0xFF0B57D0), Color(0xFFFFFFFF))
 
     @Test
     fun `below Android 12 the static scheme is used even with dynamic color on`() {

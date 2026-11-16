@@ -1,105 +1,111 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!--
-      Material 3 (GM3) static baseline color tokens — the one palette for light and dark.
+      Google Material 3 (GM3) system color tokens: the static palette Google apps use
+      (Messages, Gmail, Drive, Calendar, etc.), not the purple AndroidX M3 baseline.
 
-      Sources (authoritative; do not invent values):
-      - Palette RGB and scheme role mappings: AndroidX Compose Material3 generated tokens
-        ColorLightTokens / ColorDarkTokens / PaletteTokens (VERSION v0_210):
-        https://raw.githubusercontent.com/androidx/androidx/androidx-main/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/PaletteTokens.kt
-        https://raw.githubusercontent.com/androidx/androidx/androidx-main/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/ColorLightTokens.kt
-        https://raw.githubusercontent.com/androidx/androidx/androidx-main/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/ColorDarkTokens.kt
-      - Role names and baseline scheme overview: https://m3.material.io/styles/color/static/baseline
-      - Token catalog cross-check (light sys roles): https://tokencatalog.dev/md3/styles/color/sets/all
-      - Messages UI role mapping (FAB / primary emphasis): https://m3.material.io/styles/color/roles
-        (Material’s own examples use Messages: FAB and starred → primary / primaryContainer).
+      CSS custom properties are named gm3-sys-color-* (with a double-hyphen prefix in CSS;
+      XML comments cannot contain that prefix, so it is written without the leading hyphens).
 
-      Google Messages is closed-source; public AOSP Messaging is not the Play Store app.
-      Exact proprietary Messages APK hexes for custom bubble presets (Blue, etc.) were not
-      confirmed from a public Google source — UI jobs below map onto these baseline roles instead.
+      Sources (cross-checked; every hex below appears in at least one):
+      1. Complete light + dark gm3-sys-color-* CSS (Google Calendar style dump mirrored at):
+         https://raw.githubusercontent.com/pabricrui/web/49df1f1c1cca8853ac985a419cc8d3fe33954fd3/css/material.css
+      2. Same light/dark gm3-sys-color-* set:
+         https://raw.githubusercontent.com/WalkQuackBack/review-app-vite/7e8184ab78d4ec974cf9ccbf3967069f3d72901c/src/styles/globals.css
+      3. Light hex to gm3-sys-color-* map extracted from Google Workspace CSS:
+         https://raw.githubusercontent.com/WalkQuackBack/google-suite-color-theme/main/color-index.ts
+      4. com_google_material_gm3V10 / gm3V11 asset-catalog roles (light/dark) from a Google app dump:
+         https://techdevnotes.com/apps/ios/gemini/6477489729/design-system
 
-      Scrim alphas (32% M3 default is too light for lift; keep 60%/70% black):
-      scheme.scrim is Neutral0 (#000000) per ColorLightTokens / ColorDarkTokens.
+      Corrections vs an earlier draft that used on-*-fixed tones for container on roles:
+      - Light onPrimaryContainer is #0842A0 (sources 1 and 4), not #041E49 (#041E49 is on-primary-fixed).
+        Source 2 lists #041E49 for on-primary-container; we follow 1 and 4 (and source 1's on-primary-fixed-variant).
+      - Light onSecondaryContainer is #004A77 (sources 1 and 4), not #001D35 (#001D35 is on-secondary-fixed).
+        Source 2 lists #001D35 for on-secondary-container; we follow 1 and 4.
+      - Light onErrorContainer is #8C1D18 (sources 1 and 4); source 2 lists #410E0B; we follow 1 and 4.
+
+      Scrim dim alphas (60%/70% black) are app lift/modal overlays on top of GM3 scrim #000000.
     -->
 
-    <!-- ===== Light scheme (ColorLightTokens → PaletteTokens) ===== -->
-    <color name="m3_primary">#6750A4</color>
+    <!-- ===== Light (gm3-sys-color-*) ===== -->
+    <color name="m3_primary">#0B57D0</color>
     <color name="m3_on_primary">#FFFFFF</color>
-    <color name="m3_primary_container">#EADDFF</color>
-    <color name="m3_on_primary_container">#21005D</color>
-    <color name="m3_secondary">#625B71</color>
+    <color name="m3_primary_container">#D3E3FD</color>
+    <color name="m3_on_primary_container">#0842A0</color>
+    <color name="m3_secondary">#00639B</color>
     <color name="m3_on_secondary">#FFFFFF</color>
-    <color name="m3_secondary_container">#E8DEF8</color>
-    <color name="m3_on_secondary_container">#1D192B</color>
-    <color name="m3_tertiary">#7D5260</color>
+    <color name="m3_secondary_container">#C2E7FF</color>
+    <color name="m3_on_secondary_container">#004A77</color>
+    <color name="m3_tertiary">#146C2E</color>
     <color name="m3_on_tertiary">#FFFFFF</color>
-    <color name="m3_tertiary_container">#FFD8E4</color>
-    <color name="m3_on_tertiary_container">#31111D</color>
+    <color name="m3_tertiary_container">#C4EED0</color>
+    <color name="m3_on_tertiary_container">#0F5223</color>
     <color name="m3_error">#B3261E</color>
     <color name="m3_on_error">#FFFFFF</color>
     <color name="m3_error_container">#F9DEDC</color>
-    <color name="m3_on_error_container">#410E0B</color>
-    <color name="m3_background">#FEF7FF</color>
-    <color name="m3_on_background">#1D1B20</color>
-    <color name="m3_surface">#FEF7FF</color>
-    <color name="m3_on_surface">#1D1B20</color>
-    <color name="m3_surface_variant">#E7E0EC</color>
-    <color name="m3_on_surface_variant">#49454F</color>
-    <color name="m3_outline">#79747E</color>
-    <color name="m3_outline_variant">#CAC4D0</color>
-    <color name="m3_inverse_surface">#322F35</color>
-    <color name="m3_inverse_on_surface">#F5EFF7</color>
-    <color name="m3_inverse_primary">#D0BCFF</color>
-    <color name="m3_surface_bright">#FEF7FF</color>
-    <color name="m3_surface_dim">#DED8E1</color>
+    <color name="m3_on_error_container">#8C1D18</color>
+    <color name="m3_background">#FFFFFF</color>
+    <color name="m3_on_background">#1F1F1F</color>
+    <color name="m3_surface">#FFFFFF</color>
+    <color name="m3_on_surface">#1F1F1F</color>
+    <color name="m3_surface_variant">#E1E3E1</color>
+    <color name="m3_on_surface_variant">#444746</color>
+    <color name="m3_outline">#747775</color>
+    <color name="m3_outline_variant">#C4C7C5</color>
+    <color name="m3_inverse_surface">#303030</color>
+    <color name="m3_inverse_on_surface">#F2F2F2</color>
+    <color name="m3_inverse_primary">#A8C7FA</color>
+    <color name="m3_surface_bright">#FFFFFF</color>
+    <color name="m3_surface_dim">#D3DBE5</color>
     <color name="m3_surface_container_lowest">#FFFFFF</color>
-    <color name="m3_surface_container_low">#F7F2FA</color>
-    <color name="m3_surface_container">#F3EDF7</color>
-    <color name="m3_surface_container_high">#ECE6F0</color>
-    <color name="m3_surface_container_highest">#E6E0E9</color>
+    <color name="m3_surface_container_low">#F8FAFD</color>
+    <color name="m3_surface_container">#F0F4F9</color>
+    <color name="m3_surface_container_high">#E9EEF6</color>
+    <color name="m3_surface_container_highest">#DDE3EA</color>
+    <color name="m3_surface_tint">#6991D6</color>
     <color name="m3_scrim">#000000</color>
-    <!-- Black at 60% / 70% for modal and lift scrims (base = m3_scrim). -->
     <color name="m3_scrim_dim">#99000000</color>
     <color name="m3_lift_scrim">#99000000</color>
 
-    <!-- ===== Dark scheme (ColorDarkTokens → PaletteTokens) ===== -->
-    <color name="m3_primary_dark">#D0BCFF</color>
-    <color name="m3_on_primary_dark">#381E72</color>
-    <color name="m3_primary_container_dark">#4F378B</color>
-    <color name="m3_on_primary_container_dark">#EADDFF</color>
-    <color name="m3_secondary_dark">#CCC2DC</color>
-    <color name="m3_on_secondary_dark">#332D41</color>
-    <color name="m3_secondary_container_dark">#4A4458</color>
-    <color name="m3_on_secondary_container_dark">#E8DEF8</color>
-    <color name="m3_tertiary_dark">#EFB8C8</color>
-    <color name="m3_on_tertiary_dark">#492532</color>
-    <color name="m3_tertiary_container_dark">#633B48</color>
-    <color name="m3_on_tertiary_container_dark">#FFD8E4</color>
+    <!-- ===== Dark (gm3-sys-color-* under color-scheme: dark) ===== -->
+    <color name="m3_primary_dark">#A8C7FA</color>
+    <color name="m3_on_primary_dark">#062E6F</color>
+    <color name="m3_primary_container_dark">#0842A0</color>
+    <color name="m3_on_primary_container_dark">#D3E3FD</color>
+    <color name="m3_secondary_dark">#7FCFFF</color>
+    <color name="m3_on_secondary_dark">#003355</color>
+    <color name="m3_secondary_container_dark">#004A77</color>
+    <color name="m3_on_secondary_container_dark">#C2E7FF</color>
+    <color name="m3_tertiary_dark">#6DD58C</color>
+    <color name="m3_on_tertiary_dark">#0A3818</color>
+    <color name="m3_tertiary_container_dark">#0F5223</color>
+    <color name="m3_on_tertiary_container_dark">#C4EED0</color>
     <color name="m3_error_dark">#F2B8B5</color>
     <color name="m3_on_error_dark">#601410</color>
     <color name="m3_error_container_dark">#8C1D18</color>
     <color name="m3_on_error_container_dark">#F9DEDC</color>
-    <color name="m3_background_dark">#141218</color>
-    <color name="m3_on_background_dark">#E6E0E9</color>
-    <color name="m3_surface_dark">#141218</color>
-    <color name="m3_on_surface_dark">#E6E0E9</color>
-    <color name="m3_surface_variant_dark">#49454F</color>
-    <color name="m3_on_surface_variant_dark">#CAC4D0</color>
-    <color name="m3_outline_dark">#938F99</color>
-    <color name="m3_outline_variant_dark">#49454F</color>
-    <color name="m3_inverse_surface_dark">#E6E0E9</color>
-    <color name="m3_inverse_on_surface_dark">#322F35</color>
-    <color name="m3_inverse_primary_dark">#6750A4</color>
-    <color name="m3_surface_bright_dark">#3B383E</color>
-    <color name="m3_surface_dim_dark">#141218</color>
-    <color name="m3_surface_container_lowest_dark">#0F0D13</color>
-    <color name="m3_surface_container_low_dark">#1D1B20</color>
-    <color name="m3_surface_container_dark">#211F26</color>
-    <color name="m3_surface_container_high_dark">#2B2930</color>
-    <color name="m3_surface_container_highest_dark">#36343B</color>
+    <color name="m3_background_dark">#131314</color>
+    <color name="m3_on_background_dark">#E3E3E3</color>
+    <color name="m3_surface_dark">#131314</color>
+    <color name="m3_on_surface_dark">#E3E3E3</color>
+    <color name="m3_surface_variant_dark">#444746</color>
+    <color name="m3_on_surface_variant_dark">#C4C7C5</color>
+    <color name="m3_outline_dark">#8E918F</color>
+    <color name="m3_outline_variant_dark">#444746</color>
+    <color name="m3_inverse_surface_dark">#E3E3E3</color>
+    <color name="m3_inverse_on_surface_dark">#303030</color>
+    <color name="m3_inverse_primary_dark">#0B57D0</color>
+    <color name="m3_surface_bright_dark">#37393B</color>
+    <color name="m3_surface_dim_dark">#131314</color>
+    <color name="m3_surface_container_lowest_dark">#0E0E0E</color>
+    <color name="m3_surface_container_low_dark">#1B1B1B</color>
+    <color name="m3_surface_container_dark">#1E1F20</color>
+    <color name="m3_surface_container_high_dark">#282A2C</color>
+    <color name="m3_surface_container_highest_dark">#333537</color>
+    <color name="m3_surface_tint_dark">#D1E1FF</color>
     <color name="m3_scrim_dim_dark">#B3000000</color>
 
-    <!-- Commons / launcher aliases → light primary and surfaces (dark variants chosen in theme code). -->
+    <!-- Commons / launcher aliases → light primary and surfaces. -->
     <color name="color_primary">@color/m3_primary</color>
     <color name="color_primary_dark">@color/m3_primary_dark</color>
     <color name="color_accent">@color/m3_primary</color>
