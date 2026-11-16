@@ -721,7 +721,7 @@ private fun Metadata(message: Message, state: ThreadUiState, content: Color, mod
         verticalAlignment = if (failed) Alignment.Top else Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.xs),
     ) {
-        if (starred) Icon(AfshIcon.StarFilled.painter(), null, tint = metaColor, modifier = Modifier.size(14.dp))
+        if (starred) Icon(AfshIcon.Star.painter(filled = true), null, tint = metaColor, modifier = Modifier.size(14.dp))
         when {
             message.isScheduled ->
                 Icon(AfshIcon.Schedule.painter(), null, tint = metaColor, modifier = Modifier.size(14.dp))

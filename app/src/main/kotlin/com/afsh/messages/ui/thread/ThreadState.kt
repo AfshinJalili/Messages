@@ -183,7 +183,7 @@ enum class MessageAction(@StringRes val label: Int, val icon: AfshIcon) {
     COPY(org.fossify.commons.R.string.copy, AfshIcon.Copy),
     FORWARD(R.string.forward_message, AfshIcon.Forward),
     STAR(R.string.star_message, AfshIcon.Star),
-    UNSTAR(R.string.unstar_message, AfshIcon.StarFilled),
+    UNSTAR(R.string.unstar_message, AfshIcon.Star),
     DELETE(org.fossify.commons.R.string.delete, AfshIcon.Delete),
     SHARE(org.fossify.commons.R.string.share, AfshIcon.Share),
     SELECT_TEXT(org.fossify.commons.R.string.select_text, AfshIcon.TextCursor),

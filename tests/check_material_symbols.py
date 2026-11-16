@@ -14,16 +14,23 @@ entry = kotlin / 'com/afsh/messages/ui/components/AfshIcon.kt'
 problems = []
 source = entry.read_text()
 body = source.split('enum class AfshIcon', 1)[1]
-entries = re.findall(r'^\s+(\w+)\(R\.drawable\.(\w+)\)[,;]', body, re.M)
+# Match both single-resource and dual-resource entries (with filled variant)
+entries = re.findall(r'^\s+(\w+)\(R\.drawable\.(\w+)(?:,\s*R\.drawable\.(\w+))?\)[,;]', body, re.M)
 assert entries, 'no AfshIcon entries found'
 
-for name, drawable in entries:
+for name, drawable, filled in entries:
     if not drawable.startswith('ic_msym_'):
         problems.append(f'AfshIcon.{name} draws {drawable}; every icon is a Material Symbol (ic_msym_*)')
     elif not (drawables / f'{drawable}.xml').exists():
         problems.append(f'AfshIcon.{name} references missing drawable {drawable}')
+    if filled:
+        if not filled.startswith('ic_msym_'):
+            problems.append(f'AfshIcon.{name} draws {filled}; every icon is a Material Symbol (ic_msym_*)')
+        elif not (drawables / f'{filled}.xml').exists():
+            problems.append(f'AfshIcon.{name} references missing filled drawable {filled}')
 
-used = {drawable for _, drawable in entries}
+used = {drawable for _, drawable, _ in entries}
+used |= {filled for _, _, filled in entries if filled}
 for path in sorted(drawables.glob('ic_msym_*.xml')):
     text = path.read_text()
     if path.stem not in used:
