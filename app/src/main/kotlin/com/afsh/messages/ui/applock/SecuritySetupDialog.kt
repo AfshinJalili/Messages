@@ -26,7 +26,6 @@ import com.afsh.messages.ui.Afsh
 import com.afsh.messages.ui.components.AfshDialog
 import kotlinx.coroutines.delay
 import org.fossify.commons.R as CommonsR
-import org.fossify.commons.extensions.isRPlus
 import org.fossify.commons.helpers.MINIMUM_PIN_LENGTH
 import org.fossify.commons.helpers.PROTECTION_FINGERPRINT
 import org.fossify.commons.helpers.PROTECTION_PATTERN
@@ -57,7 +56,7 @@ fun SecuritySetupDialog(
         add(PROTECTION_PATTERN to stringResource(CommonsR.string.pattern))
         add(PROTECTION_PIN to stringResource(CommonsR.string.pin))
         if (biometricAvailable) {
-            add(PROTECTION_FINGERPRINT to if (context.isRPlus()) stringResource(CommonsR.string.biometrics) else stringResource(CommonsR.string.fingerprint))
+            add(PROTECTION_FINGERPRINT to if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) stringResource(CommonsR.string.biometrics) else stringResource(CommonsR.string.fingerprint))
         }
     }
 
@@ -227,7 +226,7 @@ private fun BiometricSecurityTab(
             val info = BiometricPrompt.PromptInfo.Builder()
                 .setTitle(context.getString(AppR.string.app_lock))
                 .setNegativeButtonText(context.getString(android.R.string.cancel))
-                .setAllowedAuthenticators(BiometricPrompt.AUTHENTICATOR_BIOMETRIC_STRONG)
+                .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
                 .build()
             prompt.authenticate(info)
         }
