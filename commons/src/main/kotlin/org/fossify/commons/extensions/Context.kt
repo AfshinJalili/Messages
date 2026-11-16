@@ -124,7 +124,6 @@ import org.fossify.commons.helpers.isQPlus
 import org.fossify.commons.helpers.isRPlus
 import org.fossify.commons.helpers.isSPlus
 import org.fossify.commons.helpers.isUpsideDownCakePlus
-import org.fossify.commons.helpers.proPackages
 import org.fossify.commons.models.AlarmSound
 import org.fossify.commons.models.BlockedNumber
 import org.joda.time.DateTimeConstants
@@ -843,9 +842,7 @@ fun Context.saveExifRotation(exif: ExifInterface, degrees: Int) {
 
 fun Context.getLaunchIntent() = packageManager.getLaunchIntentForPackage(baseConfig.appId)
 
-fun Context.getCanAppBeUpgraded() = proPackages.contains(baseConfig.appId.removeSuffix(".debug").removePrefix("org.fossify."))
-
-fun Context.getProUrl() = "https://play.google.com/store/apps/details?id=${baseConfig.appId.removeSuffix(".debug")}.pro"
+.pro"
 
 fun Context.getStoreUrl() = "https://play.google.com/store/apps/details?id=${packageName.removeSuffix(".debug")}"
 

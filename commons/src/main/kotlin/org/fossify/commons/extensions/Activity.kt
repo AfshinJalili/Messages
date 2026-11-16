@@ -43,15 +43,11 @@ import androidx.fragment.app.FragmentActivity
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import org.fossify.commons.R
 import org.fossify.commons.activities.BaseSimpleActivity
-import org.fossify.commons.compose.extensions.DEVELOPER_PLAY_STORE_URL
 import org.fossify.commons.databinding.DialogTitleBinding
 import org.fossify.commons.dialogs.ConfirmationAdvancedDialog
 import org.fossify.commons.dialogs.ConfirmationDialog
 import org.fossify.commons.dialogs.CustomIntervalPickerDialog
-import org.fossify.commons.dialogs.DonateDialog
 import org.fossify.commons.dialogs.RadioGroupDialog
-import org.fossify.commons.dialogs.UpgradeToProDialog
-import org.fossify.commons.dialogs.WhatsNewDialog
 import org.fossify.commons.dialogs.WritePermissionDialog
 import org.fossify.commons.dialogs.WritePermissionDialog.WritePermissionDialogMode
 import org.fossify.commons.helpers.CREATE_DOCUMENT_SDK_30
@@ -79,7 +75,6 @@ import org.fossify.commons.models.Android30RenameFormat
 import org.fossify.commons.models.FileDirItem
 import org.fossify.commons.models.PhoneNumber
 import org.fossify.commons.models.RadioItem
-import org.fossify.commons.models.Release
 import org.fossify.commons.views.MyTextView
 import java.io.File
 import java.io.FileNotFoundException
@@ -123,14 +118,6 @@ fun Activity.appLaunched(appId: String) {
     }
 
     baseConfig.appRunCount++
-}
-
-fun Activity.showDonateOrUpgradeDialog() {
-    if (getCanAppBeUpgraded()) {
-        UpgradeToProDialog(this)
-    } else if (!isOrWasThankYouInstalled()) {
-        DonateDialog(this)
-    }
 }
 
 fun Activity.isAppInstalledOnSDCard(): Boolean = try {
@@ -386,24 +373,6 @@ fun BaseSimpleActivity.showOTGPermissionDialog(path: String) {
             }
         }
     }
-}
-
-fun Activity.launchPurchaseThankYouIntent() {
-    hideKeyboard()
-    launchViewIntent(getString(R.string.thank_you_url))
-}
-
-fun Activity.launchUpgradeToProIntent() {
-    hideKeyboard()
-    try {
-        launchViewIntent("market://details?id=${baseConfig.appId.removeSuffix(".debug")}.pro")
-    } catch (ignored: Exception) {
-        launchViewIntent(getStoreUrl())
-    }
-}
-
-fun Activity.launchMoreAppsFromUsIntent() {
-    launchViewIntent(DEVELOPER_PLAY_STORE_URL)
 }
 
 fun Activity.launchViewIntent(id: Int) = launchViewIntent(getString(id))
@@ -707,22 +676,6 @@ fun Activity.tryGenericMimeType(intent: Intent, mimeType: String, uri: Uri): Boo
     } catch (e: Exception) {
         false
     }
-}
-
-fun BaseSimpleActivity.checkWhatsNew(releases: List<Release>, currVersion: Int) {
-    if (baseConfig.lastVersion == 0) {
-        baseConfig.lastVersion = currVersion
-        return
-    }
-
-    val newReleases = arrayListOf<Release>()
-    releases.filterTo(newReleases) { it.id > baseConfig.lastVersion }
-
-    if (newReleases.isNotEmpty()) {
-        WhatsNewDialog(this, newReleases)
-    }
-
-    baseConfig.lastVersion = currVersion
 }
 
 fun BaseSimpleActivity.deleteFolders(folders: List<FileDirItem>, deleteMediaOnly: Boolean = true, callback: ((wasSuccess: Boolean) -> Unit)? = null) {

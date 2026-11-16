@@ -92,10 +92,8 @@ import org.fossify.commons.extensions.storeAndroidTreeUri
 import org.fossify.commons.extensions.toast
 import org.fossify.commons.extensions.updateOTGPathFromPartition
 import org.fossify.commons.extensions.writeLn
-import org.fossify.commons.helpers.APP_FAQ
 import org.fossify.commons.helpers.APP_ICON_IDS
 import org.fossify.commons.helpers.APP_LAUNCHER_NAME
-import org.fossify.commons.helpers.APP_LICENSES
 import org.fossify.commons.helpers.APP_NAME
 import org.fossify.commons.helpers.APP_PACKAGE_NAME
 import org.fossify.commons.helpers.APP_REPOSITORY_NAME
@@ -117,7 +115,6 @@ import org.fossify.commons.helpers.REQUEST_APP_UNLOCK
 import org.fossify.commons.helpers.REQUEST_CODE_SET_DEFAULT_CALLER_ID
 import org.fossify.commons.helpers.REQUEST_CODE_SET_DEFAULT_DIALER
 import org.fossify.commons.helpers.SD_OTG_SHORT
-import org.fossify.commons.helpers.SELECT_EXPORT_SETTINGS_FILE_INTENT
 import org.fossify.commons.helpers.SHOW_FAQ_BEFORE_MAIL
 import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.commons.helpers.getConflictResolution
@@ -127,7 +124,6 @@ import org.fossify.commons.helpers.isTiramisuPlus
 import org.fossify.commons.helpers.isUpsideDownCakePlus
 import org.fossify.commons.helpers.sumByLong
 import org.fossify.commons.interfaces.CopyMoveListener
-import org.fossify.commons.models.FAQItem
 import org.fossify.commons.models.FileDirItem
 import org.fossify.commons.views.MyAppBarLayout
 import java.io.File
@@ -140,7 +136,6 @@ abstract class BaseSimpleActivity : EdgeToEdgeActivity() {
     var isAskingPermissions = false
     var useDynamicTheme = true
     var checkedDocumentPath = ""
-    var configItemsToExport = LinkedHashMap<String, Any>()
 
     private lateinit var backCallback: OnBackPressedCallback
 
@@ -534,9 +529,6 @@ abstract class BaseSimpleActivity : EdgeToEdgeActivity() {
             } else {
                 funAfterSAFPermission?.invoke(false)
             }
-        } else if (requestCode == SELECT_EXPORT_SETTINGS_FILE_INTENT && resultCode == RESULT_OK && resultData != null && resultData.data != null) {
-            val outputStream = contentResolver.openOutputStream(resultData.data!!)
-            exportSettingsTo(outputStream, configItemsToExport)
         } else if (requestCode == DELETE_FILE_SDK_30_HANDLER) {
             funAfterSdk30Action?.invoke(resultCode == RESULT_OK)
         } else if (requestCode == RECOVERABLE_SECURITY_HANDLER) {
@@ -1214,32 +1206,6 @@ abstract class BaseSimpleActivity : EdgeToEdgeActivity() {
                 negative = 0
             ) {}
         }
-    }
-
-    private fun exportSettingsTo(
-        outputStream: OutputStream?,
-        configItems: LinkedHashMap<String, Any>
-    ) {
-        if (outputStream == null) {
-            toast(R.string.unknown_error_occurred)
-            return
-        }
-
-        ensureBackgroundThread {
-            outputStream.bufferedWriter().use { out ->
-                for ((key, value) in configItems) {
-                    out.writeLn("$key=$value")
-                }
-            }
-
-            toast(R.string.settings_exported_successfully)
-        }
-    }
-
-    private fun getExportSettingsFilename(): String {
-        val appName = baseConfig.appId.removeSuffix(".debug").removeSuffix(".pro")
-            .removePrefix("org.fossify.")
-        return "$appName-settings_${getCurrentFormattedDateTime()}"
     }
 
     @SuppressLint("InlinedApi")

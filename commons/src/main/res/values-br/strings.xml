@@ -1,47 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="never">Norse</string>
     <string name="custom">Personelaet</string>
     <string name="minutes_raw">a vunutennoù</string>
     <string name="hours_raw">eur</string>
     <string name="days_raw">a zevezhioù</string>
-    <plurals name="days">
-        <item quantity="one">%ddevezh</item>
-        <item quantity="other">%da zevezhioù</item>
-    </plurals>
-    <plurals name="weeks">
-        <item quantity="one">%dsizhun</item>
-        <item quantity="other">%dsizhun</item>
-    </plurals>
-    <plurals name="months">
-        <item quantity="one">%dmiz</item>
-        <item quantity="other">%da vizioù</item>
-    </plurals>
-    <plurals name="years">
-        <item quantity="one">%da vloavezhioù</item>
-        <item quantity="other">%da vloavezhioù</item>
-    </plurals>
-    <plurals name="minutes_before">
-        <item quantity="one">%dvunutenn a-raok</item>
-        <item quantity="other">%da vunutennoù a-raok</item>
-    </plurals>
-    <plurals name="hours_before">
-        <item quantity="one">%deur a-raok</item>
-        <item quantity="other">%deur a-raok</item>
-    </plurals>
-    <plurals name="days_before">
-        <item quantity="one">%da zevezhioù a-raok</item>
-        <item quantity="other">%da zevezhioù a-raok</item>
-    </plurals>
-    <plurals name="by_minutes">
-        <item quantity="one">%dvunutenn</item>
-        <item quantity="other">%da vunutennoù</item>
-    </plurals>
-    <plurals name="by_hours">
-        <item quantity="one">%deur</item>
-        <item quantity="other">%da eurioù</item>
-    </plurals>
-    <string name="snooze">Daleañ</string>
     <string name="no_reminder">Adc\'halv ebet</string>
     <string name="at_start">D\'an deroù</string>
     <string name="january">Genver</string>
@@ -75,5 +37,4 @@
     <string name="friday_short">Gwe</string>
     <string name="saturday_short">Sad</string>
     <string name="sunday_short">Sul</string>
-    <string name="audio">Aodio</string>
 </resources>
