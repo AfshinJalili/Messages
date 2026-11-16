@@ -1255,11 +1255,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
     }
 
     private fun renameConversation() {
-        val current = conversation
-        if (current == null) {
-            toast(R.string.unknown_error_occurred)
-            return
-        }
+        val current = conversation ?: return
         showRenameDialog(current) { title ->
             ensureBackgroundThread {
                 conversation = renameConversation(current, newTitle = title)
