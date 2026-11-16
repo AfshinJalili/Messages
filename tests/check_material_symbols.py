@@ -4,7 +4,7 @@
 Fails when:
 - an AfshIcon entry lacks a shipped ic_msym_* drawable in commons (including its filled variant),
 - a shipped ic_msym_* drawable is unused by AfshIcon,
-- a symbol hardcodes a color instead of @color/icon_mask,
+- a symbol hardcodes a color instead of @color/m3_on_primary,
 - app Kotlin outside AfshIcon.kt names an ic_msym_* drawable id,
 - any ic_msym_* exists under app/src (single copy lives in commons only),
 - a non-ic_msym_ <vector> drawable ships outside the allowed exceptions (launcher / brand mark only).
@@ -113,9 +113,9 @@ for path in sorted(commons_drawables.glob('ic_msym_*.xml')):
     if path.stem not in used:
         problems.append(f'{path.name} is not used by AfshIcon.kt; unused symbols must not ship')
     if re.search(r'#[0-9a-fA-F]{3,8}\b|@android:color|\?attr/', text):
-        problems.append(f'{path.name} hardcodes a color or theme attribute; tint through @color/icon_mask')
-    if '@color/icon_mask' not in text:
-        problems.append(f'{path.name} is not tinted by @color/icon_mask')
+        problems.append(f'{path.name} hardcodes a color or theme attribute; tint through @color/m3_on_primary')
+    if '@color/m3_on_primary' not in text:
+        problems.append(f'{path.name} is not tinted by @color/m3_on_primary')
 
 for path in kotlin.rglob('*.kt'):
     if path != entry and 'ic_msym_' in path.read_text():

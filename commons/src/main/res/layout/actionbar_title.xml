@@ -6,5 +6,5 @@
     android:background="?attr/selectableItemBackground"
     android:gravity="center_vertical|start"
     android:paddingEnd="@dimen/medium_margin"
-    android:textColor="@android:color/white"
+    android:textColor="@color/m3_on_primary"
     android:textSize="@dimen/actionbar_text_size" />

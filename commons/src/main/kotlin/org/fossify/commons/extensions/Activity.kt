@@ -85,7 +85,7 @@ fun Activity.appLaunched(appId: String) {
         checkAppIconColor()
     } else if (!baseConfig.wasOrangeIconChecked) {
         baseConfig.wasOrangeIconChecked = true
-        val primaryColor = resources.getColor(R.color.color_primary)
+        val primaryColor = resources.getColor(R.color.m3_primary)
         if (baseConfig.appIconColor != primaryColor) {
             getAppIconColors().forEachIndexed { index, color ->
                 toggleAppIconColor(appId, index, color, false)

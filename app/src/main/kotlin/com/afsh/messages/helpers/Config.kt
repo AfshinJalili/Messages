@@ -25,10 +25,10 @@ class Config(context: Context) : BaseConfig(context) {
             if (!prefs.contains(IS_SYSTEM_THEME_ENABLED)) {
                 isSystemThemeEnabled = true
                 if (!prefs.contains(BACKGROUND_COLOR)) {
-                    backgroundColor = ContextCompat.getColor(context, R.color.m3_surface)
+                    backgroundColor = ContextCompat.getColor(context, org.fossify.commons.R.color.m3_surface)
                 }
                 if (!prefs.contains(TEXT_COLOR)) {
-                    textColor = ContextCompat.getColor(context, R.color.m3_on_surface)
+                    textColor = ContextCompat.getColor(context, org.fossify.commons.R.color.m3_on_surface)
                 }
             }
             prefs.edit().putBoolean(THEME_DEFAULTS_APPLIED, true).apply()

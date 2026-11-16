@@ -1,18 +1,18 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
 
     <style name="AppTheme.Base" parent="Theme.Material3.Dark.NoActionBar">
-        <item name="colorPrimary">@color/color_primary</item>
-        <item name="colorPrimaryDark">@color/color_primary_dark</item>
-        <item name="colorAccent">@color/color_accent</item>
+        <item name="colorPrimary">@color/m3_primary</item>
+        <item name="colorPrimaryDark">@color/m3_primary_dark</item>
+        <item name="colorAccent">@color/m3_primary</item>
         <item name="android:spinnerItemStyle">@style/SpinnerItem</item>
         <item name="spinnerDropDownItemStyle">@style/SpinnerItem.DropDownItem</item>
         <item name="android:spinnerDropDownItemStyle">@style/SpinnerItem.DropDownItem</item>
         <item name="buttonStyle">@style/MyTransparentButton</item>
         <item name="android:buttonStyle">@style/MyTransparentButton</item>
         <item name="actionOverflowMenuStyle">@style/TopPopupMenu.Overflow.Dark</item>
-        <item name="android:textColor">@color/default_text_color</item>
-        <item name="android:colorControlHighlight">@color/theme_activated</item>
-        <item name="colorControlHighlight">@color/theme_activated</item>
+        <item name="android:textColor">@color/m3_on_surface</item>
+        <item name="android:colorControlHighlight">@color/m3_surface_container_highest</item>
+        <item name="colorControlHighlight">@color/m3_surface_container_highest</item>
         <item name="bottomSheetDialogTheme">@style/BottomSheetDialogTheme</item>
         <item name="android:actionModeCloseDrawable">@drawable/ic_msym_arrow_back</item>
         <item name="actionModeStyle">@style/AppCompat.ActionMode</item>
@@ -24,8 +24,8 @@
     </style>
 
     <style name="AppTheme.Base.Core" parent="Theme.Material3.Dark.NoActionBar">
-        <item name="android:colorControlHighlight">@color/theme_activated</item>
-        <item name="colorControlHighlight">@color/theme_activated</item>
+        <item name="android:colorControlHighlight">@color/m3_surface_container_highest</item>
+        <item name="colorControlHighlight">@color/m3_surface_container_highest</item>
         <item name="bottomSheetDialogTheme">@style/BottomSheetDialogTheme</item>
         <item name="android:forceDarkAllowed">false</item>
         <item name="windowActionModeOverlay">true</item>
@@ -45,10 +45,10 @@
 
     <!-- material dialogs -->
     <style name="ThemeOverlay.App.MaterialAlertDialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
-        <item name="colorPrimary">@color/theme_surface</item>
-        <item name="colorSecondary">@color/theme_surface</item>
-        <item name="colorSurface">@color/theme_surface</item>
-        <item name="colorOnSurface">@color/color_primary</item>
+        <item name="colorPrimary">@color/m3_surface</item>
+        <item name="colorSecondary">@color/m3_surface</item>
+        <item name="colorSurface">@color/m3_surface</item>
+        <item name="colorOnSurface">@color/m3_primary</item>
         <item name="alertDialogStyle">@style/MaterialAlertDialog.App</item>
         <item name="materialAlertDialogTitleTextStyle">@style/MaterialAlertDialog.App.Title.Text</item>
         <item name="buttonBarPositiveButtonStyle">@style/Widget.App.Button</item>
@@ -62,11 +62,11 @@
     </style>
 
     <style name="MaterialAlertDialog.App.Title.Text" parent="MaterialAlertDialog.Material3.Title.Text">
-        <item name="android:textColor">@color/color_primary</item>
+        <item name="android:textColor">@color/m3_primary</item>
     </style>
 
     <style name="Widget.App.Button" parent="Widget.Material3.Button.TextButton.Dialog">
-        <item name="android:textColor">@color/color_primary</item>
+        <item name="android:textColor">@color/m3_primary</item>
     </style>
 
     <style name="ShapeAppearance.App.MediumComponent" parent="ShapeAppearance.Material3.MediumComponent">
@@ -75,7 +75,7 @@
     </style>
 
     <style name="ActionMenuOverflowIcon" parent="@style/Widget.AppCompat.ActionButton.Overflow">
-        <item name="android:tint">@color/theme_surface</item>
+        <item name="android:tint">@color/m3_surface</item>
     </style>
 
     <!-- contextual action mode -->
@@ -101,7 +101,7 @@
         <item name="android:background">@drawable/widget_config_seekbar_background</item>
         <item name="android:paddingStart">@dimen/activity_margin</item>
         <item name="android:paddingEnd">@dimen/activity_margin</item>
-        <item name="android:textColor">@color/theme_on_surface</item>
+        <item name="android:textColor">@color/m3_on_surface</item>
         <item name="android:textSize">@dimen/big_text_size</item>
     </style>
 
@@ -127,7 +127,7 @@
     </style>
 
     <style name="MyTransparentButton" parent="Widget.AppCompat.Button">
-        <item name="android:textColor">@android:color/white</item>
+        <item name="android:textColor">@color/m3_on_primary</item>
         <item name="background">@drawable/transparent_button</item>
         <item name="android:background">@drawable/transparent_button</item>
     </style>
@@ -140,18 +140,18 @@
     </style>
 
     <style name="MyDialogTheme" parent="Theme.Material3.Light.Dialog">
-        <item name="colorAccent">@color/color_primary</item>
-        <item name="android:windowBackground">@color/theme_light_background_color</item>
-        <item name="android:textColor">@color/theme_light_text_color</item>
+        <item name="colorAccent">@color/m3_primary</item>
+        <item name="android:windowBackground">@color/m3_surface</item>
+        <item name="android:textColor">@color/m3_on_surface</item>
         <item name="android:buttonBarNegativeButtonStyle">@style/DialogButtonStyle</item>
         <item name="android:buttonBarPositiveButtonStyle">@style/DialogButtonStyle</item>
         <item name="android:buttonBarNeutralButtonStyle">@style/DialogButtonStyle</item>
     </style>
 
     <style name="MyDialogTheme.Dark" parent="Theme.Material3.Dark.Dialog">
-        <item name="colorAccent">@color/color_primary</item>
-        <item name="android:windowBackground">@color/theme_dark_background_color</item>
-        <item name="android:textColor">@color/theme_dark_text_color</item>
+        <item name="colorAccent">@color/m3_primary</item>
+        <item name="android:windowBackground">@color/m3_surface_dark</item>
+        <item name="android:textColor">@color/m3_on_surface_dark</item>
 
         <item name="android:buttonBarNegativeButtonStyle">@style/DialogButtonStyle</item>
         <item name="android:buttonBarPositiveButtonStyle">@style/DialogButtonStyle</item>
@@ -159,21 +159,21 @@
     </style>
 
     <style name="DialogButtonStyle" parent="Widget.Material3.Button.TextButton.Dialog">
-        <item name="android:textColor">@color/color_primary</item>
+        <item name="android:textColor">@color/m3_primary</item>
     </style>
 
     <style name="MaterialDialogButtonStyle" parent="Widget.Material3.Button.TextButton.Dialog">
-        <item name="android:textColor">@color/color_primary</item>
+        <item name="android:textColor">@color/m3_primary</item>
     </style>
 
     <!-- Used at dark Material You Time picker. Some of its parts cannot be customized through themes, we use these hacky ways. -->
     <style name="MyTimePickerMaterialTheme.Dark" parent="@android:style/Theme.DeviceDefault.Dialog">
-        <item name="colorAccent">@color/color_primary</item>
-        <item name="android:colorAccent">@color/color_primary</item>
-        <item name="android:windowBackground">@drawable/dialog_you_background</item>
-        <item name="android:textColor">@color/color_primary</item>
-        <item name="android:textColorSecondary">@color/theme_on_surface</item>
-        <item name="android:textColorPrimary">@color/theme_on_surface</item>
+        <item name="colorAccent">@color/m3_primary</item>
+        <item name="android:colorAccent">@color/m3_primary</item>
+        <item name="android:windowBackground">@drawable/dialog_bg</item>
+        <item name="android:textColor">@color/m3_primary</item>
+        <item name="android:textColorSecondary">@color/m3_on_surface</item>
+        <item name="android:textColorPrimary">@color/m3_on_surface</item>
         <item name="android:buttonBarNegativeButtonStyle">@style/MaterialDialogButtonStyle</item>
         <item name="android:buttonBarPositiveButtonStyle">@style/MaterialDialogButtonStyle</item>
         <item name="android:buttonBarNeutralButtonStyle">@style/MaterialDialogButtonStyle</item>
@@ -181,12 +181,12 @@
 
     <!-- Used at both dark and light Material You Date pickers and light Time Picker, as otherwise it glitches -->
     <style name="MyDateTimePickerMaterialTheme" parent="@style/Theme.AppCompat.Light.Dialog">
-        <item name="colorAccent">@color/color_primary</item>
-        <item name="android:colorAccent">@color/color_primary</item>
-        <item name="android:windowBackground">@drawable/dialog_you_background</item>
-        <item name="android:textColor">@color/color_primary</item>
-        <item name="android:textColorPrimary">@color/theme_on_surface</item>
-        <item name="android:textColorSecondary">@color/theme_on_surface</item>
+        <item name="colorAccent">@color/m3_primary</item>
+        <item name="android:colorAccent">@color/m3_primary</item>
+        <item name="android:windowBackground">@drawable/dialog_bg</item>
+        <item name="android:textColor">@color/m3_primary</item>
+        <item name="android:textColorPrimary">@color/m3_on_surface</item>
+        <item name="android:textColorSecondary">@color/m3_on_surface</item>
         <item name="android:buttonBarNegativeButtonStyle">@style/MaterialDialogButtonStyle</item>
         <item name="android:buttonBarPositiveButtonStyle">@style/MaterialDialogButtonStyle</item>
         <item name="android:buttonBarNeutralButtonStyle">@style/MaterialDialogButtonStyle</item>
@@ -243,13 +243,13 @@
     </style>
 
     <style name="LightActionBarItems" parent="ThemeOverlay.AppCompat.ActionBar">
-        <item name="colorAccent">@android:color/white</item>
-        <item name="android:textColorHint">@color/hint_white</item>
+        <item name="colorAccent">@color/m3_on_primary</item>
+        <item name="android:textColorHint">@color/m3_on_primary</item>
     </style>
 
     <style name="DarkActionBarItems" parent="ThemeOverlay.AppCompat.ActionBar">
-        <item name="colorAccent">@color/theme_on_surface</item>
-        <item name="android:textColorHint">@color/hint_black</item>
+        <item name="colorAccent">@color/m3_on_surface</item>
+        <item name="android:textColorHint">@color/m3_on_surface</item>
     </style>
 
     <style name="TopPopupMenu.Overflow.Light" parent="@style/Widget.MaterialComponents.PopupMenu.Overflow">
@@ -298,12 +298,12 @@
         <item name="android:backgroundDimAmount">0.32</item>
         <item name="bottomSheetStyle">@style/AppTheme.Material3.BottomSheetModalStyle</item>
         <item name="elevationOverlayEnabled">true</item>
-        <item name="android:navigationBarColor">@color/theme_surface</item>
-        <item name="android:navigationBarDividerColor" tools:targetApi="o_mr1">@color/theme_surface</item>
+        <item name="android:navigationBarColor">@color/m3_surface</item>
+        <item name="android:navigationBarDividerColor" tools:targetApi="o_mr1">@color/m3_surface</item>
     </style>
 
     <style name="AppTheme.Material3.BottomSheetModalStyle" parent="Widget.Material3.BottomSheet.Modal">
-        <item name="backgroundTint">@color/theme_surface</item>
+        <item name="backgroundTint">@color/m3_surface</item>
         <item name="shapeAppearanceOverlay">@style/BottomSheetShapeAppearanceOverlay</item>
     </style>
 
@@ -318,8 +318,8 @@
     <style name="BottomSheetDialogTheme" parent="Theme.Design.Light.BottomSheetDialog">
         <item name="android:backgroundDimAmount">0.32</item>
         <item name="bottomSheetStyle">@style/BottomSheetModalStyle</item>
-        <item name="android:colorControlHighlight">@color/theme_activated</item>
-        <item name="colorControlHighlight">@color/theme_activated</item>
+        <item name="android:colorControlHighlight">@color/m3_surface_container_highest</item>
+        <item name="colorControlHighlight">@color/m3_surface_container_highest</item>
     </style>
 
     <style name="BottomSheetModalStyle" parent="Widget.Design.BottomSheet.Modal">

@@ -1,47 +1,108 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!--
-      Commons color names only. Terminal GM3 hex lives in app/src/main/res/values/colors.xml;
-      the app overrides these names on merge. This file has no hex — only framework colors and aliases.
+      Google Material 3 (GM3) system color tokens: the static palette Google apps use
+      (Messages, Gmail, Drive, Calendar, etc.), not the purple AndroidX M3 baseline.
+
+      CSS custom properties are named gm3-sys-color-* (with a double-hyphen prefix in CSS;
+      XML comments cannot contain that prefix, so it is written without the leading hyphens).
+
+      Sources (cross-checked; every hex below appears in at least one):
+      1. Complete light + dark gm3-sys-color-* CSS (Google Calendar style dump mirrored at):
+         https://raw.githubusercontent.com/pabricrui/web/49df1f1c1cca8853ac985a419cc8d3fe33954fd3/css/material.css
+      2. Same light/dark gm3-sys-color-* set:
+         https://raw.githubusercontent.com/WalkQuackBack/review-app-vite/7e8184ab78d4ec974cf9ccbf3967069f3d72901c/src/styles/globals.css
+      3. Light hex to gm3-sys-color-* map extracted from Google Workspace CSS:
+         https://raw.githubusercontent.com/WalkQuackBack/google-suite-color-theme/main/color-index.ts
+      4. com_google_material_gm3V10 / gm3V11 asset-catalog roles (light/dark) from a Google app dump:
+         https://techdevnotes.com/apps/ios/gemini/6477489729/design-system
+
+      Corrections vs an earlier draft that used on-*-fixed tones for container on roles:
+      - Light onPrimaryContainer is #0842A0 (sources 1 and 4), not #041E49 (#041E49 is on-primary-fixed).
+        Source 2 lists #041E49 for on-primary-container; we follow 1 and 4 (and source 1's on-primary-fixed-variant).
+      - Light onSecondaryContainer is #004A77 (sources 1 and 4), not #001D35 (#001D35 is on-secondary-fixed).
+        Source 2 lists #001D35 for on-secondary-container; we follow 1 and 4.
+      - Light onErrorContainer is #8C1D18 (sources 1 and 4); source 2 lists #410E0B; we follow 1 and 4.
+
+      Scrim dim alphas (60%/70% black) are app lift/modal overlays on top of GM3 scrim #000000.
     -->
-    <color name="color_primary">@android:color/holo_blue_dark</color>
-    <color name="color_primary_dark">@android:color/holo_blue_dark</color>
-    <color name="color_accent">@color/color_primary</color>
 
-    <color name="theme_surface">@android:color/white</color>
-    <color name="theme_on_surface">@android:color/black</color>
-    <color name="theme_activated">@android:color/darker_gray</color>
+    <!-- ===== Light (gm3-sys-color-*) ===== -->
+    <color name="m3_primary">#0B57D0</color>
+    <color name="m3_on_primary">#FFFFFF</color>
+    <color name="m3_primary_container">#D3E3FD</color>
+    <color name="m3_on_primary_container">#0842A0</color>
+    <color name="m3_secondary">#00639B</color>
+    <color name="m3_on_secondary">#FFFFFF</color>
+    <color name="m3_secondary_container">#C2E7FF</color>
+    <color name="m3_on_secondary_container">#004A77</color>
+    <color name="m3_tertiary">#146C2E</color>
+    <color name="m3_on_tertiary">#FFFFFF</color>
+    <color name="m3_tertiary_container">#C4EED0</color>
+    <color name="m3_on_tertiary_container">#0F5223</color>
+    <color name="m3_error">#B3261E</color>
+    <color name="m3_on_error">#FFFFFF</color>
+    <color name="m3_error_container">#F9DEDC</color>
+    <color name="m3_on_error_container">#8C1D18</color>
+    <color name="m3_background">#FFFFFF</color>
+    <color name="m3_on_background">#1F1F1F</color>
+    <color name="m3_surface">#FFFFFF</color>
+    <color name="m3_on_surface">#1F1F1F</color>
+    <color name="m3_surface_variant">#E1E3E1</color>
+    <color name="m3_on_surface_variant">#444746</color>
+    <color name="m3_outline">#747775</color>
+    <color name="m3_outline_variant">#C4C7C5</color>
+    <color name="m3_inverse_surface">#303030</color>
+    <color name="m3_inverse_on_surface">#F2F2F2</color>
+    <color name="m3_inverse_primary">#A8C7FA</color>
+    <color name="m3_surface_bright">#FFFFFF</color>
+    <color name="m3_surface_dim">#D3DBE5</color>
+    <color name="m3_surface_container_lowest">#FFFFFF</color>
+    <color name="m3_surface_container_low">#F8FAFD</color>
+    <color name="m3_surface_container">#F0F4F9</color>
+    <color name="m3_surface_container_high">#E9EEF6</color>
+    <color name="m3_surface_container_highest">#DDE3EA</color>
+    <color name="m3_surface_tint">#6991D6</color>
+    <color name="m3_scrim">#000000</color>
+    <color name="m3_scrim_dim">#99000000</color>
+    <color name="m3_lift_scrim">#99000000</color>
 
-    <color name="theme_light_text_color">@color/theme_on_surface</color>
-    <color name="theme_light_background_color">@color/theme_surface</color>
-    <color name="theme_dark_text_color">@android:color/white</color>
-    <color name="theme_dark_background_color">@android:color/black</color>
-
-    <color name="default_text_color">@color/theme_on_surface</color>
-    <color name="default_background_color">@color/theme_surface</color>
-    <color name="default_primary_color">@color/color_primary</color>
-    <color name="default_app_icon_color">@color/color_primary</color>
-    <color name="default_accent_color">@color/color_primary</color>
-    <color name="default_widget_bg_color">@android:color/transparent</color>
-    <color name="default_widget_text_color">@color/color_primary</color>
-
-    <color name="pressed_item_foreground">@android:color/transparent</color>
-    <color name="activated_item_foreground">@color/theme_activated</color>
-    <color name="divider_grey">@android:color/darker_gray</color>
-    <color name="gradient_grey_start">@android:color/black</color>
-    <color name="bottom_tabs_light_background">@color/theme_surface</color>
-    <color name="disabled_text_color_highlight">@android:color/transparent</color>
-    <color name="hint_white">@android:color/white</color>
-    <color name="hint_black">@android:color/black</color>
-    <color name="light_grey_stroke">@android:color/white</color>
-    <color name="thumb_deactivated">@android:color/darker_gray</color>
-    <color name="track_deactivated">@android:color/darker_gray</color>
-    <color name="radiobutton_disabled">@android:color/darker_gray</color>
-
-    <color name="you_status_bar_color">@color/theme_surface</color>
-    <color name="you_contextual_status_bar_color">@color/color_primary</color>
-    <color name="you_background_color">@color/theme_surface</color>
-    <color name="you_neutral_text_color">@color/theme_on_surface</color>
-    <color name="you_primary_color">@color/color_primary</color>
-    <color name="you_dialog_background_color">@color/theme_surface</color>
+    <!-- ===== Dark (gm3-sys-color-* under color-scheme: dark) ===== -->
+    <color name="m3_primary_dark">#A8C7FA</color>
+    <color name="m3_on_primary_dark">#062E6F</color>
+    <color name="m3_primary_container_dark">#0842A0</color>
+    <color name="m3_on_primary_container_dark">#D3E3FD</color>
+    <color name="m3_secondary_dark">#7FCFFF</color>
+    <color name="m3_on_secondary_dark">#003355</color>
+    <color name="m3_secondary_container_dark">#004A77</color>
+    <color name="m3_on_secondary_container_dark">#C2E7FF</color>
+    <color name="m3_tertiary_dark">#6DD58C</color>
+    <color name="m3_on_tertiary_dark">#0A3818</color>
+    <color name="m3_tertiary_container_dark">#0F5223</color>
+    <color name="m3_on_tertiary_container_dark">#C4EED0</color>
+    <color name="m3_error_dark">#F2B8B5</color>
+    <color name="m3_on_error_dark">#601410</color>
+    <color name="m3_error_container_dark">#8C1D18</color>
+    <color name="m3_on_error_container_dark">#F9DEDC</color>
+    <color name="m3_background_dark">#131314</color>
+    <color name="m3_on_background_dark">#E3E3E3</color>
+    <color name="m3_surface_dark">#131314</color>
+    <color name="m3_on_surface_dark">#E3E3E3</color>
+    <color name="m3_surface_variant_dark">#444746</color>
+    <color name="m3_on_surface_variant_dark">#C4C7C5</color>
+    <color name="m3_outline_dark">#8E918F</color>
+    <color name="m3_outline_variant_dark">#444746</color>
+    <color name="m3_inverse_surface_dark">#E3E3E3</color>
+    <color name="m3_inverse_on_surface_dark">#303030</color>
+    <color name="m3_inverse_primary_dark">#0B57D0</color>
+    <color name="m3_surface_bright_dark">#37393B</color>
+    <color name="m3_surface_dim_dark">#131314</color>
+    <color name="m3_surface_container_lowest_dark">#0E0E0E</color>
+    <color name="m3_surface_container_low_dark">#1B1B1B</color>
+    <color name="m3_surface_container_dark">#1E1F20</color>
+    <color name="m3_surface_container_high_dark">#282A2C</color>
+    <color name="m3_surface_container_highest_dark">#333537</color>
+    <color name="m3_surface_tint_dark">#D1E1FF</color>
+    <color name="m3_scrim_dim_dark">#B3000000</color>
+    <color name="m3_transparent">#00000000</color>
 </resources>

@@ -18,15 +18,10 @@ import kotlin.math.pow
 /** True when [ColorUtils.calculateLuminance] is above 0.5 (light surface → dark content). */
 fun Int.isLightColor(): Boolean = ColorUtils.calculateLuminance(this) > 0.5
 
-/**
- * Contrasting ink for this background. Uses framework black/white only (not brand tokens);
- * letter avatars resolve on-surface / on-primary from the app GM3 resources instead.
- */
+/** Contrasting ink for this background (black on light, white on dark). */
 fun Int.getContrastColor(): Int {
     return if (isLightColor()) Color.BLACK else Color.WHITE
 }
-
-fun Int.toHex() = String.format("#%06X", 0xFFFFFF and this).uppercase(Locale.getDefault())
 
 fun Int.adjustAlpha(factor: Float): Int {
     val alpha = Math.round(Color.alpha(this) * factor)

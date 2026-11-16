@@ -262,8 +262,8 @@ class SettingsActivity : ComposePageActivity() {
             config.isSystemThemeEnabled = theme == ThemeChoice.SYSTEM
             if (theme != ThemeChoice.SYSTEM) {
                 val dark = theme == ThemeChoice.DARK
-                config.backgroundColor = getColor(if (dark) R.color.m3_surface_dark else R.color.m3_surface)
-                config.textColor = getColor(if (dark) R.color.m3_on_surface_dark else R.color.m3_on_surface)
+                config.backgroundColor = getColor(if (dark) org.fossify.commons.R.color.m3_surface_dark else org.fossify.commons.R.color.m3_surface)
+                config.textColor = getColor(if (dark) org.fossify.commons.R.color.m3_on_surface_dark else org.fossify.commons.R.color.m3_on_surface)
             }
             config.syncAccentWithTheme()
         }

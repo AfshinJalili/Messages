@@ -4,7 +4,7 @@ Personal messaging as a clear, living line between people. The inbox favors send
 
 The design source is `design/afsh.pen` (encrypted; edit only through the pen CLI or pencil MCP). PNG exports in `design/exports/` are previews only; the canvas is the truth. Screens are fixed 390 × 844 frames and the design decides open questions through issues labeled `design-gap`.
 
-Theme: `ui/AfshTheme.kt`. The palette is Google Material 3 (GM3) system colors in `res/values/colors.xml` (`m3_*`, with `gm3-sys-color-*` sources cited in that file) because `tests/check_design_tokens.py` rejects inline colors outside it. Roles and type are in Kotlin, and only the theme looks up color resources: screens read `MaterialTheme.colorScheme` or `Afsh.colors` (for example `liftScrim` and `themePreview`), and `tests/check_ui_contract.py` rejects `colorResource` elsewhere. Light or dark follows Appearance → System (device night mode) or the explicit light/dark choice. There is no Material You / dynamic-color path — `afshColorScheme` always reads the static GM3 tokens. The Commons accent and custom color pickers do not apply to Compose screens. Fonts are bundled from google/fonts (OFL): Funnel Sans, Atkinson Hyperlegible, and Vazirmatn for RTL labels. Message content, previews, drafts, and search excerpts use Atkinson for Latin and Vazirmatn for Arabic-script runs regardless of app language, preserving weight and link styling. Content containing Arabic script uses 1.7em leading; other content uses 1.45em.
+Theme: `ui/AfshTheme.kt`. The palette is Google Material 3 (GM3) system colors defined once in `commons/src/main/res/values/colors.xml` (`m3_*`, with `gm3-sys-color-*` sources cited in that file) because `tests/check_design_tokens.py` rejects inline colors, framework `@android:color/*` (except transparent), and duplicate color names across modules. Roles and type are in Kotlin, and only the theme looks up color resources: screens read `MaterialTheme.colorScheme` or `Afsh.colors` (for example `liftScrim` and `themePreview`), and `tests/check_ui_contract.py` rejects `colorResource` elsewhere. Light or dark follows Appearance → System (device night mode) or the explicit light/dark choice. There is no Material You / dynamic-color path — `afshColorScheme` always reads the static GM3 tokens. The Commons accent and custom color pickers do not apply to Compose screens. Fonts are bundled from google/fonts (OFL): Funnel Sans, Atkinson Hyperlegible, and Vazirmatn for RTL labels. Message content, previews, drafts, and search excerpts use Atkinson for Latin and Vazirmatn for Arabic-script runs regardless of app language, preserving weight and link styling. Content containing Arabic script uses 1.7em leading; other content uses 1.45em.
 
 ## Product idea
 
@@ -85,7 +85,7 @@ Android resources are the source of truth. This document describes how to use th
 
 | Definition | Source |
 | --- | --- |
-| AFSH palette values and the Commons default names that point at them | `app/src/main/res/values/colors.xml` |
+| GM3 palette values (`m3_*` light and `m3_*_dark`) | `commons/src/main/res/values/colors.xml` |
 | Color roles (Material slots and `Afsh.colors`) | `afshColorScheme` and `AfshTheme` in `app/src/main/kotlin/com/afsh/messages/ui/AfshTheme.kt` |
 | Light and dark XML themes for Commons screens, mirroring the roles | `app/src/main/res/values/styles.xml` |
 | Component spacing | `AfshSpacing` in `app/src/main/kotlin/com/afsh/messages/ui/AfshTheme.kt` (`Afsh.spacing`) |
@@ -97,11 +97,11 @@ Android resources are the source of truth. This document describes how to use th
 
 ### Color
 
-The theme is the one color source. `colors.xml` holds the Material 3 static baseline (`m3_*` light and `m3_*_dark`); screens never read them directly. `afshColorScheme(dark)` in `ui/AfshTheme.kt` maps them to every Material slot, and everything else reads roles:
+The theme is the one color source. `commons/.../colors.xml` holds the Material 3 static baseline (`m3_*` light and `m3_*_dark`); screens never invent new names. `afshColorScheme(dark)` in `ui/AfshTheme.kt` maps them to every Material slot, and everything else reads roles or the same `m3_*` names:
 
 - Compose screens read Material slots through `MaterialTheme.colorScheme` and the AFSH job roles through `Afsh.colors`.
 - XML widgets and Commons screens (the app-lock dialog and screen) use `AppTheme.Afsh.Light` and `AppTheme.Afsh.Dark` in `styles.xml`, whose items mirror the same roles. `SimpleActivity.setTheme()` and Commons' `getThemeId()` (through `App.themeId`) always pick one of them by `afshDark()`.
-- Notifications and Commons' stored accent use `primaryRoleColor()`. `Config.applyThemeDefaults()` defaults Appearance to System and points the stored accent at the primary role on every start; Settings calls `syncAccentWithTheme()` after the light or dark choice changes. Every `you_*` resource is overridden to the static baseline, and Commons' `isDynamicTheme()` is always false, so the wallpaper never recolors the app.
+- Notifications and Commons' stored accent use `primaryRoleColor()`. `Config.applyThemeDefaults()` defaults Appearance to System and points the stored accent at the primary role on every start; Settings calls `syncAccentWithTheme()` after the light or dark choice changes. Commons' `isDynamicTheme()` is always false, so the wallpaper never recolors the app.
 
 | Role | Light | Dark | Used for |
 | --- | --- | --- | --- |
