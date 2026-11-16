@@ -11,7 +11,6 @@ import android.os.Looper
 import android.provider.ContactsContract
 import android.telephony.PhoneNumberUtils
 import org.fossify.commons.R
-import org.fossify.commons.activities.BaseSimpleActivity
 import org.fossify.commons.databases.ContactsDatabase
 import org.fossify.commons.helpers.*
 import org.fossify.commons.interfaces.ContactsDao
@@ -324,22 +323,6 @@ fun Context.getSocialActions(id: Int): ArrayList<SocialAction> {
         socialActions.add(socialAction)
     }
     return socialActions
-}
-
-fun BaseSimpleActivity.initiateCall(contact: Contact, onStartCallIntent: (phoneNumber: String) -> Unit) {
-    val numbers = contact.phoneNumbers
-    when {
-        numbers.isEmpty() -> return
-        numbers.size == 1 -> onStartCallIntent(numbers.first().value)
-        else -> {
-            val picked = numbers.find { it.isPrimary } ?: numbers.first()
-            onStartCallIntent(picked.value)
-        }
-    }
-}
-
-fun BaseSimpleActivity.tryInitiateCall(contact: Contact, onStartCallIntent: (phoneNumber: String) -> Unit) {
-    initiateCall(contact, onStartCallIntent)
 }
 
 fun Context.isContactBlocked(contact: Contact, callback: (Boolean) -> Unit) {

@@ -462,10 +462,6 @@ open class BaseConfig(val context: Context) {
         get() = prefs.getStringSet(FAVORITES, HashSet())!!
         set(favorites) = prefs.edit().remove(FAVORITES).putStringSet(FAVORITES, favorites).apply()
 
-    var showCallConfirmation: Boolean
-        get() = prefs.getBoolean(SHOW_CALL_CONFIRMATION, false)
-        set(showCallConfirmation) = prefs.edit().putBoolean(SHOW_CALL_CONFIRMATION, showCallConfirmation).apply()
-
     // Kept for BaseConfig API compatibility; the Fossify color picker UI is removed.
     var colorPickerRecentColors: LinkedList<Int>
         get(): LinkedList<Int> {
