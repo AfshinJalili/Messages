@@ -36,6 +36,7 @@ androidx-lifecycle = "2.10.0"
 androidx-biometricKtx = "1.4.0-alpha02"
 androidx-exifinterface = "1.4.2"
 androidx-coreKtx = "1.17.0"
+androidx-coreSplashscreen = "1.2.0"
 androidx-appcompat = "1.7.1"
 material = "1.13.0"
 patternLockView = "a90b0d4bf0"
@@ -91,6 +92,7 @@ kotlin-immutable-collections = { module = "org.jetbrains.kotlinx:kotlinx-collect
 androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "androidx-appcompat" }
 androidx-biometric-ktx = { module = "androidx.biometric:biometric-ktx", version.ref = "androidx-biometricKtx" }
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidx-coreKtx" }
+androidx-core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "androidx-coreSplashscreen" }
 androidx-customView = { module = "androidx.customview:customview", version.ref = "androidx-customView" }
 androidx-customViewPooling = { module = "androidx.customview:customview-poolingcontainer", version.ref = "androidx-customViewPooling" }
 androidx-exifinterface = { module = "androidx.exifinterface:exifinterface", version.ref = "androidx-exifinterface" }
