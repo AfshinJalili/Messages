@@ -1006,10 +1006,3 @@ fun String?.fromHtml(): Spanned =
         else -> Html.fromHtml(this, Html.FROM_HTML_MODE_LEGACY)
     }
 
-/**
- * Returns a consistent background color for contact names based on their hash code.
- * This is based on the existing logic from SimpleContactHelper.getContactLetterIcon().
- */
-fun String.getNameColor(): Int {
-    return letterBackgroundColors[abs(this.hashCode()) % letterBackgroundColors.size].toInt()
-}

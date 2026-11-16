@@ -11,9 +11,7 @@ import android.graphics.Color
 import android.graphics.Typeface
 import android.view.ViewGroup
 import androidx.loader.content.CursorLoader
-import com.google.android.material.color.MaterialColors
 import org.fossify.commons.R
-import org.fossify.commons.helpers.DARK_GREY
 import org.fossify.commons.helpers.FONT_TYPE_CUSTOM
 import org.fossify.commons.helpers.FONT_TYPE_SYSTEM_DEFAULT
 import org.fossify.commons.helpers.FontHelper
@@ -21,7 +19,6 @@ import org.fossify.commons.helpers.MyContentProvider
 import org.fossify.commons.helpers.MyContentProvider.GLOBAL_THEME_SYSTEM
 import org.fossify.commons.helpers.appIconColorStrings
 import org.fossify.commons.helpers.ensureBackgroundThread
-import org.fossify.commons.helpers.isSPlus
 import org.fossify.commons.models.GlobalConfig
 import org.fossify.commons.models.isGlobalThemingEnabled
 import org.fossify.commons.views.MyAppCompatCheckbox
@@ -38,68 +35,33 @@ import org.fossify.commons.views.MyTextView
 import java.io.File
 
 /**
- * Wallpaper / Material You dynamic colors are disabled for AFSH Messages: the app always uses the
- * static GM3 baseline. "System theme" still means follow light/dark via [isSystemInDarkMode], not
- * recolor from the wallpaper (Fossify originally conflated the two).
+ * Wallpaper / Material You dynamic colors are not used. Light/dark follows stored colors
+ * (and system night mode when Appearance → System is on); values come from the app GM3 tokens.
  */
 fun Context.isDynamicTheme() = false
 
-fun Context.isBlackAndWhiteTheme(): Boolean {
-    return baseConfig.textColor == Color.WHITE
-            && baseConfig.primaryColor == Color.BLACK
-            && baseConfig.backgroundColor == Color.BLACK
-}
+fun Context.isBlackAndWhiteTheme(): Boolean = false
 
-fun Context.isWhiteTheme(): Boolean {
-    return baseConfig.textColor == DARK_GREY
-            && baseConfig.primaryColor == Color.WHITE
-            && baseConfig.backgroundColor == Color.WHITE
-}
+fun Context.isWhiteTheme(): Boolean = false
 
 fun Context.isSystemInDarkMode() = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_YES != 0
 
-fun Context.isAutoTheme() = !isSPlus() && baseConfig.isSystemThemeEnabled
+fun Context.isAutoTheme() = false
 
-fun Context.getProperTextColor() = when {
-    isDynamicTheme() -> resources.getColor(R.color.you_neutral_text_color, theme)
-    else -> baseConfig.textColor
-}
+fun Context.getProperTextColor() = baseConfig.textColor
 
-fun Context.getProperBackgroundColor() = when {
-    isDynamicTheme() -> resources.getColor(R.color.you_background_color, theme)
-    else -> baseConfig.backgroundColor
-}
+fun Context.getProperBackgroundColor() = baseConfig.backgroundColor
 
-fun Context.getProperPrimaryColor() = when {
-    isDynamicTheme() -> resources.getColor(R.color.you_primary_color, theme)
-    isWhiteTheme() || isBlackAndWhiteTheme() -> baseConfig.accentColor
-    else -> baseConfig.primaryColor
-}
+fun Context.getProperPrimaryColor() = baseConfig.primaryColor
 
-fun Context.getProperStatusBarColor() = when {
-    isDynamicTheme() -> resources.getColor(R.color.you_status_bar_color, theme)
-    else -> getProperBackgroundColor()
-}
+fun Context.getProperStatusBarColor() = getProperBackgroundColor()
 
-// get the color of the status bar with material activity, if the layout is scrolled down a bit
-fun Context.getColoredMaterialStatusBarColor(): Int {
-    return when {
-        isDynamicTheme() -> resources.getColor(R.color.you_status_bar_color, theme)
-        else -> getProperPrimaryColor()
-    }
-}
+fun Context.getColoredMaterialStatusBarColor(): Int = getProperPrimaryColor()
 
 fun Context.updateTextColors(viewGroup: ViewGroup) {
-    val textColor = when {
-        isDynamicTheme() -> getProperTextColor()
-        else -> baseConfig.textColor
-    }
-
+    val textColor = baseConfig.textColor
     val backgroundColor = baseConfig.backgroundColor
-    val accentColor = when {
-        isWhiteTheme() || isBlackAndWhiteTheme() -> baseConfig.accentColor
-        else -> getProperPrimaryColor()
-    }
+    val accentColor = getProperPrimaryColor()
 
     val cnt = viewGroup.childCount
     (0 until cnt).map { viewGroup.getChildAt(it) }.forEach {
@@ -120,36 +82,17 @@ fun Context.updateTextColors(viewGroup: ViewGroup) {
     }
 }
 
-fun Context.getTimePickerDialogTheme() = when {
-    isDynamicTheme() -> if (isSystemInDarkMode()) {
-        R.style.MyTimePickerMaterialTheme_Dark
-    } else {
-        R.style.MyDateTimePickerMaterialTheme
-    }
+fun Context.getTimePickerDialogTheme() =
+    if (baseConfig.backgroundColor.isLightColor()) R.style.MyDialogTheme else R.style.MyDialogTheme_Dark
 
-    baseConfig.backgroundColor.getContrastColor() == Color.WHITE -> R.style.MyDialogTheme_Dark
-    else -> R.style.MyDialogTheme
-}
+fun Context.getDatePickerDialogTheme() = getTimePickerDialogTheme()
 
-fun Context.getDatePickerDialogTheme() = when {
-    isDynamicTheme() -> R.style.MyDateTimePickerMaterialTheme
-    baseConfig.backgroundColor.getContrastColor() == Color.WHITE -> R.style.MyDialogTheme_Dark
-    else -> R.style.MyDialogTheme
-}
-
-fun Context.getPopupMenuTheme(): Int {
-    return if (isDynamicTheme()) {
-        if (isSystemInDarkMode()) {
-            R.style.AppTheme_YouPopupMenuStyle
-        } else {
-            R.style.AppTheme_YouPopupMenuStyle_Light
-        }
-    } else if (isWhiteTheme()) {
+fun Context.getPopupMenuTheme(): Int =
+    if (baseConfig.backgroundColor.isLightColor()) {
         R.style.AppTheme_PopupMenuLightStyle
     } else {
         R.style.AppTheme_PopupMenuDarkStyle
     }
-}
 
 fun Context.syncGlobalConfig(callback: (() -> Unit)? = null) {
     if (canAccessGlobalConfig()) {
@@ -286,25 +229,14 @@ fun Context.toggleAppIconColor(appId: String, colorIndex: Int, color: Int, enabl
     }
 }
 
-fun Context.getAppIconColors() = resources.getIntArray(R.array.md_app_icon_colors).toCollection(ArrayList())
+/** Launcher icon accent swatches — resolved from the app GM3 primary (single accent). */
+fun Context.getAppIconColors(): ArrayList<Int> {
+    val id = resources.getIdentifier("m3_primary", "color", packageName)
+    val primary = if (id != 0) getColor(id) else baseConfig.primaryColor
+    return arrayListOf(primary)
+}
 
 @SuppressLint("NewApi")
-fun Context.getBottomNavigationBackgroundColor(): Int {
-    val baseColor = baseConfig.backgroundColor
-    val bottomColor = when {
-        isDynamicTheme() -> resources.getColor(R.color.you_status_bar_color, theme)
-        baseColor == Color.WHITE -> resources.getColor(R.color.bottom_tabs_light_background)
-        else -> baseConfig.backgroundColor.lightenColor(4)
-    }
-    return bottomColor
-}
+fun Context.getBottomNavigationBackgroundColor(): Int = baseConfig.backgroundColor
 
-fun Context.getDialogBackgroundColor(): Int {
-    return when {
-        isDynamicTheme() -> MaterialColors.getColor(
-            this, com.google.android.material.R.attr.colorSurfaceContainerHigh, Color.TRANSPARENT
-        )
-
-        else -> baseConfig.backgroundColor
-    }
-}
+fun Context.getDialogBackgroundColor(): Int = baseConfig.backgroundColor

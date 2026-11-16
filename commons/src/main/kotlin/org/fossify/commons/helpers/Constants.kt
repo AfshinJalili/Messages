@@ -49,7 +49,6 @@ const val SHA1 = "SHA-1"
 const val SHA256 = "SHA-256"
 const val SHORT_ANIMATION_DURATION = 150L
 const val DEFAULT_ANIMATION_DURATION = 300L
-val DARK_GREY = 0xFF333333.toInt()
 
 const val LOWER_ALPHA = 0.25f
 const val MEDIUM_ALPHA = 0.5f
@@ -453,21 +452,6 @@ val appIconColorStrings = arrayListOf(
     ".Brown",
     ".Blue_grey",
     ".Grey_black"
-)
-
-// most app icon colors from md_app_icon_colors with reduced alpha
-// used at showing contact placeholders without image
-val letterBackgroundColors = arrayListOf(
-    0xCCD32F2F,
-    0xCCC2185B,
-    0xCC1976D2,
-    0xCC0288D1,
-    0xCC0097A7,
-    0xCC00796B,
-    0xCC388E3C,
-    0xCC689F38,
-    0xCCF57C00,
-    0xCCE64A19
 )
 
 // view types

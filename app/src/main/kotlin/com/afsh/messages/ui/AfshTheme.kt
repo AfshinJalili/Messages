@@ -3,7 +3,6 @@ package com.afsh.messages.ui
 import androidx.compose.ui.text.style.TextDirection
 import android.content.Context
 import android.content.res.Configuration
-import android.os.Build
 import androidx.compose.foundation.shape.AbsoluteRoundedCornerShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Shape
@@ -13,8 +12,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -48,7 +45,7 @@ private const val DARK_LUMINANCE = 0.5
 
 /**
  * Light or dark: follows the system night mode when Appearance → System is on; otherwise the
- * stored light/dark background. Never uses wallpaper / Material You colors ([DynamicColor] is off).
+ * stored light/dark background. Wallpaper / Material You colors are not used.
  */
 fun Context.afshDark(): Boolean = if (baseConfig.isSystemThemeEnabled) {
     resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
@@ -211,41 +208,11 @@ private fun typography(rtl: Boolean): Typography {
 }
 
 /**
- * Material You wallpaper colors stay off: the app always draws the static GM3 baseline.
- * Kept as a named switch so [colorSource] / [ColorSourceTest] stay explicit.
- */
-const val DynamicColor = false
-
-/** Where the color scheme comes from: the static GM3 baseline, or (unused) wallpaper colors. */
-enum class ColorSource { Static, Dynamic }
-
-/** Dynamic color exists from Android 12 (API 31); with [DynamicColor] false every API gets Static. */
-fun colorSource(dynamicColor: Boolean = DynamicColor, sdkInt: Int = Build.VERSION.SDK_INT): ColorSource =
-    if (dynamicColor && sdkInt >= Build.VERSION_CODES.S) ColorSource.Dynamic else ColorSource.Static
-
-/**
- * High-emphasis accent (send, FAB, primary buttons). Static GM3 uses primary / onPrimary;
- * if dynamic color were ever enabled it would keep the same pair from the dynamic scheme.
- */
-fun accentRole(source: ColorSource, scheme: ColorScheme, static: ColorRole): ColorRole = when (source) {
-    ColorSource.Static -> static
-    ColorSource.Dynamic -> ColorRole(scheme.primary, scheme.onPrimary)
-}
-
-/**
  * The one palette: Compose screens read it through [AfshTheme], and the XML theme, Commons'
  * stored accent and notifications read the same roles through [com.afsh.messages.helpers.primaryRoleColor].
- * [source] is always [ColorSource.Static] while [DynamicColor] is false.
+ * Always the static GM3 tokens in `res/values/colors.xml` — never wallpaper / Material You.
  */
-fun Context.afshColorScheme(dark: Boolean, source: ColorSource = colorSource()): ColorScheme {
-    if (source == ColorSource.Dynamic && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        return if (dark) dynamicDarkColorScheme(this) else dynamicLightColorScheme(this)
-    }
-    return afshStaticColorScheme(dark)
-}
-
-/** Full Material 3 baseline scheme from `res/values/colors.xml` (see source comment block there). */
-private fun Context.afshStaticColorScheme(dark: Boolean): ColorScheme {
+fun Context.afshColorScheme(dark: Boolean): ColorScheme {
     fun color(id: Int) = Color(getColor(id))
     return if (dark) {
         darkColorScheme(
@@ -376,13 +343,11 @@ fun AfshTheme(dark: Boolean, textScale: Float = 1f, content: @Composable () -> U
     val density = LocalDensity.current
     val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     val context = LocalContext.current
-    val source = colorSource()
-    val scheme = remember(context, dark, source) { context.afshColorScheme(dark, source) }
-    val accent = accentRole(source, scheme, ColorRole(scheme.primary, scheme.onPrimary))
+    val scheme = remember(context, dark) { context.afshColorScheme(dark) }
     val primaryContainer = ColorRole(scheme.primaryContainer, scheme.onPrimaryContainer)
     val extras = AfshColors(
-        accent = accent.container,
-        onAccent = accent.content,
+        accent = scheme.primary,
+        onAccent = scheme.onPrimary,
         onBandVariant = scheme.onSurfaceVariant,
         avatars = listOf(scheme.secondaryContainer, scheme.tertiaryContainer, scheme.primaryContainer),
         onAvatar = scheme.onSurface,

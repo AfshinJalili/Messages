@@ -3,7 +3,6 @@ package org.fossify.commons.extensions
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.Dialog
-import android.app.TimePickerDialog
 import android.content.ActivityNotFoundException
 import android.content.ComponentName
 import android.content.ContentValues
@@ -46,14 +45,11 @@ import org.fossify.commons.activities.BaseSimpleActivity
 import org.fossify.commons.databinding.DialogTitleBinding
 import org.fossify.commons.dialogs.ConfirmationAdvancedDialog
 import org.fossify.commons.dialogs.ConfirmationDialog
-import org.fossify.commons.dialogs.CustomIntervalPickerDialog
-import org.fossify.commons.dialogs.RadioGroupDialog
 import org.fossify.commons.dialogs.WritePermissionDialog
 import org.fossify.commons.dialogs.WritePermissionDialog.WritePermissionDialogMode
 import org.fossify.commons.helpers.CREATE_DOCUMENT_SDK_30
 import org.fossify.commons.helpers.EXTRA_SHOW_ADVANCED
 import org.fossify.commons.helpers.IS_FROM_GALLERY
-import org.fossify.commons.helpers.MINUTE_SECONDS
 import org.fossify.commons.helpers.MyContentProvider.COL_LAST_UPDATED_TS
 import org.fossify.commons.helpers.MyContentProvider.MY_CONTENT_URI
 import org.fossify.commons.helpers.OPEN_DOCUMENT_TREE_FOR_SDK_30
@@ -73,15 +69,12 @@ import org.fossify.commons.helpers.isUpsideDownCakePlus
 import org.fossify.commons.models.AlarmSound
 import org.fossify.commons.models.Android30RenameFormat
 import org.fossify.commons.models.FileDirItem
-import org.fossify.commons.models.PhoneNumber
-import org.fossify.commons.models.RadioItem
 import org.fossify.commons.views.MyTextView
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.FileOutputStream
 import java.io.IOException
 import java.io.OutputStream
-import java.util.TreeSet
 
 fun Activity.appLaunched(appId: String) {
     baseConfig.internalStoragePath = getInternalStoragePath()
@@ -1472,91 +1465,15 @@ fun Activity.setupDialogStuff(
 
             applyFontToViewRecursively(view)
 
-            val bgDrawable = when {
-                isBlackAndWhiteTheme() -> resources.getDrawable(R.drawable.black_dialog_background, theme)
-                isDynamicTheme() -> resources.getDrawable(R.drawable.dialog_you_background, theme)
-                else -> resources.getColoredDrawableWithColor(R.drawable.dialog_bg, baseConfig.backgroundColor)
-            }
-
-            window?.setBackgroundDrawable(bgDrawable)
+            window?.setBackgroundDrawable(
+                resources.getColoredDrawableWithColor(R.drawable.dialog_bg, baseConfig.backgroundColor)
+            )
             callback?.invoke(this)
         }
     }
 }
 
-fun Activity.getAlertDialogBuilder() = if (isDynamicTheme()) {
-    MaterialAlertDialogBuilder(this)
-} else {
-    AlertDialog.Builder(this)
-}
-
-fun Activity.showPickSecondsDialogHelper(
-    curMinutes: Int, isSnoozePicker: Boolean = false, showSecondsAtCustomDialog: Boolean = false, showDuringDayOption: Boolean = false,
-    cancelCallback: (() -> Unit)? = null, callback: (seconds: Int) -> Unit
-) {
-    val seconds = if (curMinutes == -1) curMinutes else curMinutes * 60
-    showPickSecondsDialog(seconds, isSnoozePicker, showSecondsAtCustomDialog, showDuringDayOption, cancelCallback, callback)
-}
-
-fun Activity.showPickSecondsDialog(
-    curSeconds: Int, isSnoozePicker: Boolean = false, showSecondsAtCustomDialog: Boolean = false, showDuringDayOption: Boolean = false,
-    cancelCallback: (() -> Unit)? = null, callback: (seconds: Int) -> Unit
-) {
-    hideKeyboard()
-    val seconds = TreeSet<Int>()
-    seconds.apply {
-        if (!isSnoozePicker) {
-            add(-1)
-            add(0)
-        }
-        add(1 * MINUTE_SECONDS)
-        add(5 * MINUTE_SECONDS)
-        add(10 * MINUTE_SECONDS)
-        add(30 * MINUTE_SECONDS)
-        add(60 * MINUTE_SECONDS)
-        add(curSeconds)
-    }
-
-    val items = ArrayList<RadioItem>(seconds.size + 1)
-    seconds.mapIndexedTo(items) { index, value ->
-        RadioItem(index, getFormattedSeconds(value, !isSnoozePicker), value)
-    }
-
-    var selectedIndex = 0
-    seconds.forEachIndexed { index, value ->
-        if (value == curSeconds) {
-            selectedIndex = index
-        }
-    }
-
-    items.add(RadioItem(-2, getString(R.string.custom)))
-
-    if (showDuringDayOption) {
-        items.add(RadioItem(-3, getString(R.string.during_day_at_hh_mm)))
-    }
-
-    RadioGroupDialog(this, items, selectedIndex, showOKButton = isSnoozePicker, cancelCallback = cancelCallback) {
-        when (it) {
-            -2 -> {
-                CustomIntervalPickerDialog(this, showSeconds = showSecondsAtCustomDialog) {
-                    callback(it)
-                }
-            }
-
-            -3 -> {
-                TimePickerDialog(
-                    this, getTimePickerDialogTheme(),
-                    { view, hourOfDay, minute -> callback(hourOfDay * -3600 + minute * -60) },
-                    curSeconds / 3600, curSeconds % 3600, baseConfig.use24HourFormat
-                ).show()
-            }
-
-            else -> {
-                callback(it as Int)
-            }
-        }
-    }
-}
+fun Activity.getAlertDialogBuilder() = AlertDialog.Builder(this)
 
 fun BaseSimpleActivity.getAlarmSounds(type: Int, callback: (ArrayList<AlarmSound>) -> Unit) {
     val alarms = ArrayList<AlarmSound>()
@@ -1619,41 +1536,3 @@ fun Activity.overrideActivityTransition(enterAnim: Int, exitAnim: Int, exiting: 
     }
 }
 
-fun Activity.maybeShowNumberPickerDialog(
-    phoneNumbers: List<PhoneNumber>,
-    respectPrimary: Boolean = false,
-    callback: (number: PhoneNumber) -> Unit
-) {
-    when {
-        phoneNumbers.size == 1 -> callback(phoneNumbers.first())
-        phoneNumbers.size > 1 -> {
-            if (respectPrimary) {
-                val primaryNumber = phoneNumbers.find { it.isPrimary }
-                if (primaryNumber != null) {
-                    callback(primaryNumber)
-                    return
-                }
-            }
-
-            val items = phoneNumbers.mapIndexed { index, phoneNumber ->
-                val type = getPhoneNumberTypeText(phoneNumber.type, phoneNumber.label)
-                RadioItem(
-                    id = index,
-                    title = "${phoneNumber.value} ($type)",
-                    value = phoneNumber
-                )
-            }
-
-            RadioGroupDialog(
-                activity = this,
-                items = ArrayList(items),
-            ) { selectedPhoneNumber ->
-                callback(selectedPhoneNumber as PhoneNumber)
-            }
-        }
-
-        else -> {
-            toast(R.string.no_phone_number_found)
-        }
-    }
-}

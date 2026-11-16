@@ -466,15 +466,20 @@ open class BaseConfig(val context: Context) {
         get() = prefs.getBoolean(SHOW_CALL_CONFIRMATION, false)
         set(showCallConfirmation) = prefs.edit().putBoolean(SHOW_CALL_CONFIRMATION, showCallConfirmation).apply()
 
-    // color picker last used colors
+    // Kept for BaseConfig API compatibility; the Fossify color picker UI is removed.
     var colorPickerRecentColors: LinkedList<Int>
         get(): LinkedList<Int> {
+            fun token(name: String, fallback: Int): Int {
+                val id = context.resources.getIdentifier(name, "color", context.packageName)
+                return if (id != 0) ContextCompat.getColor(context, id) else fallback
+            }
+            val primary = ContextCompat.getColor(context, R.color.default_primary_color)
             val defaultList = arrayListOf(
-                ContextCompat.getColor(context, R.color.md_red_700),
-                ContextCompat.getColor(context, R.color.md_blue_700),
-                ContextCompat.getColor(context, R.color.md_green_700),
-                ContextCompat.getColor(context, R.color.md_yellow_700),
-                ContextCompat.getColor(context, R.color.md_orange_700)
+                token("m3_error", primary),
+                token("m3_primary", primary),
+                token("m3_tertiary", primary),
+                token("m3_secondary", primary),
+                primary,
             )
             return LinkedList(prefs.getString(COLOR_PICKER_RECENT_COLORS, null)?.lines()?.map { it.toInt() } ?: defaultList)
         }

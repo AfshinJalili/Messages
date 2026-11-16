@@ -4,7 +4,7 @@ Personal messaging as a clear, living line between people. The inbox favors send
 
 The design source is `design/afsh.pen` (encrypted; edit only through the pen CLI or pencil MCP). PNG exports in `design/exports/` are previews only; the canvas is the truth. Screens are fixed 390 × 844 frames and the design decides open questions through issues labeled `design-gap`.
 
-Theme: `ui/AfshTheme.kt`. The palette is Google Material 3 (GM3) system colors in `res/values/colors.xml` (`m3_*`, with `--gm3-sys-color-*` sources cited in that file) because `tests/check_design_tokens.py` rejects inline colors outside it. Roles and type are in Kotlin, and only the theme looks up color resources: screens read `MaterialTheme.colorScheme` or `Afsh.colors` (for example `liftScrim` and `themePreview`), and `tests/check_ui_contract.py` rejects `colorResource` elsewhere. Light or dark follows Appearance → System (device night mode) or the explicit light/dark choice; Material You wallpaper colors never apply (`DynamicColor` is off). The Commons accent and custom color pickers do not apply to Compose screens. Fonts are bundled from google/fonts (OFL): Funnel Sans, Atkinson Hyperlegible, and Vazirmatn for RTL labels. Message content, previews, drafts, and search excerpts use Atkinson for Latin and Vazirmatn for Arabic-script runs regardless of app language, preserving weight and link styling. Content containing Arabic script uses 1.7em leading; other content uses 1.45em.
+Theme: `ui/AfshTheme.kt`. The palette is Google Material 3 (GM3) system colors in `res/values/colors.xml` (`m3_*`, with `gm3-sys-color-*` sources cited in that file) because `tests/check_design_tokens.py` rejects inline colors outside it. Roles and type are in Kotlin, and only the theme looks up color resources: screens read `MaterialTheme.colorScheme` or `Afsh.colors` (for example `liftScrim` and `themePreview`), and `tests/check_ui_contract.py` rejects `colorResource` elsewhere. Light or dark follows Appearance → System (device night mode) or the explicit light/dark choice. There is no Material You / dynamic-color path — `afshColorScheme` always reads the static GM3 tokens. The Commons accent and custom color pickers do not apply to Compose screens. Fonts are bundled from google/fonts (OFL): Funnel Sans, Atkinson Hyperlegible, and Vazirmatn for RTL labels. Message content, previews, drafts, and search excerpts use Atkinson for Latin and Vazirmatn for Arabic-script runs regardless of app language, preserving weight and link styling. Content containing Arabic script uses 1.7em leading; other content uses 1.45em.
 
 ## Product idea
 
@@ -114,11 +114,11 @@ The theme is the one color source. `colors.xml` holds the Material 3 static base
 | `outline` / `outlineVariant` | `#747775` / `#C4C7C5` | `#8E918F` / `#444746` | Borders, dividers |
 | `error` family | `#B3261E` … | `#F2B8B5` … | Destructive actions and failures |
 | `inverseSurface` / `inversePrimary` | `#303030` / `#A8C7FA` | `#E3E3E3` / `#0B57D0` | Snackbar |
-| `Afsh.colors.accent` / `onAccent` | primary / onPrimary | primary / onPrimary | Send, FAB, primary buttons (`accentRole`) |
+| `Afsh.colors.accent` / `onAccent` | primary / onPrimary | primary / onPrimary | Send, FAB, primary buttons |
 | `Afsh.colors.badge` | primary / onPrimary | primary / onPrimary | Unread count |
 | `Afsh.colors.avatars` | secondary/tertiary/primary containers | same roles | Letter avatars |
 
-**Dynamic color.** `DynamicColor` in `ui/AfshTheme.kt` stays false: the static GM3 baseline always applies. `ColorSourceTest` locks that switch and the accent mapping.
+**No dynamic color.** `afshColorScheme` has a single static path. `ColorSourceTest` locks the GM3 primary / onPrimary accent pair.
 
 Light or dark: `afshDark()` follows system night mode when Appearance is System, otherwise the stored light/dark background. `tests/check_design_tokens.py` rejects hardcoded colors outside `colors.xml` / `AfshTheme.kt`, and `tests/check_ui_contract.py` rejects `primaryContainer` outside the theme. `DesignChecks` asserts that the XML themes, Commons' accent and the Commons screens' theme match these roles. White icon paths are tint masks, not palette choices.
 

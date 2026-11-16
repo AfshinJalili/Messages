@@ -13,12 +13,9 @@ import android.telephony.PhoneNumberUtils
 import org.fossify.commons.R
 import org.fossify.commons.activities.BaseSimpleActivity
 import org.fossify.commons.databases.ContactsDatabase
-import org.fossify.commons.dialogs.CallConfirmationDialog
-import org.fossify.commons.dialogs.RadioGroupDialog
 import org.fossify.commons.helpers.*
 import org.fossify.commons.interfaces.ContactsDao
 import org.fossify.commons.interfaces.GroupsDao
-import org.fossify.commons.models.RadioItem
 import org.fossify.commons.models.contacts.Contact
 import org.fossify.commons.models.contacts.ContactSource
 import org.fossify.commons.models.contacts.Organization
@@ -331,33 +328,18 @@ fun Context.getSocialActions(id: Int): ArrayList<SocialAction> {
 
 fun BaseSimpleActivity.initiateCall(contact: Contact, onStartCallIntent: (phoneNumber: String) -> Unit) {
     val numbers = contact.phoneNumbers
-    if (numbers.size == 1) {
-        onStartCallIntent(numbers.first().value)
-    } else if (numbers.size > 1) {
-        val primaryNumber = contact.phoneNumbers.find { it.isPrimary }
-        if (primaryNumber != null) {
-            onStartCallIntent(primaryNumber.value)
-        } else {
-            val items = ArrayList<RadioItem>()
-            numbers.forEachIndexed { index, phoneNumber ->
-                items.add(RadioItem(index, "${phoneNumber.value} (${getPhoneNumberTypeText(phoneNumber.type, phoneNumber.label)})", phoneNumber.value))
-            }
-
-            RadioGroupDialog(this, items) {
-                onStartCallIntent(it as String)
-            }
+    when {
+        numbers.isEmpty() -> return
+        numbers.size == 1 -> onStartCallIntent(numbers.first().value)
+        else -> {
+            val picked = numbers.find { it.isPrimary } ?: numbers.first()
+            onStartCallIntent(picked.value)
         }
     }
 }
 
 fun BaseSimpleActivity.tryInitiateCall(contact: Contact, onStartCallIntent: (phoneNumber: String) -> Unit) {
-    if (baseConfig.showCallConfirmation) {
-        CallConfirmationDialog(this, contact.getNameToDisplay()) {
-            initiateCall(contact, onStartCallIntent)
-        }
-    } else {
-        initiateCall(contact, onStartCallIntent)
-    }
+    initiateCall(contact, onStartCallIntent)
 }
 
 fun Context.isContactBlocked(contact: Contact, callback: (Boolean) -> Unit) {
