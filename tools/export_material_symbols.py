@@ -35,10 +35,8 @@ SYMBOLS = {
     "volume_up": None, "close": None, "photo_camera": None, "video_library": None, "videocam": None, "mic": None,
     "schedule_send": None, "arrow_downward": None, "arrow_outward": None, "play_circle": None, "audio_file": None,
     "picture_as_pdf": None, "folder_zip": None,
-    # Commons / remaining-surface symbols
-    "apps": None, "article": None, "bug_report": None, "code": None, "contact_support": None,
-    "drag_handle": None, "fingerprint": None, "folder": None, "favorite": None, "do_not_disturb_on": None,
-    "policy": None, "volunteer_activism": None,
+    # Commons / remaining-surface symbols (About/Donation-only glyphs dropped with #276)
+    "drag_handle": None, "do_not_disturb_on": None, "volunteer_activism": None,
     # Filled variants (FILL 1) for selected/active states
     "star_fill": "star", "keep_fill": "keep", "forum_fill": "forum", "layers_fill": "layers", "settings_fill": "settings",
 }

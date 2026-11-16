@@ -92,17 +92,8 @@ enum class AfshIcon(@DrawableRes val resource: Int, @DrawableRes val filledResou
     AudioFile(R.drawable.ic_msym_audio_file),
     Pdf(R.drawable.ic_msym_picture_as_pdf),
     ZipFile(R.drawable.ic_msym_folder_zip),
-    Apps(R.drawable.ic_msym_apps),
-    Article(R.drawable.ic_msym_article),
-    BugReport(R.drawable.ic_msym_bug_report),
-    Code(R.drawable.ic_msym_code),
-    ContactSupport(R.drawable.ic_msym_contact_support),
     DragHandle(R.drawable.ic_msym_drag_handle),
-    Fingerprint(R.drawable.ic_msym_fingerprint),
-    Folder(R.drawable.ic_msym_folder),
-    Favorite(R.drawable.ic_msym_favorite),
     RemoveCircle(R.drawable.ic_msym_do_not_disturb_on),
-    Policy(R.drawable.ic_msym_policy),
     Donate(R.drawable.ic_msym_volunteer_activism);
 
     /**
