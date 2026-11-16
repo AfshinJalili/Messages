@@ -17,7 +17,6 @@ import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.fossify.commons.dialogs.SecurityDialog
 import org.fossify.commons.extensions.getCurrentFormattedDateTime
 import org.fossify.commons.extensions.isAValidFilename
 import org.fossify.commons.extensions.launchViewIntent
@@ -248,24 +247,35 @@ class SettingsActivity : ComposePageActivity() {
         startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, packageName))
     }
 
-    /** Commons' security dialog sets or removes the lock; its result decides the switch. */
+    /** Compose security dialog sets or removes the lock; its result decides the switch. */
     private fun toggleAppLock() {
         val tab = if (config.isAppPasswordProtectionOn) config.appProtectionType else SHOW_ALL_TABS
-        SecurityDialog(this, config.appPasswordHash, tab) { hash, type, success ->
-            if (!success) return@SecurityDialog
-            val wasOn = config.isAppPasswordProtectionOn
-            config.isAppPasswordProtectionOn = !wasOn
-            config.appPasswordHash = if (wasOn) "" else hash
-            config.appProtectionType = type
-            state = readSettings()
-            if (!wasOn) {
-                val message = if (type == PROTECTION_FINGERPRINT) {
-                    org.fossify.commons.R.string.fingerprint_setup_successfully
-                } else {
-                    org.fossify.commons.R.string.protection_setup_successfully
-                }
-                inform(getString(R.string.app_lock), getString(message))
-            }
+        showAfshDialog { dismiss ->
+            com.afsh.messages.ui.applock.SecuritySetupDialog(
+                requiredHash = config.appPasswordHash,
+                showTabIndex = tab,
+                onDismiss = dismiss,
+                onResult = { hash, type, success ->
+                    if (!success) {
+                        dismiss()
+                        return@SecuritySetupDialog
+                    }
+                    val wasOn = config.isAppPasswordProtectionOn
+                    config.isAppPasswordProtectionOn = !wasOn
+                    config.appPasswordHash = if (wasOn) "" else hash
+                    config.appProtectionType = type
+                    state = readSettings()
+                    dismiss()
+                    if (!wasOn) {
+                        val message = if (type == PROTECTION_FINGERPRINT) {
+                            org.fossify.commons.R.string.fingerprint_setup_successfully
+                        } else {
+                            org.fossify.commons.R.string.protection_setup_successfully
+                        }
+                        inform(getString(R.string.app_lock), getString(message))
+                    }
+                },
+            )
         }
     }
 
