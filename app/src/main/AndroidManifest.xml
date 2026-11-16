@@ -138,14 +138,7 @@
         <activity android:name="org.fossify.commons.activities.DonationActivity" tools:node="remove" />
 
         <activity android:name="org.fossify.commons.activities.CustomizationActivity" tools:node="remove" />
-
-        <activity
-            android:name="org.fossify.commons.activities.ManageBlockedNumbersActivity"
-            android:configChanges="orientation"
-            android:exported="false"
-            android:label="@string/blocked_numbers"
-            android:parentActivityName=".activities.SettingsActivity"
-            tools:replace="android:label" />
+        <activity android:name="org.fossify.commons.activities.ManageBlockedNumbersActivity" tools:node="remove" />
 
         <activity
             android:name=".activities.BlockRulesActivity"
