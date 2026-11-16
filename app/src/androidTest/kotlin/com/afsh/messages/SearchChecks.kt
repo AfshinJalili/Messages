@@ -1,10 +1,7 @@
 package com.afsh.messages
 
-import android.provider.Telephony
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
@@ -26,16 +23,13 @@ import com.afsh.messages.helpers.BLOCK_REASON_KEYWORD
 import com.afsh.messages.helpers.ImportProgress
 import com.afsh.messages.helpers.SearchRepository
 import com.afsh.messages.models.Attachment
-import com.afsh.messages.models.Conversation
 import com.afsh.messages.models.CONVERSATION_SEARCH_RESULT_ID
-import com.afsh.messages.models.Message
 import com.afsh.messages.models.MessageAttachment
 import com.afsh.messages.models.RecycleBinMessage
 import com.afsh.messages.models.SearchMatch
 import com.afsh.messages.models.SearchResult
 import com.afsh.messages.models.SpamMessage
 import com.afsh.messages.ui.AfshTheme
-import com.afsh.messages.ui.inbox.InboxScreen
 import com.afsh.messages.ui.inbox.InboxUiState
 import com.afsh.messages.ui.search.SearchContent
 import com.afsh.messages.ui.search.SearchFilter
@@ -63,40 +57,11 @@ class SearchChecks {
         threadId: Long = id,
     ) = SearchResult(id, title, snippet, "fixture date", threadId, "")
 
-    private fun fixtureMessage(
-        id: Long,
-        threadId: Long,
-        body: String,
-        attachment: MessageAttachment? = null,
-        isMms: Boolean = false,
-    ) = Message(
-        id = id,
-        body = body,
-        type = Telephony.Sms.MESSAGE_TYPE_INBOX,
-        status = -1,
-        participants = ArrayList(),
-        date = 1,
-        read = true,
-        threadId = threadId,
-        isMMS = isMms,
-        attachment = attachment,
-        senderPhoneNumber = "fixture-address",
-        senderName = "Search fixture",
-        senderPhotoUri = "",
-        subscriptionId = -1,
-    )
+    private fun searchMessage(id: Long, threadId: Long, body: String, attachment: MessageAttachment? = null, isMms: Boolean = false) =
+        fixtureMessage(id, body, threadId = threadId, date = 1, isMms = isMms, attachment = attachment, address = "fixture-address", senderName = "Search fixture")
 
-    private fun fixtureConversation(threadId: Long, title: String) = Conversation(
-        threadId = threadId,
-        snippet = "synthetic preview",
-        date = 1,
-        read = true,
-        title = title,
-        photoUri = "",
-        isGroupConversation = false,
-        phoneNumber = "fixture-address-$threadId",
-        messageCount = 1,
-    )
+    private fun searchConversation(threadId: Long, title: String) =
+        fixtureConversation(threadId, title, snippet = "synthetic preview", phone = "fixture-address-$threadId", messageCount = 1)
 
     private fun fixtureAttachment(id: Long, filename: String, mimetype: String) = MessageAttachment(
         id = id,
@@ -127,37 +92,37 @@ class SearchChecks {
         val messages = database.MessagesDao()
         val conversations = database.ConversationsDao()
 
-        messages.insertOrUpdate(fixtureMessage(81_011, liveThread, literalBody))
-        conversations.insertOrUpdate(fixtureConversation(liveThread, "Fixture $query"))
+        messages.insertOrUpdate(searchMessage(81_011, liveThread, literalBody))
+        conversations.insertOrUpdate(searchConversation(liveThread, "Fixture $query"))
 
-        messages.insertOrUpdate(fixtureMessage(81_021, decoyThread, "synthetic wildXcard_under token"))
-        conversations.insertOrUpdate(fixtureConversation(decoyThread, "Fixture wildXcard_under"))
+        messages.insertOrUpdate(searchMessage(81_021, decoyThread, "synthetic wildXcard_under token"))
+        conversations.insertOrUpdate(searchConversation(decoyThread, "Fixture wildXcard_under"))
 
         val matchingMmsId = 81_081L
         val irrelevantMmsId = 81_082L
-        messages.insertOrUpdate(fixtureMessage(matchingMmsId, 8_108, literalBody, isMms = true))
-        messages.insertOrUpdate(fixtureMessage(irrelevantMmsId, 8_109, "synthetic wildXcard_under token", isMms = true))
+        messages.insertOrUpdate(searchMessage(matchingMmsId, 8_108, literalBody, isMms = true))
+        messages.insertOrUpdate(searchMessage(irrelevantMmsId, 8_109, "synthetic wildXcard_under token", isMms = true))
 
         val candidates = messages.searchCandidates("%wild\\%card\\_under%", "%wild\\%card\\_under%").map { it.id }.toSet()
         check(matchingMmsId in candidates && irrelevantMmsId !in candidates) {
             "Candidate search must include matching MMS rows and exclude irrelevant MMS rows"
         }
 
-        messages.insertOrUpdate(fixtureMessage(81_031, recycledThread, literalBody))
+        messages.insertOrUpdate(searchMessage(81_031, recycledThread, literalBody))
         messages.insertRecycleBinEntry(RecycleBinMessage(81_031, deletedTS = 1))
-        conversations.insertOrUpdate(fixtureConversation(recycledThread, "Fixture $query recycled"))
+        conversations.insertOrUpdate(searchConversation(recycledThread, "Fixture $query recycled"))
 
-        messages.insertOrUpdate(fixtureMessage(81_041, spamThread, literalBody))
+        messages.insertOrUpdate(searchMessage(81_041, spamThread, literalBody))
         messages.insertSpamMarker(SpamMessage(81_041, spamThread, BLOCK_REASON_KEYWORD))
-        conversations.insertOrUpdate(fixtureConversation(spamThread, "Fixture $query spam"))
+        conversations.insertOrUpdate(searchConversation(spamThread, "Fixture $query spam"))
 
         val photoName = "photo-$query.jpg"
-        messages.insertOrUpdate(fixtureMessage(81_051, 8_105, "synthetic caption", fixtureAttachment(81_051, photoName, "image/jpeg")))
+        messages.insertOrUpdate(searchMessage(81_051, 8_105, "synthetic caption", fixtureAttachment(81_051, photoName, "image/jpeg")))
         messages.insertOrUpdate(
-            fixtureMessage(81_061, 8_106, "synthetic caption", fixtureAttachment(81_061, "photo-wildXcard_under.jpg", "image/jpeg"))
+            searchMessage(81_061, 8_106, "synthetic caption", fixtureAttachment(81_061, "photo-wildXcard_under.jpg", "image/jpeg"))
         )
         messages.insertOrUpdate(
-            fixtureMessage(81_071, 8_107, "synthetic caption", fixtureAttachment(81_071, "clip-$query.mp4", "video/mp4"))
+            searchMessage(81_071, 8_107, "synthetic caption", fixtureAttachment(81_071, "clip-$query.mp4", "video/mp4"))
         )
 
         val matches = runBlocking { SearchRepository(targetContext, database.MessagesDao(), database.ConversationsDao()).search(query) }
@@ -187,9 +152,9 @@ class SearchChecks {
         val notImported = 8_201L
         val recycledOnly = 8_202L
         val conversations = database.ConversationsDao()
-        conversations.insertOrUpdate(fixtureConversation(notImported, "Fixture unopened person"))
-        conversations.insertOrUpdate(fixtureConversation(recycledOnly, "Fixture unopened recycled"))
-        database.MessagesDao().insertOrUpdate(fixtureMessage(82_021, recycledOnly, "synthetic body"))
+        conversations.insertOrUpdate(searchConversation(notImported, "Fixture unopened person"))
+        conversations.insertOrUpdate(searchConversation(recycledOnly, "Fixture unopened recycled"))
+        database.MessagesDao().insertOrUpdate(searchMessage(82_021, recycledOnly, "synthetic body"))
         database.MessagesDao().insertRecycleBinEntry(RecycleBinMessage(82_021, deletedTS = 1))
 
         val people = runBlocking { SearchRepository(targetContext, database.MessagesDao(), conversations).search("unopened") }
@@ -230,7 +195,7 @@ class SearchChecks {
         fixtures.forEach { (_, fixture) ->
             val (id, filename) = fixture
             database.MessagesDao().insertOrUpdate(
-                fixtureMessage(id, id, "unmatched message body", fixtureAttachment(id, filename, "application/pdf"))
+                searchMessage(id, id, "unmatched message body", fixtureAttachment(id, filename, "application/pdf"))
             )
         }
         val repository = SearchRepository(targetContext, database.MessagesDao(), database.ConversationsDao())
@@ -419,21 +384,10 @@ class SearchChecks {
 
         compose.setContent {
             AfshTheme(dark = false) {
-                InboxScreen(
-                    state = InboxUiState(),
-                    snackbarHostState = remember { SnackbarHostState() },
-                    onOpen = {},
-                    onToggleSelection = {},
-                    onSelectAll = {},
-                    onClearSelection = {},
-                    onAction = {},
-                    onSwipe = { _, _ -> },
-                    onFilter = {},
-                    onSearch = { search = SearchUiState(open = true, recent = recent) },
-                    onNewMessage = {},
-                    onLibrary = {},
-                    onSettings = {},
+                TestInbox(
+                    InboxUiState(),
                     search = search,
+                    onSearch = { search = SearchUiState(open = true, recent = recent) },
                     onSearchBack = { search = search.copy(open = false) },
                 )
             }

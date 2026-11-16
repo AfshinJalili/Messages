@@ -6,8 +6,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.SemanticsProperties
-import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
@@ -35,7 +33,7 @@ class ComposerChecks {
     @get:Rule
     val compose = createAndroidComposeRule<ComponentActivity>()
     private fun text(id: Int, vararg args: Any) = compose.activity.getString(id, *args)
-    private val isButton = SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button)
+    private val isButton = hasRole(Role.Button)
 
     private val events = mutableListOf<ComposerEvent>()
     private var state by mutableStateOf(ComposerState())

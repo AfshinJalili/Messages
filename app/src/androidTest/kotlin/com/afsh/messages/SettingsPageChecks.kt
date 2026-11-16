@@ -7,11 +7,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.SemanticsProperties
-import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHeightIsAtLeast
@@ -29,7 +25,6 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.fossify.commons.helpers.DATE_FORMAT_ONE
@@ -87,8 +82,6 @@ class SettingsPageChecks {
         }
     }
 
-    private fun hasRole(role: Role) = SemanticsMatcher.expectValue(SemanticsProperties.Role, role)
-
     /** A row that opens a page or dialog, found by its label and its button role, never by layout. */
     private fun link(label: String) = compose.onNode(hasText(label) and hasRole(Role.Button) and hasClickAction())
 
@@ -133,7 +126,7 @@ class SettingsPageChecks {
         try {
             NavBadges.publish(NavCounts(library = 7))
             show(SettingsPage.OVERVIEW) {}
-            val seven = String.format(compose.activity.resources.configuration.locales[0], "%d", 7)
+            val seven = compose.activity.localizedNumber(7)
             compose.onNodeWithText(seven, useUnmergedTree = true).assertExists()
         } finally {
             NavBadges.publish(before)
@@ -209,10 +202,8 @@ class SettingsPageChecks {
         val events = mutableListOf<SettingsEvent>()
         var page by mutableStateOf(SettingsPage.APPEARANCE)
         compose.setContent {
-            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
-                AfshTheme(dark = false, textScale = 1.5f) {
-                    SettingsScreen(sample.copy(fontSize = FONT_SIZE_LARGE), page, navigation, remember { SnackbarHostState() }, {}, { events += it })
-                }
+            TestTheme(rtl = true, textScale = 1.5f) {
+                SettingsScreen(sample.copy(fontSize = FONT_SIZE_LARGE), page, navigation, remember { SnackbarHostState() }, {}, { events += it })
             }
         }
         choice(text(R.string.theme_system)).performScrollTo().assertIsSelected().assertTarget()
@@ -227,14 +218,7 @@ class SettingsPageChecks {
 
     @Test
     fun settingsPagesAreCapturedInEveryVariant() {
-        var variant by mutableStateOf(DesignVariant.LIGHT)
-        var page by mutableStateOf(SettingsPage.OVERVIEW)
-        compose.setContent {
-            DesignVariantContent(variant) {
-                SettingsScreen(sample, page, navigation, remember { SnackbarHostState() }, {}, {})
-            }
-        }
-        listOf(
+        val pages = listOf(
             SettingsPage.OVERVIEW to "24-settings",
             SettingsPage.APPEARANCE to "25-appearance",
             SettingsPage.WRITING to "26-writing",
@@ -245,13 +229,9 @@ class SettingsPageChecks {
             SettingsPage.IMPORT_REVIEW to "31-import-review",
             SettingsPage.ABOUT to "48-about",
             SettingsPage.INTERACTIONS to "49-interactions",
-        ).forEach { (settingsPage, name) ->
-            page = settingsPage
-            DesignVariant.entries.forEach {
-                variant = it
-                compose.waitForIdle()
-                Screenshots.capture(name + it.suffix)
-            }
-        }
+        )
+        val capture = VariantCapture(compose)
+        capture.show { page -> SettingsScreen(sample, pages[page].first, navigation, remember { SnackbarHostState() }, {}, {}) }
+        capture.captureEach(pages.map { it.second })
     }
 }

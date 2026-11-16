@@ -1,10 +1,8 @@
 package com.afsh.messages
 
 import androidx.activity.ComponentActivity
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
@@ -17,9 +15,6 @@ import androidx.compose.ui.test.swipeDown
 import androidx.compose.ui.test.swipeUp
 import androidx.compose.ui.unit.Dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.afsh.messages.models.Conversation
-import com.afsh.messages.ui.inbox.InboxRow
-import com.afsh.messages.ui.inbox.InboxScreen
 import com.afsh.messages.ui.inbox.InboxUiState
 import org.junit.Rule
 import org.junit.Test
@@ -37,9 +32,7 @@ class InboxHeaderScrollChecks {
     val compose = createAndroidComposeRule<ComponentActivity>()
     private fun text(id: Int) = compose.activity.getString(id)
 
-    private val rows = (1..40L).map {
-        InboxRow(Conversation(it, "Message $it", 1, true, "Person $it", "", false, "55501$it"), draft = null, pinned = false, muted = false)
-    }
+    private val rows = (1..40L).map { inboxRow(fixtureConversation(it, "Person $it", snippet = "Message $it", phone = "55501$it")) }
 
     private fun fieldTop(): Dp = compose.onNodeWithText(text(R.string.inbox_search_hint), useUnmergedTree = true).getUnclippedBoundsInRoot().top
 
@@ -59,12 +52,7 @@ class InboxHeaderScrollChecks {
     @androidx.compose.runtime.Composable
     private fun Inbox(state: InboxUiState) {
         DesignVariantContent(DesignVariant.LIGHT) {
-            InboxScreen(
-                state = state,
-                snackbarHostState = remember { SnackbarHostState() },
-                onOpen = {}, onToggleSelection = {}, onSelectAll = {}, onClearSelection = {}, onAction = {},
-                onSwipe = { _, _ -> }, onFilter = {}, onSearch = {}, onNewMessage = {}, onLibrary = {}, onSettings = {},
-            )
+            TestInbox(state)
         }
     }
 

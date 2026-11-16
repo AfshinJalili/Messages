@@ -1,7 +1,6 @@
 package com.afsh.messages
 
 import android.content.Context
-import android.content.ContextWrapper
 import android.content.Intent
 import android.util.TypedValue
 import android.view.ContextThemeWrapper
@@ -25,27 +24,20 @@ import org.junit.runner.RunWith
 class DesignChecks {
     private val target = InstrumentationRegistry.getInstrumentation().targetContext
 
-    private fun withIsolatedPreferences(block: (Context, Config) -> Unit) {
-        val context = object : ContextWrapper(target) {
-            override fun getSharedPreferences(name: String?, mode: Int) =
-                target.getSharedPreferences("design-checks", mode)
-        }
-        val prefs = context.getSharedPreferences("design-checks", Context.MODE_PRIVATE)
-        prefs.edit().clear().commit()
-        try {
-            block(context, Config(context))
-        } finally {
-            prefs.edit().clear().commit()
-        }
-    }
+    private fun withIsolatedPreferences(block: (Context, Config) -> Unit) =
+        IsolatedPreferences("design-checks").use { block(it.context, it.config) }
+
+    /** The surface role as a stored background, which is what picks light or dark. */
+    private fun Context.surface(dark: Boolean) = afshColorScheme(dark).surface.toArgb()
 
     @Test
     fun anOlderStoredAccentMovesToThePrimaryRole() = withIsolatedPreferences { context, config ->
+        // Any accent an older version stored; it must give way to the role.
         val older = ContextCompat.getColor(context, org.fossify.commons.R.color.md_indigo_700)
         config.primaryColor = older
         config.accentColor = older
         config.isSystemThemeEnabled = false
-        config.backgroundColor = ContextCompat.getColor(context, R.color.surface_light)
+        config.backgroundColor = context.surface(dark = false)
         config.applyThemeDefaults()
         val role = context.afshColorScheme(dark = false).primary.toArgb()
         check(context.getProperPrimaryColor() == role) { "Commons accent is not the light primary role" }
@@ -56,9 +48,9 @@ class DesignChecks {
     @Test
     fun switchingToDarkMovesTheAccentToTheDarkRole() = withIsolatedPreferences { context, config ->
         config.isSystemThemeEnabled = false
-        config.backgroundColor = ContextCompat.getColor(context, R.color.surface_light)
+        config.backgroundColor = context.surface(dark = false)
         config.applyThemeDefaults()
-        config.backgroundColor = ContextCompat.getColor(context, R.color.surface_dark)
+        config.backgroundColor = context.surface(dark = true)
         config.syncAccentWithTheme()
         val role = context.afshColorScheme(dark = true).primary.toArgb()
         check(context.getProperPrimaryColor() == role) { "Commons accent is not the dark primary role" }

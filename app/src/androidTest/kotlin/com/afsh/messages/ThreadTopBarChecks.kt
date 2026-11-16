@@ -2,29 +2,24 @@ package com.afsh.messages
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.width
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.semantics.SemanticsProperties
-import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isHeading
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import com.afsh.messages.models.Message
-import com.afsh.messages.ui.AfshTheme
 import com.afsh.messages.ui.thread.THREAD_TOP_BAR_TAG
 import com.afsh.messages.ui.thread.ThreadEvent
 import com.afsh.messages.ui.thread.ThreadHeaderState
@@ -51,11 +46,9 @@ class ThreadTopBarChecks {
         canDial = true,
         actions = listOf(ThreadMenuAction.SEARCH, ThreadMenuAction.DETAILS, ThreadMenuAction.DELETE),
     )
-    private val selectedMessage = Message(
-        1, "Hi", 1, -1, arrayListOf(), 1700000000, true, 1, false, null, "", "Fixture", "", -1,
-    )
+    private val selectedMessage = fixtureMessage(1, "Hi", date = 1_700_000_000, address = "", senderName = "Fixture")
 
-    private val isHeading = SemanticsMatcher.keyIsDefined(SemanticsProperties.Heading)
+    private val heading = isHeading()
     private val inBar = hasAnyAncestor(hasTestTag(THREAD_TOP_BAR_TAG))
 
     private fun show(
@@ -64,10 +57,8 @@ class ThreadTopBarChecks {
         textScale: Float = 1f,
         onEvent: (ThreadEvent) -> Unit = {},
     ) = compose.setContent {
-        CompositionLocalProvider(LocalLayoutDirection provides if (rtl) LayoutDirection.Rtl else LayoutDirection.Ltr) {
-            AfshTheme(dark = false, textScale = textScale) {
-                Box(Modifier.width(360.dp)) { ThreadTopBar(state, onEvent) }
-            }
+        TestTheme(rtl = rtl, textScale = textScale) {
+            Box(Modifier.width(360.dp)) { ThreadTopBar(state, onEvent) }
         }
     }
 
@@ -77,12 +68,12 @@ class ThreadTopBarChecks {
         val events = mutableListOf<ThreadEvent>()
         show(ThreadUiState(header = header)) { events += it }
 
-        compose.onNode(hasText(header.title) and isHeading and inBar).assertIsDisplayed()
+        compose.onNode(hasText(header.title) and heading and inBar).assertIsDisplayed()
         compose.onNode(hasText(header.subtitle) and inBar).assertIsDisplayed()
 
         button(org.fossify.commons.R.string.back).performClick()
         button(org.fossify.commons.R.string.dial_number).performClick()
-        compose.onNode(hasText(header.title) and isHeading).performClick()
+        compose.onNode(hasText(header.title) and heading).performClick()
         assertEquals(listOf(ThreadEvent.Back, ThreadEvent.Dial, ThreadEvent.OpenDetails), events)
 
         button(org.fossify.commons.R.string.more_options).performClick()
@@ -101,7 +92,7 @@ class ThreadTopBarChecks {
         val state = ThreadUiState(header = header, items = listOf(selectedMessage), selected = setOf(selectedMessage.getStableId()))
         show(state) { events += it }
 
-        compose.onNode(hasText(context.resources.getQuantityString(R.plurals.inbox_selected, 1, 1)) and inBar).assertIsDisplayed()
+        compose.onNode(hasText(context.quantity(R.plurals.inbox_selected, 1)) and inBar).assertIsDisplayed()
         button(org.fossify.commons.R.string.dial_number).assertDoesNotExist()
         button(org.fossify.commons.R.string.more_options).assertDoesNotExist()
         button(org.fossify.commons.R.string.close).performClick()
@@ -125,7 +116,7 @@ class ThreadTopBarChecks {
         show(ThreadUiState(header = long), rtl = true, textScale = 2f)
 
         val bar = compose.onNodeWithTag(THREAD_TOP_BAR_TAG).getBoundsInRoot()
-        val title = compose.onNode(isHeading and inBar).getBoundsInRoot()
+        val title = compose.onNode(heading and inBar).getBoundsInRoot()
         assertTrue("The bar grows to hold the name", title.top >= bar.top && title.bottom <= bar.bottom)
         listOf(org.fossify.commons.R.string.back, org.fossify.commons.R.string.dial_number, org.fossify.commons.R.string.more_options).forEach {
             val action = button(it).assertIsDisplayed().getBoundsInRoot()
@@ -136,6 +127,4 @@ class ThreadTopBarChecks {
         val more = button(org.fossify.commons.R.string.more_options).getBoundsInRoot()
         assertTrue("Back leads in RTL", back.left > more.left)
     }
-
-    private fun hasSetTextAction() = SemanticsMatcher.keyIsDefined(androidx.compose.ui.semantics.SemanticsActions.SetText)
 }

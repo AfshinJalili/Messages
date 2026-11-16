@@ -51,7 +51,7 @@ class SpamPageChecks {
     @get:Rule
     val compose = createAndroidComposeRule<ComponentActivity>()
     private fun text(id: Int, vararg args: Any) = compose.activity.getString(id, *args)
-    private fun quantity(id: Int, count: Int) = compose.activity.resources.getQuantityString(id, count, count)
+    private fun quantity(id: Int, count: Int) = compose.activity.quantity(id, count)
     private val library = PageNavigation(TopDestination.LIBRARY, {})
     private val settings = PageNavigation(TopDestination.SETTINGS, {})
     /** A time on today (or [daysAgo] days back), so the day pills never depend on when the test runs. */
@@ -222,38 +222,27 @@ class SpamPageChecks {
 
     @Test
     fun spamPagesAreCapturedInEveryVariant() {
-        var variant by mutableStateOf(DesignVariant.LIGHT)
-        var page by mutableIntStateOf(0)
         val senders = listOf(
             BlockedSender("555 0183", null, false),
             BlockedSender("+15550190", "Unknown marketing line", false),
             BlockedSender("555 0197", null, true),
         )
-        compose.setContent {
-            DesignVariantContent(variant) {
-                when (page) {
-                    0 -> SpamScreen(SpamUiState(loading = false, messages = messages), library, remember { SnackbarHostState() }, {})
-                    1 -> BlockRulesScreen(BlockRulesUiState(3, listOf("Claim your reward", "Free prize")), settings, {})
-                    2 -> BlockedNumbersScreen(BlockedNumbersUiState(false, senders), settings, {}, {}, {})
-                    3 -> AddRuleScreen(
-                        AddRuleUiState(RuleKind.PHRASE, value = "limited offer", example = "A limited offer just for you"),
-                        settings, {}, {}, {},
-                    )
-                    else -> MoveRulesScreen(3, 2, settings, remember { SnackbarHostState() }, {}, {}, {})
-                }
+        val capture = VariantCapture(compose)
+        capture.show { page ->
+            when (page) {
+                0 -> SpamScreen(SpamUiState(loading = false, messages = messages), library, remember { SnackbarHostState() }, {})
+                1 -> BlockRulesScreen(BlockRulesUiState(3, listOf("Claim your reward", "Free prize")), settings, {})
+                2 -> BlockedNumbersScreen(BlockedNumbersUiState(false, senders), settings, {}, {}, {})
+                3 -> AddRuleScreen(
+                    AddRuleUiState(RuleKind.PHRASE, value = "limited offer", example = "A limited offer just for you"),
+                    settings, {}, {}, {},
+                )
+                else -> MoveRulesScreen(3, 2, settings, remember { SnackbarHostState() }, {}, {}, {})
             }
         }
-        listOf("20-spam", "21-block-rules", "38-blocked-numbers", "50-add-phrase", "51-move-rules").forEachIndexed { index, name ->
-            page = index
-            DesignVariant.entries.forEach {
-                variant = it
-                compose.waitForIdle()
-                Screenshots.capture(name + it.suffix)
-            }
-        }
+        capture.captureEach(listOf("20-spam", "21-block-rules", "38-blocked-numbers", "50-add-phrase", "51-move-rules"))
         // A selected message: checks beside the bubbles and the selection bar.
-        page = 0
-        variant = DesignVariant.LIGHT
+        capture.page = 0
         compose.onNodeWithText("50% extra data", substring = true).performTouchInput { longClick() }
         compose.waitForIdle()
         Screenshots.capture("20-spam-selected")

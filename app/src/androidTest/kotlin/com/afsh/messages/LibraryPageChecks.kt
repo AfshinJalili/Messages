@@ -17,11 +17,9 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.longClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.afsh.messages.models.Conversation
 import com.afsh.messages.ui.AfshTheme
 import com.afsh.messages.ui.components.PageNavigation
 import com.afsh.messages.ui.components.TopDestination
-import com.afsh.messages.ui.inbox.InboxRow
 import com.afsh.messages.ui.library.ArchiveEvent
 import com.afsh.messages.ui.library.ArchiveScreen
 import com.afsh.messages.ui.library.ArchiveUiState
@@ -45,9 +43,8 @@ class LibraryPageChecks {
     private val navigation = PageNavigation(TopDestination.LIBRARY, {})
     private val now = System.currentTimeMillis()
 
-    private fun conversation(id: Long, title: String, snippet: String = "", daysAgo: Int = 0) = Conversation(
-        id, snippet, ((now / 1000) - daysAgo * DAY_SECONDS).toInt(), true, title, "", false, "+1555000$id",
-    )
+    private fun conversation(id: Long, title: String, snippet: String = "", daysAgo: Int = 0) =
+        fixtureConversation(id, title, snippet = snippet, date = ((now / 1000) - daysAgo * DAY_SECONDS).toInt(), phone = "+1555000$id")
 
     private val starred = listOf(
         StarredMessage(1, false, 1, "Mina Farahani", "The address is 24 Willow Street.", now),
@@ -55,9 +52,9 @@ class LibraryPageChecks {
         StarredMessage(3, false, 3, "Book club", "Thursday at 7, at Jo’s place.", now - 8 * DAY_MILLIS),
     )
     private val archived = listOf(
-        InboxRow(conversation(11, "Parcel service", "Delivered · Your package…", 5), null, false, false),
-        InboxRow(conversation(12, "Yoga studio", "See you next month", 10), null, false, false),
-        InboxRow(conversation(13, "Nadia", "Thank you for the photos", 24), null, false, false),
+        inboxRow(conversation(11, "Parcel service", "Delivered · Your package…", 5)),
+        inboxRow(conversation(12, "Yoga studio", "See you next month", 10)),
+        inboxRow(conversation(13, "Nadia", "Thank you for the photos", 24)),
     )
     private val recycled = listOf(
         RecycledConversation(conversation(21, "Mina Farahani"), 2, now),
@@ -107,7 +104,7 @@ class LibraryPageChecks {
         check(events.last() == ArchiveEvent.ToggleSelection(archived[1])) { "Events $events" }
 
         state = state.copy(selected = setOf(12))
-        compose.onNodeWithText(resourcesPlural(R.plurals.inbox_selected, 1)).assertExists()
+        compose.onNodeWithText(compose.activity.quantity(R.plurals.inbox_selected, 1)).assertExists()
         compose.onNodeWithContentDescription(text(org.fossify.commons.R.string.delete)).performClick()
         check((events.last() as ArchiveEvent.Delete).conversations.single().threadId == 12L) { "Events $events" }
     }
@@ -146,33 +143,21 @@ class LibraryPageChecks {
 
     @Test
     fun libraryPagesAreCapturedInEveryVariant() {
-        var variant by mutableStateOf(DesignVariant.LIGHT)
-        var page by mutableStateOf(0)
-        compose.setContent {
-            DesignVariantContent(variant) {
-                when (page) {
-                    0 -> StarredScreen(StarredUiState(loading = false, messages = starred), navigation, onBack = {}, onOpen = {})
-                    1 -> ArchiveScreen(ArchiveUiState(loading = false, rows = archived), navigation, remember { SnackbarHostState() }, onEvent = {})
-                    else -> RecycleBinScreen(
-                        RecycleBinUiState(loading = false, conversations = recycled),
-                        navigation,
-                        remember { SnackbarHostState() },
-                        onEvent = {},
-                    )
-                }
+        val capture = VariantCapture(compose)
+        capture.show { page ->
+            when (page) {
+                0 -> StarredScreen(StarredUiState(loading = false, messages = starred), navigation, onBack = {}, onOpen = {})
+                1 -> ArchiveScreen(ArchiveUiState(loading = false, rows = archived), navigation, remember { SnackbarHostState() }, onEvent = {})
+                else -> RecycleBinScreen(
+                    RecycleBinUiState(loading = false, conversations = recycled),
+                    navigation,
+                    remember { SnackbarHostState() },
+                    onEvent = {},
+                )
             }
         }
-        listOf("18-starred", "19-archive", "22-recycle-bin").forEachIndexed { index, name ->
-            page = index
-            DesignVariant.entries.forEach {
-                variant = it
-                compose.waitForIdle()
-                Screenshots.capture(name + it.suffix)
-            }
-        }
+        capture.captureEach(listOf("18-starred", "19-archive", "22-recycle-bin"))
     }
-
-    private fun resourcesPlural(id: Int, count: Int) = compose.activity.resources.getQuantityString(id, count, count)
 
     private companion object {
         const val DAY_SECONDS = 86_400L

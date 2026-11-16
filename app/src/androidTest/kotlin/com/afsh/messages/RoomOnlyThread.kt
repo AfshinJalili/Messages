@@ -6,7 +6,6 @@ import com.afsh.messages.extensions.clearAllMessagesIfNeeded
 import com.afsh.messages.extensions.conversationsDB
 import com.afsh.messages.extensions.messagesDB
 import com.afsh.messages.models.Conversation
-import com.afsh.messages.models.Message
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
@@ -19,13 +18,10 @@ import java.util.concurrent.TimeUnit
  * would take the pending message (and then the thread) with it.
  */
 class RoomOnlyThread(private val context: Context, val conversation: Conversation) {
-    private val pending = Message(
-        id = conversation.threadId - 1, body = conversation.snippet, type = Telephony.Sms.MESSAGE_TYPE_OUTBOX, status = 0,
-        participants = ArrayList(),
+    private val pending = fixtureMessage(
+        id = conversation.threadId - 1, body = conversation.snippet, threadId = conversation.threadId,
         date = (TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()) + TimeUnit.DAYS.toSeconds(1)).toInt(),
-        read = true, threadId = conversation.threadId, isMMS = false, attachment = null,
-        senderPhoneNumber = conversation.phoneNumber, senderName = "", senderPhotoUri = "", subscriptionId = -1,
-        isScheduled = true,
+        type = Telephony.Sms.MESSAGE_TYPE_OUTBOX, status = 0, address = conversation.phoneNumber, scheduled = true,
     )
 
     fun insert() {

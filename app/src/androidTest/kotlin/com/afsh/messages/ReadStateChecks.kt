@@ -13,7 +13,6 @@ import com.afsh.messages.extensions.markThreadMessagesRead
 import com.afsh.messages.helpers.THREAD_ID
 import com.afsh.messages.helpers.THREAD_NUMBER
 import com.afsh.messages.helpers.THREAD_TITLE
-import com.afsh.messages.models.Conversation
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -25,8 +24,10 @@ class ReadStateChecks {
         val context = instrumentation.targetContext
         val room = RoomOnlyThread(
             context,
-            Conversation(Long.MAX_VALUE - 1, "Read-state fixture", 1, false,
-                "Read-state fixture", "", false, "5550100999", isScheduled = true, unreadCount = 3),
+            fixtureConversation(
+                Long.MAX_VALUE - 1, "Read-state fixture", snippet = "Read-state fixture", read = false,
+                phone = "5550100999", scheduled = true, unreadCount = 3,
+            ),
         )
         val fixture = room.conversation
         try {
@@ -34,19 +35,10 @@ class ReadStateChecks {
                 room.insert()
                 context.markThreadMessagesRead(fixture.threadId)
                 check(context.conversationsDB.getConversationWithThreadId(fixture.threadId)?.read == true)
-                fun awaitRead() {
-                    var read = false
-                    val readDeadline = SystemClock.elapsedRealtime() + READ_TIMEOUT_MS
-                    while (!read && SystemClock.elapsedRealtime() < readDeadline) {
-                        scenario.onActivity { activity ->
-                            val row = activity.inboxRows.singleOrNull { it.threadId == fixture.threadId }?.conversation
-                            read = row?.read == true && row.unreadCount == 0
-                        }
-                        SystemClock.sleep(20)
-                    }
-                    check(read) { "Read completed in Room, but the inbox still shows the thread as unread" }
+                scenario.awaitUntil("Read completed in Room, but the inbox still shows the thread as unread", READ_TIMEOUT_MS) { activity ->
+                    val row = activity.inboxRows.singleOrNull { it.threadId == fixture.threadId }?.conversation
+                    row?.read == true && row.unreadCount == 0
                 }
-                awaitRead()
                 check(context.conversationsDB.getConversationWithThreadId(fixture.threadId)?.unreadCount == 0)
             }
         } finally {
@@ -58,8 +50,7 @@ class ReadStateChecks {
     fun openingEmptyThreadDoesNotMarkItRead() {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val context = instrumentation.targetContext
-        val fixture = Conversation(Long.MAX_VALUE - 2, "", 1, false,
-            "Empty fixture", "", false, "5550100998", unreadCount = 1)
+        val fixture = fixtureConversation(Long.MAX_VALUE - 2, "Empty fixture", snippet = "", read = false, phone = "5550100998", unreadCount = 1)
         context.conversationsDB.insertOrUpdate(fixture)
         try {
             val intent = Intent(context, ThreadActivity::class.java)

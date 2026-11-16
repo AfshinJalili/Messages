@@ -174,7 +174,7 @@ Done. Differences from the design above:
 - The spam label goes in the message footer: "Spam · Keyword · 12:44".
 - "Never spam from this sender" uses the existing "Always allow this sender" string. It adds each spam sender address in the thread to the allowlist, then removes the thread's markers.
 
-`ThreadSpamChecks` (3 tests, `ThreadSpamGroupChecks` before #167) covers inline spam, the unread separator and hidden messages. On 24 September 2026, 29 of 30 passed across `ThreadSpamGroupChecks`, `SpamChecks`, `InboxChecks`, `ReadStateChecks`, `DeletionChecks` and `MessageActionChecks`, with the same `completedReadUpdatesInboxFromRoom` failure. The thread UI was not opened on the device, because opening a thread marks real messages read.
+The JVM test `ThreadItemsTest` (`ThreadSpamChecks` on the phone until #242, `ThreadSpamGroupChecks` before #167) covers inline spam, the unread separator and hidden messages. On 24 September 2026, 29 of 30 passed across `ThreadSpamGroupChecks`, `SpamChecks`, `InboxChecks`, `ReadStateChecks`, `DeletionChecks` and `MessageActionChecks`, with the same `completedReadUpdatesInboxFromRoom` failure. The thread UI was not opened on the device, because opening a thread marks real messages read.
 
 ### Phase 5 status
 
