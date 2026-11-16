@@ -5,8 +5,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccessTime
+import androidx.compose.ui.res.painterResource
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -233,7 +232,7 @@ private fun SimpleColumnScaffoldPreview() {
             ListItem(
                 headlineContent = { Text(text = "Some text") },
                 leadingContent = {
-                    Icon(imageVector = Icons.Filled.AccessTime, contentDescription = null)
+                    Icon(painter = painterResource(R.drawable.ic_msym_schedule), contentDescription = null)
                 }
             )
         }

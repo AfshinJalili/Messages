@@ -4,8 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.ui.res.painterResource
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -177,12 +176,12 @@ fun SimpleNavigationIcon(
 fun SimpleBackIcon(iconColor: Color?) {
     if (iconColor == null) {
         Icon(
-            imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(id = R.string.back),
+            painter = painterResource(R.drawable.ic_msym_arrow_back), contentDescription = stringResource(id = R.string.back),
             modifier = Modifier.size(SimpleTheme.dimens.icon.extraSmall)
         )
     } else {
         Icon(
-            imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(id = R.string.back),
+            painter = painterResource(R.drawable.ic_msym_arrow_back), contentDescription = stringResource(id = R.string.back),
             tint = iconColor,
             modifier = Modifier.size(SimpleTheme.dimens.icon.extraSmall)
         )

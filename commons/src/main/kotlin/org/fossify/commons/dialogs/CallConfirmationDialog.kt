@@ -9,8 +9,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Call
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -119,7 +117,7 @@ fun CallConfirmationAlertDialog(
                         .padding(16.dp)
                 ) {
                     Image(
-                        Icons.Filled.Call,
+                        R.drawable.ic_msym_call,
                         contentDescription = null,
                         colorFilter = ColorFilter.tint(dialogTextColor),
                         modifier = Modifier

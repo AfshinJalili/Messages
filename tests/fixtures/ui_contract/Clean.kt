@@ -5,3 +5,4 @@ fun size() = Modifier.size(24.dp).heightIn(min = 48.dp)
 fun shapes() = listOf(CircleShape, MaterialTheme.shapes.medium, RectangleShape)
 fun color() = Afsh.colors.badge.container
 fun icon() = Icon(AfshIcon.Search.painter(), null)
+fun filled() = Icon(AfshIcon.Star.painter(filled = true), null)
