@@ -41,7 +41,6 @@ import androidx.core.view.size
 import org.fossify.commons.R
 import org.fossify.commons.asynctasks.CopyMoveTask
 import org.fossify.commons.dialogs.ConfirmationDialog
-import org.fossify.commons.dialogs.ExportSettingsDialog
 import org.fossify.commons.dialogs.FileConflictDialog
 import org.fossify.commons.dialogs.PermissionRequiredDialog
 import org.fossify.commons.dialogs.WritePermissionDialog
