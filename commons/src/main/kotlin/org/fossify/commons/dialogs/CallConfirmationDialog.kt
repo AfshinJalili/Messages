@@ -24,6 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.fossify.commons.R
+import androidx.compose.ui.res.painterResource
 import org.fossify.commons.activities.BaseSimpleActivity
 import org.fossify.commons.compose.alert_dialog.*
 import org.fossify.commons.compose.extensions.MyDevices
@@ -117,7 +118,7 @@ fun CallConfirmationAlertDialog(
                         .padding(16.dp)
                 ) {
                     Image(
-                        R.drawable.ic_msym_call,
+                        painter = painterResource(R.drawable.ic_msym_call),
                         contentDescription = null,
                         colorFilter = ColorFilter.tint(dialogTextColor),
                         modifier = Modifier

@@ -1,5 +1,7 @@
 package org.fossify.commons.compose.settings
 
+import org.fossify.commons.R
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.clickable

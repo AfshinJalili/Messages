@@ -1,5 +1,7 @@
 package org.fossify.commons.compose.settings
 
+import org.fossify.commons.R
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.ui.res.painterResource
 import androidx.compose.material3.*

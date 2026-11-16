@@ -1,5 +1,7 @@
 package org.fossify.commons.compose.lists
 
+import org.fossify.commons.R
+
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*

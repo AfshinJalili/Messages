@@ -1,5 +1,7 @@
 package org.fossify.commons.compose.lists
 
+import org.fossify.commons.R
+
 import androidx.compose.foundation.gestures.FlingBehavior
 import androidx.compose.foundation.gestures.ScrollableDefaults
 import androidx.compose.foundation.interaction.MutableInteractionSource
