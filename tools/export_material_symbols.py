@@ -3,8 +3,7 @@
 
 Material Symbols (Apache 2.0, google/material-design-icons) is fetched here at development time only; the app stays
 offline and ships just the icons listed in SYMBOLS. Each becomes res/drawable/ic_msym_<name>.xml, filled with
-@color/icon_mask so Compose tints it. The same files are written into the commons module so remaining XML menus and
-layouts can reference them. Icons in MIRRORED flip under RTL. Icons ending in _fill use FILL 1 for selected/active
+@color/icon_mask so Compose tints it. They live in the commons module (the app depends on commons). Icons in MIRRORED flip under RTL. Icons ending in _fill use FILL 1 for selected/active
 states; everything else is FILL 0. ui/components/AfshIcon.kt names each by meaning; tests/check_material_symbols.py
 keeps the two in step.
 
@@ -29,7 +28,7 @@ SYMBOLS = {
     "more_vert": None, "open_in_new": None, "visibility": None, "visibility_off": None, "description": None,
     "forward": None, "pan_tool": None, "tag": None, "image": None, "inbox": None, "info": None, "translate": None,
     "layers": None, "checklist": None, "lock": None, "mail": None, "drafts": None, "chat_bubble": None, "chat": None,
-    "forum": None, "attach_file": None, "edit": None, "call": None, "keep": None, "add": None,
+    "forum": None, "attach_file": None, "edit": None, "call": None, "keep": None, "keep_off": None, "add": None,
     "refresh": None, "rotate_left": None, "search": None, "send": None, "settings": None, "share": None,
     "gpp_bad": None, "star": None, "text_fields": None, "delete": None,
     "warning": None, "title": None, "upload": None, "person": None, "person_add": None, "group": None,
@@ -50,10 +49,8 @@ MIRRORED = {
 }
 
 ROOT = Path(__file__).resolve().parents[1]
-OUTS = [
-    ROOT / "app/src/main/res/drawable",
-    ROOT / "commons/src/main/res/drawable",
-]
+# Single copy in commons; the app module depends on commons and sees these resources.
+OUT = ROOT / "commons/src/main/res/drawable"
 
 
 def fetch(name, stem):
@@ -87,19 +84,18 @@ def main():
     stale = []
     for name, stem in SYMBOLS.items():
         text = render(name, fetch(name, stem))
-        for out in OUTS:
-            target = out / f"ic_msym_{name}.xml"
-            if check:
-                if not target.exists() or target.read_text() != text:
-                    stale.append(f"{target.relative_to(ROOT)}")
-            else:
-                out.mkdir(parents=True, exist_ok=True)
-                target.write_text(text)
+        target = OUT / f"ic_msym_{name}.xml"
+        if check:
+            if not target.exists() or target.read_text() != text:
+                stale.append(name)
+        else:
+            OUT.mkdir(parents=True, exist_ok=True)
+            target.write_text(text)
     if check:
         assert not stale, "stale or missing: " + ", ".join(stale)
-        print(f"Material Symbols Rounded drawables match upstream ({len(SYMBOLS)} icons × {len(OUTS)} modules)")
+        print(f"Material Symbols Rounded drawables match upstream ({len(SYMBOLS)} icons in commons)")
     else:
-        print(f"Wrote {len(SYMBOLS)} drawables to {len(OUTS)} modules")
+        print(f"Wrote {len(SYMBOLS)} drawables to commons")
 
 
 if __name__ == "__main__":

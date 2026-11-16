@@ -4,12 +4,12 @@ import androidx.annotation.DrawableRes
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
-import com.afsh.messages.R
+import org.fossify.commons.R
 
 /**
  * Every interface icon by meaning, drawn from Material Symbols (Rounded, weight 400, grade 0, optical size 24). Call
  * sites ask for a meaning, never a raw vector. Arrows and chevrons mirror under RTL. Icons with a filled variant (pin,
- * star, bottom nav destinations) use FILL 1 for selected/active states through [painter]; everything else is FILL 0.
+ * star, bottom nav destinations) use FILL 1 for selected/active states through [painter]; Unpin uses keep_off and Unstar uses StarFilled. Drawables live in commons.
  * `tests/check_material_symbols.py` keeps every entry backed by a shipped symbol; `tools/export_material_symbols.py`
  * writes the symbols.
  */
@@ -67,6 +67,7 @@ enum class AfshIcon(@DrawableRes val resource: Int, @DrawableRes val filledResou
     Edit(R.drawable.ic_msym_edit),
     Call(R.drawable.ic_msym_call),
     Pin(R.drawable.ic_msym_keep, R.drawable.ic_msym_keep_fill),
+    Unpin(R.drawable.ic_msym_keep_off),
     Add(R.drawable.ic_msym_add),
     Refresh(R.drawable.ic_msym_refresh),
     Restore(R.drawable.ic_msym_rotate_left),
@@ -76,6 +77,7 @@ enum class AfshIcon(@DrawableRes val resource: Int, @DrawableRes val filledResou
     Share(R.drawable.ic_msym_share),
     SpamShield(R.drawable.ic_msym_gpp_bad),
     Star(R.drawable.ic_msym_star, R.drawable.ic_msym_star_fill),
+    StarFilled(R.drawable.ic_msym_star_fill),
     TextCursor(R.drawable.ic_msym_text_fields),
     Delete(R.drawable.ic_msym_delete),
     Warning(R.drawable.ic_msym_warning),

@@ -76,7 +76,7 @@ enum class InboxAction(@StringRes val label: Int, val icon: AfshIcon) {
     MUTE(R.string.mute_conversation, AfshIcon.NotificationsOff),
     UNMUTE(R.string.unmute_conversation, AfshIcon.Notifications),
     PIN(R.string.pin_conversation, AfshIcon.Pin),
-    UNPIN(R.string.unpin_conversation, AfshIcon.Pin),
+    UNPIN(R.string.unpin_conversation, AfshIcon.Unpin),
     DELETE(org.fossify.commons.R.string.delete, AfshIcon.Delete),
     DIAL(org.fossify.commons.R.string.dial_number, AfshIcon.Call),
     ADD_TO_CONTACT(org.fossify.commons.R.string.add_number_to_contact, AfshIcon.PersonAdd),
