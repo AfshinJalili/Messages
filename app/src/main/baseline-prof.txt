@@ -26,8 +26,9 @@ HSPLcom/afsh/messages/activities/MainActivity;->publish()V
 HSPLcom/afsh/messages/helpers/InboxRepository;->scheduleLaunchReconcile(Landroid/content/Context;)V
 HSPLcom/afsh/messages/helpers/InboxRepository;->needsFullReconcile(Landroid/content/Context;)Z
 HSPLcom/afsh/messages/ui/AvatarKt;->rememberBitmap(Ljava/lang/String;IIZLandroidx/compose/runtime/Composer;I)Landroidx/compose/ui/graphics/ImageBitmap;
-HSPLcom/afsh/messages/ui/inbox/InboxScreenKt;->InboxList*
-HSPLcom/afsh/messages/ui/inbox/InboxScreenKt;->ConversationRow*
+HSPLcom/afsh/messages/ui/inbox/InboxScreenKt;->InboxList*(**)**
+Lcom/afsh/messages/ui/components/ConversationRowKt;
+HSPLcom/afsh/messages/ui/components/ConversationRowKt;->ConversationRow*(**)**
 HSPLcom/afsh/messages/interfaces/ConversationsDao_Impl;->observeNonArchivedWithLatestSnippet()Landroidx/lifecycle/LiveData;
 # Commons splash / background helper used on every launch.
 Lorg/fossify/commons/helpers/ConstantsKt;

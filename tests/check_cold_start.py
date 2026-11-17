@@ -9,6 +9,8 @@ Fails on:
 - ensureBackgroundThread spawning an unbounded Thread instead of a bounded executor
 - SplashActivity still present as a launcher hop
 - Loading gate that waits on provider reconcile while Room is empty
+- baseline-prof.txt method rules that omit a (...) descriptor (breaks
+  :app:expandReleaseArtProfileWildcards / profgen)
 
 Host-only; no device. Run: python3 tests/check_cold_start.py
 """
@@ -26,6 +28,7 @@ REPO = APP_KT / "helpers/InboxRepository.kt"
 COMMONS_CONSTANTS = ROOT / "commons/src/main/kotlin/org/fossify/commons/helpers/Constants.kt"
 SPLASH = APP_KT / "activities/SplashActivity.kt"
 MANIFEST = ROOT / "app/src/main/AndroidManifest.xml"
+BASELINE_PROF = ROOT / "app/src/main/baseline-prof.txt"
 
 violations: list[str] = []
 
@@ -121,6 +124,28 @@ if not re.search(
     violations.append(f"{rel(MANIFEST)}: MainActivity must hold the MAIN/LAUNCHER intent-filter")
 if "Theme.Afsh.Splash" not in manifest:
     violations.append(f"{rel(MANIFEST)}: MainActivity must use Theme.Afsh.Splash")
+
+# --- Baseline profile: every method rule needs a (...) descriptor ----------
+# profgen RuleFragmentParser.wildCard/parseMethodName throws
+# StringIndexOutOfBoundsException on `->Name*` without `(...)`.
+if not BASELINE_PROF.is_file():
+    violations.append(f"{rel(BASELINE_PROF)}: missing baseline profile")
+else:
+    method_rule = re.compile(r"^[HSP]*L[^;]+;->(.+)$")
+    for lineno, raw in enumerate(BASELINE_PROF.read_text().splitlines(), 1):
+        line = raw.strip()
+        if not line or line.startswith("#") or ";->" not in line:
+            continue
+        match = method_rule.match(line)
+        if match is None:
+            violations.append(f"{rel(BASELINE_PROF)}:{lineno}: unparseable method rule: {line}")
+            continue
+        rest = match.group(1)
+        if "(" not in rest:
+            violations.append(
+                f"{rel(BASELINE_PROF)}:{lineno}: method rule missing (...) descriptor "
+                f"(use e.g. ->Name*(**)**): {line}"
+            )
 
 if violations:
     print("Cold-start check failed:")
