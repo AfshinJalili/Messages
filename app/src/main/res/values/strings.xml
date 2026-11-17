@@ -347,8 +347,25 @@
         <item quantity="other">%d numbers</item>
     </plurals>
     <string name="filter_obvious_spam">Filter obvious spam</string>
-    <string name="filter_obvious_spam_on">On · Uses local rules</string>
     <string name="filter_obvious_spam_off">Off</string>
+    <string name="filter_on_text">Looks for Persian marketing words and promo emojis. Two signals, or one signal plus a link or a named sender, send the message to Spam. One-time codes, bank and receipt texts, and people in your contacts are not filtered. Lines such as «لغو11» or unsubscribe are ignored.</string>
+    <string name="unknown_numbers">File messages from unknown numbers as spam</string>
+    <string name="unknown_numbers_text">Contacts are never filtered.</string>
+    <string name="always_spam_list">Always-spam senders</string>
+    <string name="never_spam_list">Never-spam senders</string>
+    <string name="android_blocked">Blocked on Android</string>
+    <string name="android_blocked_text">Messages from these senders may never arrive on the phone.</string>
+    <string name="what_filter_looks_for">What the filter looks for</string>
+    <string name="what_filter_looks_for_card">Persian marketing words and promo emojis, as plain text</string>
+    <string name="what_filter_words">Marketing words</string>
+    <string name="what_filter_emojis">Promo emojis</string>
+    <string name="spam_why_sender">you marked this sender as always spam</string>
+    <string name="spam_why_android">blocked on Android</string>
+    <string name="spam_why_unknown">unknown number</string>
+    <string name="no_never_spam_senders">No never-spam senders</string>
+    <string name="no_android_blocked">No numbers blocked on Android</string>
+    <string name="remove_never_spam">Remove %s</string>
+    <string name="filter_senders">Senders</string>
     <string name="edit_phrase">Edit phrase</string>
     <string name="remove_phrase">Remove %s</string>
     <string name="add_phrase_or_number">Add a phrase or number</string>
@@ -357,7 +374,7 @@
     <string name="block_a_number">Block a number</string>
     <string name="block_a_number_subtitle">Messages from this sender move to Spam</string>
     <string name="no_blocked_numbers">No blocked numbers</string>
-    <string name="no_blocked_numbers_text">Block a sender from Spam or a conversation, or add a number here.</string>
+    <string name="no_blocked_numbers_text">Mark a sender as always spam or never spam from a conversation, block them on this phone, or add a number here.</string>
     <string name="phrase">Phrase</string>
     <string name="phone_number_label">Phone number or sender name</string>
     <string name="phrase_guidance">Matching is case-insensitive. Review filtered messages in Spam.</string>
@@ -373,7 +390,11 @@
     <string name="number_error_detail">Use the digits or the name the messages come from.</string>
     <string name="move_filter_rules">Move filter rules</string>
     <string name="what_will_be_exported">What will be exported</string>
-    <string name="rules_summary">%1$s · %2$s</string>
+    <string name="rules_summary">%1$s · %2$s · %3$s</string>
+    <plurals name="never_spam_sender_count">
+        <item quantity="one">%d never-spam sender</item>
+        <item quantity="other">%d never-spam senders</item>
+    </plurals>
     <string name="rules_export_privacy">The file lists blocked numbers and phrases. Store it privately.</string>
     <string name="export_block_list">Export block list</string>
     <string name="have_a_block_list">Have a block list?</string>
@@ -654,7 +675,7 @@
     <string name="spam_patterns_result_marketing">Spam · marketing words or promo emojis</string>
     <string name="spam_patterns_result_none">No rule matches · stays in the inbox</string>
     <string name="spam_patterns_code_words">One-time code words</string>
-    <string name="spam_patterns_code_words_text">With a code, the message is always allowed, even with a link or a لغو line.</string>
+    <string name="spam_patterns_code_words_text">With a code, the message is always allowed, even with a link.</string>
     <string name="spam_patterns_code">Code</string>
     <string name="spam_patterns_code_text">The code itself. Both a code word and a code must match.</string>
     <string name="spam_patterns_transactional">Bank and receipts</string>
