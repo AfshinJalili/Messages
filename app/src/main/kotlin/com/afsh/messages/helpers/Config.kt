@@ -260,6 +260,11 @@ class Config(context: Context) : BaseConfig(context) {
         allowedNumbers = allowedNumbers.plus(number)
     }
 
+    /** Removes every stored form of [number] from the never-spam allowlist. */
+    fun removeAllowedNumber(number: String) {
+        allowedNumbers = allowedNumbers.filterNot { setOf(it).containsNumber(number) }.toSet()
+    }
+
     /** Senders the user blocked in the app. Their SMS are still stored, but go to Spam. */
     var spamNumbers: Set<String>
         get() = prefs.getStringSet(SPAM_NUMBERS, HashSet<String>())!!
