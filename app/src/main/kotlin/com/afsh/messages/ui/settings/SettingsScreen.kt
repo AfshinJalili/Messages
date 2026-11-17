@@ -1,10 +1,10 @@
 package com.afsh.messages.ui.settings
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -44,21 +44,25 @@ private val SettingsBodyPadding: PaddingValues
 fun SettingsScreen(
     state: SettingsUiState,
     page: SettingsPage,
-    navigation: PageNavigation,
-    snackbarHostState: SnackbarHostState,
+    navigation: PageNavigation?,
+    snackbarHostState: SnackbarHostState?,
     onBack: () -> Unit,
     onEvent: (SettingsEvent) -> Unit,
     modifier: Modifier = Modifier,
+    /** True when hosted as a MainActivity tab: the outer scaffold already owns nav and snackbar. */
+    embedded: Boolean = false,
 ) {
-    if (page != SettingsPage.OVERVIEW) BackHandler(onBack = onBack)
+    // Back (including predictive) is owned by ScreenStack in SettingsController so the gesture
+    // drives the same slide-out as the up arrow and the system back button.
     PageScaffold(
         title = stringResource(page.title),
         modifier = modifier,
         subtitle = stringResource(page.subtitle),
         // The overview is a top-level tab: no back button there (R1-01).
         onBack = onBack.takeIf { page != SettingsPage.OVERVIEW },
-        navigation = navigation,
-        snackbarHostState = snackbarHostState,
+        navigation = navigation.takeUnless { embedded },
+        snackbarHostState = snackbarHostState.takeUnless { embedded },
+        contentWindowInsets = if (embedded) WindowInsets(0) else null,
     ) {
         Column(
             Modifier

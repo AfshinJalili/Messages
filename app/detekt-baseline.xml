@@ -51,11 +51,6 @@
     <ID>MagicNumber:SearchResultsAdapter.kt$SearchResultsAdapter$0.8f</ID>
     <ID>MagicNumber:SearchResultsAdapter.kt$SearchResultsAdapter$0.9f</ID>
     <ID>MagicNumber:SearchResultsAdapter.kt$SearchResultsAdapter$1.2f</ID>
-    <ID>MagicNumber:SettingsActivity.kt$SettingsActivity$3</ID>
-    <ID>MagicNumber:SettingsActivity.kt$SettingsActivity$4</ID>
-    <ID>MagicNumber:SettingsActivity.kt$SettingsActivity$5</ID>
-    <ID>MagicNumber:SettingsActivity.kt$SettingsActivity$6</ID>
-    <ID>MagicNumber:SettingsActivity.kt$SettingsActivity$7</ID>
     <ID>MagicNumber:ShortcutHelper.kt$ShortcutHelper$99</ID>
     <ID>MagicNumber:SmsStatusDeliveredReceiver.kt$SmsStatusDeliveredReceiver$0x03</ID>
     <ID>MagicNumber:SmsStatusDeliveredReceiver.kt$SmsStatusDeliveredReceiver$0x3f</ID>
@@ -206,7 +201,6 @@
     <ID>TooManyFunctions:MessagesWriter.kt$MessagesWriter</ID>
     <ID>TooManyFunctions:RecycleBinConversationsActivity.kt$RecycleBinConversationsActivity : SimpleActivity</ID>
     <ID>TooManyFunctions:SearchResultsAdapter.kt$SearchResultsAdapter : MyRecyclerViewAdapter</ID>
-    <ID>TooManyFunctions:SettingsActivity.kt$SettingsActivity : SimpleActivity</ID>
     <ID>TooManyFunctions:ShortcutHelper.kt$ShortcutHelper</ID>
     <ID>TooManyFunctions:ThreadActivity.kt$ThreadActivity : SimpleActivity</ID>
     <ID>TooManyFunctions:ThreadAdapter.kt$ThreadAdapter : MyRecyclerViewListAdapter</ID>

@@ -36,6 +36,7 @@
         android:name=".App"
         android:allowBackup="true"
         android:appCategory="productivity"
+        android:enableOnBackInvokedCallback="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_launcher_name"
         android:roundIcon="@mipmap/ic_launcher"
@@ -60,7 +61,13 @@
         <activity
             android:name=".activities.MainActivity"
             android:configChanges="orientation"
-            android:exported="true" />
+            android:exported="true">
+
+            <intent-filter>
+                <action android:name="android.intent.action.APPLICATION_PREFERENCES" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
 
         <activity
             android:name=".activities.RecycleBinConversationsActivity"
@@ -119,19 +126,6 @@
         </activity>
 
         <activity
-            android:name=".activities.SettingsActivity"
-            android:configChanges="orientation"
-            android:exported="true"
-            android:label="@string/settings"
-            android:parentActivityName=".activities.MainActivity">
-
-            <intent-filter>
-                <action android:name="android.intent.action.APPLICATION_PREFERENCES" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-        </activity>
-
-        <activity
             android:name=".activities.AppLockActivity"
             android:configChanges="orientation"
             android:exported="false"
@@ -142,7 +136,7 @@
             android:configChanges="orientation"
             android:exported="false"
             android:label="@string/block_rules"
-            android:parentActivityName=".activities.SettingsActivity" />
+            android:parentActivityName=".activities.MainActivity" />
 
         <activity
             android:name=".activities.BlockedNumbersActivity"

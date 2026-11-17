@@ -111,8 +111,8 @@ import com.afsh.messages.ui.components.TopDestination
 import com.afsh.messages.ui.inbox.LibraryDestination
 
 class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
-    // The root of the task: it opens with the launcher's motion and is never pushed.
-    override val usesScreenMotion = false
+    // Task root: launcher open keeps the system motion (AppTheme.Afsh.Root_*).
+    override val isTaskRootTheme = true
 
     private val MAKE_DEFAULT_APP_REQUEST = 1
 
@@ -137,11 +137,13 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
     private var inbox by mutableStateOf(InboxUiState())
     private var darkTheme by mutableStateOf(false)
     private var textScale by mutableFloatStateOf(1f)
-    private var libraryOpen by mutableStateOf(false)
+    private var topDestination by mutableStateOf(TopDestination.INBOX)
     // 32 or 33 while the app cannot work yet; null once the inbox can load.
     private var firstRun by mutableStateOf<FirstRunStep?>(null)
     @VisibleForTesting
     internal val snackbarHost = SnackbarHostState()
+    // Constructed here so Activity Result contracts register before onCreate finishes.
+    private val settings = com.afsh.messages.ui.settings.SettingsController(this, snackbarHost, ::refreshInboxTheme)
 
     private val root by lazy { ComposeView(this) }
 
@@ -155,7 +157,10 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
         inboxFilter = InboxFilter.entries.getOrNull(savedInstanceState?.getInt(INBOX_FILTER) ?: 0) ?: InboxFilter.ALL
         savedInstanceState?.getLongArray(INBOX_SELECTION)?.let { inbox = inbox.copy(selected = it.toSet()) }
         appLaunched(BuildConfig.APPLICATION_ID)
-        libraryOpen = savedInstanceState?.getBoolean(LIBRARY_OPEN) ?: (intent.topDestination() == TopDestination.LIBRARY)
+        topDestination = savedInstanceState?.topDestination()
+            ?: intent.topDestination()
+            ?: TopDestination.INBOX
+        settings.onCreate(savedInstanceState)
         search = SearchUiState(
             open = savedInstanceState?.getBoolean(SEARCH_OPEN) ?: false,
             query = savedInstanceState?.getString(SEARCH_QUERY).orEmpty(),
@@ -184,7 +189,9 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
                         onSearch = ::openSearch,
                         onNewMessage = ::launchNewConversation,
                         onLibrary = ::openLibrary,
-                        onSettings = ::launchSettings,
+                        selectedTab = topDestination,
+                        onSelectTab = ::selectTab,
+                        settingsContent = { settings.Content() },
                         search = search,
                         onSearchQuery = ::searchTextChanged,
                         onSearchFilter = ::setSearchFilter,
@@ -192,11 +199,6 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
                         onSearchBack = ::closeSearch,
                         onSearchRetry = ::loadSearchResults,
                         onRetryRefresh = { InboxRepository.retry(this) },
-                        libraryOpen = libraryOpen,
-                        onLibraryTab = {
-                            closeSearch()
-                            libraryOpen = it
-                        },
                     )
                 }
             }
@@ -215,6 +217,7 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
     override fun onResume() {
         super.onResume()
         refreshInboxTheme()
+        settings.onResume()
         if (search.open) loadSearchResults()
         refreshSpamBadge()
         refreshDrafts()
@@ -233,7 +236,8 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
         outState.putBoolean(SEARCH_OPEN, search.open)
         outState.putString(SEARCH_QUERY, search.query)
         outState.putInt(SEARCH_FILTER, search.filter.ordinal)
-        outState.putBoolean(LIBRARY_OPEN, libraryOpen)
+        outState.putString(TOP_DESTINATION, topDestination.name)
+        settings.onSaveInstanceState(outState)
         outState.putInt(INBOX_FILTER, inboxFilter.ordinal)
         outState.putLongArray(INBOX_SELECTION, inbox.selected.toLongArray())
         super.onSaveInstanceState(outState)
@@ -257,15 +261,13 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        intent.topDestination()?.let { destination ->
-            closeSearch()
-            libraryOpen = destination == TopDestination.LIBRARY
-        }
+        intent.topDestination()?.let(::selectTab)
     }
 
     override fun onBackPressedCompat(): Boolean {
-        if (libraryOpen && !search.open) {
-            libraryOpen = false
+        if (topDestination == TopDestination.SETTINGS && settings.handleBack()) return true
+        if (topDestination != TopDestination.INBOX && !search.open) {
+            selectTab(TopDestination.INBOX)
             return true
         }
         return when {
@@ -848,16 +850,16 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
         }
     }
 
-    private fun launchSettings() {
+    private fun selectTab(destination: TopDestination) {
         closeSearch()
         hideKeyboard()
-        startActivity(Intent(this, SettingsActivity::class.java))
+        if (destination != TopDestination.SETTINGS) settings.resetToOverview()
+        topDestination = destination
     }
 
     companion object {
         private const val TAG = "MainActivity"
         private const val TOP_DESTINATION = "top_destination"
-        private const val LIBRARY_OPEN = "library_open"
         private const val SEARCH_OPEN = "search_open"
         private const val SEARCH_QUERY = "search_query"
         private const val SEARCH_FILTER = "search_filter"
@@ -869,7 +871,14 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
                 .putExtra(TOP_DESTINATION, destination.name)
                 .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
 
-        private fun Intent.topDestination() = getStringExtra(TOP_DESTINATION)?.let { name ->
+        private fun Intent.topDestination(): TopDestination? = when {
+            action == Intent.ACTION_APPLICATION_PREFERENCES -> TopDestination.SETTINGS
+            else -> getStringExtra(TOP_DESTINATION)?.let { name ->
+                TopDestination.entries.firstOrNull { it.name == name }
+            }
+        }
+
+        private fun Bundle.topDestination() = getString(TOP_DESTINATION)?.let { name ->
             TopDestination.entries.firstOrNull { it.name == name }
         }
     }

@@ -94,6 +94,8 @@ fun PageScaffold(
     selection: PageSelection? = null,
     actions: @Composable RowScope.() -> Unit = {},
     bottomBar: (@Composable () -> Unit)? = null,
+    /** When set, replaces the default inset rule (use zero insets when a parent scaffold already cleared the nav bar). */
+    contentWindowInsets: WindowInsets? = null,
     content: @Composable () -> Unit,
 ) {
     BackHandler(enabled = selection != null) { selection?.onClear?.invoke() }
@@ -110,7 +112,7 @@ fun PageScaffold(
         modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = MaterialTheme.colorScheme.surface,
         // The app bar and navigation handle the top and bottom insets themselves.
-        contentWindowInsets = if (rail || (navigation == null && activeBar == null)) {
+        contentWindowInsets = contentWindowInsets ?: if (rail || (navigation == null && activeBar == null)) {
             WindowInsets.navigationBars
         } else {
             WindowInsets(0)

@@ -1,6 +1,5 @@
 package com.afsh.messages.activities
 
-import android.content.Intent
 import android.os.Bundle
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
@@ -101,11 +100,9 @@ abstract class ComposePageActivity : SimpleActivity(), UndoDeletion.UndoHost {
     /** Settings sub-pages keep the navigation with Settings active (R5-34). */
     protected fun settingsNavigation() = PageNavigation(TopDestination.SETTINGS, ::navigateTo)
 
+    /** Clears pushed screens and brings Main forward on [destination] with the shared tab host. */
     protected open fun navigateTo(destination: TopDestination) {
-        when (destination) {
-            TopDestination.SETTINGS -> startActivity(Intent(this, SettingsActivity::class.java))
-            else -> startActivity(MainActivity.topLevelIntent(this, destination))
-        }
+        startActivity(MainActivity.topLevelIntent(this, destination))
     }
 
     /**

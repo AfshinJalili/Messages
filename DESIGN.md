@@ -94,6 +94,28 @@ Android resources are the source of truth. This document describes how to use th
 | Shared opacity and font scale | `app/src/main/res/values/design_values.xml` (`opacity_surface_tint`); font scale via `afshTextScale()` in `ui/AfshTheme.kt` |
 | XML theme selection, the primary role for Commons and notifications, and API-compatible float resource access | `app/src/main/kotlin/com/afsh/messages/helpers/Design.kt` |
 | Launcher shape | `app/src/main/res/drawable/ic_launcher_foreground.xml` |
+| Screen and tab motion (durations, parallax, tab shift) | `app/src/main/res/values/motion.xml` |
+| Screen and tab motion easing | `app/src/main/res/interpolator/emphasized_decelerate.xml` and `EmphasizedDecelerate` in `ui/components/Motion.kt` |
+| Activity screen transitions | `AfshWindowAnimation` in `app/src/main/res/values/styles.xml` → `res/anim/screen_*.xml` (and `res/anim-ldrtl/` for RTL); exit/enter anims use `fillAfter`/`fillBefore` so the old window never snaps back for a frame |
+| Opaque window chrome | `android:windowBackground` = surface role on `AppTheme.Afsh.Light` / `Dark` (incoming window solid before Compose draws) |
+| Task-root (inbox) theme | `AppTheme.Afsh.Root.Light` / `Root.Dark` (`windowAnimationStyle` null) via `afshXmlTheme(root = true)` |
+| Compose screen and tab transitions | `ScreenStack` and `TabSwitch` in `ui/components/Motion.kt` |
+
+### Motion
+
+Screen and tab navigation share one motion language: fast, directional, and without alpha crossfade (Telegram / Google Messages style). Dialogs and bottom sheets keep Material 3 motion and are out of scope here.
+
+Inbox, Library, and Settings are three tabs of `MainActivity` (`TabSwitch` + `SettingsController`). Pushed screens (conversation, Library pages, block rules, …) remain Activities and use the theme window animations. Leaving a pushed screen for a top-level tab uses `MainActivity.topLevelIntent` (`CLEAR_TOP` / `SINGLE_TOP`), which is a screen close — not a tab switch — and then shows the chosen tab.
+
+| Motion | Behaviour | Duration | Easing |
+| --- | --- | --- | --- |
+| Open screen (Activity theme or in-Activity `ScreenStack`) | New screen slides in from the end edge; the screen underneath shifts toward the start by `motion_parallax` (25% of width) | `motion_open_ms` (220ms) | Emphasized decelerate |
+| Close screen (Back, up, predictive back) | Exact reverse of open | `motion_close_ms` (220ms) | Emphasized decelerate |
+| Switch bottom-nav / rail tabs (`TabSwitch`) | Both panes shift by `motion_tab_shift` (30% of width) in the tab-order direction | `motion_tab_ms` (120ms) | Emphasized decelerate |
+
+RTL mirrors start/end automatically: Compose uses `SlideDirection.Start`/`End`, and Activity XML ships mirrored sets under `anim-ldrtl/`. Predictive back on Android 14+ drives the same close motion for Activities (theme `windowAnimationStyle`) and for in-Activity stacks (`SeekableTransitionState` in `ScreenStack`).
+
+Do not invent per-screen transition specs, `Crossfade`, or `fadeIn`/`fadeOut` for navigation, and do not call `overridePendingTransition` / `overrideActivityTransition`. Change tokens in `motion.xml`, the shared specs in `Motion.kt` / `res/anim`, and `AfshWindowAnimation` only. `tests/check_motion.py` fails on navigation fades, ad-hoc screen transition specs outside `Motion.kt`, alpha in `screen_*.xml`, a revived `ScreenMotion` / `SettingsActivity`, or missing theme window animations.
 
 ### Color
 
@@ -149,7 +171,7 @@ Every shared component in `ui/components/` is stock Material 3 or a thin wrapper
 - `DetailRow`: `ListItem`'s trailing slot cannot let a long value wrap at the row's end.
 - `LabeledField`: its caption and value line up with the identity card's text inset, which `ListItem`'s 16dp inset breaks.
 - `DisabledComposer`: a switched-off copy of the composer's own `Surface`s; Material 3 has no disabled composer.
-- `SwipeableRow`, `SelectableBubbleRow`, `PageScaffold`, `Motion`: layout and gesture wiring around stock `SwipeToDismissBox`, `Scaffold` and Compose animation, not surfaces.
+- `SwipeableRow`, `SelectableBubbleRow`, `PageScaffold`, `Motion` (`ScreenStack`, `TabSwitch`): layout, gesture and navigation-motion wiring around stock `SwipeToDismissBox`, `Scaffold` and Compose animation, not surfaces.
 
 Message bubbles and the composer are built from stock Material 3 components (`tests/check_material_components.py` fails on a hand-drawn one). Every bubble, in the conversation, Spam and message details, is `MessageBubble`: a `Surface` whose color role comes from `BubbleTone` (received, sent, failed, selected; selection wins) and whose shape comes from `AfshCorners.bubble`. Only `MessageBubble.kt` reads the sent-bubble role. The composer band is a `Surface`; the field is a filled `TextField` without an indicator, the attach and SIM controls are `IconButton`s, send is a `FilledIconButton`, the length pill, tiles and remove dot are `Surface`s; the attach sheet is the shared `AfshSheet`. Compose tests find composer controls by their label and role, as TalkBack does.
 
