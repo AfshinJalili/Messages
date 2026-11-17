@@ -41,7 +41,7 @@ fun MoveRulesScreen(
 ) {
     val colors = MaterialTheme.colorScheme
     PageScaffold(
-        title = stringResource(R.string.move_block_rules),
+        title = stringResource(R.string.move_filter_rules),
         modifier = modifier,
         onBack = onBack,
         navigation = navigation,

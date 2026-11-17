@@ -191,7 +191,7 @@ fun SpamScreen(
             null
         },
         actions = {
-            PageAppBarAction(AfshIcon.SpamShield, stringResource(R.string.block_rules), onClick = {
+            PageAppBarAction(AfshIcon.SpamShield, stringResource(R.string.filter_rules), onClick = {
                 onEvent(SpamEvent.OpenRules)
             })
             if (state.messages.isNotEmpty()) {

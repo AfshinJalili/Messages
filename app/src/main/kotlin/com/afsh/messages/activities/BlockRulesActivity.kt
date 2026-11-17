@@ -13,7 +13,7 @@ import com.afsh.messages.ui.spam.BlockRulesScreen
 import com.afsh.messages.ui.spam.BlockRulesUiState
 import com.afsh.messages.ui.spam.RuleKind
 
-/** 21 · Block rules: the counts, the local filter switch and the blocked phrases. */
+/** 21 · Filter rules: the counts, the local filter switch and the blocked phrases. */
 class BlockRulesActivity : ComposePageActivity() {
     private var state by mutableStateOf(BlockRulesUiState())
 

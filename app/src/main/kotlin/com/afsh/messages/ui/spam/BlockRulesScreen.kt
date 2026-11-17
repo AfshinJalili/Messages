@@ -61,7 +61,7 @@ data class BlockRulesUiState(
     val filterEnabled: Boolean = true,
 )
 
-/** Everything 21 · Block rules can ask its activity to do. */
+/** Everything 21 · Filter rules can ask its activity to do. */
 sealed interface BlockRulesEvent {
     data object Back : BlockRulesEvent
     data object OpenNumbers : BlockRulesEvent
@@ -88,12 +88,12 @@ fun BlockRulesScreen(
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     PageScaffold(
-        title = stringResource(R.string.block_rules),
+        title = stringResource(R.string.filter_rules),
         modifier = modifier,
         onBack = { onEvent(BlockRulesEvent.Back) },
         navigation = navigation,
         actions = {
-            PageAppBarAction(AfshIcon.Share, stringResource(R.string.move_block_rules), onClick = {
+            PageAppBarAction(AfshIcon.Share, stringResource(R.string.move_filter_rules), onClick = {
                 onEvent(BlockRulesEvent.MoveRules)
             })
         },
