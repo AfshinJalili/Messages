@@ -1,6 +1,7 @@
 package com.afsh.messages.ui
 
 import android.graphics.Bitmap
+import android.util.LruCache
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
@@ -69,22 +70,40 @@ internal fun initials(title: String): String? = title.split(' ')
     .joinToString("") { it.first().uppercase() }
     .ifEmpty { null }
 
+/**
+ * Decoded bitmaps survive row disposal so the inbox scroll does not decode the same URI again.
+ * ~8 MB of ARGB bitmaps; keys are uri + size + crop.
+ */
+private val bitmapCache = object : LruCache<String, ImageBitmap>(8 * 1024 * 1024) {
+    override fun sizeOf(key: String, value: ImageBitmap): Int = value.width * value.height * 4
+}
+
 /** Null until loaded, and when [uri] is empty or fails to decode. Fits inside [widthPx] × [heightPx]. */
 @Composable
 fun rememberBitmap(uri: String, widthPx: Int, heightPx: Int, circle: Boolean = false): ImageBitmap? {
     val context = LocalContext.current
-    val bitmap by produceState<ImageBitmap?>(null, uri, widthPx, heightPx) {
-        // produceState keeps the previous key's value; a removed photo must not linger.
-        value = null
-        if (uri.isEmpty() || widthPx <= 0 || heightPx <= 0) return@produceState
+    val cacheKey = "$uri|$widthPx|$heightPx|$circle"
+    val bitmap by produceState<ImageBitmap?>(bitmapCache.get(cacheKey), uri, widthPx, heightPx, circle) {
+        if (uri.isEmpty() || widthPx <= 0 || heightPx <= 0) {
+            value = null
+            return@produceState
+        }
+        bitmapCache.get(cacheKey)?.let {
+            value = it
+            return@produceState
+        }
         val glide = Glide.with(context.applicationContext)
         val request = glide.asBitmap().load(uri)
         val target = (if (circle) request.circleCrop() else request.fitCenter()).submit(widthPx, heightPx)
         // Glide recycles the bitmap it hands out once the target is cleared, so keep a private copy.
         try {
-            value = withContext(Dispatchers.IO) {
-                runCatching { target.get().let { it.copy(it.config ?: Bitmap.Config.ARGB_8888, false) }.asImageBitmap() }.getOrNull()
+            val decoded = withContext(Dispatchers.IO) {
+                runCatching {
+                    target.get().let { it.copy(it.config ?: Bitmap.Config.ARGB_8888, false) }.asImageBitmap()
+                }.getOrNull()
             }
+            if (decoded != null) bitmapCache.put(cacheKey, decoded)
+            value = decoded
         } finally {
             glide.clear(target)
         }

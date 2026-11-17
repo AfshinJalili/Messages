@@ -19,6 +19,7 @@ import com.afsh.messages.extensions.messagesDB
 import com.afsh.messages.extensions.shouldUnarchive
 import com.afsh.messages.extensions.showReceivedMessageNotification
 import com.afsh.messages.extensions.updateConversationArchivedStatus
+import com.afsh.messages.helpers.ConversationPreview
 import com.afsh.messages.helpers.IncomingSpamClassifier
 import com.afsh.messages.helpers.refreshConversations
 import com.afsh.messages.helpers.refreshMessages
@@ -132,6 +133,8 @@ class SmsReceiver : BroadcastReceiver() {
         )
 
         context.messagesDB.insertOrUpdate(message)
+        // Conversation write above may have refreshed before this row existed in Room.
+        ConversationPreview.refresh(context, threadId)
 
         if (context.shouldUnarchive()) {
             context.updateConversationArchivedStatus(threadId, false)

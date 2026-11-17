@@ -52,6 +52,7 @@ import com.afsh.messages.R
 import com.afsh.messages.databases.MessagesDatabase
 import com.afsh.messages.helpers.AttachmentUtils.parseAttachmentNames
 import com.afsh.messages.helpers.Config
+import com.afsh.messages.helpers.ConversationPreview
 import com.afsh.messages.helpers.FILE_SIZE_NONE
 import com.afsh.messages.helpers.MAX_MESSAGE_LENGTH
 import com.afsh.messages.helpers.MESSAGES_LIMIT
@@ -445,13 +446,16 @@ fun Context.getSpamThreads(): List<BlockedMessagesThread> =
 
 // Spam deleted by another app leaves its marker behind, and extra markers can hide a thread that has real messages.
 fun Context.removeOrphanSpamMarkers() {
-    val markerIds = messagesDB.getSpamIds()
-    if (markerIds.isEmpty()) return
+    val markers = messagesDB.getSpamMarkers()
+    if (markers.isEmpty()) return
+    val markerIds = markers.map { it.id }
     // A failed query must not look like "every SMS is gone", so no cursor means no cleanup.
     val existing = contentResolver.query(Sms.CONTENT_URI, arrayOf(Sms._ID), "${Sms._ID} IN (${markerIds.joinToString()})", null, null)
         ?.use { cursor -> HashSet<Long>().apply { while (cursor.moveToNext()) add(cursor.getLong(0)) } }
         ?: return
-    markerIds.filterNot { it in existing }.forEach { messagesDB.deleteSpamMarker(it) }
+    val removed = markers.filter { it.id !in existing }
+    removed.forEach { messagesDB.deleteSpamMarker(it.id) }
+    if (removed.isNotEmpty()) ConversationPreview.refresh(this, removed.map { it.threadId })
 }
 
 fun Context.getUnreadCountsByThread(): Map<Long, Int> {
@@ -476,6 +480,30 @@ fun Context.getUnreadCountsByThread(): Map<Long, Int> {
     ) { bump(it.getLongValue(Mms.THREAD_ID)) }
 
     return result
+}
+
+/**
+ * Cheap Telephony fingerprint for launch: thread count and latest date only.
+ * Skips contact lookups, blocked-number filters, unread scans and draft merges that
+ * [getConversations] pays for on a full reconcile.
+ */
+fun Context.telephonyThreadDigest(): Pair<Int, Int> {
+    val uri = "${Threads.CONTENT_URI}?simple=true".toUri()
+    val projection = arrayOf(Threads.DATE)
+    val selection = "${Threads.MESSAGE_COUNT} > 0"
+    var count = 0
+    var latest = 0
+    try {
+        queryCursorUnsafe(uri, projection, selection, emptyArray(), null) { cursor ->
+            count++
+            var date = cursor.getLongValue(Threads.DATE)
+            if (date.toString().length > 10) date /= 1000
+            if (date > latest) latest = date.toInt()
+        }
+    } catch (_: Exception) {
+        return -1 to -1
+    }
+    return count to latest
 }
 
 fun Context.getConversations(
@@ -600,7 +628,7 @@ fun Context.getConversations(
  * Per-call caches for [getConversations]. Each thread used to cost one canonical-address query per
  * recipient plus two contact lookups, so a first import of a few hundred threads took half a minute.
  * Addresses now come from one query, and names and photos come from [MessagingCache.namePhoto], which
- * outlives the call, so the reconcile that runs on every return to the inbox does not look them up again.
+ * outlives the call, so a later dirty-check reconcile does not look them up again.
  */
 private class ThreadLookups(
     private val context: Context,
@@ -1084,11 +1112,14 @@ fun Context.emptyMessagesRecycleBinForConversation(threadId: Long) {
 
 fun Context.restoreAllMessagesFromRecycleBinForConversation(threadId: Long) {
     messagesDB.deleteThreadMessagesFromRecycleBin(threadId)
+    ConversationPreview.refresh(this, threadId)
 }
 
 fun Context.moveMessageToRecycleBin(id: Long) {
     try {
+        val threadId = messagesDB.getThreadIdForMessage(id)
         messagesDB.insertRecycleBinEntry(RecycleBinMessage(id, System.currentTimeMillis()))
+        if (threadId != null) ConversationPreview.refresh(this, threadId)
     } catch (e: Exception) {
         showErrorToast(e)
     }
@@ -1096,7 +1127,9 @@ fun Context.moveMessageToRecycleBin(id: Long) {
 
 fun Context.restoreMessageFromRecycleBin(id: Long) {
     try {
+        val threadId = messagesDB.getThreadIdForMessage(id)
         messagesDB.deleteFromRecycleBin(id)
+        if (threadId != null) ConversationPreview.refresh(this, threadId)
     } catch (e: Exception) {
         showErrorToast(e)
     }
@@ -1497,8 +1530,15 @@ fun Context.insertOrUpdateConversation(
         if (cachedConv.read && cachedConv.unreadCount == 0 && !updatedConv.read) {
             updatedConv = updatedConv.copy(read = true, unreadCount = 0)
         }
+        // REPLACE would clear denormalized preview columns; keep them until refresh below.
+        updatedConv = updatedConv.copy(
+            previewSnippet = cachedConv.previewSnippet,
+            previewDate = cachedConv.previewDate,
+            allSpam = cachedConv.allSpam,
+        )
     }
     conversationsDB.insertOrUpdate(updatedConv)
+    ConversationPreview.refresh(this, updatedConv.threadId)
 }
 
 fun Context.renameConversation(conversation: Conversation, newTitle: String): Conversation {

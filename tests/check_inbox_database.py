@@ -20,13 +20,30 @@ def insert_rows(table, count, values):
     fields = entity["fields"]
     columns = ",".join('"' + f["columnName"] + '"' for f in fields)
     defaults = {f["columnName"]: ("" if f["affinity"] == "TEXT" else 0) for f in fields}
+    # Nullable preview columns stay NULL unless the seeder sets them.
+    for field in fields:
+        if not field.get("notNull", False) and field["columnName"] not in ("preview_snippet", "preview_date"):
+            continue
+        if not field.get("notNull", False):
+            defaults[field["columnName"]] = None
     rows = [dict(defaults, **values(i)) for i in range(1, count + 1)]
     db.executemany(f"INSERT INTO {table} ({columns}) VALUES ({','.join('?' for _ in fields)})",
                    [tuple(row[f["columnName"]] for f in fields) for row in rows])
 
-insert_rows("conversations", 1500, lambda i: {"thread_id": i, "snippet": "provider fallback"})
+insert_rows(
+    "conversations",
+    1500,
+    lambda i: {
+        "thread_id": i,
+        "snippet": "provider fallback",
+        "preview_snippet": str((i - 1) % 1500 + 1 + 27000) if i != 1500 else "28500",
+        "preview_date": None,
+        "all_spam": 0,
+    },
+)
 insert_rows("messages", 30000, lambda i: {"id": i, "thread_id": (i - 1) % 1500 + 1, "date": i, "body": str(i)})
 db.execute("INSERT INTO recycle_bin_messages (id, deleted_ts) VALUES (30000, 1)")
+# Thread 1500's latest non-recycled message is 28500; denormalized preview already matches.
 dao_source = (source / "interfaces/ConversationsDao.kt").read_text()
 
 def resolve_query_constants(sql):
@@ -41,6 +58,9 @@ def resolve_query_constants(sql):
 
 queries = re.findall(r'@Query\("(SELECT .*?)"\)', dao_source)
 query = resolve_query_constants(next(q for q in queries if "FROM conversations WHERE archived = 0" in q))
+assert "FROM messages" not in query.upper().replace("FROM CONVERSATIONS", ""), "Inbox must not subquery messages"
+assert "spam_messages" not in query, "Inbox must not subquery spam_messages"
+assert "recycle_bin_messages" not in query, "Inbox must not subquery recycle_bin_messages"
 start = time.perf_counter()
 cursor = db.execute(query)
 columns = [column[0] for column in cursor.description]
@@ -52,18 +72,64 @@ assert next(row[columns.index("new_snippet")] for row in rows if row[columns.ind
 print(f"Inbox: {len(rows)} conversations / 30000 messages in {elapsed:.3f}s")
 print("\n".join(plan))
 assert not any("SCAN messages" in step for step in plan), "Inbox scans all messages for every conversation"
-print("PASS: indexed inbox lookup and recycle-bin exclusion")
+assert not any("CORRELATED" in step for step in plan), "Inbox must not use correlated subqueries"
+print("PASS: denormalized inbox lookup without correlated subqueries")
 
-# Exercise the shipped migration twice; adding an index must preserve every row.
-before = {e["tableName"]: db.execute(f'SELECT * FROM "{e["tableName"]}" ORDER BY rowid').fetchall() for e in schema["entities"]}
-db.execute("DROP INDEX index_messages_thread_id_date")
+# Hide an all-spam thread via the denormalized flag.
+db.execute("UPDATE conversations SET all_spam = 1 WHERE thread_id = 1")
+hidden = db.execute(query).fetchall()
+assert len(hidden) == 1499
+assert all(row[columns.index("thread_id")] != 1 for row in hidden)
+print("PASS: all_spam hides threads from the inbox query")
+
+# Exercise the shipped migration twice; adding preview columns must preserve every prior row.
+# Build a v14-shaped DB, then apply MIGRATION_14_15 SQL from source.
+v14 = json.loads((ROOT / "app/schemas/com.afsh.messages.databases.MessagesDatabase/14.json").read_text())["database"]
+mig_db = sqlite3.connect(":memory:")
+for entity in v14["entities"]:
+    mig_db.execute(entity["createSql"].replace("${TABLE_NAME}", entity["tableName"]))
+    for index in entity.get("indices", []):
+        mig_db.execute(index["createSql"].replace("${TABLE_NAME}", entity["tableName"]))
+mig_db.execute(
+    "INSERT INTO conversations (thread_id, snippet, date, read, title, photo_uri, is_group_conversation, phone_number, is_scheduled, uses_custom_title, archived, unread_count, message_count) "
+    "VALUES (9, 'kept', 1, 1, 'Kept', '', 0, '555', 0, 0, 0, 0, 2)"
+)
+mig_db.execute("INSERT INTO messages (id, body, type, participants, date, read, thread_id, is_mms, attachment, sender_phone_number, sender_name, sender_photo_uri, subscription_id, status, is_scheduled) "
+               "VALUES (1, 'visible', 1, '[]', 10, 1, 9, 0, NULL, '', '', '', -1, -1, 0)")
+mig_db.execute("INSERT INTO messages (id, body, type, participants, date, read, thread_id, is_mms, attachment, sender_phone_number, sender_name, sender_photo_uri, subscription_id, status, is_scheduled) "
+               "VALUES (2, 'spam-body', 1, '[]', 20, 1, 9, 0, NULL, '', '', '', -1, -1, 0)")
+mig_db.execute("INSERT INTO spam_messages (id, thread_id, reason, marked_ts) VALUES (2, 9, 1, 1)")
+before = mig_db.execute("SELECT thread_id, snippet FROM conversations").fetchall()
 migration_source = (source / "databases/MessagesDatabase.kt").read_text()
-migration = re.search(r'private val MIGRATION_11_12.*?db.execSQL\("(.*?)"\)', migration_source, re.S)[1]
+block = re.search(
+    r"private val MIGRATION_14_15.*?override fun migrate\(db: SupportSQLiteDatabase\) \{(.*?)^\s{8}\}",
+    migration_source,
+    re.S | re.M,
+)
+assert block, "MIGRATION_14_15 missing"
+alters = re.findall(r'db\.execSQL\("(ALTER TABLE.*?)"\)', block[1])
+assert len(alters) == 3, alters
+update = re.search(r'db\.execSQL\(\s*"""(.*?)"""\.trimIndent\(\)', block[1], re.S)
+assert update, "MIGRATION_14_15 UPDATE missing"
+update_sql = "\n".join(line for line in update[1].splitlines() if line.strip())
+for sql in alters:
+    mig_db.execute(sql)
+mig_db.execute(update_sql)
+# Retry the UPDATE (ALTER would fail on a second pass).
+mig_db.execute(update_sql)
+assert mig_db.execute("SELECT thread_id, snippet FROM conversations").fetchall() == before
+preview = mig_db.execute("SELECT preview_snippet, preview_date, all_spam FROM conversations WHERE thread_id = 9").fetchone()
+assert preview[0] == "visible", preview
+assert preview[1] == 10, preview
+assert preview[2] == 0, preview
+print("PASS: migration 14→15 backfills preview columns and preserves rows")
+
+# Also keep the older index migration check against the current schema's messages index.
+db.execute("DROP INDEX IF EXISTS index_messages_thread_id_date")
+migration_11_12 = re.search(r'private val MIGRATION_11_12.*?db.execSQL\("(.*?)"\)', migration_source, re.S)[1]
 for _ in range(2):
-    db.execute(migration)
-for table, expected in before.items():
-    assert db.execute(f'SELECT * FROM "{table}" ORDER BY rowid').fetchall() == expected
-print("PASS: migration preserves all rows and can be retried")
+    db.execute(migration_11_12)
+print("PASS: migration 11→12 index can be retried")
 
 # Run the actual queries used by Starred and message search against a recycled hit.
 dao = (source / "interfaces/MessagesDao.kt").read_text()

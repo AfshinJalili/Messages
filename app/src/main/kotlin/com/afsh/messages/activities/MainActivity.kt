@@ -21,6 +21,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -37,12 +38,15 @@ import kotlinx.coroutines.withTimeoutOrNull
 import org.fossify.commons.extensions.applyColorFilter
 import org.fossify.commons.extensions.appLaunched
 import org.fossify.commons.extensions.appLockManager
+import org.fossify.commons.extensions.baseConfig
 import org.fossify.commons.extensions.convertToBitmap
 import org.fossify.commons.extensions.copyToClipboard
 import org.fossify.commons.extensions.hideKeyboard
+import org.fossify.commons.extensions.isSystemInDarkMode
 import org.fossify.commons.extensions.launchActivityIntent
 import org.fossify.commons.extensions.notificationManager
 import org.fossify.commons.extensions.openNotificationSettings
+import org.fossify.commons.extensions.syncGlobalConfig
 import org.fossify.commons.extensions.toast
 import org.fossify.commons.helpers.KEY_PHONE
 import org.fossify.commons.extensions.hasPermission
@@ -51,6 +55,7 @@ import org.fossify.commons.helpers.PERMISSION_READ_SMS
 import org.fossify.commons.helpers.PERMISSION_SEND_SMS
 import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.commons.helpers.isQPlus
+import org.fossify.commons.R as CommonsR
 import com.afsh.messages.App
 import com.afsh.messages.BuildConfig
 import com.afsh.messages.R
@@ -121,7 +126,8 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
     private var searchJob: Job? = null
     private val searchRepository by lazy { SearchRepository(this) }
     private var inboxConversations = listOf<Conversation>()
-    private var providerReconcileActive = false
+    private var roomSnapshotReceived = false
+    private var splashReady = false
     private var resumedBefore = false
     // 73: the last provider refresh failed; cleared by the next one that succeeds.
     private var refreshFailed = false
@@ -153,6 +159,26 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
 
     @SuppressLint("InlinedApi")
     override fun onCreate(savedInstanceState: Bundle?) {
+        val splash = installSplashScreen()
+        splash.setKeepOnScreenCondition { !splashReady }
+        // Same theme sync SplashActivity used to do before handing off to MainActivity.
+        syncGlobalConfig {
+            baseConfig.apply {
+                if (isSystemThemeEnabled) {
+                    val isUsingSystemDarkTheme = isSystemInDarkMode()
+                    textColor = resources.getColor(
+                        if (isUsingSystemDarkTheme) CommonsR.color.m3_on_surface_dark
+                        else CommonsR.color.m3_on_surface,
+                        theme
+                    )
+                    backgroundColor = resources.getColor(
+                        if (isUsingSystemDarkTheme) CommonsR.color.m3_surface_dark
+                        else CommonsR.color.m3_surface,
+                        theme
+                    )
+                }
+            }
+        }
         super.onCreate(savedInstanceState)
         setContentView(root)
         inboxFilter = InboxFilter.entries.getOrNull(savedInstanceState?.getInt(INBOX_FILTER) ?: 0) ?: InboxFilter.ALL
@@ -313,6 +339,7 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
             !hasPermission(PERMISSION_READ_SMS) || !hasPermission(PERMISSION_SEND_SMS) -> FirstRunStep.PERMISSIONS
             else -> null
         }
+        if (firstRun != null) splashReady = true
         if (firstRun == null) askPermissions()
     }
 
@@ -378,7 +405,6 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
         // Contacts permission may have just been granted; the inbox's contact cache needs its observer.
         (application as App).watchContacts()
         InboxRepository.setReconcileListener { status ->
-            providerReconcileActive = status == ReconcileStatus.RUNNING
             when (status) {
                 ReconcileStatus.FAILED -> refreshFailed = true
                 ReconcileStatus.DONE -> refreshFailed = false
@@ -390,13 +416,16 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
         }
         conversationsDB.observeNonArchivedWithLatestSnippet().observe(this) { rows ->
             if (isDestroyed || isFinishing) return@observe
+            roomSnapshotReceived = true
+            splashReady = true
             inboxConversations = rows.map { it.toConversation() }
             archiving.retainAll(inboxConversations.map { it.threadId }.toSet())
             publish()
             // Marker changes also invalidate this query, so new spam updates the badge here.
             refreshSpamBadge()
         }
-        InboxRepository.scheduleProviderReconcile(this, immediate = true)
+        // Paint Room first; full Telephony reconcile only when the cheap digest says it is dirty.
+        InboxRepository.scheduleLaunchReconcile(this)
         SpamBackfill.run(this)
         if (!importObserved) {
             importObserved = true
@@ -438,7 +467,11 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
             filter = inboxFilter,
             unreadMessages = present.unreadMessageCount(),
             inboxCountShown = config.showInboxUnreadCount,
-            loading = providerReconcileActive && inboxConversations.isEmpty(),
+            // Only the first import: Room has answered and still has no rows. Do not block on Telephony.
+            loading = roomSnapshotReceived &&
+                inboxConversations.isEmpty() &&
+                importProgress == null &&
+                !config.messagesImported,
             refreshFailed = refreshFailed,
             importProgress = importProgress,
             // A selection must not act on rows the current filter or an undo window hides. Before the

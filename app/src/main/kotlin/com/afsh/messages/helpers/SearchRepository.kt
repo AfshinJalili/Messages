@@ -36,9 +36,9 @@ class SearchRepository(
         val people = if (browsePhotos) {
             emptyList()
         } else {
-            conversations.searchPeople(pattern).map { conversation ->
+            conversations.searchPeople(pattern).map { row ->
                 ensureActive()
-                conversationMatch(conversation)
+                conversationMatch(row.toConversation())
             }
         }
         if (!includeMessageResults) return@withContext people

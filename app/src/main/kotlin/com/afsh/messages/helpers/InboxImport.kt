@@ -187,6 +187,7 @@ object InboxImport {
                             app.getMessagesDB().runInTransaction {
                                 fetched.chunked(INSERT_CHUNK).forEach { app.messagesDB.insertMessages(*it.toTypedArray()) }
                             }
+                            ConversationPreview.refresh(app, fetched.map { it.threadId })
                         } catch (_: Exception) {
                             // Rows were not written; drop those ids from handled so the next run retries.
                             val failedIds = fetched.map { it.threadId }.toSet()

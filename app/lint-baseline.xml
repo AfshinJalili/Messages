@@ -34,16 +34,6 @@
             column="23"/>
     </issue>
 
-    <issue
-        id="CustomSplashScreen"
-        message="The application should not provide its own launch screen"
-        errorLine1="class SplashActivity : BaseSplashActivity() {"
-        errorLine2="      ~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/com/afsh/messages/activities/SplashActivity.kt"
-            line="6"
-            column="7"/>
-    </issue>
 
     <issue
         id="GradleDependency"

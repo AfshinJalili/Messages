@@ -94,9 +94,11 @@ class SearchChecks {
 
         messages.insertOrUpdate(searchMessage(81_011, liveThread, literalBody))
         conversations.insertOrUpdate(searchConversation(liveThread, "Fixture $query"))
+        conversations.updatePreview(liveThread, literalBody, null, allSpam = false)
 
         messages.insertOrUpdate(searchMessage(81_021, decoyThread, "synthetic wildXcard_under token"))
         conversations.insertOrUpdate(searchConversation(decoyThread, "Fixture wildXcard_under"))
+        conversations.updatePreview(decoyThread, "synthetic wildXcard_under token", null, allSpam = false)
 
         val matchingMmsId = 81_081L
         val irrelevantMmsId = 81_082L
@@ -111,10 +113,13 @@ class SearchChecks {
         messages.insertOrUpdate(searchMessage(81_031, recycledThread, literalBody))
         messages.insertRecycleBinEntry(RecycleBinMessage(81_031, deletedTS = 1))
         conversations.insertOrUpdate(searchConversation(recycledThread, "Fixture $query recycled"))
+        // Recycled-only: no visible preview, so people search must omit the thread.
+        conversations.updatePreview(recycledThread, null, null, allSpam = false)
 
         messages.insertOrUpdate(searchMessage(81_041, spamThread, literalBody))
         messages.insertSpamMarker(SpamMessage(81_041, spamThread, BLOCK_REASON_KEYWORD))
         conversations.insertOrUpdate(searchConversation(spamThread, "Fixture $query spam"))
+        conversations.updatePreview(spamThread, null, null, allSpam = true)
 
         val photoName = "photo-$query.jpg"
         messages.insertOrUpdate(searchMessage(81_051, 8_105, "synthetic caption", fixtureAttachment(81_051, photoName, "image/jpeg")))

@@ -8,9 +8,11 @@ import com.afsh.messages.extensions.conversationsDB
 import com.afsh.messages.extensions.getSpamThreads
 import com.afsh.messages.extensions.getUnreadCountsByThread
 import com.afsh.messages.extensions.getUnreadSpamCounts
+import com.afsh.messages.extensions.insertOrUpdateConversation
 import com.afsh.messages.extensions.messagesDB
 import com.afsh.messages.extensions.removeOrphanSpamMarkers
 import com.afsh.messages.helpers.BLOCK_REASON_KEYWORD
+import com.afsh.messages.helpers.ConversationPreview
 import com.afsh.messages.helpers.SpamBackfill
 import com.afsh.messages.models.SpamMessage
 import org.junit.Assume.assumeTrue
@@ -31,8 +33,10 @@ class SpamChecks {
     private fun message(id: Long, threadId: Long, body: String, date: Int, isMMS: Boolean = false) =
         fixtureMessage(id, body, threadId = threadId, date = date, read = false, isMms = isMMS)
 
-    private fun markSpam(id: Long, threadId: Long) =
+    private fun markSpam(id: Long, threadId: Long) {
         context.messagesDB.insertSpamMarker(SpamMessage(id = id, threadId = threadId, reason = BLOCK_REASON_KEYWORD))
+        ConversationPreview.refresh(context, threadId)
+    }
 
     private fun inbox(threadId: Long) = context.conversationsDB.getNonArchived().singleOrNull { it.threadId == threadId }
 
@@ -50,26 +54,28 @@ class SpamChecks {
         val threadId = Long.MAX_VALUE - 301
         val spamId = Long.MAX_VALUE - 3011
         withThread(threadId) {
-            context.conversationsDB.insertOrUpdate(conversation(threadId, messageCount = 1))
+            context.insertOrUpdateConversation(conversation(threadId, messageCount = 1))
             context.messagesDB.insertOrUpdate(message(spamId, threadId, "win a prize", 500))
+            ConversationPreview.refresh(context, threadId)
             check(inbox(threadId) != null) { "An unmarked thread must be visible" }
 
             markSpam(spamId, threadId)
             check(inbox(threadId) == null) { "A thread whose only message is spam must be hidden" }
 
-            context.conversationsDB.insertOrUpdate(conversation(threadId, messageCount = 1))
+            context.insertOrUpdateConversation(conversation(threadId, messageCount = 1))
             check(inbox(threadId) == null) { "A reconciler overwrite must not reveal a hidden thread" }
             check(context.conversationsDB.getAll().any { it.threadId == threadId }) {
                 "The reconciler must still see hidden rows"
             }
 
-            context.conversationsDB.insertOrUpdate(conversation(threadId, messageCount = 1, archived = true))
+            context.insertOrUpdateConversation(conversation(threadId, messageCount = 1, archived = true))
             check(context.conversationsDB.getAllArchived().none { it.threadId == threadId }) {
                 "Hidden spam threads must not show in the archive either"
             }
-            context.conversationsDB.insertOrUpdate(conversation(threadId, messageCount = 1))
+            context.insertOrUpdateConversation(conversation(threadId, messageCount = 1))
 
             context.messagesDB.deleteSpamMarker(spamId)
+            ConversationPreview.refresh(context, threadId)
             check(inbox(threadId) != null) { "Removing the marker must reveal the thread" }
         }
     }
@@ -80,7 +86,7 @@ class SpamChecks {
         val realId = Long.MAX_VALUE - 3021
         val spamId = Long.MAX_VALUE - 3022
         withThread(threadId) {
-            context.conversationsDB.insertOrUpdate(conversation(threadId, messageCount = 2))
+            context.insertOrUpdateConversation(conversation(threadId, messageCount = 2))
             context.messagesDB.insertOrUpdate(message(realId, threadId, "real", 100))
             context.messagesDB.insertOrUpdate(message(spamId, threadId, "spam", 500))
             markSpam(spamId, threadId)
@@ -97,11 +103,11 @@ class SpamChecks {
         val spamId = Long.MAX_VALUE - 3031
         withThread(threadId) {
             markSpam(spamId, threadId)
-            context.conversationsDB.insertOrUpdate(conversation(threadId, messageCount = 0))
+            context.insertOrUpdateConversation(conversation(threadId, messageCount = 0))
             check(inbox(threadId) != null) { "An unfilled message count must keep the thread visible" }
 
             // Telephony counts MMS too, so an MMS in a spam SMS thread leaves the count above the markers.
-            context.conversationsDB.insertOrUpdate(conversation(threadId, messageCount = 2))
+            context.insertOrUpdateConversation(conversation(threadId, messageCount = 2))
             check(inbox(threadId) != null) { "An unmarked message must keep the thread visible" }
         }
     }
@@ -111,7 +117,7 @@ class SpamChecks {
         val threadId = Long.MAX_VALUE - 304
         val sharedId = Long.MAX_VALUE - 3041
         withThread(threadId) {
-            context.conversationsDB.insertOrUpdate(conversation(threadId, messageCount = 2))
+            context.insertOrUpdateConversation(conversation(threadId, messageCount = 2))
             context.messagesDB.insertOrUpdate(message(sharedId, threadId, "picture", 500, isMMS = true))
             markSpam(sharedId, threadId)
             check(inbox(threadId)?.snippet == "picture") { "An MMS must not be treated as spam by an SMS marker" }
@@ -123,11 +129,12 @@ class SpamChecks {
         val threadId = Long.MAX_VALUE - 305
         val spamId = Long.MAX_VALUE - 3051
         withThread(threadId) {
-            context.conversationsDB.insertOrUpdate(conversation(threadId, messageCount = 1))
+            context.insertOrUpdateConversation(conversation(threadId, messageCount = 1))
             markSpam(spamId, threadId)
             check(inbox(threadId) == null)
 
             context.messagesDB.deleteThreadMessages(threadId)
+            ConversationPreview.refresh(context, threadId)
             check(inbox(threadId) != null) { "Deleting a thread's messages must remove its spam markers" }
         }
     }
@@ -240,7 +247,7 @@ class SpamChecks {
     fun migration12to13() = migratedDatabase(
         name = "spam-migration-check.db",
         version = 12,
-        migrations = listOf("MIGRATION_12_13", "MIGRATION_13_14"),
+        migrations = listOf("MIGRATION_12_13", "MIGRATION_13_14", "MIGRATION_14_15"),
         seed = { db ->
             db.execSQL(
                 "INSERT INTO conversations (thread_id, snippet, date, read, title, photo_uri, is_group_conversation, phone_number, is_scheduled, uses_custom_title, archived, unread_count) " +
