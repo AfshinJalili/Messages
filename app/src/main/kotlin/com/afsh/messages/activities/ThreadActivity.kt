@@ -192,6 +192,7 @@ import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
 import org.joda.time.DateTime
 import java.io.File
+import kotlinx.coroutines.CompletableDeferred
 
 /**
  * The conversation screen's host: lifecycle, intents, permissions, and the provider and settings the
@@ -391,6 +392,9 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
     override fun onDestroy() {
         super.onDestroy()
         bus?.unregister(this)
+        // Clear any pending page load completion to prevent awaits that never resume
+        data.pageLoadCompletion?.complete(Unit)
+        data.pageLoadCompletion = null
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -924,6 +928,8 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
     private fun loadMoreMessages() {
         if (data.isEmpty || data.allFetched || data.loadingOlder) return
         data.loadingOlder = true
+        val completion = CompletableDeferred<Unit>()
+        data.pageLoadCompletion = completion
         val cutoff = data.list.first().date
         ensureBackgroundThread {
             fetchOlderMessages(cutoff)
@@ -931,6 +937,8 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
             val items = threadItems
             runOnUiThread {
                 data.loadingOlder = false
+                data.pageLoadCompletion = null
+                completion.complete(Unit)
                 publishItems(items)
             }
         }
@@ -950,38 +958,52 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
             return
         }
 
-        ensureBackgroundThread {
-            // A page the timeline asked for may still be loading; let it land rather than give up.
-            var waits = 0
-            while (data.loadingOlder && waits++ < JUMP_WAIT_LIMIT) Thread.sleep(JUMP_WAIT_MS)
+        lifecycleScope.launch {
+            // Wait for all in-flight older-page loads to complete before starting our own.
+            while (data.pageLoadCompletion != null) {
+                data.pageLoadCompletion?.await()
+            }
+            
+            // Claim the load slot synchronously on the main thread to prevent races.
             data.loadingOlder = true
-            val items = try {
-                var cutoff = data.oldestDate() ?: Int.MAX_VALUE
-                var found = data.contains(messageId, isMms)
-                var loops = 0
+            val completion = CompletableDeferred<Unit>()
+            data.pageLoadCompletion = completion
+            
+            ensureBackgroundThread {
+                val items = try {
+                    var cutoff = data.oldestDate() ?: Int.MAX_VALUE
+                    var found = data.contains(messageId, isMms)
+                    
+                    // Load older pages until we find the message or reach the start of the thread.
+                    // Bound to MAX_JUMP_LOOPS to prevent infinite loops if the message doesn't exist.
+                    var loops = 0
+                    while (!found && !data.allFetched && loops < MAX_JUMP_LOOPS) {
+                        val fetched = fetchOlderMessages(cutoff)
+                        if (fetched.isEmpty()) break
+                        cutoff = data.list.first().date
+                        found = data.contains(messageId, isMms)
+                        loops++
+                    }
 
-                // not the best solution, but this will do for now.
-                while (!found && !data.allFetched) {
-                    if (fetchOlderMessages(cutoff).isEmpty() || loops >= 1000) break
-                    cutoff = data.list.first().date
-                    found = data.contains(messageId, isMms)
-                    loops++
+                    threadItems = getThreadItems()
+                    threadItems
+                } catch (e: Exception) {
+                    // Without this, page loads stay blocked for the rest of the visit.
+                    runOnUiThread {
+                        data.loadingOlder = false
+                        data.pageLoadCompletion = null
+                        completion.complete(Unit)
+                        holder.jumpFailed()
+                    }
+                    return@ensureBackgroundThread
                 }
-
-                threadItems = getThreadItems()
-                threadItems
-            } catch (e: Exception) {
-                // Without this, page loads stay blocked for the rest of the visit.
                 runOnUiThread {
                     data.loadingOlder = false
-                    holder.jumpFailed()
+                    data.pageLoadCompletion = null
+                    completion.complete(Unit)
+                    publishItems(items)
+                    holder.scrollToJump(messageId, isMms)
                 }
-                return@ensureBackgroundThread
-            }
-            runOnUiThread {
-                data.loadingOlder = false
-                publishItems(items)
-                holder.scrollToJump(messageId, isMms)
             }
         }
     }
@@ -1233,9 +1255,10 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
     }
 
     private fun renameConversation() {
-        showRenameDialog(conversation!!) { title ->
+        val current = conversation ?: return
+        showRenameDialog(current) { title ->
             ensureBackgroundThread {
-                conversation = renameConversation(conversation!!, newTitle = title)
+                conversation = renameConversation(current, newTitle = title)
                 runOnUiThread { refreshMenuItems() }
             }
         }
@@ -1900,8 +1923,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
     // endregion
 
     companion object {
-        private const val JUMP_WAIT_MS = 50L
-        private const val JUMP_WAIT_LIMIT = 100
+        private const val MAX_JUMP_LOOPS = 1000
         private const val SAVED_COMPOSER_TEXT = "composer_text"
         private const val SAVED_NEW_ON_OPEN = "new_on_open"
         private const val SAVED_COMPOSER_ATTACHMENTS = "composer_attachments"

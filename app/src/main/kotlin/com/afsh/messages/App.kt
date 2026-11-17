@@ -29,6 +29,10 @@ class App : FossifyApp() {
 
     override fun themeId(activity: Activity) = activity.afshXmlTheme()
 
+    companion object {
+        private const val TAG = "AfshApp"
+    }
+
     override fun onCreate() {
         super.onCreate()
         InboxRepository.init(this)
@@ -83,7 +87,8 @@ class App : FossifyApp() {
         ).forEach {
             try {
                 contentResolver.registerContentObserver(it, true, contactsObserver)
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                android.util.Log.w(TAG, "Failed to register content observer for contacts", e)
             }
         }
     }
