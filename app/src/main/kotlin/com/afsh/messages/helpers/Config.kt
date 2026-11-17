@@ -182,6 +182,23 @@ class Config(context: Context) : BaseConfig(context) {
         get() = prefs.getBoolean(MESSAGES_IMPORTED, false)
         set(messagesImported) = prefs.edit().putBoolean(MESSAGES_IMPORTED, messagesImported).apply()
 
+    /**
+     * `"threadId:attempts"` entries for message-import failures. Cleared when import finishes.
+     * See [ImportFailureLedger].
+     */
+    var importThreadFailures: Set<String>
+        get() = prefs.getStringSet(IMPORT_THREAD_FAILURES, emptySet()) ?: emptySet()
+        set(importThreadFailures) = prefs.edit()
+            .putStringSet(IMPORT_THREAD_FAILURES, HashSet(importThreadFailures))
+            .apply()
+
+    /** Thread ids whose messages were read successfully (including empty). Cleared when import finishes. */
+    var importHandledThreads: Set<String>
+        get() = prefs.getStringSet(IMPORT_HANDLED_THREADS, emptySet()) ?: emptySet()
+        set(importHandledThreads) = prefs.edit()
+            .putStringSet(IMPORT_HANDLED_THREADS, HashSet(importHandledThreads))
+            .apply()
+
     var keyboardHeight: Int
         get() = prefs.getInt(SOFT_KEYBOARD_HEIGHT, context.getDefaultKeyboardHeight())
         set(keyboardHeight) = prefs.edit().putInt(SOFT_KEYBOARD_HEIGHT, keyboardHeight).apply()

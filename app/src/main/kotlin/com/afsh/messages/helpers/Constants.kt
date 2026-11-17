@@ -41,6 +41,8 @@ const val IMPORT_SMS = "import_sms"
 const val IMPORT_MMS = "import_mms"
 const val WAS_DB_CLEARED = "was_db_cleared_4"
 const val MESSAGES_IMPORTED = "messages_imported"
+const val IMPORT_THREAD_FAILURES = "import_thread_failures"
+const val IMPORT_HANDLED_THREADS = "import_handled_threads"
 const val EXTRA_VCARD_URI = "vcard"
 const val SCHEDULED_MESSAGE_ID = "scheduled_message_id"
 const val SOFT_KEYBOARD_HEIGHT = "soft_keyboard_height"
@@ -138,8 +140,17 @@ fun refreshMessages() {
     EventBus.getDefault().post(Events.RefreshMessages())
 }
 
-fun refreshConversations() {
-    InboxRepository.refreshInbox()
+/**
+ * Notifies screens that conversation rows changed.
+ *
+ * [reconcile] defaults to true for structural edits (archive, delete, import) that may need a
+ * full Telephony pass. Receivers that already wrote the affected Room row must pass false: as the
+ * default SMS app they wake on every message, and a full reconcile each time burns CPU and battery.
+ */
+fun refreshConversations(reconcile: Boolean = true) {
+    if (reconcile) {
+        InboxRepository.refreshInbox()
+    }
     EventBus.getDefault().post(Events.RefreshConversations())
 }
 

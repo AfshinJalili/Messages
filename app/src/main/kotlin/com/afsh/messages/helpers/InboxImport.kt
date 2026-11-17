@@ -6,6 +6,7 @@ import com.afsh.messages.extensions.conversationsDB
 import com.afsh.messages.extensions.getMessages
 import com.afsh.messages.extensions.getMessagesDB
 import com.afsh.messages.extensions.messagesDB
+import com.afsh.messages.models.Message
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -42,6 +43,65 @@ internal object ImportProgressMath {
     }
 
     fun hold(peak: Int, next: Int): Int = maxOf(peak, next.coerceIn(0, 100))
+}
+
+/**
+ * Tracks message-import progress per thread across reconciles.
+ *
+ * - [failures]: how many times [getMessages] threw (`"threadId:attempts"` prefs). After
+ *   [MAX_ATTEMPTS] the thread is abandoned so it cannot restart the whole import forever.
+ * - [handled]: thread ids that were read successfully (including empty). Empty threads never
+ *   get Room rows, so without this the import would never finish.
+ */
+internal object ImportFailureLedger {
+    const val MAX_ATTEMPTS = 3
+
+    fun parseFailures(stored: Set<String>): Map<Long, Int> = stored.mapNotNull { entry ->
+        val parts = entry.split(':', limit = 2)
+        val id = parts.getOrNull(0)?.toLongOrNull() ?: return@mapNotNull null
+        val attempts = parts.getOrNull(1)?.toIntOrNull()?.coerceAtLeast(0) ?: return@mapNotNull null
+        id to attempts
+    }.toMap()
+
+    fun serializeFailures(failures: Map<Long, Int>): Set<String> =
+        failures.map { (id, attempts) -> "$id:$attempts" }.toSet()
+
+    fun parseHandled(stored: Set<String>): Set<Long> =
+        stored.mapNotNull { it.toLongOrNull() }.toSet()
+
+    fun serializeHandled(handled: Set<Long>): Set<String> =
+        handled.map { it.toString() }.toSet()
+
+    fun record(failures: Map<Long, Int>, threadId: Long): Map<Long, Int> {
+        val next = (failures[threadId] ?: 0) + 1
+        return failures + (threadId to next.coerceAtMost(MAX_ATTEMPTS))
+    }
+
+    fun clearFailure(failures: Map<Long, Int>, threadId: Long): Map<Long, Int> =
+        if (threadId in failures) failures - threadId else failures
+
+    fun isAbandoned(failures: Map<Long, Int>, threadId: Long): Boolean =
+        (failures[threadId] ?: 0) >= MAX_ATTEMPTS
+
+    /** Threads still missing Room messages, not abandoned, and not already read successfully. */
+    fun pending(
+        threadIds: Collection<Long>,
+        hasMessages: (Long) -> Boolean,
+        failures: Map<Long, Int>,
+        handled: Set<Long>,
+    ): List<Long> = threadIds.filter {
+        !hasMessages(it) && !isAbandoned(failures, it) && it !in handled
+    }
+
+    /** True when every thread has messages, was read successfully, or was abandoned. */
+    fun finished(
+        threadIds: Collection<Long>,
+        hasMessages: (Long) -> Boolean,
+        failures: Map<Long, Int>,
+        handled: Set<Long>,
+    ): Boolean = threadIds.all {
+        hasMessages(it) || isAbandoned(failures, it) || it in handled
+    }
 }
 
 /**
@@ -94,25 +154,65 @@ object InboxImport {
                 if (threadIds.isEmpty()) {
                     publish(100)
                     app.config.messagesImported = true
+                    app.config.importThreadFailures = emptySet()
+                    app.config.importHandledThreads = emptySet()
                     return@ensureBackgroundThread
                 }
-                publish(ImportProgressMath.messagesPercent(0, threadIds.size, afterConversations))
-                // Every write re-runs the inbox query, which reads messages, so write in batches.
-                threadIds.chunked(BATCH_THREADS).forEachIndexed { batch, ids ->
-                    val fetched = ids
-                        .filter { !app.messagesDB.hasThreadMessages(it) }
-                        .flatMap { app.getMessages(it, includeScheduledMessages = false) }
-                    if (fetched.isNotEmpty()) {
-                        app.getMessagesDB().runInTransaction {
-                            fetched.chunked(INSERT_CHUNK).forEach { app.messagesDB.insertMessages(*it.toTypedArray()) }
+                var failures = ImportFailureLedger.parseFailures(app.config.importThreadFailures)
+                var handled = ImportFailureLedger.parseHandled(app.config.importHandledThreads)
+                val pending = ImportFailureLedger.pending(
+                    threadIds = threadIds,
+                    hasMessages = { app.messagesDB.hasThreadMessages(it) },
+                    failures = failures,
+                    handled = handled,
+                )
+                publish(ImportProgressMath.messagesPercent(0, pending.size.coerceAtLeast(1), afterConversations))
+                // One bad thread must not abort the rest, and a permanently failing thread must
+                // not restart the whole import after every reconcile: only [pending] is visited,
+                // failures are counted, and abandoned threads are skipped forever.
+                pending.chunked(BATCH_THREADS).forEachIndexed { batch, ids ->
+                    val fetched = ArrayList<Message>()
+                    ids.forEach { threadId ->
+                        try {
+                            val messages = app.getMessages(threadId, includeScheduledMessages = false)
+                            fetched += messages
+                            failures = ImportFailureLedger.clearFailure(failures, threadId)
+                            handled = handled + threadId
+                        } catch (_: Exception) {
+                            failures = ImportFailureLedger.record(failures, threadId)
                         }
                     }
-                    val done = minOf((batch + 1) * BATCH_THREADS, threadIds.size)
-                    publish(ImportProgressMath.messagesPercent(done, threadIds.size, afterConversations))
+                    if (fetched.isNotEmpty()) {
+                        try {
+                            app.getMessagesDB().runInTransaction {
+                                fetched.chunked(INSERT_CHUNK).forEach { app.messagesDB.insertMessages(*it.toTypedArray()) }
+                            }
+                        } catch (_: Exception) {
+                            // Rows were not written; drop those ids from handled so the next run retries.
+                            val failedIds = fetched.map { it.threadId }.toSet()
+                            handled = handled - failedIds
+                        }
+                    }
+                    val done = minOf((batch + 1) * BATCH_THREADS, pending.size)
+                    publish(ImportProgressMath.messagesPercent(done, pending.size, afterConversations))
                 }
-                app.config.messagesImported = true
+                app.config.importThreadFailures = ImportFailureLedger.serializeFailures(failures)
+                app.config.importHandledThreads = ImportFailureLedger.serializeHandled(handled)
+                if (
+                    ImportFailureLedger.finished(
+                        threadIds = threadIds,
+                        hasMessages = { app.messagesDB.hasThreadMessages(it) },
+                        failures = failures,
+                        handled = handled,
+                    )
+                ) {
+                    app.config.messagesImported = true
+                    app.config.importThreadFailures = emptySet()
+                    app.config.importHandledThreads = emptySet()
+                    publish(100)
+                }
             } catch (_: Exception) {
-                // Resumed after the next successful reconcile.
+                // Listing threads failed; resume after the next successful reconcile.
             } finally {
                 clear()
                 running.set(false)

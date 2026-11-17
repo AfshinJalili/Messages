@@ -97,6 +97,7 @@ class MmsReceiver : MmsReceivedReceiver() {
         }
         InboxRepository.refreshUnreadCounts(context, listOf(mms.threadId))
         refreshMessages()
-        refreshConversations()
+        // Room already has this thread; a full provider reconcile on every MMS drains battery.
+        refreshConversations(reconcile = false)
     }
 }
