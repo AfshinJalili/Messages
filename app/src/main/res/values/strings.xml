@@ -273,16 +273,16 @@
     <string name="delete_forever_title">Delete forever?</string>
     <string name="delete_forever_conversation_text">This conversation cannot be restored after permanent deletion.</string>
 
-    <!-- Spam and block rules (design 20, 21, 38, 50, 51) -->
+    <!-- Spam and filter rules (design 20, 21, 38, 50, 51) -->
     <string name="spam_subtitle">Separate from the people you trust</string>
     <string name="spam_empty_text">Blocked and suspicious messages stay here without an inbox alert.</string>
     <string name="not_spam_short">Not spam</string>
     <string name="block_sender">Block sender</string>
     <string name="block_sender_title">Block %s?</string>
-    <string name="block_sender_text">Their new messages will go straight to Spam, without an alert. You can unblock them in Block rules.</string>
+    <string name="block_sender_text">Their new messages will go straight to Spam, without an alert. You can unblock them in Filter rules.</string>
     <string name="clear_spam_title">Delete all spam?</string>
-    <string name="block_rules">Block rules</string>
-    <string name="block_rules_subtitle">A short, understandable list of what gets filtered</string>
+    <string name="filter_rules">Filter rules</string>
+    <string name="filter_rules_subtitle">A short, understandable list of what gets filtered</string>
     <plurals name="blocked_senders">
         <item quantity="one">%d sender</item>
         <item quantity="other">%d senders</item>
@@ -322,17 +322,17 @@
     <string name="phrase_error_detail">Edit the blocked phrase instead, or try different words.</string>
     <string name="number_invalid">Enter a number or sender name</string>
     <string name="number_error_detail">Use the digits or the name the messages come from.</string>
-    <string name="move_block_rules">Move block rules</string>
-    <string name="move_block_rules_subtitle">Keep your filtering choices on another phone</string>
+    <string name="move_filter_rules">Move filter rules</string>
+    <string name="move_filter_rules_subtitle">Keep your filtering choices on another phone</string>
     <string name="what_will_be_exported">What will be exported</string>
     <string name="rules_summary">%1$s · %2$s</string>
     <string name="rules_export_privacy">The file lists blocked numbers and phrases. Store it privately.</string>
     <string name="export_block_list">Export block list</string>
     <string name="have_a_block_list">Have a block list?</string>
     <string name="have_a_block_list_text">Choose a file to merge rules with this device.</string>
-    <string name="block_rules_file_name" translatable="false">messages-block-rules.json</string>
-    <string name="block_rules_exported">Block list exported</string>
-    <string name="block_rules_imported">Added %s</string>
+    <string name="filter_rules_file_name" translatable="false">messages-filter-rules.json</string>
+    <string name="filter_rules_exported">Block list exported</string>
+    <string name="filter_rules_imported">Added %s</string>
 
     <!-- Settings (design 24–31, 48, 49) -->
     <string name="settings_subtitle">Make Messages feel right for you</string>
@@ -349,7 +349,7 @@
     <string name="settings_interactions">Interactions</string>
     <string name="settings_interactions_subtitle">Choose shortcuts that fit your hands</string>
     <string name="settings_interactions_summary">Swipe actions and archive</string>
-    <string name="settings_block_rules_summary">Numbers, phrases, local filter</string>
+    <string name="settings_filter_rules_summary">Numbers, phrases, local filter</string>
     <string name="settings_privacy">Privacy &amp; lock</string>
     <string name="settings_privacy_subtitle">Control what others can see</string>
     <string name="settings_privacy_summary">App lock and stored data</string>

@@ -240,7 +240,7 @@ class SpamPageChecks {
                 else -> MoveRulesScreen(3, 2, settings, remember { SnackbarHostState() }, {}, {}, {})
             }
         }
-        capture.captureEach(listOf("20-spam", "21-block-rules", "38-blocked-numbers", "50-add-phrase", "51-move-rules"))
+        capture.captureEach(listOf("20-spam", "21-filter-rules", "38-blocked-numbers", "50-add-phrase", "51-move-rules"))
         // A selected message: checks beside the bubbles and the selection bar.
         capture.page = 0
         compose.onNodeWithText("50% extra data", substring = true).performTouchInput { longClick() }

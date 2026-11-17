@@ -39,7 +39,7 @@ class MoveBlockRulesActivity : ComposePageActivity() {
             navigation = settingsNavigation(),
             snackbarHostState = snackbarHost,
             onBack = ::finish,
-            onExport = { exportTo.launch(getString(R.string.block_rules_file_name)) },
+            onExport = { exportTo.launch(getString(R.string.filter_rules_file_name)) },
             onImport = { importFrom.launch(arrayOf(JSON, "text/plain")) },
         )
     }
@@ -61,7 +61,7 @@ class MoveBlockRulesActivity : ComposePageActivity() {
                 contentResolver.openOutputStream(uri)?.use { BlockRulesFile.write(rules, it) } != null
             }.getOrDefault(false)
         }
-        report(getString(if (written) R.string.block_rules_exported else org.fossify.commons.R.string.exporting_failed))
+        report(getString(if (written) R.string.filter_rules_exported else org.fossify.commons.R.string.exporting_failed))
     }
 
     private fun import(uri: Uri) = lifecycleScope.launch {
@@ -80,7 +80,7 @@ class MoveBlockRulesActivity : ComposePageActivity() {
                 R.string.rules_summary,
                 resources.getQuantityString(R.plurals.blocked_number_count, rules.numbers.size, rules.numbers.size),
                 resources.getQuantityString(R.plurals.blocked_phrase_count, rules.phrases.size, rules.phrases.size),
-            ).let { getString(R.string.block_rules_imported, it) },
+            ).let { getString(R.string.filter_rules_imported, it) },
         )
     }
 
