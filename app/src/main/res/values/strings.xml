@@ -6,9 +6,15 @@
     <string name="clear_spam">Clear all</string>
     <string name="clear_spam_confirmation">Permanently delete all blocked messages?</string>
     <string name="not_spam">Not spam (restore to inbox)</string>
-    <string name="allow_sender">Always allow this sender</string>
+    <plurals name="allow_sender">
+        <item quantity="one">Always allow this sender</item>
+        <item quantity="other">Always allow these senders</item>
+    </plurals>
     <string name="sender_allowed">Sender allowed and message restored</string>
-    <string name="message_restored">Message restored to inbox</string>
+    <plurals name="message_restored">
+        <item quantity="one">Message restored to inbox</item>
+        <item quantity="other">Messages restored to inbox</item>
+    </plurals>
     <string name="block_reason_ai">Legacy filter</string>
     <string name="block_reason_keyword">Keyword</string>
     <string name="block_reason_number">Blocked number</string>
@@ -133,8 +139,14 @@
     <!-- Mute -->
     <string name="mute_conversation">Mute</string>
     <string name="unmute_conversation">Unmute</string>
-    <string name="conversation_muted">Conversation muted</string>
-    <string name="conversation_unmuted">Conversation unmuted</string>
+    <plurals name="conversation_muted">
+        <item quantity="one">Conversation muted</item>
+        <item quantity="other">%d conversations muted</item>
+    </plurals>
+    <plurals name="conversation_unmuted">
+        <item quantity="one">Conversation unmuted</item>
+        <item quantity="other">%d conversations unmuted</item>
+    </plurals>
     <string name="muted">Muted</string>
     <!-- Message actions -->
     <string name="star_message">Star</string>
@@ -277,9 +289,22 @@
     <string name="spam_subtitle">Separate from the people you trust</string>
     <string name="spam_empty_text">Blocked and suspicious messages stay here without an inbox alert.</string>
     <string name="not_spam_short">Not spam</string>
-    <string name="block_sender">Block sender</string>
-    <string name="block_sender_title">Block %s?</string>
-    <string name="block_sender_text">Their new messages will go straight to Spam, without an alert. You can unblock them in Block rules.</string>
+    <plurals name="block_number">
+        <item quantity="one">Block number</item>
+        <item quantity="other">Block numbers</item>
+    </plurals>
+    <plurals name="block_sender">
+        <item quantity="one">Block sender</item>
+        <item quantity="other">Block senders</item>
+    </plurals>
+    <plurals name="block_sender_title">
+        <item quantity="one">Block %s?</item>
+        <item quantity="other">Block these %d senders?</item>
+    </plurals>
+    <plurals name="block_sender_text">
+        <item quantity="one">Their new messages will go straight to Spam, without an alert. You can unblock them in Block rules.</item>
+        <item quantity="other">Their new messages will go straight to Spam, without an alert. You can unblock them in Block rules.</item>
+    </plurals>
     <string name="clear_spam_title">Delete all spam?</string>
     <string name="block_rules">Block rules</string>
     <string name="block_rules_subtitle">A short, understandable list of what gets filtered</string>

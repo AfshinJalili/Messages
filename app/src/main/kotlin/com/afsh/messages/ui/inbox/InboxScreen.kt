@@ -103,6 +103,7 @@ import com.afsh.messages.ui.components.BottomBarSwitch
 import com.afsh.messages.ui.components.AfshIcon
 import com.afsh.messages.ui.components.BarAction
 import com.afsh.messages.ui.components.SelectionBar
+import com.afsh.messages.ui.components.actionLabel
 import com.afsh.messages.ui.components.selectionTitle
 import com.afsh.messages.ui.components.keptWhileLeaving
 import com.afsh.messages.ui.library.LibraryScreen
@@ -663,16 +664,24 @@ private fun NewMessageButton(expanded: Boolean, onClick: () -> Unit) {
 
 @Composable
 private fun InboxSelectionBar(state: InboxUiState, onAction: (InboxAction) -> Unit) {
+    val count = state.selected.size.coerceAtLeast(1)
     val actions = remember(state.selected, state.rows, state.archiveAvailable) {
         availableActions(state.selectedRows, state.archiveAvailable).splitForBar()
     }
     val (bar, overflow) = keptWhileLeaving(actions, empty = state.selected.isEmpty())
-    SelectionBar(bar.map { it.toBarAction(onAction) }, overflow = overflow.map { it.toBarAction(onAction) })
+    SelectionBar(
+        bar.map { it.toBarAction(count, onAction) },
+        overflow = overflow.map { it.toBarAction(count, onAction) },
+    )
 }
 
 @Composable
-private fun InboxAction.toBarAction(onAction: (InboxAction) -> Unit) =
-    BarAction(stringResource(label), icon, destructive = this == InboxAction.BLOCK || this == InboxAction.DELETE) { onAction(this) }
+private fun InboxAction.toBarAction(count: Int, onAction: (InboxAction) -> Unit) =
+    BarAction(
+        actionLabel(label, count, labelIsQuantity),
+        icon,
+        destructive = this == InboxAction.BLOCK || this == InboxAction.DELETE,
+    ) { onAction(this) }
 
 private enum class InboxBottomBar { SELECTION, NAVIGATION, NONE }
 

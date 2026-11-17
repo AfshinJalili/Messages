@@ -1,5 +1,6 @@
 package com.afsh.messages.ui.thread
 
+import androidx.annotation.AnyRes
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Immutable
 import com.afsh.messages.R
@@ -155,7 +156,7 @@ sealed interface ThreadEvent {
 }
 
 /** Declaration order is the overflow menu order (design view 40). */
-enum class ThreadMenuAction(@StringRes val label: Int, val icon: AfshIcon) {
+enum class ThreadMenuAction(@AnyRes val label: Int, val icon: AfshIcon, val labelIsQuantity: Boolean = false) {
     SEARCH(R.string.search_in_conversation, AfshIcon.Search),
     DETAILS(R.string.conversation_details, AfshIcon.Info),
     MUTE(R.string.mute_conversation, AfshIcon.NotificationsOff),
@@ -167,8 +168,8 @@ enum class ThreadMenuAction(@StringRes val label: Int, val icon: AfshIcon) {
     COPY_NUMBER(org.fossify.commons.R.string.copy_number_to_clipboard, AfshIcon.Copy),
     ARCHIVE(R.string.archive, AfshIcon.Archive),
     UNARCHIVE(R.string.unarchive, AfshIcon.Inbox),
-    ALLOW_SENDER(R.string.allow_sender, AfshIcon.Verified),
-    BLOCK(org.fossify.commons.R.string.block_number, AfshIcon.Block),
+    ALLOW_SENDER(R.plurals.allow_sender, AfshIcon.Verified, labelIsQuantity = true),
+    BLOCK(R.plurals.block_number, AfshIcon.Block, labelIsQuantity = true),
     RESTORE(R.string.restore_all_messages, AfshIcon.Restore),
     DELETE(org.fossify.commons.R.string.delete, AfshIcon.Delete),
 
