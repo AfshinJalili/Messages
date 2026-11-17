@@ -172,7 +172,7 @@ class SearchChecks {
                     state = SearchUiState(
                         open = true,
                         query = "fixture",
-                        importProgress = ImportProgress(ImportProgress.Phase.MESSAGES, 20, 80),
+                        importProgress = ImportProgress(55),
                     ),
                     onQuery = {},
                     onFilter = {},
@@ -182,7 +182,7 @@ class SearchChecks {
             }
         }
         compose.onNodeWithText(text(R.string.import_progress_title)).assertExists()
-        compose.onNodeWithText(compose.activity.getString(R.string.import_progress_messages, 20, 80)).assertExists()
+        compose.onNodeWithText(compose.activity.getString(R.string.import_progress_percent, 55)).assertExists()
     }
 
     @Test
