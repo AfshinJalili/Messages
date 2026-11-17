@@ -1,27 +1,29 @@
 #!/usr/bin/env python3
-"""Multi-select action labels that name a countable noun must use <plurals> and labelIsQuantity.
+"""Multi-select actions whose labels name a sender/number must use <plurals> + labelIsQuantity.
 
-Scans InboxAction and ThreadMenuAction enums. An entry whose label is R.string.<name> where
-<name> looks count-sensitive (sender, number, message, conversation, or Persian-facing block/
-allow sender ids) must instead use R.plurals and labelIsQuantity = true. Verb-only actions may
-keep plain strings.
+Only the count-sensitive spam/block/allow actions are gated: verb-only labels (Mute, Archive,
+Delete, …) may stay as plain strings even when the resource id contains a noun.
 """
 from pathlib import Path
 import re
 
 root = Path(__file__).resolve().parents[1]
-sources = [
-    root / 'app/src/main/kotlin/com/afsh/messages/ui/inbox/InboxState.kt',
-    root / 'app/src/main/kotlin/com/afsh/messages/ui/thread/ThreadState.kt',
-]
 
-# Resource name fragments that imply a countable noun in the label.
-SENSITIVE = re.compile(
-    r'(sender|number|message|conversation|block_number|block_sender|allow_sender|always_spam|never_spam)',
-    re.I,
-)
+# Actions that offer a countable sender/number label when several rows are selected.
+COUNT_SENSITIVE_ACTIONS = {
+    'BLOCK',
+    'ALLOW_SENDER',
+    'ALWAYS_SPAM',
+    'NEVER_SPAM',
+    'BLOCK_ON_PHONE',
+    'ANDROID_BLOCK',
+}
 
-# ENTRY(R.string.foo) or ENTRY(R.plurals.foo, ..., labelIsQuantity = true)
+ENUMS = {
+    root / 'app/src/main/kotlin/com/afsh/messages/ui/inbox/InboxState.kt': 'InboxAction',
+    root / 'app/src/main/kotlin/com/afsh/messages/ui/thread/ThreadState.kt': 'ThreadMenuAction',
+}
+
 ENTRY = re.compile(
     r'(?P<name>[A-Z_]+)\(\s*'
     r'(?:(?:org\.fossify\.commons\.)?R\.(?P<kind>string|plurals)\.(?P<res>\w+))'
@@ -29,30 +31,22 @@ ENTRY = re.compile(
 )
 
 violations = []
-for path in sources:
+for path, enum_name in ENUMS.items():
     text = path.read_text()
-    # Limit to the enum bodies we care about.
-    for enum_name in ('InboxAction', 'ThreadMenuAction'):
-        m = re.search(rf'enum class {enum_name}\b[^{{]*\{{(?P<body>.*?)^\}}', text, re.S | re.M)
-        if not m:
-            violations.append(f'{path.name}: missing enum {enum_name}')
+    m = re.search(rf'enum class {enum_name}\b[^{{]*\{{(?P<body>.*?)^\}}', text, re.S | re.M)
+    if not m:
+        violations.append(f'{path.relative_to(root)}: missing enum {enum_name}')
+        continue
+    for entry in ENTRY.finditer(m.group('body')):
+        name, kind, res, rest = entry.group('name'), entry.group('kind'), entry.group('res'), entry.group('rest')
+        if name not in COUNT_SENSITIVE_ACTIONS:
             continue
-        body = m.group('body')
-        for entry in ENTRY.finditer(body):
-            name, kind, res, rest = entry.group('name'), entry.group('kind'), entry.group('res'), entry.group('rest')
-            if not SENSITIVE.search(res) and not SENSITIVE.search(name):
-                continue
-            quantity = 'labelIsQuantity' in rest and 'true' in rest
-            if kind == 'string':
-                violations.append(
-                    f'{path.relative_to(root)}: {enum_name}.{name} uses R.string.{res}; '
-                    f'count-sensitive labels must use R.plurals and labelIsQuantity = true'
-                )
-            elif kind == 'plurals' and not quantity:
-                violations.append(
-                    f'{path.relative_to(root)}: {enum_name}.{name} uses R.plurals.{res} '
-                    f'without labelIsQuantity = true'
-                )
+        quantity = 'labelIsQuantity' in rest and 'true' in rest
+        if kind != 'plurals' or not quantity:
+            violations.append(
+                f'{path.relative_to(root)}: {enum_name}.{name} must use R.plurals '
+                f'(got R.{kind}.{res}) with labelIsQuantity = true'
+            )
 
 assert not violations, '\n'.join(violations)
 print('Multi-select plurals checks passed')
