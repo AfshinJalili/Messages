@@ -293,6 +293,19 @@
         <item quantity="one">از حالا پیام‌های تازه‌اش بی‌اعلان به هرزنامه می‌روند. پیامک‌های فعلی‌اش سر جایشان می‌مانند.</item>
         <item quantity="other">از حالا پیام‌های تازه‌شان بی‌اعلان به هرزنامه می‌روند. پیامک‌های فعلی‌شان سر جایشان می‌مانند.</item>
     </plurals>
+    <plurals name="block_on_phone">
+        <item quantity="one">مسدود کردن روی این گوشی</item>
+        <item quantity="other">مسدود کردن این فرستنده‌ها روی این گوشی</item>
+    </plurals>
+    <plurals name="block_on_phone_title">
+        <item quantity="one">%s روی این گوشی مسدود شود؟</item>
+        <item quantity="other">این %d فرستنده روی این گوشی مسدود شوند؟</item>
+    </plurals>
+    <plurals name="block_on_phone_text">
+        <item quantity="one">هرزنامه پیام‌ها را در پوشهٔ هرزنامه نگه می‌دارد. مسدود کردن روی این گوشی یعنی گوشی آن‌ها را دور می‌اندازد و هرگز نمی‌رسند.</item>
+        <item quantity="other">هرزنامه پیام‌ها را در پوشهٔ هرزنامه نگه می‌دارد. مسدود کردن روی این گوشی یعنی گوشی آن‌ها را دور می‌اندازد و هرگز نمی‌رسند.</item>
+    </plurals>
+    <string name="block_on_phone_unavailable">این گوشی نمی‌تواند شماره مسدود کند.</string>
     <string name="clear_spam_title">همهٔ هرزنامه‌ها حذف شوند؟</string>
     <string name="filter_rules">قوانین فیلتر</string>
     <plurals name="blocked_senders">

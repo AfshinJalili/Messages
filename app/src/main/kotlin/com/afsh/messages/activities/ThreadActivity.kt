@@ -112,6 +112,7 @@ import com.afsh.messages.helpers.THREAD_NUMBER
 import com.afsh.messages.helpers.THREAD_TEXT
 import com.afsh.messages.helpers.THREAD_TITLE
 import com.afsh.messages.helpers.UndoDeletion
+import com.afsh.messages.helpers.blockNumbersOnPhone
 import com.afsh.messages.helpers.containsNumber
 import com.afsh.messages.helpers.contactAsText
 import com.afsh.messages.helpers.generateRandomId
@@ -491,6 +492,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
             ThreadMenuAction.SEARCH -> holder.openSearch()
             ThreadMenuAction.ALWAYS_SPAM -> alwaysSpamSender()
             ThreadMenuAction.NEVER_SPAM -> neverSpamSender()
+            ThreadMenuAction.BLOCK_ON_PHONE -> blockOnThisPhone()
             ThreadMenuAction.DELETE -> askConfirmDelete()
             ThreadMenuAction.RESTORE -> askConfirmRestoreAll()
             ThreadMenuAction.ARCHIVE -> setArchived(true)
@@ -1184,6 +1186,19 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
                     runOnUiThread { refreshMenuItems() }
                 }
             }
+        }
+    }
+
+    private fun blockOnThisPhone() {
+        val numbers = participants.getAddresses()
+        val names = conversation?.title ?: TextUtils.join(", ", numbers)
+        confirm(
+            title = resources.getQuantityString(R.plurals.block_on_phone_title, 1, names),
+            explanation = resources.getQuantityString(R.plurals.block_on_phone_text, 1),
+            confirmLabel = resources.getQuantityString(R.plurals.block_on_phone, 1),
+            destructive = true,
+        ) {
+            if (blockNumbersOnPhone(numbers)) refreshMenuItems()
         }
     }
 

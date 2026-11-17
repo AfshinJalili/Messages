@@ -170,13 +170,14 @@ enum class ThreadMenuAction(@AnyRes val label: Int, val icon: AfshIcon, val labe
     UNARCHIVE(R.string.unarchive, AfshIcon.Inbox),
     NEVER_SPAM(R.plurals.never_spam, AfshIcon.Verified, labelIsQuantity = true),
     ALWAYS_SPAM(R.plurals.always_spam, AfshIcon.SpamShield, labelIsQuantity = true),
+    BLOCK_ON_PHONE(R.plurals.block_on_phone, AfshIcon.Block, labelIsQuantity = true),
     RESTORE(R.string.restore_all_messages, AfshIcon.Restore),
     DELETE(org.fossify.commons.R.string.delete, AfshIcon.Delete),
 
     ;
 
     /** Shown in the error color: these remove or shut out the conversation. */
-    val destructive: Boolean get() = this == DELETE
+    val destructive: Boolean get() = this == DELETE || this == BLOCK_ON_PHONE
 }
 
 /** Declaration order is the display order; the bar takes the first few (design view 10), the rest overflow. */
