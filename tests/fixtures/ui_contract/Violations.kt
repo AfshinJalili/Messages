@@ -6,6 +6,9 @@ fun nested() = PaddingValues(start = Afsh.spacing.md, end = if (x) 0.dp else 4.d
 fun radius() = RoundedCornerShape(12.dp)
 fun corner() = CutCornerShape(CornerSize(8.dp))
 fun token() = RoundedCornerShape(Afsh.spacing.sm)
-fun color() = colorResource(R.color.afsh_pine_2)
+fun color() = colorResource(R.color.m3_primary_container)
 fun context() = ContextCompat.getColor(context, R.color.surface_light)
 fun role() = MaterialTheme.colorScheme.onPrimaryContainer
+fun materialIcons() = Icon(Icons.Default.Search, null)
+fun imageVector() = ImageVector.Builder("x", 24.dp, 24.dp, 24f, 24f).build()
+fun painterDrawable() = painterResource(R.drawable.ic_msym_search)

@@ -24,41 +24,5 @@
         tools:node="remove" />
 
     <application android:supportsRtl="true">
-        <activity
-            android:name="org.fossify.commons.activities.ContributorsActivity"
-            android:configChanges="orientation"
-            android:exported="false"
-            android:label="@string/contributors"
-            android:parentActivityName="org.fossify.commons.activities.AboutActivity" />
-
-        <activity
-            android:name="org.fossify.commons.activities.FAQActivity"
-            android:configChanges="orientation"
-            android:exported="false"
-            android:label="@string/frequently_asked_questions"
-            android:parentActivityName="org.fossify.commons.activities.AboutActivity" />
-
-        <activity
-            android:name="org.fossify.commons.activities.LicenseActivity"
-            android:configChanges="orientation"
-            android:exported="false"
-            android:label="@string/third_party_licences"
-            android:parentActivityName="org.fossify.commons.activities.AboutActivity" />
-
-        <activity
-            android:name=".activities.ManageBlockedNumbersActivity"
-            android:configChanges="orientation"
-            android:enableOnBackInvokedCallback="true"
-            android:exported="false"
-            android:label="@string/manage_blocked_numbers" />
-
-        <activity
-            android:name=".activities.DonationActivity"
-            android:exported="false"
-            android:label="@string/donate_to_fossify" />
-
-        <activity
-            android:name=".activities.AppLockActivity"
-            android:exported="false" />
     </application>
 </manifest>

@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.Intent
 import android.util.TypedValue
 import android.view.ContextThemeWrapper
-import androidx.core.content.ContextCompat
 import androidx.core.graphics.ColorUtils
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -33,7 +32,7 @@ class DesignChecks {
     @Test
     fun anOlderStoredAccentMovesToThePrimaryRole() = withIsolatedPreferences { context, config ->
         // Any accent an older version stored; it must give way to the role.
-        val older = ContextCompat.getColor(context, org.fossify.commons.R.color.md_indigo_700)
+        val older = 0xFF303F9F.toInt() // former Material indigo, not a GM3 token
         config.primaryColor = older
         config.accentColor = older
         config.isSystemThemeEnabled = false

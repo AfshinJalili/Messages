@@ -131,21 +131,11 @@
             </intent-filter>
         </activity>
 
-        <activity android:name="org.fossify.commons.activities.AboutActivity" tools:node="remove" />
-        <activity android:name="org.fossify.commons.activities.ContributorsActivity" tools:node="remove" />
-        <activity android:name="org.fossify.commons.activities.FAQActivity" tools:node="remove" />
-        <activity android:name="org.fossify.commons.activities.LicenseActivity" tools:node="remove" />
-        <activity android:name="org.fossify.commons.activities.DonationActivity" tools:node="remove" />
-
-        <activity android:name="org.fossify.commons.activities.CustomizationActivity" tools:node="remove" />
-
         <activity
-            android:name="org.fossify.commons.activities.ManageBlockedNumbersActivity"
+            android:name=".activities.AppLockActivity"
             android:configChanges="orientation"
             android:exported="false"
-            android:label="@string/blocked_numbers"
-            android:parentActivityName=".activities.SettingsActivity"
-            tools:replace="android:label" />
+            android:label="@string/app_lock" />
 
         <activity
             android:name=".activities.BlockRulesActivity"

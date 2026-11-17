@@ -3,7 +3,6 @@ package org.fossify.commons.extensions
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.Dialog
-import android.app.TimePickerDialog
 import android.content.ActivityNotFoundException
 import android.content.ComponentName
 import android.content.ContentValues
@@ -43,22 +42,14 @@ import androidx.fragment.app.FragmentActivity
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import org.fossify.commons.R
 import org.fossify.commons.activities.BaseSimpleActivity
-import org.fossify.commons.compose.extensions.DEVELOPER_PLAY_STORE_URL
 import org.fossify.commons.databinding.DialogTitleBinding
 import org.fossify.commons.dialogs.ConfirmationAdvancedDialog
 import org.fossify.commons.dialogs.ConfirmationDialog
-import org.fossify.commons.dialogs.CustomIntervalPickerDialog
-import org.fossify.commons.dialogs.DonateDialog
-import org.fossify.commons.dialogs.RadioGroupDialog
-import org.fossify.commons.dialogs.SecurityDialog
-import org.fossify.commons.dialogs.UpgradeToProDialog
-import org.fossify.commons.dialogs.WhatsNewDialog
 import org.fossify.commons.dialogs.WritePermissionDialog
 import org.fossify.commons.dialogs.WritePermissionDialog.WritePermissionDialogMode
 import org.fossify.commons.helpers.CREATE_DOCUMENT_SDK_30
 import org.fossify.commons.helpers.EXTRA_SHOW_ADVANCED
 import org.fossify.commons.helpers.IS_FROM_GALLERY
-import org.fossify.commons.helpers.MINUTE_SECONDS
 import org.fossify.commons.helpers.MyContentProvider.COL_LAST_UPDATED_TS
 import org.fossify.commons.helpers.MyContentProvider.MY_CONTENT_URI
 import org.fossify.commons.helpers.OPEN_DOCUMENT_TREE_FOR_SDK_30
@@ -78,16 +69,12 @@ import org.fossify.commons.helpers.isUpsideDownCakePlus
 import org.fossify.commons.models.AlarmSound
 import org.fossify.commons.models.Android30RenameFormat
 import org.fossify.commons.models.FileDirItem
-import org.fossify.commons.models.PhoneNumber
-import org.fossify.commons.models.RadioItem
-import org.fossify.commons.models.Release
 import org.fossify.commons.views.MyTextView
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.FileOutputStream
 import java.io.IOException
 import java.io.OutputStream
-import java.util.TreeSet
 
 fun Activity.appLaunched(appId: String) {
     baseConfig.internalStoragePath = getInternalStoragePath()
@@ -98,7 +85,7 @@ fun Activity.appLaunched(appId: String) {
         checkAppIconColor()
     } else if (!baseConfig.wasOrangeIconChecked) {
         baseConfig.wasOrangeIconChecked = true
-        val primaryColor = resources.getColor(R.color.color_primary)
+        val primaryColor = resources.getColor(R.color.m3_primary)
         if (baseConfig.appIconColor != primaryColor) {
             getAppIconColors().forEachIndexed { index, color ->
                 toggleAppIconColor(appId, index, color, false)
@@ -124,14 +111,6 @@ fun Activity.appLaunched(appId: String) {
     }
 
     baseConfig.appRunCount++
-}
-
-fun Activity.showDonateOrUpgradeDialog() {
-    if (getCanAppBeUpgraded()) {
-        UpgradeToProDialog(this)
-    } else if (!isOrWasThankYouInstalled()) {
-        DonateDialog(this)
-    }
 }
 
 fun Activity.isAppInstalledOnSDCard(): Boolean = try {
@@ -387,24 +366,6 @@ fun BaseSimpleActivity.showOTGPermissionDialog(path: String) {
             }
         }
     }
-}
-
-fun Activity.launchPurchaseThankYouIntent() {
-    hideKeyboard()
-    launchViewIntent(getString(R.string.thank_you_url))
-}
-
-fun Activity.launchUpgradeToProIntent() {
-    hideKeyboard()
-    try {
-        launchViewIntent("market://details?id=${baseConfig.appId.removeSuffix(".debug")}.pro")
-    } catch (ignored: Exception) {
-        launchViewIntent(getStoreUrl())
-    }
-}
-
-fun Activity.launchMoreAppsFromUsIntent() {
-    launchViewIntent(DEVELOPER_PLAY_STORE_URL)
 }
 
 fun Activity.launchViewIntent(id: Int) = launchViewIntent(getString(id))
@@ -708,22 +669,6 @@ fun Activity.tryGenericMimeType(intent: Intent, mimeType: String, uri: Uri): Boo
     } catch (e: Exception) {
         false
     }
-}
-
-fun BaseSimpleActivity.checkWhatsNew(releases: List<Release>, currVersion: Int) {
-    if (baseConfig.lastVersion == 0) {
-        baseConfig.lastVersion = currVersion
-        return
-    }
-
-    val newReleases = arrayListOf<Release>()
-    releases.filterTo(newReleases) { it.id > baseConfig.lastVersion }
-
-    if (newReleases.isNotEmpty()) {
-        WhatsNewDialog(this, newReleases)
-    }
-
-    baseConfig.lastVersion = currVersion
 }
 
 fun BaseSimpleActivity.deleteFolders(folders: List<FileDirItem>, deleteMediaOnly: Boolean = true, callback: ((wasSuccess: Boolean) -> Unit)? = null) {
@@ -1413,102 +1358,6 @@ private fun createCasualFileOutputStream(activity: BaseSimpleActivity, targetFil
     }
 }
 
-fun Activity.performSecurityCheck(
-    protectionType: Int,
-    requiredHash: String,
-    successCallback: ((String, Int) -> Unit)? = null,
-    failureCallback: (() -> Unit)? = null
-) {
-    if (protectionType == PROTECTION_FINGERPRINT && isRPlus()) {
-        showBiometricPrompt(successCallback, failureCallback)
-    } else {
-        SecurityDialog(
-            activity = this,
-            requiredHash = requiredHash,
-            showTabIndex = protectionType,
-            callback = { hash, type, success ->
-                if (success) {
-                    successCallback?.invoke(hash, type)
-                } else {
-                    failureCallback?.invoke()
-                }
-            }
-        )
-    }
-}
-
-fun Activity.showBiometricPrompt(
-    successCallback: ((String, Int) -> Unit)? = null,
-    failureCallback: (() -> Unit)? = null
-) {
-    Class2BiometricAuthPrompt.Builder(getText(R.string.authenticate), getText(R.string.cancel))
-        .build()
-        .startAuthentication(
-            AuthPromptHost(this as FragmentActivity),
-            object : AuthPromptCallback() {
-                override fun onAuthenticationSucceeded(activity: FragmentActivity?, result: BiometricPrompt.AuthenticationResult) {
-                    successCallback?.invoke("", PROTECTION_FINGERPRINT)
-                }
-
-                override fun onAuthenticationError(activity: FragmentActivity?, errorCode: Int, errString: CharSequence) {
-                    val isCanceledByUser = errorCode == BiometricPrompt.ERROR_NEGATIVE_BUTTON || errorCode == BiometricPrompt.ERROR_USER_CANCELED
-                    if (!isCanceledByUser) {
-                        toast(errString.toString())
-                    }
-                    failureCallback?.invoke()
-                }
-
-                override fun onAuthenticationFailed(activity: FragmentActivity?) {
-                    toast(R.string.authentication_failed)
-                    failureCallback?.invoke()
-                }
-            }
-        )
-}
-
-fun Activity.handleHiddenFolderPasswordProtection(callback: () -> Unit) {
-    if (baseConfig.isHiddenPasswordProtectionOn) {
-        SecurityDialog(this, baseConfig.hiddenPasswordHash, baseConfig.hiddenProtectionType) { _, _, success ->
-            if (success) {
-                callback()
-            }
-        }
-    } else {
-        callback()
-    }
-}
-
-fun Activity.handleAppPasswordProtection(callback: (success: Boolean) -> Unit) {
-    if (baseConfig.isAppPasswordProtectionOn) {
-        SecurityDialog(this, baseConfig.appPasswordHash, baseConfig.appProtectionType) { _, _, success ->
-            callback(success)
-        }
-    } else {
-        callback(true)
-    }
-}
-
-fun Activity.handleDeletePasswordProtection(callback: () -> Unit) {
-    if (baseConfig.isDeletePasswordProtectionOn) {
-        SecurityDialog(this, baseConfig.deletePasswordHash, baseConfig.deleteProtectionType) { _, _, success ->
-            if (success) {
-                callback()
-            }
-        }
-    } else {
-        callback()
-    }
-}
-
-fun Activity.handleLockedFolderOpening(path: String, callback: (success: Boolean) -> Unit) {
-    if (baseConfig.isFolderProtected(path)) {
-        SecurityDialog(this, baseConfig.getFolderProtectionHash(path), baseConfig.getFolderProtectionType(path)) { _, _, success ->
-            callback(success)
-        }
-    } else {
-        callback(true)
-    }
-}
 
 fun Activity.updateGlobalConfig(contentValues: ContentValues) {
     ensureBackgroundThread {
@@ -1616,91 +1465,15 @@ fun Activity.setupDialogStuff(
 
             applyFontToViewRecursively(view)
 
-            val bgDrawable = when {
-                isBlackAndWhiteTheme() -> resources.getDrawable(R.drawable.black_dialog_background, theme)
-                isDynamicTheme() -> resources.getDrawable(R.drawable.dialog_you_background, theme)
-                else -> resources.getColoredDrawableWithColor(R.drawable.dialog_bg, baseConfig.backgroundColor)
-            }
-
-            window?.setBackgroundDrawable(bgDrawable)
+            window?.setBackgroundDrawable(
+                resources.getColoredDrawableWithColor(R.drawable.dialog_bg, baseConfig.backgroundColor)
+            )
             callback?.invoke(this)
         }
     }
 }
 
-fun Activity.getAlertDialogBuilder() = if (isDynamicTheme()) {
-    MaterialAlertDialogBuilder(this)
-} else {
-    AlertDialog.Builder(this)
-}
-
-fun Activity.showPickSecondsDialogHelper(
-    curMinutes: Int, isSnoozePicker: Boolean = false, showSecondsAtCustomDialog: Boolean = false, showDuringDayOption: Boolean = false,
-    cancelCallback: (() -> Unit)? = null, callback: (seconds: Int) -> Unit
-) {
-    val seconds = if (curMinutes == -1) curMinutes else curMinutes * 60
-    showPickSecondsDialog(seconds, isSnoozePicker, showSecondsAtCustomDialog, showDuringDayOption, cancelCallback, callback)
-}
-
-fun Activity.showPickSecondsDialog(
-    curSeconds: Int, isSnoozePicker: Boolean = false, showSecondsAtCustomDialog: Boolean = false, showDuringDayOption: Boolean = false,
-    cancelCallback: (() -> Unit)? = null, callback: (seconds: Int) -> Unit
-) {
-    hideKeyboard()
-    val seconds = TreeSet<Int>()
-    seconds.apply {
-        if (!isSnoozePicker) {
-            add(-1)
-            add(0)
-        }
-        add(1 * MINUTE_SECONDS)
-        add(5 * MINUTE_SECONDS)
-        add(10 * MINUTE_SECONDS)
-        add(30 * MINUTE_SECONDS)
-        add(60 * MINUTE_SECONDS)
-        add(curSeconds)
-    }
-
-    val items = ArrayList<RadioItem>(seconds.size + 1)
-    seconds.mapIndexedTo(items) { index, value ->
-        RadioItem(index, getFormattedSeconds(value, !isSnoozePicker), value)
-    }
-
-    var selectedIndex = 0
-    seconds.forEachIndexed { index, value ->
-        if (value == curSeconds) {
-            selectedIndex = index
-        }
-    }
-
-    items.add(RadioItem(-2, getString(R.string.custom)))
-
-    if (showDuringDayOption) {
-        items.add(RadioItem(-3, getString(R.string.during_day_at_hh_mm)))
-    }
-
-    RadioGroupDialog(this, items, selectedIndex, showOKButton = isSnoozePicker, cancelCallback = cancelCallback) {
-        when (it) {
-            -2 -> {
-                CustomIntervalPickerDialog(this, showSeconds = showSecondsAtCustomDialog) {
-                    callback(it)
-                }
-            }
-
-            -3 -> {
-                TimePickerDialog(
-                    this, getTimePickerDialogTheme(),
-                    { view, hourOfDay, minute -> callback(hourOfDay * -3600 + minute * -60) },
-                    curSeconds / 3600, curSeconds % 3600, baseConfig.use24HourFormat
-                ).show()
-            }
-
-            else -> {
-                callback(it as Int)
-            }
-        }
-    }
-}
+fun Activity.getAlertDialogBuilder() = AlertDialog.Builder(this)
 
 fun BaseSimpleActivity.getAlarmSounds(type: Int, callback: (ArrayList<AlarmSound>) -> Unit) {
     val alarms = ArrayList<AlarmSound>()
@@ -1763,41 +1536,3 @@ fun Activity.overrideActivityTransition(enterAnim: Int, exitAnim: Int, exiting: 
     }
 }
 
-fun Activity.maybeShowNumberPickerDialog(
-    phoneNumbers: List<PhoneNumber>,
-    respectPrimary: Boolean = false,
-    callback: (number: PhoneNumber) -> Unit
-) {
-    when {
-        phoneNumbers.size == 1 -> callback(phoneNumbers.first())
-        phoneNumbers.size > 1 -> {
-            if (respectPrimary) {
-                val primaryNumber = phoneNumbers.find { it.isPrimary }
-                if (primaryNumber != null) {
-                    callback(primaryNumber)
-                    return
-                }
-            }
-
-            val items = phoneNumbers.mapIndexed { index, phoneNumber ->
-                val type = getPhoneNumberTypeText(phoneNumber.type, phoneNumber.label)
-                RadioItem(
-                    id = index,
-                    title = "${phoneNumber.value} ($type)",
-                    value = phoneNumber
-                )
-            }
-
-            RadioGroupDialog(
-                activity = this,
-                items = ArrayList(items),
-            ) { selectedPhoneNumber ->
-                callback(selectedPhoneNumber as PhoneNumber)
-            }
-        }
-
-        else -> {
-            toast(R.string.no_phone_number_found)
-        }
-    }
-}

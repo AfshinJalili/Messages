@@ -36,7 +36,7 @@ enum class BubbleTone {
 fun BubbleTone.role(): ColorRole {
     val colors = MaterialTheme.colorScheme
     return when (this) {
-        BubbleTone.Received -> ColorRole(colors.surfaceContainer, colors.onSurface)
+        BubbleTone.Received -> Afsh.colors.receivedBubble
         BubbleTone.Sent -> Afsh.colors.sentBubble
         BubbleTone.Failed -> ColorRole(colors.errorContainer, colors.onErrorContainer)
         BubbleTone.Selected -> ColorRole(colors.secondaryContainer, colors.onSecondaryContainer)

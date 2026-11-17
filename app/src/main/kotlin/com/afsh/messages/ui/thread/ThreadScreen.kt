@@ -307,6 +307,8 @@ private fun LiftOverlay(lift: LiftedBubble, up: Boolean, sheetTop: Float, state:
         val clipped = height < full - 1f
         val incoming = lift.message.isReceivedMessage()
         val fade = with(density) { LiftFade.toPx() }
+        val mask = Afsh.colors.mask
+        val clear = Afsh.colors.transparent
         Box(
             Modifier
                 .absoluteOffset { IntOffset((lift.bounds.left - at.x).roundToInt(), top.roundToInt()) }
@@ -318,7 +320,7 @@ private fun LiftOverlay(lift: LiftedBubble, up: Boolean, sheetTop: Float, state:
                             .drawWithContent {
                                 drawContent()
                                 drawRect(
-                                    Brush.verticalGradient(0f to Color.Black, 1f to Color.Transparent, startY = size.height - fade, endY = size.height),
+                                    Brush.verticalGradient(0f to mask, 1f to clear, startY = size.height - fade, endY = size.height),
                                     blendMode = BlendMode.DstIn,
                                 )
                             }
@@ -608,7 +610,7 @@ private fun Bubble(
                 }
             }
             if (message.body.isNotEmpty()) {
-                MessageText(message.body, content, linkColor = if (incoming || selected || failed) colors.primary else Afsh.colors.accent, links = !state.selecting, onCopy = { onEvent(ThreadEvent.CopyText(it)) })
+                MessageText(message.body, content, linkColor = colors.primary, links = !state.selecting, onCopy = { onEvent(ThreadEvent.CopyText(it)) })
             }
             // Never hide a failure, in-flight send, scheduled time, star, or spam explanation in a run.
             if (!groupedBelow || failed || message.isScheduled || message.type == Telephony.Sms.MESSAGE_TYPE_OUTBOX || state.isStarred(message) || state.spamReason(message) != null) {
@@ -721,7 +723,7 @@ private fun Metadata(message: Message, state: ThreadUiState, content: Color, mod
         verticalAlignment = if (failed) Alignment.Top else Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.xs),
     ) {
-        if (starred) Icon(AfshIcon.StarFilled.painter(), null, tint = metaColor, modifier = Modifier.size(14.dp))
+        if (starred) Icon(AfshIcon.Star.painter(filled = true), null, tint = metaColor, modifier = Modifier.size(14.dp))
         when {
             message.isScheduled ->
                 Icon(AfshIcon.Schedule.painter(), null, tint = metaColor, modifier = Modifier.size(14.dp))

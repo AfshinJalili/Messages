@@ -6,8 +6,11 @@ Fails on, anywhere in the app's Kotlin outside ui/AfshTheme.kt:
 - a hand-built corner radius: any RoundedCornerShape or CornerRadius, or a literal dp in CutCornerShape or CornerSize
   (use MaterialTheme.shapes, AfshCorners or CircleShape),
 - primaryContainer or onPrimaryContainer (read the job's role through Afsh.colors),
-- colorResource, and in Compose code (ui/) also R.color and getColor (use Afsh.colors or MaterialTheme.colorScheme);
+- colorResource, and in Compose code (ui/) also R.color and getColor (use Afsh.colors or MaterialTheme.colorScheme),
+- Icons.* from material-icons, ImageVector.Builder / inline path icons, and painterResource(R.drawable…) for icons
+  outside AfshIcon.kt (request AfshIcon instead);
 and any Lucide drawable, reference or tool in the app, its resources, Gradle files or tools/.
+Also scans commons Kotlin for Icons.* and ImageVector.Builder so Fossify leftovers cannot return.
 
 Sizes (icons, touch targets, avatars) are not spacing and may stay literal. Before checking the app, the script checks
 itself against tests/fixtures/ui_contract: every rule must fire on Violations.kt and none on Clean.kt.
@@ -17,7 +20,9 @@ import re
 
 root = Path(__file__).resolve().parents[1]
 kotlin = root / 'app/src/main/kotlin/com/afsh/messages'
+commons_kotlin = root / 'commons/src/main/kotlin'
 theme = kotlin / 'ui/AfshTheme.kt'
+afsh_icon = kotlin / 'ui/components/AfshIcon.kt'
 fixtures = root / 'tests/fixtures/ui_contract'
 
 SPACING_CALL = re.compile(r'\b(padding|absolutePadding|spacedBy|PaddingValues)\(')
@@ -28,6 +33,9 @@ COLOR_RESOURCE = re.compile(r'\bcolorResource\s*\(')
 COLOR_LOOKUP = re.compile(r'\bR\.color\.|\bgetColor\(')
 PRIMARY_CONTAINER = re.compile(r'\b(?:on)?[pP]rimaryContainer\b')
 LUCIDE = re.compile(r'lucide', re.IGNORECASE)
+MATERIAL_ICONS = re.compile(r'\bIcons\.(Default|Filled|Outlined|Rounded|Sharp|TwoTone|AutoMirrored)\b')
+IMAGE_VECTOR_BUILDER = re.compile(r'\bImageVector\.Builder\b|\bPathBuilder\s*\(')
+PAINTER_DRAWABLE = re.compile(r'\bpainterResource\s*\(\s*(?:R|org\.fossify\.commons\.R)\.drawable\.')
 
 RULES = {
     'lucide': 'references Lucide; request an AfshIcon (Material Symbols) instead',
@@ -35,6 +43,9 @@ RULES = {
     'radius': 'builds its own corner radius; use MaterialTheme.shapes, AfshCorners or CircleShape',
     'color': 'looks up a color resource directly; use Afsh.colors or MaterialTheme.colorScheme',
     'primaryContainer': 'reads primaryContainer outside the theme; use its Afsh.colors role',
+    'materialIcons': 'uses material-icons Icons.*; request an AfshIcon (Material Symbols) instead',
+    'imageVector': 'builds an inline ImageVector/path icon; request an AfshIcon instead',
+    'painterDrawable': 'loads a drawable painter outside AfshIcon; request an AfshIcon instead',
 }
 
 
@@ -48,7 +59,7 @@ def call_args(text, pattern):
         yield text.count('\n', 0, match.start()) + 1, text[match.end():end - 1]
 
 
-def kotlin_problems(text, compose=True):
+def kotlin_problems(text, compose=True, allow_painter=False):
     """(line, rule) for every contract break in one Kotlin source."""
     found = []
     for number, args in call_args(text, SPACING_CALL):
@@ -66,6 +77,12 @@ def kotlin_problems(text, compose=True):
             found.append((number, 'color'))
         if PRIMARY_CONTAINER.search(line):
             found.append((number, 'primaryContainer'))
+        if MATERIAL_ICONS.search(line):
+            found.append((number, 'materialIcons'))
+        if IMAGE_VECTOR_BUILDER.search(line):
+            found.append((number, 'imageVector'))
+        if not allow_painter and PAINTER_DRAWABLE.search(line):
+            found.append((number, 'painterDrawable'))
     return found
 
 
@@ -83,8 +100,18 @@ for path in sorted(kotlin.rglob('*.kt')):
     if path == theme:
         continue
     compose = (kotlin / 'ui') in path.parents
-    for number, rule in kotlin_problems(path.read_text(), compose):
+    allow_painter = path == afsh_icon
+    for number, rule in kotlin_problems(path.read_text(), compose, allow_painter=allow_painter):
         problems.append(f'{path.relative_to(root)}:{number} {RULES[rule]}')
+
+# Commons must not bring back material-icons Icons.* or inline ImageVector builders.
+for path in sorted(commons_kotlin.rglob('*.kt')):
+    text = path.read_text()
+    for number, line in enumerate(text.splitlines(), 1):
+        if MATERIAL_ICONS.search(line):
+            problems.append(f'{path.relative_to(root)}:{number} {RULES["materialIcons"]}')
+        if IMAGE_VECTOR_BUILDER.search(line):
+            problems.append(f'{path.relative_to(root)}:{number} {RULES["imageVector"]}')
 
 # Lucide outside Kotlin: drawables, other resources, Gradle files and tools.
 others = [p for p in (root / 'app/src').rglob('*') if p.is_file() and p.suffix != '.kt']

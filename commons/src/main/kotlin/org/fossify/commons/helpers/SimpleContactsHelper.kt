@@ -1,6 +1,7 @@
 package org.fossify.commons.helpers
 
 import android.content.Context
+import android.content.res.Configuration
 import android.database.Cursor
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -19,6 +20,7 @@ import android.text.TextUtils
 import android.util.SparseArray
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.core.graphics.ColorUtils
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.DecodeFormat
 import com.bumptech.glide.load.engine.DiskCacheStrategy
@@ -27,7 +29,6 @@ import com.bumptech.glide.request.RequestOptions
 import org.fossify.commons.R
 import org.fossify.commons.extensions.applyColorFilter
 import org.fossify.commons.extensions.baseConfig
-import org.fossify.commons.extensions.getContrastColor
 import org.fossify.commons.extensions.getIntValue
 import org.fossify.commons.extensions.getNameLetter
 import org.fossify.commons.extensions.getStringValue
@@ -306,14 +307,16 @@ class SimpleContactsHelper(val context: Context) {
         val view = TextView(context)
         view.layout(0, 0, size, size)
 
+        val fills = avatarLetterFills()
+        val fill = fills[Math.floorMod(name.hashCode(), fills.size)]
         val circlePaint = Paint().apply {
-            color = letterBackgroundColors[Math.abs(name.hashCode()) % letterBackgroundColors.size].toInt()
+            color = fill
             isAntiAlias = true
         }
 
         val wantedTextSize = size / 2f
         val textPaint = Paint().apply {
-            color = circlePaint.color.getContrastColor()
+            color = avatarLetterContent()
             isAntiAlias = true
             textAlign = Paint.Align.CENTER
             textSize = wantedTextSize
@@ -331,9 +334,51 @@ class SimpleContactsHelper(val context: Context) {
 
     fun getColoredGroupIcon(title: String): Drawable {
         val icon = context.resources.getDrawable(R.drawable.ic_group_circle_bg)
-        val bgColor = letterBackgroundColors[Math.abs(title.hashCode()) % letterBackgroundColors.size].toInt()
+        val fills = avatarLetterFills()
+        val bgColor = fills[Math.floorMod(title.hashCode(), fills.size)]
         (icon as LayerDrawable).findDrawableByLayerId(R.id.attendee_circular_background).applyColorFilter(bgColor)
         return icon
+    }
+
+    /**
+     * Same trio as in-app [com.afsh.messages.ui.AfshColors.avatars]: secondary / tertiary /
+     * primary container from the app's GM3 color resources (resolved by name so commons has no hex).
+     */
+    private fun avatarLetterFills(): IntArray {
+        val dark = avatarDark()
+        val names = if (dark) {
+            arrayOf(
+                "m3_secondary_container_dark",
+                "m3_tertiary_container_dark",
+                "m3_primary_container_dark",
+            )
+        } else {
+            arrayOf(
+                "m3_secondary_container",
+                "m3_tertiary_container",
+                "m3_primary_container",
+            )
+        }
+        return IntArray(names.size) { i -> appColor(names[i]) }
+    }
+
+    private fun avatarLetterContent(): Int =
+        appColor(if (avatarDark()) "m3_on_surface_dark" else "m3_on_surface")
+
+    private fun avatarDark(): Boolean {
+        val night = context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK ==
+            Configuration.UI_MODE_NIGHT_YES
+        return if (context.baseConfig.isSystemThemeEnabled) {
+            night
+        } else {
+            ColorUtils.calculateLuminance(context.baseConfig.backgroundColor) < 0.5
+        }
+    }
+
+    private fun appColor(name: String): Int {
+        val id = context.resources.getIdentifier(name, "color", context.packageName)
+        check(id != 0) { "Missing app color resource $name" }
+        return context.getColor(id)
     }
 
     fun getContactLookupKey(contactId: String): String {

@@ -161,13 +161,13 @@ abstract class EdgeToEdgeActivity : AppCompatActivity() {
             topAppBar.toolbar?.setTitleTextColor(contrastColor)
             topAppBar.toolbar?.navigationIcon?.applyColorFilter(contrastColor)
             topAppBar.toolbar?.collapseIcon = resources.getColoredDrawableWithColor(
-                drawableId = R.drawable.ic_arrow_left_vector,
+                drawableId = R.drawable.ic_msym_arrow_back,
                 color = contrastColor
             )
         }
 
         topAppBar.toolbar?.overflowIcon =
-            resources.getColoredDrawableWithColor(R.drawable.ic_three_dots_vector, contrastColor)
+            resources.getColoredDrawableWithColor(R.drawable.ic_msym_more_vert, contrastColor)
 
         val menu = topAppBar.toolbar?.menu ?: return
         for (i in 0 until menu.size) {

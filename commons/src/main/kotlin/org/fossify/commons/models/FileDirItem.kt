@@ -3,7 +3,6 @@ package org.fossify.commons.models
 import android.content.Context
 import android.net.Uri
 import android.provider.MediaStore
-import androidx.compose.runtime.Immutable
 import com.bumptech.glide.signature.ObjectKey
 import org.fossify.commons.extensions.*
 import org.fossify.commons.helpers.*
@@ -183,7 +182,6 @@ fun FileDirItemReadOnly.asFileDirItem() = FileDirItem(
     mediaStoreId = mediaStoreId
 )
 
-@Immutable
 class FileDirItemReadOnly(
     path: String,
     name: String = "",

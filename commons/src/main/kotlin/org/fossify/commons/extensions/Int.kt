@@ -8,7 +8,6 @@ import android.os.Handler
 import android.os.Looper
 import androidx.core.graphics.ColorUtils
 import androidx.core.os.postDelayed
-import org.fossify.commons.helpers.DARK_GREY
 import org.fossify.commons.helpers.WCAG_AA_NORMAL
 import java.text.DecimalFormat
 import java.util.Locale
@@ -16,12 +15,13 @@ import java.util.Random
 import kotlin.math.log10
 import kotlin.math.pow
 
-fun Int.getContrastColor(): Int {
-    val luminance = ColorUtils.calculateLuminance(this)
-    return if (luminance > 0.5) DARK_GREY else Color.WHITE
-}
+/** True when [ColorUtils.calculateLuminance] is above 0.5 (light surface → dark content). */
+fun Int.isLightColor(): Boolean = ColorUtils.calculateLuminance(this) > 0.5
 
-fun Int.toHex() = String.format("#%06X", 0xFFFFFF and this).uppercase(Locale.getDefault())
+/** Contrasting ink for this background (black on light, white on dark). */
+fun Int.getContrastColor(): Int {
+    return if (isLightColor()) Color.BLACK else Color.WHITE
+}
 
 fun Int.adjustAlpha(factor: Float): Int {
     val alpha = Math.round(Color.alpha(this) * factor)

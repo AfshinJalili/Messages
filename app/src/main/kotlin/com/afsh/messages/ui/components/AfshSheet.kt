@@ -26,7 +26,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.paneTitle
@@ -98,7 +97,7 @@ fun AfshSheet(
         shape = AfshCorners.Sheet,
         containerColor = colors.surfaceContainer,
         contentColor = colors.onSurface,
-        scrimColor = if (dimBehind) BottomSheetDefaults.ScrimColor else Color.Transparent,
+        scrimColor = if (dimBehind) Afsh.colors.scrim else Afsh.colors.transparent,
         dragHandle = { BottomSheetDefaults.DragHandle(color = colors.outlineVariant) },
     ) {
         Column(
@@ -164,7 +163,7 @@ fun AfshSheetItem(
             }
         },
         colors = ListItemDefaults.colors(
-            containerColor = Color.Transparent,
+            containerColor = Afsh.colors.transparent,
             headlineColor = if (danger) colors.error else colors.onSurface,
             supportingColor = colors.onSurfaceVariant,
         ),

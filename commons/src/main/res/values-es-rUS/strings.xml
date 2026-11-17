@@ -2,6 +2,5 @@
 <resources>
     <string name="ok">OK</string>
     <string name="cancel">Cancelar</string>
-    <string name="edit">Editar</string>
     <string name="close">Cerrar</string>
 </resources>

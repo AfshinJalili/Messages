@@ -741,10 +741,10 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
     private fun getCreateNewContactShortcut(appIconColor: Int): ShortcutInfo {
         val newEvent = getString(R.string.new_conversation)
         val drawable =
-            AppCompatResources.getDrawable(this, org.fossify.commons.R.drawable.shortcut_plus)
+            AppCompatResources.getDrawable(this, R.drawable.shortcut_new_conversation)
 
         (drawable as LayerDrawable).findDrawableByLayerId(
-            org.fossify.commons.R.id.shortcut_plus_background
+            R.id.shortcut_new_conversation_background
         ).applyColorFilter(appIconColor)
 
         val bmp = drawable.convertToBitmap()

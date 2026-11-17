@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Generate the Material Symbols (Outlined, weight 400, 24dp) vector drawables the app's icons are drawn from.
+"""Generate the Material Symbols (Rounded, weight 400, 24dp) vector drawables the app's icons are drawn from.
 
 Material Symbols (Apache 2.0, google/material-design-icons) is fetched here at development time only; the app stays
 offline and ships just the icons listed in SYMBOLS. Each becomes res/drawable/ic_msym_<name>.xml, filled with
-@color/icon_mask so Compose tints it. Icons in MIRRORED flip under RTL. ui/components/AfshIcon.kt names each by
-meaning; tests/check_material_symbols.py keeps the two in step.
+@color/m3_on_primary so Compose tints it. They live in the commons module (the app depends on commons). Icons in MIRRORED flip under RTL. Icons ending in _fill use FILL 1 for selected/active
+states; everything else is FILL 0. ui/components/AfshIcon.kt names each by meaning; tests/check_material_symbols.py
+keeps the two in step.
 
     python3 tools/export_material_symbols.py            # fetch and write
     python3 tools/export_material_symbols.py --check    # verify the committed drawables match upstream
@@ -15,35 +16,47 @@ import urllib.request
 from pathlib import Path
 
 BASE = "https://raw.githubusercontent.com/google/material-design-icons/master/symbols/android"
+STYLE = "materialsymbolsrounded"  # Rounded style, not Outlined
 
-# drawable name -> upstream file stem (default: the same name).
+# Drawable name -> upstream file stem (default: the same name). Names ending in _fill use FILL 1; others use FILL 0.
 SYMBOLS = {
     "archive": None, "arrow_back": None, "arrow_forward": None, "block": None, "notifications": None,
     "notifications_off": None, "calendar_month": None, "sim_card": None, "check": None, "done_all": None,
-    "chevron_right": None, "keyboard_arrow_up": None, "check_circle": None, "help": None, "schedule": None, "cloud_off": None,
+    "chevron_right": None, "chevron_left": None, "keyboard_arrow_up": None, "check_circle": None, "help": None,
+    "schedule": None, "cloud_off": None,
     "contacts": None, "content_copy": None, "keyboard_return": None, "backup": None, "download": None,
     "more_vert": None, "open_in_new": None, "visibility": None, "visibility_off": None, "description": None,
     "forward": None, "pan_tool": None, "tag": None, "image": None, "inbox": None, "info": None, "translate": None,
     "layers": None, "checklist": None, "lock": None, "mail": None, "drafts": None, "chat_bubble": None, "chat": None,
     "forum": None, "attach_file": None, "edit": None, "call": None, "keep": None, "keep_off": None, "add": None,
     "refresh": None, "rotate_left": None, "search": None, "send": None, "settings": None, "share": None,
-    "gpp_bad": None, "star": None, "star_filled": "star_fill1", "text_fields": None, "delete": None,
+    "gpp_bad": None, "star": None, "text_fields": None, "delete": None,
     "warning": None, "title": None, "upload": None, "person": None, "person_add": None, "group": None,
     "volume_up": None, "close": None, "photo_camera": None, "video_library": None, "videocam": None, "mic": None,
     "schedule_send": None, "arrow_downward": None, "arrow_outward": None, "play_circle": None, "audio_file": None,
     "picture_as_pdf": None, "folder_zip": None,
+    # Commons / remaining-surface symbols (About/Donation-only glyphs dropped with #276)
+    "drag_handle": None, "do_not_disturb_on": None, "volunteer_activism": None,
+    # Filled variants (FILL 1) for selected/active states
+    "star_fill": "star", "keep_fill": "keep", "forum_fill": "forum", "layers_fill": "layers", "settings_fill": "settings",
 }
 
 # Direction-bearing glyphs flip under RTL.
-MIRRORED = {"arrow_back", "arrow_forward", "chevron_right", "forward", "arrow_outward"}
+MIRRORED = {
+    "arrow_back", "arrow_forward", "chevron_right", "chevron_left", "forward", "arrow_outward",
+}
 
-OUT = Path(__file__).resolve().parents[1] / "app/src/main/res/drawable"
+ROOT = Path(__file__).resolve().parents[1]
+# Single copy in commons; the app module depends on commons and sees these resources.
+OUT = ROOT / "commons/src/main/res/drawable"
 
 
 def fetch(name, stem):
+    """Fetch the icon from upstream. Names ending in _fill use FILL 1; others use FILL 0."""
     stem = stem or name
-    group = name if stem == name else stem.removesuffix("_fill1")
-    url = f"{BASE}/{group}/materialsymbolsoutlined/{stem}_24px.xml"
+    base_name = stem.removesuffix("_fill")
+    fill_suffix = "_fill1" if name.endswith("_fill") else ""
+    url = f"{BASE}/{base_name}/{STYLE}/{base_name}{fill_suffix}_24px.xml"
     with urllib.request.urlopen(url) as response:
         return response.read().decode()
 
@@ -52,11 +65,13 @@ def render(name, upstream):
     paths = re.findall(r'android:pathData="([^"]+)"', upstream)
     assert paths, f"{name}: no path in upstream"
     body = "\n".join(
-        f'    <path\n        android:fillColor="@color/icon_mask"\n        android:pathData="{d}" />' for d in paths)
-    mirror = '\n    android:autoMirrored="true"' if name in MIRRORED else ""
+        f'    <path\n        android:fillColor="@color/m3_on_primary"\n        android:pathData="{d}" />' for d in paths)
+    base_name = name.removesuffix("_fill")
+    mirror = '\n    android:autoMirrored="true"' if base_name in MIRRORED else ""
+    fill_note = " FILL 1" if name.endswith("_fill") else ""
     return (
         '<?xml version="1.0" encoding="utf-8"?>\n'
-        f'<!-- Material Symbols "{name}" (Apache 2.0), generated by tools/export_material_symbols.py. -->\n'
+        f'<!-- Material Symbols Rounded "{name}"{fill_note} (Apache 2.0), generated by tools/export_material_symbols.py. -->\n'
         '<vector xmlns:android="http://schemas.android.com/apk/res/android"\n'
         '    android:width="24dp"\n    android:height="24dp"\n    android:viewportWidth="960"\n'
         f'    android:viewportHeight="960"{mirror}>\n{body}\n</vector>\n')
@@ -72,12 +87,13 @@ def main():
             if not target.exists() or target.read_text() != text:
                 stale.append(name)
         else:
+            OUT.mkdir(parents=True, exist_ok=True)
             target.write_text(text)
     if check:
         assert not stale, "stale or missing: " + ", ".join(stale)
-        print("Material Symbols drawables match upstream")
+        print(f"Material Symbols Rounded drawables match upstream ({len(SYMBOLS)} icons in commons)")
     else:
-        print(f"Wrote {len(SYMBOLS)} drawables")
+        print(f"Wrote {len(SYMBOLS)} drawables to commons")
 
 
 if __name__ == "__main__":

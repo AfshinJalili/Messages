@@ -17,8 +17,6 @@ const val EXTERNAL_STORAGE_PROVIDER_AUTHORITY = "com.android.externalstorage.doc
 const val EXTRA_SHOW_ADVANCED = "android.content.extra.SHOW_ADVANCED"
 
 const val APP_NAME = "app_name"
-const val APP_LICENSES = "app_licenses"
-const val APP_FAQ = "app_faq"
 const val APP_VERSION_NAME = "app_version_name"
 const val APP_PACKAGE_NAME = "app_package_name"
 const val APP_REPOSITORY_NAME = "app_repo_name"
@@ -51,7 +49,6 @@ const val SHA1 = "SHA-1"
 const val SHA256 = "SHA-256"
 const val SHORT_ANIMATION_DURATION = 150L
 const val DEFAULT_ANIMATION_DURATION = 300L
-val DARK_GREY = 0xFF333333.toInt()
 
 const val LOWER_ALPHA = 0.25f
 const val MEDIUM_ALPHA = 0.5f
@@ -170,7 +167,6 @@ const val WAS_MESSENGER_RECORDER_SHOWN = "was_messenger_recorder_shown"
 const val DEFAULT_TAB = "default_tab"
 const val START_NAME_WITH_SURNAME = "start_name_with_surname"
 const val FAVORITES = "favorites"
-const val SHOW_CALL_CONFIRMATION = "show_call_confirmation"
 const val COLOR_PICKER_RECENT_COLORS = "color_picker_recent_colors"
 const val SHOW_CONTACT_THUMBNAILS = "show_contact_thumbnails"
 const val SHOW_PHONE_NUMBERS = "show_phone_numbers"
@@ -230,42 +226,6 @@ const val HANGOUTS = "Hangouts"
 const val QQ = "QQ"
 const val JABBER = "Jabber"
 
-// licenses
-internal const val LICENSE_KOTLIN = 1L
-const val LICENSE_SUBSAMPLING = 2L
-const val LICENSE_GLIDE = 4L
-const val LICENSE_CROPPER = 8L
-const val LICENSE_FILTERS = 16L
-const val LICENSE_RTL = 32L
-const val LICENSE_JODA = 64L
-const val LICENSE_STETHO = 128L
-const val LICENSE_OTTO = 256L
-const val LICENSE_PHOTOVIEW = 512L
-const val LICENSE_PICASSO = 1024L
-const val LICENSE_PATTERN = 2048L
-const val LICENSE_REPRINT = 4096L
-const val LICENSE_GIF_DRAWABLE = 8192L
-const val LICENSE_AUTOFITTEXTVIEW = 16384L
-const val LICENSE_ROBOLECTRIC = 32768L
-const val LICENSE_ESPRESSO = 65536L
-const val LICENSE_GSON = 131072L
-const val LICENSE_LEAK_CANARY = 262144L
-const val LICENSE_NUMBER_PICKER = 524288L
-const val LICENSE_EXOPLAYER = 1048576L
-const val LICENSE_PANORAMA_VIEW = 2097152L
-const val LICENSE_SANSELAN = 4194304L
-const val LICENSE_GESTURE_VIEWS = 8388608L
-const val LICENSE_INDICATOR_FAST_SCROLL = 16777216L
-const val LICENSE_EVENT_BUS = 33554432L
-const val LICENSE_AUDIO_RECORD_VIEW = 67108864L
-const val LICENSE_SMS_MMS = 134217728L
-const val LICENSE_APNG = 268435456L
-const val LICENSE_PDF_VIEW_PAGER = 536870912L
-const val LICENSE_M3U_PARSER = 1073741824L
-const val LICENSE_ANDROID_LAME = 2147483648L
-const val LICENSE_PDF_VIEWER = 4294967296L
-const val LICENSE_ZIP4J = 8589934592L
-const val LICENSE_EVALEX = 17179869184L
 
 // global intents
 const val OPEN_DOCUMENT_TREE_FOR_ANDROID_DATA_OR_OBB = 1000
@@ -274,7 +234,6 @@ const val OPEN_DOCUMENT_TREE_SD = 1002
 const val OPEN_DOCUMENT_TREE_FOR_SDK_30 = 1003
 const val REQUEST_SET_AS = 1004
 const val REQUEST_EDIT_IMAGE = 1005
-const val SELECT_EXPORT_SETTINGS_FILE_INTENT = 1006
 const val REQUEST_CODE_SET_DEFAULT_DIALER = 1007
 const val CREATE_DOCUMENT_SDK_30 = 1008
 const val REQUEST_CODE_SET_DEFAULT_CALLER_ID = 1010
@@ -494,21 +453,6 @@ val appIconColorStrings = arrayListOf(
     ".Grey_black"
 )
 
-// most app icon colors from md_app_icon_colors with reduced alpha
-// used at showing contact placeholders without image
-val letterBackgroundColors = arrayListOf(
-    0xCCD32F2F,
-    0xCCC2185B,
-    0xCC1976D2,
-    0xCC0288D1,
-    0xCC0097A7,
-    0xCC00796B,
-    0xCC388E3C,
-    0xCC689F38,
-    0xCCF57C00,
-    0xCCE64A19
-)
-
 // view types
 const val VIEW_TYPE_GRID = 1
 const val VIEW_TYPE_LIST = 2
@@ -599,8 +543,6 @@ fun getConflictResolution(resolutions: LinkedHashMap<String, Int>, path: String)
     }
 }
 
-val proPackages = arrayListOf<String>()
-
 fun mydebug(message: String) = Log.e("DEBUG", message)
 
 fun getQuestionMarks(size: Int) = ("?," * size).trimEnd(',')
@@ -608,49 +550,49 @@ fun getQuestionMarks(size: Int) = ("?," * size).trimEnd(',')
 fun getFilePlaceholderDrawables(context: Context): HashMap<String, Drawable> {
     val fileDrawables = HashMap<String, Drawable>()
     hashMapOf<String, Int>().apply {
-        put("aep", R.drawable.ic_file_aep)
-        put("ai", R.drawable.ic_file_ai)
-        put("avi", R.drawable.ic_file_avi)
-        put("css", R.drawable.ic_file_css)
-        put("csv", R.drawable.ic_file_csv)
-        put("dbf", R.drawable.ic_file_dbf)
-        put("doc", R.drawable.ic_file_doc)
-        put("docx", R.drawable.ic_file_doc)
-        put("dwg", R.drawable.ic_file_dwg)
-        put("exe", R.drawable.ic_file_exe)
-        put("fla", R.drawable.ic_file_fla)
-        put("flv", R.drawable.ic_file_flv)
-        put("htm", R.drawable.ic_file_html)
-        put("html", R.drawable.ic_file_html)
-        put("ics", R.drawable.ic_file_ics)
-        put("indd", R.drawable.ic_file_indd)
-        put("iso", R.drawable.ic_file_iso)
-        put("jpg", R.drawable.ic_file_jpg)
-        put("jpeg", R.drawable.ic_file_jpg)
-        put("js", R.drawable.ic_file_js)
-        put("json", R.drawable.ic_file_json)
-        put("m4a", R.drawable.ic_file_m4a)
-        put("mp3", R.drawable.ic_file_mp3)
-        put("mp4", R.drawable.ic_file_mp4)
-        put("ogg", R.drawable.ic_file_ogg)
-        put("pdf", R.drawable.ic_file_pdf)
-        put("plproj", R.drawable.ic_file_plproj)
-        put("ppt", R.drawable.ic_file_ppt)
-        put("pptx", R.drawable.ic_file_ppt)
-        put("prproj", R.drawable.ic_file_prproj)
-        put("psd", R.drawable.ic_file_psd)
-        put("rtf", R.drawable.ic_file_rtf)
-        put("sesx", R.drawable.ic_file_sesx)
-        put("sql", R.drawable.ic_file_sql)
-        put("svg", R.drawable.ic_file_svg)
-        put("txt", R.drawable.ic_file_txt)
-        put("vcf", R.drawable.ic_file_vcf)
-        put("wav", R.drawable.ic_file_wav)
-        put("wmv", R.drawable.ic_file_wmv)
-        put("xls", R.drawable.ic_file_xls)
-        put("xlsx", R.drawable.ic_file_xls)
-        put("xml", R.drawable.ic_file_xml)
-        put("zip", R.drawable.ic_file_zip)
+        put("aep", R.drawable.ic_msym_description)
+        put("ai", R.drawable.ic_msym_description)
+        put("avi", R.drawable.ic_msym_description)
+        put("css", R.drawable.ic_msym_description)
+        put("csv", R.drawable.ic_msym_description)
+        put("dbf", R.drawable.ic_msym_description)
+        put("doc", R.drawable.ic_msym_description)
+        put("docx", R.drawable.ic_msym_description)
+        put("dwg", R.drawable.ic_msym_description)
+        put("exe", R.drawable.ic_msym_description)
+        put("fla", R.drawable.ic_msym_description)
+        put("flv", R.drawable.ic_msym_description)
+        put("htm", R.drawable.ic_msym_description)
+        put("html", R.drawable.ic_msym_description)
+        put("ics", R.drawable.ic_msym_description)
+        put("indd", R.drawable.ic_msym_description)
+        put("iso", R.drawable.ic_msym_description)
+        put("jpg", R.drawable.ic_msym_description)
+        put("jpeg", R.drawable.ic_msym_description)
+        put("js", R.drawable.ic_msym_description)
+        put("json", R.drawable.ic_msym_description)
+        put("m4a", R.drawable.ic_msym_description)
+        put("mp3", R.drawable.ic_msym_description)
+        put("mp4", R.drawable.ic_msym_description)
+        put("ogg", R.drawable.ic_msym_description)
+        put("pdf", R.drawable.ic_msym_description)
+        put("plproj", R.drawable.ic_msym_description)
+        put("ppt", R.drawable.ic_msym_description)
+        put("pptx", R.drawable.ic_msym_description)
+        put("prproj", R.drawable.ic_msym_description)
+        put("psd", R.drawable.ic_msym_description)
+        put("rtf", R.drawable.ic_msym_description)
+        put("sesx", R.drawable.ic_msym_description)
+        put("sql", R.drawable.ic_msym_description)
+        put("svg", R.drawable.ic_msym_description)
+        put("txt", R.drawable.ic_msym_description)
+        put("vcf", R.drawable.ic_msym_description)
+        put("wav", R.drawable.ic_msym_description)
+        put("wmv", R.drawable.ic_msym_description)
+        put("xls", R.drawable.ic_msym_description)
+        put("xlsx", R.drawable.ic_msym_description)
+        put("xml", R.drawable.ic_msym_description)
+        put("zip", R.drawable.ic_msym_description)
     }.forEach { (key, value) ->
         fileDrawables[key] = context.resources.getDrawable(value)
     }

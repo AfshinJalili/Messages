@@ -86,19 +86,19 @@ open class BaseConfig(val context: Context) {
     private fun getDefaultInternalPath() = if (prefs.contains(INTERNAL_STORAGE_PATH)) "" else context.getInternalStoragePath()
 
     var textColor: Int
-        get() = prefs.getInt(TEXT_COLOR, ContextCompat.getColor(context, R.color.default_text_color))
+        get() = prefs.getInt(TEXT_COLOR, ContextCompat.getColor(context, R.color.m3_on_surface))
         set(textColor) = prefs.edit().putInt(TEXT_COLOR, textColor).apply()
 
     var backgroundColor: Int
-        get() = prefs.getInt(BACKGROUND_COLOR, ContextCompat.getColor(context, R.color.default_background_color))
+        get() = prefs.getInt(BACKGROUND_COLOR, ContextCompat.getColor(context, R.color.m3_surface))
         set(backgroundColor) = prefs.edit().putInt(BACKGROUND_COLOR, backgroundColor).apply()
 
     var primaryColor: Int
-        get() = prefs.getInt(PRIMARY_COLOR, ContextCompat.getColor(context, R.color.default_primary_color))
+        get() = prefs.getInt(PRIMARY_COLOR, ContextCompat.getColor(context, R.color.m3_primary))
         set(primaryColor) = prefs.edit().putInt(PRIMARY_COLOR, primaryColor).apply()
 
     var accentColor: Int
-        get() = prefs.getInt(ACCENT_COLOR, ContextCompat.getColor(context, R.color.default_accent_color))
+        get() = prefs.getInt(ACCENT_COLOR, ContextCompat.getColor(context, R.color.m3_primary))
         set(accentColor) = prefs.edit().putInt(ACCENT_COLOR, accentColor).apply()
 
     var lastHandledShortcutColor: Int
@@ -106,14 +106,14 @@ open class BaseConfig(val context: Context) {
         set(lastHandledShortcutColor) = prefs.edit().putInt(LAST_HANDLED_SHORTCUT_COLOR, lastHandledShortcutColor).apply()
 
     var appIconColor: Int
-        get() = prefs.getInt(APP_ICON_COLOR, ContextCompat.getColor(context, R.color.default_app_icon_color))
+        get() = prefs.getInt(APP_ICON_COLOR, ContextCompat.getColor(context, R.color.m3_primary))
         set(appIconColor) {
-            isUsingModifiedAppIcon = appIconColor != ContextCompat.getColor(context, R.color.color_primary)
+            isUsingModifiedAppIcon = appIconColor != ContextCompat.getColor(context, R.color.m3_primary)
             prefs.edit().putInt(APP_ICON_COLOR, appIconColor).apply()
         }
 
     var lastIconColor: Int
-        get() = prefs.getInt(LAST_ICON_COLOR, ContextCompat.getColor(context, R.color.color_primary))
+        get() = prefs.getInt(LAST_ICON_COLOR, ContextCompat.getColor(context, R.color.m3_primary))
         set(lastIconColor) = prefs.edit().putInt(LAST_ICON_COLOR, lastIconColor).apply()
 
     var customTextColor: Int
@@ -137,11 +137,11 @@ open class BaseConfig(val context: Context) {
         set(customAppIconColor) = prefs.edit().putInt(CUSTOM_APP_ICON_COLOR, customAppIconColor).apply()
 
     var widgetBgColor: Int
-        get() = prefs.getInt(WIDGET_BG_COLOR, ContextCompat.getColor(context, R.color.default_widget_bg_color))
+        get() = prefs.getInt(WIDGET_BG_COLOR, ContextCompat.getColor(context, R.color.m3_transparent))
         set(widgetBgColor) = prefs.edit().putInt(WIDGET_BG_COLOR, widgetBgColor).apply()
 
     var widgetTextColor: Int
-        get() = prefs.getInt(WIDGET_TEXT_COLOR, ContextCompat.getColor(context, R.color.default_widget_text_color))
+        get() = prefs.getInt(WIDGET_TEXT_COLOR, ContextCompat.getColor(context, R.color.m3_primary))
         set(widgetTextColor) = prefs.edit().putInt(WIDGET_TEXT_COLOR, widgetTextColor).apply()
 
     // hidden folder visibility protection
@@ -462,19 +462,20 @@ open class BaseConfig(val context: Context) {
         get() = prefs.getStringSet(FAVORITES, HashSet())!!
         set(favorites) = prefs.edit().remove(FAVORITES).putStringSet(FAVORITES, favorites).apply()
 
-    var showCallConfirmation: Boolean
-        get() = prefs.getBoolean(SHOW_CALL_CONFIRMATION, false)
-        set(showCallConfirmation) = prefs.edit().putBoolean(SHOW_CALL_CONFIRMATION, showCallConfirmation).apply()
-
-    // color picker last used colors
+    // Kept for BaseConfig API compatibility; the Fossify color picker UI is removed.
     var colorPickerRecentColors: LinkedList<Int>
         get(): LinkedList<Int> {
+            fun token(name: String, fallback: Int): Int {
+                val id = context.resources.getIdentifier(name, "color", context.packageName)
+                return if (id != 0) ContextCompat.getColor(context, id) else fallback
+            }
+            val primary = ContextCompat.getColor(context, R.color.m3_primary)
             val defaultList = arrayListOf(
-                ContextCompat.getColor(context, R.color.md_red_700),
-                ContextCompat.getColor(context, R.color.md_blue_700),
-                ContextCompat.getColor(context, R.color.md_green_700),
-                ContextCompat.getColor(context, R.color.md_yellow_700),
-                ContextCompat.getColor(context, R.color.md_orange_700)
+                token("m3_error", primary),
+                token("m3_primary", primary),
+                token("m3_tertiary", primary),
+                token("m3_secondary", primary),
+                primary,
             )
             return LinkedList(prefs.getString(COLOR_PICKER_RECENT_COLORS, null)?.lines()?.map { it.toInt() } ?: defaultList)
         }

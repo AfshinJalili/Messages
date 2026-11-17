@@ -27,6 +27,7 @@ import com.afsh.messages.receivers.CopyOtpReceiver
 import com.afsh.messages.receivers.DirectReplyReceiver
 import com.afsh.messages.receivers.DeleteSmsReceiver
 import com.afsh.messages.receivers.MarkAsReadReceiver
+import com.afsh.messages.ui.components.AfshIcon
 
 class NotificationHelper(private val context: Context) {
 
@@ -115,7 +116,7 @@ class NotificationHelper(private val context: Context) {
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
                 )
             replyAction = NotificationCompat.Action.Builder(
-                R.drawable.ic_send_vector,
+                AfshIcon.Send.resource,
                 replyLabel,
                 replyPendingIntent
             )
@@ -166,7 +167,7 @@ class NotificationHelper(private val context: Context) {
                 putExtra(THREAD_ID, threadId)
             }
             builder.addAction(
-                org.fossify.commons.R.drawable.ic_copy_vector,
+                AfshIcon.Copy.resource,
                 context.getString(R.string.copy_otp_code, code),
                 PendingIntent.getBroadcast(
                     context,
@@ -178,14 +179,14 @@ class NotificationHelper(private val context: Context) {
         }
 
         builder.addAction(
-            org.fossify.commons.R.drawable.ic_check_vector,
+            AfshIcon.Check.resource,
             context.getString(R.string.mark_as_read),
             markAsReadPendingIntent
         )
             .setChannelId(notificationChannelId)
         if (isNoReplySms) {
             builder.addAction(
-                org.fossify.commons.R.drawable.ic_delete_vector,
+                AfshIcon.Delete.resource,
                 context.getString(org.fossify.commons.R.string.delete),
                 deleteSmsPendingIntent
             ).setChannelId(notificationChannelId)

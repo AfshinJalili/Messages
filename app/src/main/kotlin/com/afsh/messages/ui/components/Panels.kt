@@ -75,7 +75,7 @@ fun DestinationCard(
                 }
             },
             colors = ListItemDefaults.colors(
-                containerColor = Color.Transparent,
+                containerColor = Afsh.colors.transparent,
                 headlineColor = colors.onSurface,
                 supportingColor = colors.onSurfaceVariant,
                 trailingIconColor = colors.onSurfaceVariant,

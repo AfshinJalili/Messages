@@ -73,7 +73,7 @@ fun PrimaryNavigation(
                     NavigationRailItem(
                         selected = isSelected,
                         onClick = { onSelect(destination) },
-                        icon = { NavIcon(destination, badge(destination)) },
+                        icon = { NavIcon(destination, badge(destination), isSelected) },
                         label = { NavLabel(destination, isSelected) },
                         colors = railItemColors(),
                     )
@@ -87,7 +87,7 @@ fun PrimaryNavigation(
                 NavigationBarItem(
                     selected = isSelected,
                     onClick = { onSelect(destination) },
-                    icon = { NavIcon(destination, badge(destination)) },
+                    icon = { NavIcon(destination, badge(destination), isSelected) },
                     label = { NavLabel(destination, isSelected) },
                     colors = barItemColors(),
                 )
@@ -128,9 +128,9 @@ private fun ColumnScope.CenteredItems(items: @Composable ColumnScope.() -> Unit)
 }
 
 @Composable
-private fun NavIcon(destination: TopDestination, badge: Int) {
+private fun NavIcon(destination: TopDestination, badge: Int, selected: Boolean = false) {
     BadgedBox(badge = { if (badge > 0) CountBadge(badge) }) {
-        Icon(destination.icon.painter(), contentDescription = null, modifier = Modifier.size(NavIconSize))
+        Icon(destination.icon.painter(filled = selected), contentDescription = null, modifier = Modifier.size(NavIconSize))
     }
 }
 

@@ -3,11 +3,11 @@ package org.fossify.commons.helpers
 import android.app.Application
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
-import org.fossify.commons.compose.extensions.config
+import org.fossify.commons.extensions.baseConfig
 
 class AppLockManager(
     private val context: Application,
-    private val config: BaseConfig = context.config
+    private val config: BaseConfig = context.baseConfig
 ) : DefaultLifecycleObserver {
 
     @Volatile

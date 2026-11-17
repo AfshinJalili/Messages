@@ -17,7 +17,6 @@ import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.fossify.commons.dialogs.SecurityDialog
 import org.fossify.commons.extensions.getCurrentFormattedDateTime
 import org.fossify.commons.extensions.isAValidFilename
 import org.fossify.commons.extensions.launchViewIntent
@@ -27,6 +26,7 @@ import org.fossify.commons.helpers.isQPlus
 import org.fossify.commons.helpers.isTiramisuPlus
 import com.afsh.messages.BuildConfig
 import com.afsh.messages.R
+import com.afsh.messages.R as AppR
 import com.afsh.messages.extensions.config
 import com.afsh.messages.extensions.emptyMessagesRecycleBin
 import com.afsh.messages.extensions.messagesDB
@@ -58,6 +58,8 @@ class SettingsActivity : ComposePageActivity() {
     private val pages = mutableStateListOf(SettingsPage.OVERVIEW)
     private var state by mutableStateOf(SettingsUiState())
     private var backup: BackupFile.Messages? = null
+    private var showSecurityDialog by mutableStateOf(false)
+    private var securityDialogTab by mutableStateOf(SHOW_ALL_TABS)
 
     private val chooseBackup = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri?.let(::openBackup)
@@ -77,6 +79,34 @@ class SettingsActivity : ComposePageActivity() {
                 snackbarHostState = snackbarHost,
                 onBack = ::back,
                 onEvent = ::onEvent,
+            )
+        }
+
+        if (showSecurityDialog) {
+            com.afsh.messages.ui.applock.SecuritySetupDialog(
+                requiredHash = config.appPasswordHash,
+                showTabIndex = securityDialogTab,
+                onDismiss = { showSecurityDialog = false },
+                onResult = { hash, type, success ->
+                    if (!success) {
+                        showSecurityDialog = false
+                        return@SecuritySetupDialog
+                    }
+                    val wasOn = config.isAppPasswordProtectionOn
+                    config.isAppPasswordProtectionOn = !wasOn
+                    config.appPasswordHash = if (wasOn) "" else hash
+                    config.appProtectionType = type
+                    state = readSettings()
+                    showSecurityDialog = false
+                    if (!wasOn) {
+                        val message = if (type == PROTECTION_FINGERPRINT) {
+                            org.fossify.commons.R.string.fingerprint_setup_successfully
+                        } else {
+                            org.fossify.commons.R.string.protection_setup_successfully
+                        }
+                        inform(getString(AppR.string.app_lock), getString(message))
+                    }
+                },
             )
         }
     }
@@ -232,12 +262,8 @@ class SettingsActivity : ComposePageActivity() {
             config.isSystemThemeEnabled = theme == ThemeChoice.SYSTEM
             if (theme != ThemeChoice.SYSTEM) {
                 val dark = theme == ThemeChoice.DARK
-                config.backgroundColor = getColor(
-                    if (dark) org.fossify.commons.R.color.theme_dark_background_color else org.fossify.commons.R.color.theme_light_background_color,
-                )
-                config.textColor = getColor(
-                    if (dark) org.fossify.commons.R.color.theme_dark_text_color else org.fossify.commons.R.color.theme_light_text_color,
-                )
+                config.backgroundColor = getColor(if (dark) org.fossify.commons.R.color.m3_surface_dark else org.fossify.commons.R.color.m3_surface)
+                config.textColor = getColor(if (dark) org.fossify.commons.R.color.m3_on_surface_dark else org.fossify.commons.R.color.m3_on_surface)
             }
             config.syncAccentWithTheme()
         }
@@ -248,25 +274,10 @@ class SettingsActivity : ComposePageActivity() {
         startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, packageName))
     }
 
-    /** Commons' security dialog sets or removes the lock; its result decides the switch. */
+    /** Compose security dialog sets or removes the lock; its result decides the switch. */
     private fun toggleAppLock() {
-        val tab = if (config.isAppPasswordProtectionOn) config.appProtectionType else SHOW_ALL_TABS
-        SecurityDialog(this, config.appPasswordHash, tab) { hash, type, success ->
-            if (!success) return@SecurityDialog
-            val wasOn = config.isAppPasswordProtectionOn
-            config.isAppPasswordProtectionOn = !wasOn
-            config.appPasswordHash = if (wasOn) "" else hash
-            config.appProtectionType = type
-            state = readSettings()
-            if (!wasOn) {
-                val message = if (type == PROTECTION_FINGERPRINT) {
-                    org.fossify.commons.R.string.fingerprint_setup_successfully
-                } else {
-                    org.fossify.commons.R.string.protection_setup_successfully
-                }
-                inform(getString(R.string.app_lock), getString(message))
-            }
-        }
+        securityDialogTab = if (config.isAppPasswordProtectionOn) config.appProtectionType else SHOW_ALL_TABS
+        showSecurityDialog = true
     }
 
     private fun startExport() {

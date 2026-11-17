@@ -23,11 +23,18 @@ for check in tests/check_*.py; do
   python3 "$check" > "$out/$name.txt" 2>&1 || { failed+=("$name"); tail -1 "$out/$name.txt"; }
 done
 
-echo "== build"
-./gradlew -q :app:assembleDebug :app:assembleDebugAndroidTest
+# CI builds assembleDebug, assembleDebugAndroidTest and testDebugUnitTest before this
+# script so the emulator step does not pay for Gradle twice. Local runs still build here.
+if [ "${VERIFY_SKIP_BUILD:-}" = 1 ]; then
+  echo "== build (skipped; VERIFY_SKIP_BUILD=1)"
+  echo "== unit tests (skipped; VERIFY_SKIP_BUILD=1)"
+else
+  echo "== build"
+  ./gradlew -q :app:assembleDebug :app:assembleDebugAndroidTest
 
-echo "== unit tests"
-./gradlew -q :app:testDebugUnitTest || failed+=(unit-tests)
+  echo "== unit tests"
+  ./gradlew -q :app:testDebugUnitTest || failed+=(unit-tests)
+fi
 
 emulators() { adb devices | awk '/^emulator-[0-9]+\tdevice/{print $1}'; }
 matching() { for e in $(emulators); do [ "$(adb -s "$e" emu avd name 2>/dev/null | head -n1 | tr -d '\r')" = "$AVD" ] && echo "$e"; done; true; }
