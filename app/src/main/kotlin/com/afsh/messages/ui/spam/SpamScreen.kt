@@ -53,6 +53,8 @@ import com.afsh.messages.ui.components.longPressToSelect
 import com.afsh.messages.models.SpamReviewMessage
 import com.afsh.messages.models.SpamWhy
 import com.afsh.messages.ui.Afsh
+import com.afsh.messages.ui.components.AfshSheet
+import com.afsh.messages.ui.components.AfshSheetItem
 import com.afsh.messages.ui.components.ConfirmationDialog
 import com.afsh.messages.ui.components.DatePill
 import com.afsh.messages.ui.components.EmptyState
@@ -73,7 +75,7 @@ sealed interface SpamEvent {
     data object Back : SpamEvent
     data object OpenRules : SpamEvent
     data class Open(val message: SpamReviewMessage) : SpamEvent
-    data class NotSpam(val messages: List<SpamReviewMessage>) : SpamEvent
+    data class NotSpam(val messages: List<SpamReviewMessage>, val neverSpamSender: Boolean) : SpamEvent
     data class BlockSender(val messages: List<SpamReviewMessage>) : SpamEvent
     data class Delete(val messages: List<SpamReviewMessage>) : SpamEvent
     data object DeleteAll : SpamEvent
@@ -165,6 +167,7 @@ fun SpamScreen(
     val selecting = chosen.isNotEmpty()
     val clear = { selected = emptySet() }
     var confirmBlock by remember { mutableStateOf<List<SpamReviewMessage>?>(null) }
+    var notSpamSheet by remember { mutableStateOf<List<SpamReviewMessage>?>(null) }
     var confirmDelete by remember { mutableStateOf<List<SpamReviewMessage>?>(null) }
     var confirmDeleteAll by remember { mutableStateOf(false) }
     PageScaffold(
@@ -180,13 +183,11 @@ fun SpamScreen(
                 onSelectAll = { selected = state.messages.mapTo(HashSet()) { it.id } },
                 actions = listOf(
                     BarAction(stringResource(R.string.not_spam_short), AfshIcon.Inbox) {
-                        clear()
-                        onEvent(SpamEvent.NotSpam(chosen))
+                        notSpamSheet = chosen
                     },
                     BarAction(
-                        pluralStringResource(R.plurals.block_sender, chosen.size.coerceAtLeast(1)),
-                        AfshIcon.Block,
-                        destructive = true,
+                        pluralStringResource(R.plurals.always_spam, chosen.map { it.sender }.distinct().size.coerceAtLeast(1)),
+                        AfshIcon.SpamShield,
                     ) { confirmBlock = chosen },
                     BarAction(stringResource(org.fossify.commons.R.string.delete), AfshIcon.Delete, destructive = true) { confirmDelete = chosen },
                 ),
@@ -245,17 +246,45 @@ fun SpamScreen(
             }
         }
     }
+    notSpamSheet?.let { messages ->
+        AfshSheet(title = stringResource(R.string.not_spam_sheet_title), onDismiss = { notSpamSheet = null }) {
+            AfshSheetItem(
+                label = stringResource(R.string.not_spam_only),
+                icon = AfshIcon.Inbox,
+                supporting = stringResource(R.string.not_spam_only_text),
+                onClick = {
+                    dismissThen {
+                        notSpamSheet = null
+                        clear()
+                        onEvent(SpamEvent.NotSpam(messages, neverSpamSender = false))
+                    }
+                },
+            )
+            AfshSheetItem(
+                label = pluralStringResource(R.plurals.never_spam, 1),
+                icon = AfshIcon.Verified,
+                supporting = pluralStringResource(R.plurals.never_spam_text, 1),
+                onClick = {
+                    dismissThen {
+                        notSpamSheet = null
+                        clear()
+                        onEvent(SpamEvent.NotSpam(messages, neverSpamSender = true))
+                    }
+                },
+            )
+        }
+    }
     confirmBlock?.let { messages ->
         val senderCount = remember(messages) { messages.map { it.sender }.distinct().size.coerceAtLeast(1) }
         val senders = remember(messages) { messages.map { it.sender }.distinct().joinToString(", ") }
         ConfirmationDialog(
             title = if (senderCount == 1) {
-                pluralStringResource(R.plurals.block_sender_title, 1, senders)
+                pluralStringResource(R.plurals.always_spam_title, 1, senders)
             } else {
-                pluralStringResource(R.plurals.block_sender_title, senderCount, senderCount)
+                pluralStringResource(R.plurals.always_spam_title, senderCount, senderCount)
             },
-            explanation = pluralStringResource(R.plurals.block_sender_text, senderCount),
-            confirmLabel = pluralStringResource(R.plurals.block_sender, senderCount),
+            explanation = pluralStringResource(R.plurals.always_spam_text, senderCount),
+            confirmLabel = pluralStringResource(R.plurals.always_spam, senderCount),
             dismissLabel = stringResource(org.fossify.commons.R.string.cancel),
             onConfirm = {
                 confirmBlock = null
@@ -263,7 +292,6 @@ fun SpamScreen(
                 onEvent(SpamEvent.BlockSender(messages))
             },
             onDismiss = { confirmBlock = null },
-            destructive = true,
         )
     }
     confirmDelete?.let { messages ->
