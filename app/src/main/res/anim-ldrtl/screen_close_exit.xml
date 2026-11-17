@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- RTL: top screen slides out toward the end edge (physical left). -->
+<!-- RTL: top screen slides out toward the end edge (physical left). fillAfter: see LTR close_exit. -->
 <translate xmlns:android="http://schemas.android.com/apk/res/android"
     android:duration="@integer/motion_close_ms"
     android:fromXDelta="0"
     android:interpolator="@interpolator/emphasized_decelerate"
     android:toXDelta="-100%p"
+    android:fillEnabled="true"
+    android:fillAfter="true"
     android:zAdjustment="top" />

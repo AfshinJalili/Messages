@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Back: top screen slides out toward the end edge. -->
+<!-- Back: top screen slides out toward the end edge. fillAfter keeps it off-screen until removed — without it it snaps back on top for a frame. -->
 <translate xmlns:android="http://schemas.android.com/apk/res/android"
     android:duration="@integer/motion_close_ms"
     android:fromXDelta="0"
     android:interpolator="@interpolator/emphasized_decelerate"
     android:toXDelta="100%p"
+    android:fillEnabled="true"
+    android:fillAfter="true"
     android:zAdjustment="top" />

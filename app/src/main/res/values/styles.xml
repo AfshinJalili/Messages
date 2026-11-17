@@ -14,6 +14,9 @@
     <!-- XML widgets and Commons screens (app lock). Each item mirrors a role in afshColorScheme (ui/AfshTheme.kt). -->
     <style name="AppTheme.Afsh.Dark" parent="AppTheme.Base">
         <item name="android:windowAnimationStyle">@style/AfshWindowAnimation</item>
+        <!-- Opaque from the first frame so the previous Activity cannot show through before Compose draws. -->
+        <item name="android:windowBackground">@color/m3_surface_dark</item>
+        <item name="android:windowIsTranslucent">false</item>
         <item name="colorPrimary">@color/m3_primary_dark</item>
         <item name="colorOnPrimary">@color/m3_on_primary_dark</item>
         <item name="colorPrimaryDark">@color/m3_primary_dark</item>
@@ -33,6 +36,9 @@
 
     <style name="AppTheme.Afsh.Light" parent="Theme.Material3.Light.NoActionBar">
         <item name="android:windowAnimationStyle">@style/AfshWindowAnimation</item>
+        <!-- Opaque from the first frame so the previous Activity cannot show through before Compose draws. -->
+        <item name="android:windowBackground">@color/m3_surface</item>
+        <item name="android:windowIsTranslucent">false</item>
         <item name="colorPrimary">@color/m3_primary</item>
         <item name="colorOnPrimary">@color/m3_on_primary</item>
         <item name="colorPrimaryDark">@color/m3_primary</item>

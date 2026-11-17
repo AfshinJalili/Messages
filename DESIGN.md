@@ -96,7 +96,8 @@ Android resources are the source of truth. This document describes how to use th
 | Launcher shape | `app/src/main/res/drawable/ic_launcher_foreground.xml` |
 | Screen and tab motion (durations, parallax, tab shift) | `app/src/main/res/values/motion.xml` |
 | Screen and tab motion easing | `app/src/main/res/interpolator/emphasized_decelerate.xml` and `EmphasizedDecelerate` in `ui/components/Motion.kt` |
-| Activity screen transitions | `AfshWindowAnimation` in `app/src/main/res/values/styles.xml` → `res/anim/screen_*.xml` (and `res/anim-ldrtl/` for RTL) |
+| Activity screen transitions | `AfshWindowAnimation` in `app/src/main/res/values/styles.xml` → `res/anim/screen_*.xml` (and `res/anim-ldrtl/` for RTL); exit/enter anims use `fillAfter`/`fillBefore` so the old window never snaps back for a frame |
+| Opaque window chrome | `android:windowBackground` = surface role on `AppTheme.Afsh.Light` / `Dark` (incoming window solid before Compose draws) |
 | Task-root (inbox) theme | `AppTheme.Afsh.Root.Light` / `Root.Dark` (`windowAnimationStyle` null) via `afshXmlTheme(root = true)` |
 | Compose screen and tab transitions | `ScreenStack` and `TabSwitch` in `ui/components/Motion.kt` |
 

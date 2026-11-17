@@ -101,6 +101,9 @@ else:
         'name="AppTheme.Afsh.Root.Light"',
         'android:windowAnimationStyle">@style/AfshWindowAnimation',
         'android:windowAnimationStyle">@null',
+        'android:windowBackground">@color/m3_surface',
+        'android:windowBackground">@color/m3_surface_dark',
+        'android:windowIsTranslucent">false',
     ):
         if needed not in styles:
             violations.append(f'{rel(styles_xml)}: missing {needed}')
@@ -115,6 +118,12 @@ for anim_dir in anim_dirs:
             violations.append(f'{rel(path)}: screen transitions must not use alpha')
         if 'scale' in text and 'translate' not in text:
             violations.append(f'{rel(path)}: screen transitions must slide, not zoom')
+        if 'android:fillEnabled="true"' not in text or 'android:fillAfter="true"' not in text:
+            violations.append(
+                f'{rel(path)}: must set fillEnabled/fillAfter so the exit does not snap back for a frame'
+            )
+        if path.name.endswith('_enter.xml') and 'android:fillBefore="true"' not in text:
+            violations.append(f'{rel(path)}: enter anims must set fillBefore for the first frame')
 
 for path in kotlin.rglob('*.kt'):
     text = path.read_text()
@@ -135,6 +144,8 @@ for path in kotlin.rglob('*.kt'):
             violations.append(f'{rel(path)}: must define ScreenStack and TabSwitch')
         if 'EmphasizedDecelerate' not in text:
             violations.append(f'{rel(path)}: must define EmphasizedDecelerate')
+        if 'clipToBounds' not in text:
+            violations.append(f'{rel(path)}: ScreenStack/TabSwitch must clipToBounds to drop off-host exit frames')
         continue
     if path == INBOX:
         for number, line in enumerate(text.splitlines(), 1):

@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Opening: screen underneath shifts slightly toward the start (parallax). -->
+<!-- Opening: screen underneath shifts slightly toward the start (parallax). fillAfter keeps the final offset until the window is removed — without it the exit snaps back to x=0 for a frame and flashes under the new screen. -->
 <translate xmlns:android="http://schemas.android.com/apk/res/android"
     android:duration="@integer/motion_open_ms"
     android:fromXDelta="0"
     android:interpolator="@interpolator/emphasized_decelerate"
     android:toXDelta="-25%p"
+    android:fillEnabled="true"
+    android:fillAfter="true"
     android:zAdjustment="bottom" />

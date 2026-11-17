@@ -17,6 +17,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.res.ResourcesCompat
 import com.afsh.messages.R
@@ -151,8 +152,9 @@ fun <T : Any> ScreenStack(
     }
 
     val transition = rememberTransition(transitionState, label = "screen stack")
+    // clipToBounds: a finished exit translated off-host must not paint for an extra frame.
     transition.AnimatedContent(
-        modifier = modifier,
+        modifier = modifier.clipToBounds(),
         transitionSpec = {
             if (targetState.depth >= initialState.depth) screenOpen(tokens) else screenClose(tokens)
         },
@@ -174,7 +176,7 @@ fun <T> TabSwitch(
     val tokens = rememberNavigationMotionTokens()
     AnimatedContent(
         targetState = TabEntry(tabIndex, tab),
-        modifier = modifier,
+        modifier = modifier.clipToBounds(),
         transitionSpec = {
             tabSwitch(tokens, forward = targetState.index >= initialState.index)
         },

@@ -5,4 +5,7 @@
     android:fromXDelta="100%p"
     android:interpolator="@interpolator/emphasized_decelerate"
     android:toXDelta="0"
+    android:fillEnabled="true"
+    android:fillBefore="true"
+    android:fillAfter="true"
     android:zAdjustment="top" />
