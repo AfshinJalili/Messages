@@ -675,21 +675,36 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
             }
 
             InboxAction.DETAILS -> launchConversationDetails(first.threadId)
-            InboxAction.BLOCK -> {
+            InboxAction.ALWAYS_SPAM -> {
                 val count = selected.size.coerceAtLeast(1)
                 val title = if (count == 1) {
-                    resources.getQuantityString(R.plurals.block_sender_title, 1, selected.first().title)
+                    resources.getQuantityString(R.plurals.always_spam_title, 1, selected.first().title)
                 } else {
-                    resources.getQuantityString(R.plurals.block_sender_title, count, count)
+                    resources.getQuantityString(R.plurals.always_spam_title, count, count)
                 }
                 confirm(
                     title = title,
-                    explanation = resources.getQuantityString(R.plurals.block_sender_text, count),
-                    confirmLabel = resources.getQuantityString(R.plurals.block_sender, count),
-                    destructive = true,
+                    explanation = resources.getQuantityString(R.plurals.always_spam_text, count),
+                    confirmLabel = resources.getQuantityString(R.plurals.always_spam, count),
                 ) {
-                    // App-level block: new SMS from these numbers are stored and go to Spam. Existing messages stay where they are.
                     selected.forEach { config.addSpamNumber(it.phoneNumber) }
+                    clearSelection()
+                }
+            }
+
+            InboxAction.NEVER_SPAM -> {
+                val count = selected.size.coerceAtLeast(1)
+                val title = if (count == 1) {
+                    resources.getQuantityString(R.plurals.never_spam_title, 1, selected.first().title)
+                } else {
+                    resources.getQuantityString(R.plurals.never_spam_title, count, count)
+                }
+                confirm(
+                    title = title,
+                    explanation = resources.getQuantityString(R.plurals.never_spam_text, count),
+                    confirmLabel = resources.getQuantityString(R.plurals.never_spam, count),
+                ) {
+                    selected.forEach { config.addAllowedNumber(it.phoneNumber) }
                     clearSelection()
                 }
             }

@@ -84,9 +84,17 @@
     <string name="clear_spam">پاک کردن همه</string>
     <string name="clear_spam_confirmation">همه‌ی پیام‌های مسدودشده برای همیشه حذف شوند؟</string>
     <string name="not_spam">هرزنامه نیست (بازگشت به صندوق)</string>
-    <plurals name="allow_sender">
-        <item quantity="one">همیشه این فرستنده را مجاز کن</item>
-        <item quantity="other">همیشه این فرستنده‌ها را مجاز کن</item>
+    <plurals name="never_spam">
+        <item quantity="one">هرگز این فرستنده را هرزنامه نکن</item>
+        <item quantity="other">هرگز این فرستنده‌ها را هرزنامه نکن</item>
+    </plurals>
+    <plurals name="never_spam_title">
+        <item quantity="one">هرگز %s را هرزنامه نکنیم؟</item>
+        <item quantity="other">هرگز این %d فرستنده را هرزنامه نکنیم؟</item>
+    </plurals>
+    <plurals name="never_spam_text">
+        <item quantity="one">پیام‌هایشان در صندوق می‌مانند، حتی اگر با یک عبارت یا فیلتر تبلیغاتی جور درآیند. در قوانین فیلتر می‌توانید تغییرش دهید.</item>
+        <item quantity="other">پیام‌هایشان در صندوق می‌مانند، حتی اگر با یک عبارت یا فیلتر تبلیغاتی جور درآیند. در قوانین فیلتر می‌توانید تغییرش دهید.</item>
     </plurals>
     <string name="sender_allowed">فرستنده مجاز شد و پیام بازگردانده شد</string>
     <plurals name="message_restored">
@@ -261,21 +269,29 @@
     <!-- Spam and filter rules (design 20, 21, 38, 50, 51) -->
     <string name="spam_empty_text">پیام‌های مسدود و مشکوک بدون اعلان در صندوق، اینجا می‌مانند.</string>
     <string name="not_spam_short">هرزنامه نیست</string>
-    <plurals name="block_number">
-        <item quantity="one">مسدود کردن شماره</item>
-        <item quantity="other">مسدود کردن شماره‌ها</item>
+    <plurals name="always_spam">
+        <item quantity="one">همیشه این فرستنده را هرزنامه کن</item>
+        <item quantity="other">همیشه این فرستنده‌ها را هرزنامه کن</item>
+    </plurals>
+    <plurals name="always_spam_title">
+        <item quantity="one">همیشه %s هرزنامه باشد؟</item>
+        <item quantity="other">همیشه این %d فرستنده هرزنامه باشند؟</item>
+    </plurals>
+    <plurals name="always_spam_text">
+        <item quantity="one">از حالا پیام‌های تازه‌اش بی‌اعلان به هرزنامه می‌روند. پیامک‌های فعلی‌اش سر جایشان می‌مانند. پیام‌های بعدی را در کتابخانه ← هرزنامه ببینید.</item>
+        <item quantity="other">از حالا پیام‌های تازه‌شان بی‌اعلان به هرزنامه می‌روند. پیامک‌های فعلی‌شان سر جایشان می‌مانند. پیام‌های بعدی را در کتابخانه ← هرزنامه ببینید.</item>
     </plurals>
     <plurals name="block_sender">
-        <item quantity="one">مسدود کردن فرستنده</item>
-        <item quantity="other">مسدود کردن فرستنده‌ها</item>
+        <item quantity="one">همیشه این فرستنده را هرزنامه کن</item>
+        <item quantity="other">همیشه این فرستنده‌ها را هرزنامه کن</item>
     </plurals>
     <plurals name="block_sender_title">
-        <item quantity="one">%s مسدود شود؟</item>
-        <item quantity="other">این %d فرستنده مسدود شوند؟</item>
+        <item quantity="one">همیشه %s هرزنامه باشد؟</item>
+        <item quantity="other">همیشه این %d فرستنده هرزنامه باشند؟</item>
     </plurals>
     <plurals name="block_sender_text">
-        <item quantity="one">پیام‌های تازه‌اش بی‌اعلان مستقیم به هرزنامه می‌روند. در قوانین فیلتر می‌توانید رفع مسدودی کنید.</item>
-        <item quantity="other">پیام‌های تازه‌شان بی‌اعلان مستقیم به هرزنامه می‌روند. در قوانین فیلتر می‌توانید رفع مسدودی کنید.</item>
+        <item quantity="one">از حالا پیام‌های تازه‌اش بی‌اعلان به هرزنامه می‌روند. پیامک‌های فعلی‌اش سر جایشان می‌مانند.</item>
+        <item quantity="other">از حالا پیام‌های تازه‌شان بی‌اعلان به هرزنامه می‌روند. پیامک‌های فعلی‌شان سر جایشان می‌مانند.</item>
     </plurals>
     <string name="clear_spam_title">همهٔ هرزنامه‌ها حذف شوند؟</string>
     <string name="filter_rules">قوانین فیلتر</string>
