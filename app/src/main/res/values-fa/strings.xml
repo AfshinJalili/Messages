@@ -325,8 +325,25 @@
         <item quantity="other">%d شماره</item>
     </plurals>
     <string name="filter_obvious_spam">فیلتر هرزنامه‌های آشکار</string>
-    <string name="filter_obvious_spam_on">روشن · با قوانین روی گوشی</string>
     <string name="filter_obvious_spam_off">خاموش</string>
+    <string name="filter_on_text">به واژه‌های تبلیغاتی فارسی و اموجی‌های تبلیغاتی نگاه می‌کند. اگر دو نشانه باشد، یا یک نشانه به‌علاوهٔ پیوند یا فرستندهٔ نام‌دار، پیام به هرزنامه می‌رود. رمز یک‌بارمصرف، پیام بانک و رسید، و افراد دفترچه مخاطبان فیلتر نمی‌شوند. خط‌هایی مثل «لغو11» یا unsubscribe نادیده گرفته می‌شوند.</string>
+    <string name="unknown_numbers">پیام‌های شماره‌های ناشناس را هرزنامه کن</string>
+    <string name="unknown_numbers_text">مخاطبان هرگز فیلتر نمی‌شوند.</string>
+    <string name="always_spam_list">فرستنده‌های همیشه‌هرزنامه</string>
+    <string name="never_spam_list">فرستنده‌هایی که هرگز هرزنامه نیستند</string>
+    <string name="android_blocked">مسدود در اندروید</string>
+    <string name="android_blocked_text">پیام‌های این فرستنده‌ها ممکن است اصلاً به گوشی نرسند.</string>
+    <string name="what_filter_looks_for">آنچه جستجو می‌شود</string>
+    <string name="what_filter_looks_for_card">واژه‌های تبلیغاتی فارسی و اموجی‌های تبلیغاتی، به‌صورت متن ساده</string>
+    <string name="what_filter_words">واژه‌های تبلیغاتی</string>
+    <string name="what_filter_emojis">اموجی‌های تبلیغاتی</string>
+    <string name="spam_why_sender">این فرستنده را همیشه هرزنامه کرده‌اید</string>
+    <string name="spam_why_android">مسدود در اندروید</string>
+    <string name="spam_why_unknown">شمارهٔ ناشناس</string>
+    <string name="no_never_spam_senders">فرستندهٔ هرگز-هرزنامه نیست</string>
+    <string name="no_android_blocked">شماره‌ای در اندروید مسدود نیست</string>
+    <string name="remove_never_spam">حذف %s</string>
+    <string name="filter_senders">فرستنده‌ها</string>
     <string name="edit_phrase">ویرایش عبارت</string>
     <string name="remove_phrase">حذف %s</string>
     <string name="add_phrase_or_number">افزودن عبارت یا شماره</string>
@@ -335,7 +352,7 @@
     <string name="block_a_number">مسدود کردن شماره</string>
     <string name="block_a_number_subtitle">پیام‌های این فرستنده به هرزنامه می‌روند</string>
     <string name="no_blocked_numbers">شماره‌ی مسدودی نیست</string>
-    <string name="no_blocked_numbers_text">فرستنده را از هرزنامه یا گفت‌وگو مسدود کنید، یا شماره‌ای اینجا اضافه کنید.</string>
+    <string name="no_blocked_numbers_text">فرستنده را از گفت‌وگو همیشه یا هرگز هرزنامه کنید، روی این گوشی مسدود کنید، یا شماره‌ای اینجا اضافه کنید.</string>
     <string name="phrase">عبارت</string>
     <string name="phone_number_label">شماره یا نام فرستنده</string>
     <string name="phrase_guidance">بزرگی و کوچکی حروف مهم نیست. پیام‌های فیلترشده را در هرزنامه ببینید.</string>
@@ -351,7 +368,11 @@
     <string name="number_error_detail">رقم‌ها یا نامی را بنویسید که پیام‌ها با آن می‌رسند.</string>
     <string name="move_filter_rules">انتقال قوانین فیلتر</string>
     <string name="what_will_be_exported">چه چیزی برون‌بری می‌شود</string>
-    <string name="rules_summary">%1$s · %2$s</string>
+    <string name="rules_summary">%1$s · %2$s · %3$s</string>
+    <plurals name="never_spam_sender_count">
+        <item quantity="one">%d فرستندهٔ هرگز-هرزنامه</item>
+        <item quantity="other">%d فرستندهٔ هرگز-هرزنامه</item>
+    </plurals>
     <string name="rules_export_privacy">این فایل شماره‌ها و عبارت‌های مسدود را فهرست می‌کند. آن را خصوصی نگه دارید.</string>
     <string name="export_block_list">برون‌بری فهرست مسدودها</string>
     <string name="have_a_block_list">فهرست مسدودها دارید؟</string>
@@ -624,7 +645,7 @@
     <string name="spam_patterns_result_marketing">هرزنامه · واژه‌ها یا اموجی‌های تبلیغاتی</string>
     <string name="spam_patterns_result_none">هیچ قانونی نمی‌گیرد · در صندوق می‌ماند</string>
     <string name="spam_patterns_code_words">واژه‌های رمز یک‌بار مصرف</string>
-    <string name="spam_patterns_code_words_text">اگر کد هم داشته باشد، پیام همیشه مجاز است، حتی با پیوند یا خط لغو.</string>
+    <string name="spam_patterns_code_words_text">اگر کد هم داشته باشد، پیام همیشه مجاز است، حتی با پیوند.</string>
     <string name="spam_patterns_code">کد</string>
     <string name="spam_patterns_code_text">خود کد. هم واژه‌ی رمز و هم کد باید پیدا شوند.</string>
     <string name="spam_patterns_transactional">بانک و رسید</string>

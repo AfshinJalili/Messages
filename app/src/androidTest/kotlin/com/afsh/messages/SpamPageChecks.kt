@@ -35,6 +35,7 @@ import com.afsh.messages.ui.spam.BlockRulesUiState
 import com.afsh.messages.ui.spam.BlockedNumbersScreen
 import com.afsh.messages.ui.spam.BlockedNumbersUiState
 import com.afsh.messages.ui.spam.BlockedSender
+import com.afsh.messages.ui.spam.FilterSenderKind
 import com.afsh.messages.ui.spam.MoveRulesScreen
 import com.afsh.messages.ui.spam.RuleKind
 import com.afsh.messages.ui.spam.SpamEvent
@@ -117,7 +118,9 @@ class SpamPageChecks {
     @Test
     fun rulesToggleTheFilterAndRemoveAndAddPhrases() {
         val events = mutableListOf<BlockRulesEvent>()
-        var state by mutableStateOf(BlockRulesUiState(blockedNumbers = 3, phrases = listOf("Claim your reward", "Free prize")))
+        var state by mutableStateOf(
+            BlockRulesUiState(alwaysSpamCount = 3, phrases = listOf("Claim your reward", "Free prize")),
+        )
         compose.setContent {
             AfshTheme(dark = false) { BlockRulesScreen(state, settings, { events += it }) }
         }
@@ -139,15 +142,15 @@ class SpamPageChecks {
 
     @Test
     fun blockedNumbersUnblockAndPhraseErrorsExplainThemselves() {
-        val unblocked = mutableListOf<BlockedSender>()
+        val removed = mutableListOf<BlockedSender>()
         var page by mutableIntStateOf(0)
-        val sender = BlockedSender("555 0183", null, inSystemList = false)
+        val sender = BlockedSender("555 0183", null, FilterSenderKind.AlwaysSpam)
         compose.setContent {
             AfshTheme(dark = false) {
                 if (page == 0) {
                     BlockedNumbersScreen(
                         BlockedNumbersUiState(loading = false, senders = listOf(sender)),
-                        settings, onBack = {}, onUnblock = { unblocked += it }, onBlockNumber = {},
+                        settings, onBack = {}, onRemove = { removed += it }, onBlockNumber = {},
                     )
                 } else {
                     AddRuleScreen(
@@ -158,7 +161,7 @@ class SpamPageChecks {
             }
         }
         compose.onNodeWithText(text(org.fossify.commons.R.string.unblock)).performClick()
-        check(unblocked == listOf(sender)) { "Unblocked $unblocked" }
+        check(removed == listOf(sender)) { "Removed $removed" }
         page = 1
         compose.onNodeWithText(text(R.string.phrase_already_blocked)).assertExists()
         compose.onNodeWithText(text(R.string.no_current_match)).assertExists()
@@ -225,21 +228,25 @@ class SpamPageChecks {
     @Test
     fun spamPagesAreCapturedInEveryVariant() {
         val senders = listOf(
-            BlockedSender("555 0183", null, false),
-            BlockedSender("+15550190", "Unknown marketing line", false),
-            BlockedSender("555 0197", null, true),
+            BlockedSender("555 0183", null, FilterSenderKind.AlwaysSpam),
+            BlockedSender("+15550190", "Unknown marketing line", FilterSenderKind.NeverSpam),
+            BlockedSender("555 0197", null, FilterSenderKind.AndroidBlocked),
         )
         val capture = VariantCapture(compose)
         capture.show { page ->
             when (page) {
                 0 -> SpamScreen(SpamUiState(loading = false, messages = messages), library, remember { SnackbarHostState() }, {})
-                1 -> BlockRulesScreen(BlockRulesUiState(3, listOf("Claim your reward", "Free prize")), settings, {})
+                1 -> BlockRulesScreen(
+                    BlockRulesUiState(alwaysSpamCount = 3, phrases = listOf("Claim your reward", "Free prize")),
+                    settings,
+                    {},
+                )
                 2 -> BlockedNumbersScreen(BlockedNumbersUiState(false, senders), settings, {}, {}, {})
                 3 -> AddRuleScreen(
                     AddRuleUiState(RuleKind.PHRASE, value = "limited offer", example = "A limited offer just for you"),
                     settings, {}, {}, {},
                 )
-                else -> MoveRulesScreen(3, 2, settings, remember { SnackbarHostState() }, {}, {}, {})
+                else -> MoveRulesScreen(3, 2, 1, settings, remember { SnackbarHostState() }, {}, {}, {})
             }
         }
         capture.captureEach(listOf("20-spam", "21-filter-rules", "38-blocked-numbers", "50-add-phrase", "51-move-rules"))

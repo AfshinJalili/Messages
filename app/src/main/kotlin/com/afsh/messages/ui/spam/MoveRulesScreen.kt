@@ -27,11 +27,12 @@ import com.afsh.messages.ui.components.PageContentPadding
 import com.afsh.messages.ui.components.PageNavigation
 import com.afsh.messages.ui.components.PageScaffold
 
-/** 51 · Spam / move rule list: export this device's rules, or merge a file into them. */
+/** 51 · Filter rules export/import: includes always-spam, phrases and the never-spam allowlist. */
 @Composable
 fun MoveRulesScreen(
     numbers: Int,
     phrases: Int,
+    allowed: Int,
     navigation: PageNavigation,
     snackbarHostState: SnackbarHostState,
     onBack: () -> Unit,
@@ -71,6 +72,7 @@ fun MoveRulesScreen(
                         R.string.rules_summary,
                         pluralStringResource(R.plurals.blocked_number_count, numbers, numbers),
                         pluralStringResource(R.plurals.blocked_phrase_count, phrases, phrases),
+                        pluralStringResource(R.plurals.never_spam_sender_count, allowed, allowed),
                     ),
                     style = MaterialTheme.typography.bodyMedium,
                     color = colors.onSurfaceVariant,
@@ -85,7 +87,7 @@ fun MoveRulesScreen(
                 stringResource(R.string.export_block_list),
                 onClick = onExport,
                 modifier = Modifier.fillMaxWidth(),
-                enabled = numbers + phrases > 0,
+                enabled = numbers + phrases + allowed > 0,
             )
             InfoPanel(
                 title = stringResource(R.string.have_a_block_list),

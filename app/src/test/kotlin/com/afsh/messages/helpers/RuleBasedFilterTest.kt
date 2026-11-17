@@ -156,4 +156,16 @@ class RuleBasedFilterTest {
         assertTrue(SpamPatternGroup.entries.none { it.key == "unsubscribe" })
         assertTrue(SpamPatterns.DEFAULT.groups.keys.none { it.key == "unsubscribe" })
     }
+
+    @Test
+    fun `plain filter labels are ordinary Persian words and promo emojis`() {
+        val words = plainFilterLabels(SpamPatterns.DEFAULT[SpamPatternGroup.MARKETING])
+        assertTrue(words.contains("تخفیف"))
+        assertTrue(words.contains("جشنواره"))
+        assertTrue(words.none { it.contains("\\") || it.contains("(?:") })
+        val emojis = plainFilterLabels(SpamPatterns.DEFAULT[SpamPatternGroup.PROMO_EMOJI])
+        assertTrue(emojis.contains("🎉"))
+        assertTrue(emojis.contains("🍕"))
+        assertTrue(emojis.contains("🔥"))
+    }
 }

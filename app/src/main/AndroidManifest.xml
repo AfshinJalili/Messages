@@ -142,7 +142,14 @@
             android:name=".activities.BlockedNumbersActivity"
             android:configChanges="orientation"
             android:exported="false"
-            android:label="@string/blocked_numbers"
+            android:label="@string/filter_senders"
+            android:parentActivityName=".activities.BlockRulesActivity" />
+
+        <activity
+            android:name=".activities.WhatFilterLooksForActivity"
+            android:configChanges="orientation"
+            android:exported="false"
+            android:label="@string/what_filter_looks_for"
             android:parentActivityName=".activities.BlockRulesActivity" />
 
         <activity

@@ -12,11 +12,11 @@ import com.afsh.messages.extensions.getNameAndPhotoFromPhoneNumber
 import com.afsh.messages.ui.spam.BlockedNumbersScreen
 import com.afsh.messages.ui.spam.BlockedNumbersUiState
 import com.afsh.messages.ui.spam.BlockedSender
+import com.afsh.messages.ui.spam.FilterSenderKind
 import com.afsh.messages.ui.spam.RuleKind
 
 /**
- * 38 · Blocked numbers: the app's own block list and Android's, in one list. Unblocking removes
- * the sender from whichever list holds it.
+ * 38 · Filter senders: always-spam, never-spam and Android's block list, in three sections.
  */
 class BlockedNumbersActivity : ComposePageActivity() {
     private var state by mutableStateOf(BlockedNumbersUiState())
@@ -27,7 +27,7 @@ class BlockedNumbersActivity : ComposePageActivity() {
             state,
             settingsNavigation(),
             onBack = ::finish,
-            onUnblock = ::unblock,
+            onRemove = ::remove,
             onBlockNumber = { startActivity(AddBlockRuleActivity.intent(this, RuleKind.NUMBER)) },
         )
     }
@@ -40,23 +40,34 @@ class BlockedNumbersActivity : ComposePageActivity() {
     override fun reload() {
         ensureBackgroundThread {
             val system = runCatching { getBlockedNumbers() }.getOrDefault(arrayListOf()).map {
-                BlockedSender(it.number, it.contactName?.takeUnless(String::isBlank), inSystemList = true)
+                BlockedSender(
+                    it.number,
+                    it.contactName?.takeUnless(String::isBlank),
+                    FilterSenderKind.AndroidBlocked,
+                )
             }
-            val app = config.spamNumbers.map { number ->
+            val always = config.spamNumbers.map { number ->
                 val name = getNameAndPhotoFromPhoneNumber(number).name.takeUnless { it.isBlank() || it == number }
-                BlockedSender(number, name, inSystemList = false)
+                BlockedSender(number, name, FilterSenderKind.AlwaysSpam)
             }
-            val senders = (app + system)
-                .distinctBy { it.number }
+            val never = config.allowedNumbers.map { number ->
+                val name = getNameAndPhotoFromPhoneNumber(number).name.takeUnless { it.isBlank() || it == number }
+                BlockedSender(number, name, FilterSenderKind.NeverSpam)
+            }
+            val senders = (always + never + system)
                 .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.name ?: it.number })
             runOnUiThread { state = BlockedNumbersUiState(loading = false, senders = senders) }
         }
     }
 
-    private fun unblock(sender: BlockedSender) {
+    private fun remove(sender: BlockedSender) {
         state = state.copy(senders = state.senders - sender)
         ensureBackgroundThread {
-            if (sender.inSystemList) deleteBlockedNumber(sender.number) else config.removeSpamNumber(sender.number)
+            when (sender.kind) {
+                FilterSenderKind.AndroidBlocked -> deleteBlockedNumber(sender.number)
+                FilterSenderKind.AlwaysSpam -> config.removeSpamNumber(sender.number)
+                FilterSenderKind.NeverSpam -> config.removeAllowedNumber(sender.number)
+            }
             runOnUiThread { reload() }
         }
     }
