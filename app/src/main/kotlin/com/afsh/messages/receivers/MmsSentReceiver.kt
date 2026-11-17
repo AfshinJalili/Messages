@@ -8,12 +8,14 @@ import android.database.sqlite.SQLiteException
 import android.net.Uri
 import android.provider.Telephony
 import android.widget.Toast
-import org.fossify.commons.extensions.showErrorToast
-import org.fossify.commons.extensions.toast
 import com.afsh.messages.R
 import com.afsh.messages.extensions.deleteMessage
+import com.afsh.messages.helpers.ConversationSync
 import com.afsh.messages.helpers.refreshConversations
 import com.afsh.messages.helpers.refreshMessages
+import org.fossify.commons.extensions.showErrorToast
+import org.fossify.commons.extensions.toast
+import org.fossify.commons.helpers.ensureBackgroundThread
 import java.io.File
 
 /** Handles updating databases and states when a MMS message is sent. */
@@ -52,8 +54,13 @@ class MmsSentReceiver : SendStatusReceiver() {
     }
 
     override fun updateAppDatabase(context: Context, intent: Intent, receiverResultCode: Int) {
-        refreshMessages()
-        refreshConversations()
+        val uri = intent.getStringExtra(EXTRA_CONTENT_URI)?.let(Uri::parse)
+        ensureBackgroundThread {
+            // Without a full reconcile, Room still needs this thread's snippet/date/unread.
+            ConversationSync.syncThreadForMmsUri(context, uri)
+            refreshMessages()
+            refreshConversations(reconcile = false)
+        }
     }
 
     companion object {

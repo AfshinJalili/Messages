@@ -31,6 +31,7 @@ class App : FossifyApp() {
 
     companion object {
         private const val TAG = "AfshApp"
+        private const val CONTACTS_CACHE_DEBOUNCE_MS = 750L
     }
 
     override fun onCreate() {
@@ -72,31 +73,38 @@ class App : FossifyApp() {
     }
 
     private var watchingContacts = false
+    private val contactsHandler = Handler(Looper.getMainLooper())
+    private val clearContactCaches = Runnable {
+        MessagingCache.namePhoto.evictAll()
+        MessagingCache.participantsCache.evictAll()
+    }
 
     /**
      * Clears the contact caches when contacts change. The inbox refresh relies on them, so this runs
-     * again once contacts permission is granted after launch.
+     * again once contacts permission is granted after launch. Contact sync fires many rapid
+     * onChange callbacks; debounce so a sync storm does not thrash the caches while the process
+     * is warm as the default SMS app.
      */
     fun watchContacts() {
         if (watchingContacts || !hasPermission(PERMISSION_READ_CONTACTS)) return
         watchingContacts = true
-        listOf(
-            ContactsContract.Contacts.CONTENT_URI,
-            ContactsContract.Data.CONTENT_URI,
-            ContactsContract.DisplayPhoto.CONTENT_URI
-        ).forEach {
-            try {
-                contentResolver.registerContentObserver(it, true, contactsObserver)
-            } catch (e: Exception) {
-                android.util.Log.w(TAG, "Failed to register content observer for contacts", e)
-            }
+        // Contacts.CONTENT_URI with descendants already covers Data and photos; observing all
+        // three multiplied every sync callback.
+        try {
+            contentResolver.registerContentObserver(
+                ContactsContract.Contacts.CONTENT_URI,
+                true,
+                contactsObserver,
+            )
+        } catch (e: Exception) {
+            android.util.Log.w(TAG, "Failed to register content observer for contacts", e)
         }
     }
 
-    private val contactsObserver = object : ContentObserver(Handler(Looper.getMainLooper())) {
+    private val contactsObserver = object : ContentObserver(contactsHandler) {
         override fun onChange(selfChange: Boolean, uri: Uri?) {
-            MessagingCache.namePhoto.evictAll()
-            MessagingCache.participantsCache.evictAll()
+            contactsHandler.removeCallbacks(clearContactCaches)
+            contactsHandler.postDelayed(clearContactCaches, CONTACTS_CACHE_DEBOUNCE_MS)
         }
     }
 }

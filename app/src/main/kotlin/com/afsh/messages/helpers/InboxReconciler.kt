@@ -93,7 +93,9 @@ object InboxReconciler {
                         }
                     }
 
-                    cachedConversations.forEach { conversation ->
+                    // Only temporary scheduled threads can expire; querying every inbox row
+                    // on each reconcile was a free CPU tax after every resume and SMS.
+                    allCached.filter { it.isScheduled }.forEach { conversation ->
                         app.clearExpiredScheduledMessages(conversation.threadId)
                     }
                 }

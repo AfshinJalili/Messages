@@ -54,7 +54,7 @@ class SmsStatusSentReceiver : SendStatusReceiver() {
 
                 context.messagesDB.updateType(messageId, type)
                 refreshMessages()
-                refreshConversations()
+                refreshConversations(reconcile = false)
             }
         }
     }

@@ -66,7 +66,8 @@ class ScheduledMessageReceiver : BroadcastReceiver() {
             context.deleteScheduledMessage(messageId)
             context.conversationsDB.deleteThreadId(messageId)
             refreshMessages()
-            refreshConversations()
+            // Temporary scheduled thread was deleted; reconcile so the real Telephony thread appears.
+            refreshConversations(reconcile = true)
         } catch (e: Exception) {
             context.showErrorToast(e)
         } catch (e: Error) {
