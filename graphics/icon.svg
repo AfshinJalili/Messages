@@ -1,10 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 100 100">
-  <!-- Adaptive-icon preview: GM3 primary plate + surface bubble; three equal dots (r=7). -->
-  <rect width="100" height="100" fill="#0B57D0"/>
-  <g transform="translate(18 21.2) scale(.64)">
-    <path d="M32 16 H68 A18 18 0 0 1 86 34 V56 A18 18 0 0 1 68 74 H18 A4 4 0 0 1 14 70 V34 A18 18 0 0 1 32 16 Z" fill="#FFFFFF"/>
-    <circle cx="34" cy="45" r="7" fill="#0B57D0"/>
-    <circle cx="50" cy="45" r="7" fill="#0B57D0"/>
-    <circle cx="66" cy="45" r="7" fill="#0B57D0"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 108 108">
+  <rect width="108" height="108" fill="#0B57D0"/>
+  <g transform="translate(21 24.3) scale(0.66 0.66)">
+    <path fill="#FFFFFF" fill-rule="evenodd" d="M32 16 H68 A18 18 0 0 1 86 34 V56 A18 18 0 0 1 68 74 H18 A4 4 0 0 1 14 70 V34 A18 18 0 0 1 32 16 Z M27,45 a7,7 0 1,0 14,0 a7,7 0 1,0 -14,0 Z M43,45 a7,7 0 1,0 14,0 a7,7 0 1,0 -14,0 Z M59,45 a7,7 0 1,0 14,0 a7,7 0 1,0 -14,0 Z"/>
   </g>
 </svg>
