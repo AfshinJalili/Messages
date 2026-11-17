@@ -137,6 +137,10 @@ import com.afsh.messages.ui.AfshTheme
 import com.afsh.messages.ui.afshDark
 import com.afsh.messages.ui.afshTextScale
 import com.afsh.messages.ui.components.confirm
+import com.afsh.messages.ui.components.showAfshDialog
+import com.afsh.messages.ui.components.AfshSheetItem
+import com.afsh.messages.ui.components.AfshSheet
+import com.afsh.messages.ui.components.AfshIcon
 import com.afsh.messages.ui.components.inform
 import com.afsh.messages.ui.components.showRenameDialog
 import com.afsh.messages.ui.newmessage.NewMessageUiState
@@ -532,7 +536,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
             MessageAction.SAVE_AS -> selected.flatMap { it.attachment?.attachments.orEmpty() }.takeIf { it.isNotEmpty() }?.let { saveMMS(it) }
             MessageAction.NOT_SPAM -> {
                 holder.clearSelection()
-                unmarkSpam(selected)
+                askNotSpam(selected)
             }
             MessageAction.RESTORE -> confirmRestoreMessages(selected) { deleteMessages(it, false, true) }
             // The holder selects all itself.
@@ -1111,13 +1115,41 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         }
     }
 
+    private fun askNotSpam(selected: List<Message>) {
+        showAfshDialog { dismiss ->
+            AfshSheet(title = getString(R.string.not_spam_sheet_title), onDismiss = dismiss) {
+                AfshSheetItem(
+                    label = getString(R.string.not_spam_only),
+                    icon = AfshIcon.Inbox,
+                    supporting = getString(R.string.not_spam_only_text),
+                    onClick = {
+                        dismissThen {
+                            dismiss()
+                            unmarkSpam(selected, allowSender = false)
+                        }
+                    },
+                )
+                AfshSheetItem(
+                    label = resources.getQuantityString(R.plurals.never_spam, 1),
+                    icon = AfshIcon.Verified,
+                    supporting = resources.getQuantityString(R.plurals.never_spam_text, 1),
+                    onClick = {
+                        dismissThen {
+                            dismiss()
+                            unmarkSpam(selected, allowSender = true)
+                        }
+                    },
+                )
+            }
+        }
+    }
+
     private fun unmarkSpam(selected: List<Message>, allowSender: Boolean = false) {
         ensureBackgroundThread {
             if (allowSender) {
                 (selected.map { it.senderPhoneNumber } + participants.getAddresses())
                     .filter { it.isNotEmpty() }.distinct().forEach { config.addAllowedNumber(it) }
             } else {
-                // Not spam from a blocked sender unblocks them, or their next message goes to Spam again.
                 selected.map { it.senderPhoneNumber }.filter { it.isNotEmpty() && config.spamNumbers.containsNumber(it) }
                     .distinct().forEach { config.removeSpamNumber(it) }
             }

@@ -291,6 +291,9 @@
     <!-- Spam and filter rules (design 20, 21, 38, 50, 51) -->
     <string name="spam_empty_text">Blocked and suspicious messages stay here without an inbox alert.</string>
     <string name="not_spam_short">Not spam</string>
+    <string name="not_spam_sheet_title">Move these out of Spam?</string>
+    <string name="not_spam_only">Only these messages</string>
+    <string name="not_spam_only_text">They go back to the conversation. Future messages can still be filtered.</string>
     <plurals name="always_spam">
         <item quantity="one">Always spam this sender</item>
         <item quantity="other">Always spam these senders</item>

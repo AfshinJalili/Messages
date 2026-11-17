@@ -269,6 +269,9 @@
     <!-- Spam and filter rules (design 20, 21, 38, 50, 51) -->
     <string name="spam_empty_text">پیام‌های مسدود و مشکوک بدون اعلان در صندوق، اینجا می‌مانند.</string>
     <string name="not_spam_short">هرزنامه نیست</string>
+    <string name="not_spam_sheet_title">این پیام‌ها از هرزنامه بیرون بیایند؟</string>
+    <string name="not_spam_only">فقط همین پیام‌ها</string>
+    <string name="not_spam_only_text">به گفت‌وگو برمی‌گردند. پیام‌های بعدی ممکن است دوباره فیلتر شوند.</string>
     <plurals name="always_spam">
         <item quantity="one">همیشه این فرستنده را هرزنامه کن</item>
         <item quantity="other">همیشه این فرستنده‌ها را هرزنامه کن</item>

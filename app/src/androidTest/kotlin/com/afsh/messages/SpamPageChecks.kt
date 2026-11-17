@@ -90,7 +90,9 @@ class SpamPageChecks {
         compose.onNodeWithText(quantity(R.plurals.inbox_selected, 1)).assertExists()
         compose.onNodeWithText(text(R.string.not_spam_short)).assertDoesNotExist()
         compose.onNodeWithContentDescription(text(R.string.not_spam_short)).performClick()
-        check(events.last() == SpamEvent.NotSpam(listOf(messages[1]))) { "Events $events" }
+        check(events.none { it is SpamEvent.NotSpam }) { "Not spam must open the sheet first: $events" }
+        compose.onNodeWithText(text(R.string.not_spam_only)).performClick()
+        check(events.last() == SpamEvent.NotSpam(listOf(messages[1]), neverSpamSender = false)) { "Events $events" }
         compose.onNodeWithContentDescription(text(R.string.not_spam_short)).assertDoesNotExist()
 
         // While selecting, a tap adds to the selection instead of opening.
@@ -98,10 +100,10 @@ class SpamPageChecks {
         compose.onNodeWithText("Last chance", substring = true).performClick()
         check(events.last() !is SpamEvent.Open) { "A tap while selecting must not open: $events" }
         compose.onNodeWithText(quantity(R.plurals.inbox_selected, 2)).assertExists()
-        compose.onNodeWithContentDescription(quantity(R.plurals.block_sender, 2)).performClick()
-        check(events.last() !is SpamEvent.BlockSender) { "Block must ask first" }
-        compose.onNodeWithText(quantity(R.plurals.block_sender_title, 2)).assertExists()
-        compose.onNodeWithText(quantity(R.plurals.block_sender, 2)).performClick()
+        compose.onNodeWithContentDescription(quantity(R.plurals.always_spam, 2)).performClick()
+        check(events.last() !is SpamEvent.BlockSender) { "Always spam must ask first" }
+        compose.onNodeWithText(quantity(R.plurals.always_spam_title, 2)).assertExists()
+        compose.onNodeWithText(quantity(R.plurals.always_spam, 2)).performClick()
         check(events.last() == SpamEvent.BlockSender(listOf(messages[1], messages[2]))) { "Events $events" }
 
         compose.onNodeWithText("Special offer", substring = true).performTouchInput { longClick() }
