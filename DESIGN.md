@@ -96,22 +96,25 @@ Android resources are the source of truth. This document describes how to use th
 | Launcher shape | `app/src/main/res/drawable/ic_launcher_foreground.xml` |
 | Screen and tab motion (durations, parallax, tab shift) | `app/src/main/res/values/motion.xml` |
 | Screen and tab motion easing | `app/src/main/res/interpolator/emphasized_decelerate.xml` and `EmphasizedDecelerate` in `ui/components/Motion.kt` |
-| Activity screen transitions | `res/anim/screen_*.xml` (and `res/anim-ldrtl/` for RTL) via `helpers/ScreenMotion.kt` |
+| Activity screen transitions | `AfshWindowAnimation` in `app/src/main/res/values/styles.xml` → `res/anim/screen_*.xml` (and `res/anim-ldrtl/` for RTL) |
+| Task-root (inbox) theme | `AppTheme.Afsh.Root.Light` / `Root.Dark` (`windowAnimationStyle` null) via `afshXmlTheme(root = true)` |
 | Compose screen and tab transitions | `ScreenStack` and `TabSwitch` in `ui/components/Motion.kt` |
 
 ### Motion
 
 Screen and tab navigation share one motion language: fast, directional, and without alpha crossfade (Telegram / Google Messages style). Dialogs and bottom sheets keep Material 3 motion and are out of scope here.
 
+Inbox, Library, and Settings are three tabs of `MainActivity` (`TabSwitch` + `SettingsController`). Pushed screens (conversation, Library pages, block rules, …) remain Activities and use the theme window animations. Leaving a pushed screen for a top-level tab uses `MainActivity.topLevelIntent` (`CLEAR_TOP` / `SINGLE_TOP`), which is a screen close — not a tab switch — and then shows the chosen tab.
+
 | Motion | Behaviour | Duration | Easing |
 | --- | --- | --- | --- |
-| Open screen (Activity or in-Activity `ScreenStack`) | New screen slides in from the end edge; the screen underneath shifts toward the start by `motion_parallax` (25% of width) | `motion_open_ms` (220ms) | Emphasized decelerate |
+| Open screen (Activity theme or in-Activity `ScreenStack`) | New screen slides in from the end edge; the screen underneath shifts toward the start by `motion_parallax` (25% of width) | `motion_open_ms` (220ms) | Emphasized decelerate |
 | Close screen (Back, up, predictive back) | Exact reverse of open | `motion_close_ms` (220ms) | Emphasized decelerate |
 | Switch bottom-nav / rail tabs (`TabSwitch`) | Both panes shift by `motion_tab_shift` (30% of width) in the tab-order direction | `motion_tab_ms` (120ms) | Emphasized decelerate |
 
-RTL mirrors start/end automatically: Compose uses `SlideDirection.Start`/`End`, and Activity XML ships mirrored sets under `anim-ldrtl/`. Predictive back on Android 14+ drives the same close motion for Activities (`overrideActivityTransition`) and for in-Activity stacks (`SeekableTransitionState` in `ScreenStack`).
+RTL mirrors start/end automatically: Compose uses `SlideDirection.Start`/`End`, and Activity XML ships mirrored sets under `anim-ldrtl/`. Predictive back on Android 14+ drives the same close motion for Activities (theme `windowAnimationStyle`) and for in-Activity stacks (`SeekableTransitionState` in `ScreenStack`).
 
-Do not invent per-screen transition specs, `Crossfade`, or `fadeIn`/`fadeOut` for navigation. Change tokens in `motion.xml` and the shared specs in `Motion.kt` / `res/anim` only. `tests/check_motion.py` fails on navigation fades, ad-hoc screen transition specs outside `Motion.kt`, alpha in `screen_*.xml`, or zoom leftovers.
+Do not invent per-screen transition specs, `Crossfade`, or `fadeIn`/`fadeOut` for navigation, and do not call `overridePendingTransition` / `overrideActivityTransition`. Change tokens in `motion.xml`, the shared specs in `Motion.kt` / `res/anim`, and `AfshWindowAnimation` only. `tests/check_motion.py` fails on navigation fades, ad-hoc screen transition specs outside `Motion.kt`, alpha in `screen_*.xml`, a revived `ScreenMotion` / `SettingsActivity`, or missing theme window animations.
 
 ### Color
 

@@ -46,7 +46,7 @@ fun TestInbox(
     state = state,
     snackbarHostState = remember { SnackbarHostState() },
     onOpen = {}, onToggleSelection = {}, onSelectAll = {}, onClearSelection = {}, onAction = {},
-    onSwipe = { _, _ -> }, onFilter = {}, onSearch = onSearch, onNewMessage = {}, onLibrary = {}, onSettings = {},
+    onSwipe = { _, _ -> }, onFilter = {}, onSearch = onSearch, onNewMessage = {}, onLibrary = {},
     search = search,
     onSearchBack = onSearchBack,
     onRetryRefresh = onRetryRefresh,

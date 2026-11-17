@@ -3,8 +3,17 @@
 
     <style name="AppTheme" parent="AppTheme.Afsh.Dark" />
 
+    <!-- Shared by every pushed Activity: slide open/close from res/anim (and anim-ldrtl). -->
+    <style name="AfshWindowAnimation">
+        <item name="android:activityOpenEnterAnimation">@anim/screen_open_enter</item>
+        <item name="android:activityOpenExitAnimation">@anim/screen_open_exit</item>
+        <item name="android:activityCloseEnterAnimation">@anim/screen_close_enter</item>
+        <item name="android:activityCloseExitAnimation">@anim/screen_close_exit</item>
+    </style>
+
     <!-- XML widgets and Commons screens (app lock). Each item mirrors a role in afshColorScheme (ui/AfshTheme.kt). -->
     <style name="AppTheme.Afsh.Dark" parent="AppTheme.Base">
+        <item name="android:windowAnimationStyle">@style/AfshWindowAnimation</item>
         <item name="colorPrimary">@color/m3_primary_dark</item>
         <item name="colorOnPrimary">@color/m3_on_primary_dark</item>
         <item name="colorPrimaryDark">@color/m3_primary_dark</item>
@@ -23,6 +32,7 @@
     </style>
 
     <style name="AppTheme.Afsh.Light" parent="Theme.Material3.Light.NoActionBar">
+        <item name="android:windowAnimationStyle">@style/AfshWindowAnimation</item>
         <item name="colorPrimary">@color/m3_primary</item>
         <item name="colorOnPrimary">@color/m3_on_primary</item>
         <item name="colorPrimaryDark">@color/m3_primary</item>
@@ -40,6 +50,15 @@
         <item name="colorControlActivated">@color/m3_primary</item>
         <item name="android:forceDarkAllowed" tools:targetApi="29">false</item>
         <item name="windowActionModeOverlay">true</item>
+    </style>
+
+    <!-- Task root (MainActivity): same roles, no window enter/exit so the launcher open stays system. -->
+    <style name="AppTheme.Afsh.Root.Dark" parent="AppTheme.Afsh.Dark">
+        <item name="android:windowAnimationStyle">@null</item>
+    </style>
+
+    <style name="AppTheme.Afsh.Root.Light" parent="AppTheme.Afsh.Light">
+        <item name="android:windowAnimationStyle">@null</item>
     </style>
 
 </resources>

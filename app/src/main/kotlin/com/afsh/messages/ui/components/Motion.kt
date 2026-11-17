@@ -37,7 +37,7 @@ private data class TabEntry<T>(val index: Int, val tab: T)
 
 /** The values of res/values/motion.xml, which the activity animations in res/anim use too. */
 @Immutable
-private class ScreenMotionTokens(
+private class NavigationMotionTokens(
     val openMs: Int,
     val closeMs: Int,
     val tabMs: Int,
@@ -46,10 +46,10 @@ private class ScreenMotionTokens(
 )
 
 @Composable
-private fun rememberScreenMotionTokens(): ScreenMotionTokens {
+private fun rememberNavigationMotionTokens(): NavigationMotionTokens {
     val resources = LocalContext.current.resources
     return remember(resources) {
-        ScreenMotionTokens(
+        NavigationMotionTokens(
             openMs = resources.getInteger(R.integer.motion_open_ms),
             closeMs = resources.getInteger(R.integer.motion_close_ms),
             tabMs = resources.getInteger(R.integer.motion_tab_ms),
@@ -63,9 +63,9 @@ private fun <T> openSpec(ms: Int) = tween<T>(ms, easing = EmphasizedDecelerate)
 
 /**
  * Opening: the new screen slides in from the end over the old one, which shifts toward the start
- * by [ScreenMotionTokens.parallax]. No alpha.
+ * by [NavigationMotionTokens.parallax]. No alpha.
  */
-private fun AnimatedContentTransitionScope<*>.screenOpen(tokens: ScreenMotionTokens): ContentTransform =
+private fun AnimatedContentTransitionScope<*>.screenOpen(tokens: NavigationMotionTokens): ContentTransform =
     (
         slideIntoContainer(SlideDirection.Start, openSpec(tokens.openMs)) togetherWith
             slideOutOfContainer(
@@ -79,7 +79,7 @@ private fun AnimatedContentTransitionScope<*>.screenOpen(tokens: ScreenMotionTok
  * Back: the top screen slides out toward the end while the one underneath settles from its
  * parallax offset. No alpha.
  */
-private fun AnimatedContentTransitionScope<*>.screenClose(tokens: ScreenMotionTokens): ContentTransform {
+private fun AnimatedContentTransitionScope<*>.screenClose(tokens: NavigationMotionTokens): ContentTransform {
     val transform = (
         slideIntoContainer(
             SlideDirection.End,
@@ -93,7 +93,7 @@ private fun AnimatedContentTransitionScope<*>.screenClose(tokens: ScreenMotionTo
 
 /** Tab change: both panes shift a short distance in the tab-order direction. No alpha. */
 private fun AnimatedContentTransitionScope<*>.tabSwitch(
-    tokens: ScreenMotionTokens,
+    tokens: NavigationMotionTokens,
     forward: Boolean,
 ): ContentTransform {
     val direction = if (forward) SlideDirection.Start else SlideDirection.End
@@ -124,7 +124,7 @@ fun <T : Any> ScreenStack(
     onPop: (() -> Unit)? = null,
     content: @Composable (T) -> Unit,
 ) {
-    val tokens = rememberScreenMotionTokens()
+    val tokens = rememberNavigationMotionTokens()
     val target = StackEntry(depth, screen)
     val transitionState = remember { SeekableTransitionState(target) }
     val underneath = previous?.let { StackEntry(depth - 1, it) }
@@ -171,7 +171,7 @@ fun <T> TabSwitch(
     modifier: Modifier = Modifier,
     content: @Composable (T) -> Unit,
 ) {
-    val tokens = rememberScreenMotionTokens()
+    val tokens = rememberNavigationMotionTokens()
     AnimatedContent(
         targetState = TabEntry(tabIndex, tab),
         modifier = modifier,

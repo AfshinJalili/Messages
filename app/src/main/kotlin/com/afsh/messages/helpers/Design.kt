@@ -25,5 +25,13 @@ fun Context.tonalSurfaceColor(): Int = ColorUtils.compositeColors(
     getProperBackgroundColor()
 )
 
-/** The XML theme for the current light or dark choice; it mirrors the Compose roles. */
-fun Context.afshXmlTheme(): Int = if (afshDark()) R.style.AppTheme_Afsh_Dark else R.style.AppTheme_Afsh_Light
+/**
+ * The XML theme for the current light or dark choice; it mirrors the Compose roles.
+ * [root] picks the task-root variant without window enter/exit animations (launcher open).
+ */
+fun Context.afshXmlTheme(root: Boolean = false): Int = when {
+    root && afshDark() -> R.style.AppTheme_Afsh_Root_Dark
+    root && !afshDark() -> R.style.AppTheme_Afsh_Root_Light
+    afshDark() -> R.style.AppTheme_Afsh_Dark
+    else -> R.style.AppTheme_Afsh_Light
+}

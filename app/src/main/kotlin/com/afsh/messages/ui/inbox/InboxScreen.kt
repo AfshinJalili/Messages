@@ -141,7 +141,9 @@ fun InboxScreen(
     onSearch: () -> Unit,
     onNewMessage: () -> Unit,
     onLibrary: (LibraryDestination) -> Unit,
-    onSettings: () -> Unit,
+    selectedTab: TopDestination = TopDestination.INBOX,
+    onSelectTab: (TopDestination) -> Unit = {},
+    settingsContent: @Composable () -> Unit = {},
     modifier: Modifier = Modifier,
     search: SearchUiState = SearchUiState(),
     onSearchQuery: (String) -> Unit = {},
@@ -150,17 +152,8 @@ fun InboxScreen(
     onSearchBack: () -> Unit = {},
     onSearchRetry: () -> Unit = {},
     onRetryRefresh: () -> Unit = {},
-    libraryOpen: Boolean = false,
-    onLibraryTab: (Boolean) -> Unit = {},
 ) {
     val listState = rememberLazyListState()
-    val onDestination: (TopDestination) -> Unit = { destination ->
-        when (destination) {
-            TopDestination.INBOX -> onLibraryTab(false)
-            TopDestination.LIBRARY -> onLibraryTab(true)
-            TopDestination.SETTINGS -> onSettings()
-        }
-    }
     val configuration = LocalConfiguration.current
     val compactHeight = configuration.screenHeightDp < COMPACT_HEIGHT_DP
     val forcedCollapsed = configuration.screenHeightDp < 320 || LocalDensity.current.fontScale >= 1.5f
@@ -179,7 +172,7 @@ fun InboxScreen(
         contentWindowInsets = if (showRail) WindowInsets.navigationBars else WindowInsets(0),
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
-            if (!state.selecting && !libraryOpen && !search.open) {
+            if (!state.selecting && selectedTab == TopDestination.INBOX && !search.open) {
                 NewMessageButton(expanded = !collapsed, onClick = onNewMessage)
             }
         },
@@ -194,7 +187,7 @@ fun InboxScreen(
                 when (it) {
                     InboxBottomBar.SELECTION -> InboxSelectionBar(state, onAction)
                     InboxBottomBar.NAVIGATION ->
-                        PrimaryNavigation(if (libraryOpen) TopDestination.LIBRARY else TopDestination.INBOX, onDestination, counts = state.navCounts)
+                        PrimaryNavigation(selectedTab, onSelectTab, counts = state.navCounts)
                     InboxBottomBar.NONE -> Unit
                 }
             }
@@ -207,23 +200,23 @@ fun InboxScreen(
         ) {
             if (showRail) {
                 PrimaryNavigation(
-                    if (libraryOpen) TopDestination.LIBRARY else TopDestination.INBOX,
-                    onDestination,
+                    selectedTab,
+                    onSelectTab,
                     counts = state.navCounts,
                     vertical = true,
                 )
             }
-            // Inbox and Library are peer tabs: a short horizontal shift, not a screen push.
-            TabSwitch(libraryOpen, tabIndex = if (libraryOpen) 1 else 0, Modifier.weight(1f)) { library ->
-                if (library) {
-                    LibraryScreen(
+            // All three top-level destinations share one tab motion.
+            TabSwitch(selectedTab, tabIndex = selectedTab.ordinal, Modifier.weight(1f)) { tab ->
+                when (tab) {
+                    TopDestination.LIBRARY -> LibraryScreen(
                         destinations = LibraryDestination.entries.filter { it.isAvailable(state) },
                         unreadSpam = state.unreadSpam,
                         onOpen = onLibrary,
                         modifier = Modifier.fillMaxSize(),
                     )
-                } else {
-                    Column(Modifier.fillMaxSize().nestedScroll(header.nestedScrollConnection)) {
+                    TopDestination.SETTINGS -> settingsContent()
+                    TopDestination.INBOX -> Column(Modifier.fillMaxSize().nestedScroll(header.nestedScrollConnection)) {
                         IdentityBand(
                             state, compactHeight, forcedCollapsed, header, onSearch, onSelectAll, onClearSelection,
                             search, onSearchQuery, onSearchBack,
@@ -719,7 +712,7 @@ private fun InboxPreviewContent(state: InboxUiState, dark: Boolean) {
             state = state,
             snackbarHostState = remember { SnackbarHostState() },
             onOpen = {}, onToggleSelection = {}, onSelectAll = {}, onClearSelection = {}, onAction = {},
-            onSwipe = { _, _ -> }, onFilter = {}, onSearch = {}, onNewMessage = {}, onLibrary = {}, onSettings = {},
+            onSwipe = { _, _ -> }, onFilter = {}, onSearch = {}, onNewMessage = {}, onLibrary = {},
         )
     }
 }
