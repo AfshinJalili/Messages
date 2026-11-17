@@ -55,7 +55,7 @@ class MoveBlockRulesActivity : ComposePageActivity() {
     }
 
     private fun export(uri: Uri) = lifecycleScope.launch {
-        val rules = BlockRules(config.spamNumbers, config.blockedKeywords)
+        val rules = BlockRules(config.spamNumbers, config.blockedKeywords, config.allowedNumbers)
         val written = withContext(Dispatchers.IO) {
             runCatching {
                 contentResolver.openOutputStream(uri)?.use { BlockRulesFile.write(rules, it) } != null
@@ -68,12 +68,13 @@ class MoveBlockRulesActivity : ComposePageActivity() {
         val rules = withContext(Dispatchers.IO) {
             runCatching { contentResolver.openInputStream(uri)?.use(BlockRulesFile::read) }.getOrNull()
         }
-        if (rules == null || rules.numbers.isEmpty() && rules.phrases.isEmpty()) {
+        if (rules == null || rules.numbers.isEmpty() && rules.phrases.isEmpty() && rules.allowed.isEmpty()) {
             report(getString(org.fossify.commons.R.string.importing_failed))
             return@launch
         }
         rules.numbers.forEach(config::addSpamNumber)
         rules.phrases.forEach(config::addBlockedKeyword)
+        rules.allowed.forEach(config::addAllowedNumber)
         reload()
         report(
             getString(
