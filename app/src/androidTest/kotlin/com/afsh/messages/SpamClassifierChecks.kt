@@ -89,19 +89,20 @@ class SpamClassifierChecks {
         val body = "جشنواره تخفیف 1403 لغو11"
         check(reason("SHOP", body) == BLOCK_REASON_RULE)
         val why: SpamWhy = context.spamWhy(BLOCK_REASON_RULE, "SHOP", body)
-        check(why.label == R.string.spam_why_unsubscribe) { "$why" }
-        check(why.matchedWords(body) == listOf("لغو")) { "${why.matchedWords(body)}" }
+        check(why.label == R.string.spam_why_marketing) { "$why" }
+        check(why.matchedWords(body).containsAll(listOf("جشنواره", "تخفیف"))) { "${why.matchedWords(body)}" }
+        check(!why.matchedWords(body).any { it.contains("لغو") }) { "لغو must not be a Why match: ${why.matchedWords(body)}" }
         check(!why.stale)
     }
 
     @Test
     fun editedPatternsPersistAndDriveTheVerdict() {
         context.config.ruleFilterEnabled = true
-        val body = "Special offer, reply STOP"
+        val body = "پیشنهاد ویژه امروز"
         check(RuleBasedFilter.explain(context, "SHOP", body).verdict == FilterVerdict.NO_VERDICT)
-        context.config.spamPatterns = context.config.spamPatterns.with(SpamPatternGroup.UNSUBSCRIBE, listOf("reply stop"))
-        check(context.config.spamPatterns[SpamPatternGroup.UNSUBSCRIBE] == listOf("reply stop"))
-        check(context.config.spamPatterns[SpamPatternGroup.MARKETING] == SpamPatterns.DEFAULT[SpamPatternGroup.MARKETING])
+        context.config.spamPatterns = context.config.spamPatterns.with(SpamPatternGroup.MARKETING, listOf("پیشنهاد ویژه"))
+        check(context.config.spamPatterns[SpamPatternGroup.MARKETING] == listOf("پیشنهاد ویژه"))
+        check(context.config.spamPatterns[SpamPatternGroup.LINKS] == SpamPatterns.DEFAULT[SpamPatternGroup.LINKS])
         check(RuleBasedFilter.explain(context, "SHOP", body).verdict == FilterVerdict.BLOCK)
         check(context.spamWhy(BLOCK_REASON_RULE, "SHOP", "hello").stale) { "No match now must read as stale" }
         context.config.spamPatterns = SpamPatterns.DEFAULT

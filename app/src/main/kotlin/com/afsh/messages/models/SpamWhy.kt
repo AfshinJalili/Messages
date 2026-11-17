@@ -35,7 +35,6 @@ fun Context.spamWhy(reason: Int, address: String, body: String): SpamWhy = when 
     BLOCK_REASON_RULE -> {
         val result = RuleBasedFilter.explain(config.spamPatterns, address, body)
         val label = when (result.rule) {
-            FilterRule.UNSUBSCRIBE -> R.string.spam_why_unsubscribe
             FilterRule.MARKETING -> R.string.spam_why_marketing
             else -> R.string.block_reason_rule
         }

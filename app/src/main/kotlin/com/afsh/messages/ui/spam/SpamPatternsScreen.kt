@@ -83,18 +83,22 @@ sealed interface SpamPatternsEvent {
 private fun SpamPatternGroup.title() = when (this) {
     SpamPatternGroup.CODE_WORDS -> R.string.spam_patterns_code_words
     SpamPatternGroup.CODE -> R.string.spam_patterns_code
-    SpamPatternGroup.UNSUBSCRIBE -> R.string.spam_patterns_unsubscribe
+    SpamPatternGroup.TRANSACTIONAL -> R.string.spam_patterns_transactional
     SpamPatternGroup.LINKS -> R.string.spam_patterns_links
     SpamPatternGroup.MARKETING -> R.string.spam_patterns_marketing
+    SpamPatternGroup.PROMO_EMOJI -> R.string.spam_patterns_promo_emoji
+    SpamPatternGroup.PROMO_EMOJI_WEAK -> R.string.spam_patterns_promo_emoji_weak
 }
 
 @StringRes
 private fun SpamPatternGroup.description() = when (this) {
     SpamPatternGroup.CODE_WORDS -> R.string.spam_patterns_code_words_text
     SpamPatternGroup.CODE -> R.string.spam_patterns_code_text
-    SpamPatternGroup.UNSUBSCRIBE -> R.string.spam_patterns_unsubscribe_text
+    SpamPatternGroup.TRANSACTIONAL -> R.string.spam_patterns_transactional_text
     SpamPatternGroup.LINKS -> R.string.spam_patterns_links_text
     SpamPatternGroup.MARKETING -> R.string.spam_patterns_marketing_text
+    SpamPatternGroup.PROMO_EMOJI -> R.string.spam_patterns_promo_emoji_text
+    SpamPatternGroup.PROMO_EMOJI_WEAK -> R.string.spam_patterns_promo_emoji_weak_text
 }
 
 /** The pattern being edited: [index] is null for a new one. */
@@ -280,7 +284,7 @@ private fun TryMessage(patterns: SpamPatterns) {
 @StringRes
 private fun FilterResult.label() = when (rule) {
     FilterRule.ONE_TIME_CODE -> R.string.spam_patterns_result_code
-    FilterRule.UNSUBSCRIBE -> R.string.spam_patterns_result_unsubscribe
+    FilterRule.TRANSACTIONAL -> R.string.spam_patterns_result_transactional
     FilterRule.MARKETING -> R.string.spam_patterns_result_marketing
     null -> R.string.spam_patterns_result_none
 }
