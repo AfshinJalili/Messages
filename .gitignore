@@ -18,3 +18,9 @@ keystore.properties
 .vscode/
 *.jks
 *.keystore
+
+# Gradle module outputs
+app/build/
+commons/build/
+__pycache__/
+*.py[cod]
