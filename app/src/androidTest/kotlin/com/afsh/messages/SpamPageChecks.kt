@@ -15,12 +15,14 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.hasScrollToKeyAction
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToKey
 import androidx.compose.ui.test.performTouchInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.afsh.messages.models.SpamReviewMessage
@@ -93,6 +95,8 @@ class SpamPageChecks {
         compose.onNodeWithContentDescription(text(R.string.not_spam_short)).performClick()
         check(events.none { it is SpamEvent.NotSpam }) { "Not spam must open the sheet first: $events" }
         compose.onNodeWithText(text(R.string.not_spam_only)).performClick()
+        // AfshSheet.dismissThen hides first, then fires — wait like SheetChecks.
+        compose.waitUntil(5_000) { events.any { it is SpamEvent.NotSpam } }
         check(events.last() == SpamEvent.NotSpam(listOf(messages[1]), neverSpamSender = false)) { "Events $events" }
         compose.onNodeWithContentDescription(text(R.string.not_spam_short)).assertDoesNotExist()
 
@@ -135,6 +139,9 @@ class SpamPageChecks {
         compose.onNodeWithText("Claim your reward").performClick()
         check(events.last() == BlockRulesEvent.EditPhrase("Claim your reward")) { "Events $events" }
 
+        // Filter rules grew (unknown-numbers, what-the-filter, patterns); the add row sits below
+        // the fold on a phone-height LazyColumn until scrolled into composition.
+        compose.onNode(hasScrollToKeyAction()).performScrollToKey("add")
         compose.onNodeWithText(text(R.string.add_phrase_or_number)).performClick()
         compose.onNodeWithText(text(R.string.block_a_number)).performClick()
         check(events.last() == BlockRulesEvent.AddNumber) { "Events $events" }
