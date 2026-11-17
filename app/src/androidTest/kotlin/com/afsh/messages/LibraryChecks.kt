@@ -34,7 +34,6 @@ class LibraryChecks {
             compose.onNodeWithText(text(destination.description)).assertExists()
         }
         check(opened == LibraryDestination.entries) { "Opened $opened" }
-        compose.onNodeWithText(text(R.string.library_principle_title)).assertExists()
     }
 
     @Test

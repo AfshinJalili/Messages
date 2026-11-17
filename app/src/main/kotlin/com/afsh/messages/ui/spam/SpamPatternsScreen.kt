@@ -118,7 +118,6 @@ fun SpamPatternsScreen(
     PageScaffold(
         title = stringResource(R.string.spam_patterns),
         modifier = modifier,
-        subtitle = stringResource(R.string.spam_patterns_subtitle),
         onBack = { onEvent(SpamPatternsEvent.Back) },
         navigation = navigation,
         snackbarHostState = snackbarHostState,

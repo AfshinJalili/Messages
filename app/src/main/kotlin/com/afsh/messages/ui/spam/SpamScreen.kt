@@ -170,7 +170,6 @@ fun SpamScreen(
     PageScaffold(
         title = stringResource(R.string.inbox_spam),
         modifier = modifier,
-        subtitle = stringResource(R.string.spam_subtitle),
         onBack = { onEvent(SpamEvent.Back) },
         navigation = navigation,
         snackbarHostState = snackbarHostState,

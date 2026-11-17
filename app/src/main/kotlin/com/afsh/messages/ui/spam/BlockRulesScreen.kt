@@ -90,7 +90,6 @@ fun BlockRulesScreen(
     PageScaffold(
         title = stringResource(R.string.block_rules),
         modifier = modifier,
-        subtitle = stringResource(R.string.block_rules_subtitle),
         onBack = { onEvent(BlockRulesEvent.Back) },
         navigation = navigation,
         actions = {
