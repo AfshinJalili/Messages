@@ -168,15 +168,15 @@ enum class ThreadMenuAction(@AnyRes val label: Int, val icon: AfshIcon, val labe
     COPY_NUMBER(org.fossify.commons.R.string.copy_number_to_clipboard, AfshIcon.Copy),
     ARCHIVE(R.string.archive, AfshIcon.Archive),
     UNARCHIVE(R.string.unarchive, AfshIcon.Inbox),
-    ALLOW_SENDER(R.plurals.allow_sender, AfshIcon.Verified, labelIsQuantity = true),
-    BLOCK(R.plurals.block_number, AfshIcon.Block, labelIsQuantity = true),
+    NEVER_SPAM(R.plurals.never_spam, AfshIcon.Verified, labelIsQuantity = true),
+    ALWAYS_SPAM(R.plurals.always_spam, AfshIcon.SpamShield, labelIsQuantity = true),
     RESTORE(R.string.restore_all_messages, AfshIcon.Restore),
     DELETE(org.fossify.commons.R.string.delete, AfshIcon.Delete),
 
     ;
 
     /** Shown in the error color: these remove or shut out the conversation. */
-    val destructive: Boolean get() = this == DELETE || this == BLOCK
+    val destructive: Boolean get() = this == DELETE
 }
 
 /** Declaration order is the display order; the bar takes the first few (design view 10), the rest overflow. */

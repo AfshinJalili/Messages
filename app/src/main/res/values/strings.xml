@@ -6,9 +6,17 @@
     <string name="clear_spam">Clear all</string>
     <string name="clear_spam_confirmation">Permanently delete all blocked messages?</string>
     <string name="not_spam">Not spam (restore to inbox)</string>
-    <plurals name="allow_sender">
-        <item quantity="one">Always allow this sender</item>
-        <item quantity="other">Always allow these senders</item>
+    <plurals name="never_spam">
+        <item quantity="one">Never spam this sender</item>
+        <item quantity="other">Never spam these senders</item>
+    </plurals>
+    <plurals name="never_spam_title">
+        <item quantity="one">Never spam %s?</item>
+        <item quantity="other">Never spam these %d senders?</item>
+    </plurals>
+    <plurals name="never_spam_text">
+        <item quantity="one">Their messages stay in the inbox, even if they match a phrase or the marketing filter. You can change this under Filter rules.</item>
+        <item quantity="other">Their messages stay in the inbox, even if they match a phrase or the marketing filter. You can change this under Filter rules.</item>
     </plurals>
     <string name="sender_allowed">Sender allowed and message restored</string>
     <plurals name="message_restored">
@@ -283,21 +291,29 @@
     <!-- Spam and filter rules (design 20, 21, 38, 50, 51) -->
     <string name="spam_empty_text">Blocked and suspicious messages stay here without an inbox alert.</string>
     <string name="not_spam_short">Not spam</string>
-    <plurals name="block_number">
-        <item quantity="one">Block number</item>
-        <item quantity="other">Block numbers</item>
+    <plurals name="always_spam">
+        <item quantity="one">Always spam this sender</item>
+        <item quantity="other">Always spam these senders</item>
+    </plurals>
+    <plurals name="always_spam_title">
+        <item quantity="one">Always treat %s as spam?</item>
+        <item quantity="other">Always treat these %d senders as spam?</item>
+    </plurals>
+    <plurals name="always_spam_text">
+        <item quantity="one">New messages from them will go to Spam with no alert, from now on. Existing messages stay where they are. Review future ones in Library → Spam.</item>
+        <item quantity="other">New messages from them will go to Spam with no alert, from now on. Existing messages stay where they are. Review future ones in Library → Spam.</item>
     </plurals>
     <plurals name="block_sender">
-        <item quantity="one">Block sender</item>
-        <item quantity="other">Block senders</item>
+        <item quantity="one">Always spam this sender</item>
+        <item quantity="other">Always spam these senders</item>
     </plurals>
     <plurals name="block_sender_title">
-        <item quantity="one">Block %s?</item>
-        <item quantity="other">Block these %d senders?</item>
+        <item quantity="one">Always treat %s as spam?</item>
+        <item quantity="other">Always treat these %d senders as spam?</item>
     </plurals>
     <plurals name="block_sender_text">
-        <item quantity="one">Their new messages will go straight to Spam, without an alert. You can unblock them in Filter rules.</item>
-        <item quantity="other">Their new messages will go straight to Spam, without an alert. You can unblock them in Filter rules.</item>
+        <item quantity="one">New messages from them will go to Spam with no alert, from now on. Existing messages stay where they are.</item>
+        <item quantity="other">New messages from them will go to Spam with no alert, from now on. Existing messages stay where they are.</item>
     </plurals>
     <string name="clear_spam_title">Delete all spam?</string>
     <string name="filter_rules">Filter rules</string>

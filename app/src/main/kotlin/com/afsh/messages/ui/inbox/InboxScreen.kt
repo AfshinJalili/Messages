@@ -680,7 +680,7 @@ private fun InboxAction.toBarAction(count: Int, onAction: (InboxAction) -> Unit)
     BarAction(
         actionLabel(label, count, labelIsQuantity),
         icon,
-        destructive = this == InboxAction.BLOCK || this == InboxAction.DELETE,
+        destructive = this == InboxAction.DELETE,
     ) { onAction(this) }
 
 private enum class InboxBottomBar { SELECTION, NAVIGATION, NONE }

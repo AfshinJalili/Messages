@@ -335,21 +335,21 @@ class ThreadHeaderRulesTest {
     private val single = ThreadFacts(title = "+1555", participantCount = 1, firstNumber = "+1555", firstName = "+1555", hasConversation = true, archived = false, hasItems = true)
 
     @Test
-    fun `an unsaved number offers adding to contacts and blocking`() {
+    fun `an unsaved number offers adding to contacts and always or never spam`() {
         val actions = threadMenuActions(single)
         assertTrue(ThreadMenuAction.ADD_TO_CONTACT in actions)
-        assertTrue(ThreadMenuAction.BLOCK in actions)
+        assertTrue(ThreadMenuAction.ALWAYS_SPAM in actions)
+        assertTrue(ThreadMenuAction.NEVER_SPAM in actions)
         assertTrue(ThreadMenuAction.ARCHIVE in actions)
-        assertFalse(ThreadMenuAction.ALLOW_SENDER in actions)
         assertFalse(ThreadMenuAction.RENAME in actions)
         assertEquals(ThreadMenuAction.entries.filter { it in actions }, actions)
     }
 
     @Test
-    fun `a blocked sender is allowed rather than blocked`() {
+    fun `an always-spam sender is not offered always spam again`() {
         val actions = threadMenuActions(single.copy(senderBlocked = true))
-        assertTrue(ThreadMenuAction.ALLOW_SENDER in actions)
-        assertFalse(ThreadMenuAction.BLOCK in actions)
+        assertTrue(ThreadMenuAction.NEVER_SPAM in actions)
+        assertFalse(ThreadMenuAction.ALWAYS_SPAM in actions)
     }
 
     @Test
