@@ -84,7 +84,8 @@ enum class InboxAction(@AnyRes val label: Int, val icon: AfshIcon, val labelIsQu
     COPY_NUMBER(org.fossify.commons.R.string.copy_number_to_clipboard, AfshIcon.Copy),
     RENAME(R.string.rename_conversation, AfshIcon.Edit),
     DETAILS(R.string.conversation_details, AfshIcon.Info),
-    BLOCK(R.plurals.block_number, AfshIcon.Block, labelIsQuantity = true),
+    ALWAYS_SPAM(R.plurals.always_spam, AfshIcon.SpamShield, labelIsQuantity = true),
+    NEVER_SPAM(R.plurals.never_spam, AfshIcon.Verified, labelIsQuantity = true),
 }
 
 /** Declaration order of [InboxAction] is the display order; the bar shows the first few, the rest overflow. */
@@ -105,7 +106,8 @@ fun availableActions(selected: List<InboxRow>, archiveAvailable: Boolean): List<
             InboxAction.ADD_TO_CONTACT, InboxAction.COPY_NUMBER -> person
             InboxAction.RENAME -> single && first.conversation.isGroupConversation
             InboxAction.DETAILS -> single
-            InboxAction.DELETE, InboxAction.BLOCK -> true
+            InboxAction.DELETE -> true
+            InboxAction.ALWAYS_SPAM, InboxAction.NEVER_SPAM -> true
         }
     }
 }

@@ -56,6 +56,7 @@ data class ThreadFacts(
     val hasItems: Boolean = false,
     val isRecycleBin: Boolean = false,
     val senderBlocked: Boolean = false,
+    val senderAllowed: Boolean = false,
     val muted: Boolean = false,
     /** A letter short code, which cannot receive replies. */
     val specialNumber: Boolean = false,
@@ -84,9 +85,8 @@ fun threadMenuActions(facts: ThreadFacts): List<ThreadMenuAction> = with(facts) 
             ThreadMenuAction.COPY_NUMBER -> single && !firstNumber.isNullOrEmpty() && !isRecycleBin
             ThreadMenuAction.ARCHIVE -> hasItems && archived == false && !isRecycleBin && archiveAvailable
             ThreadMenuAction.UNARCHIVE -> hasItems && archived == true && !isRecycleBin && archiveAvailable
-            // Also the way to unblock, since allowing a number removes it from the blocked set.
-            ThreadMenuAction.ALLOW_SENDER -> !isRecycleBin && single && (senderBlocked || hasSpam)
-            ThreadMenuAction.BLOCK -> !isRecycleBin && !senderBlocked
+            ThreadMenuAction.NEVER_SPAM -> !isRecycleBin && single && !senderAllowed
+            ThreadMenuAction.ALWAYS_SPAM -> !isRecycleBin && !senderBlocked
             ThreadMenuAction.RESTORE -> hasItems && isRecycleBin
             ThreadMenuAction.DELETE -> hasItems
         }

@@ -489,8 +489,8 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
     private fun handleMenuItemAction(action: ThreadMenuAction) {
         when (action) {
             ThreadMenuAction.SEARCH -> holder.openSearch()
-            ThreadMenuAction.BLOCK -> blockNumber()
-            ThreadMenuAction.ALLOW_SENDER -> unmarkSpam(data.list.filter { data.isSpam(it) }, allowSender = true)
+            ThreadMenuAction.ALWAYS_SPAM -> alwaysSpamSender()
+            ThreadMenuAction.NEVER_SPAM -> neverSpamSender()
             ThreadMenuAction.DELETE -> askConfirmDelete()
             ThreadMenuAction.RESTORE -> askConfirmRestoreAll()
             ThreadMenuAction.ARCHIVE -> setArchived(true)
@@ -558,6 +558,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
                 hasItems = threadItems.isNotEmpty(),
                 isRecycleBin = isRecycleBin,
                 senderBlocked = single && config.spamNumbers.containsNumber(participants.getAddresses().first()),
+                senderAllowed = single && config.allowedNumbers.containsNumber(participants.getAddresses().first()),
                 muted = config.isConversationMuted(threadId),
                 specialNumber = isSpecialNumber(),
                 hasSpam = data.list.any { data.isSpam(it) },
@@ -1151,21 +1152,37 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         )
     }
 
-    private fun blockNumber() {
+    private fun alwaysSpamSender() {
         val numbers = participants.getAddresses()
         val names = conversation?.title ?: TextUtils.join(", ", numbers)
         confirm(
-            title = resources.getQuantityString(R.plurals.block_sender_title, 1, names),
-            explanation = resources.getQuantityString(R.plurals.block_sender_text, 1),
-            confirmLabel = resources.getQuantityString(R.plurals.block_sender, 1),
-            destructive = true,
+            title = resources.getQuantityString(R.plurals.always_spam_title, 1, names),
+            explanation = resources.getQuantityString(R.plurals.always_spam_text, 1),
+            confirmLabel = resources.getQuantityString(R.plurals.always_spam, 1),
         ) {
             ensureBackgroundThread {
-                // App-level block: new SMS from these numbers are stored and go to Spam.
-                numbers.forEach {
-                    config.addSpamNumber(it)
-                }
+                numbers.forEach { config.addSpamNumber(it) }
                 runOnUiThread { refreshMenuItems() }
+            }
+        }
+    }
+
+    private fun neverSpamSender() {
+        val numbers = participants.getAddresses()
+        val names = conversation?.title ?: TextUtils.join(", ", numbers)
+        confirm(
+            title = resources.getQuantityString(R.plurals.never_spam_title, 1, names),
+            explanation = resources.getQuantityString(R.plurals.never_spam_text, 1),
+            confirmLabel = resources.getQuantityString(R.plurals.never_spam, 1),
+        ) {
+            val spam = data.list.filter { data.isSpam(it) }
+            if (spam.isNotEmpty()) {
+                unmarkSpam(spam, allowSender = true)
+            } else {
+                ensureBackgroundThread {
+                    numbers.forEach { config.addAllowedNumber(it) }
+                    runOnUiThread { refreshMenuItems() }
+                }
             }
         }
     }
