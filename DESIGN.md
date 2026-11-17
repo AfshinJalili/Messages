@@ -111,7 +111,7 @@ Inbox, Library, and Settings are three tabs of `MainActivity` (`TabSwitch` + `Se
 | --- | --- | --- | --- |
 | Open screen (Activity theme or in-Activity `ScreenStack`) | New screen slides in from the end edge; the screen underneath shifts toward the start by `motion_parallax` (25% of width) | `motion_open_ms` (220ms) | Emphasized decelerate |
 | Close screen (Back, up, predictive back) | Exact reverse of open | `motion_close_ms` (220ms) | Emphasized decelerate |
-| Switch bottom-nav / rail tabs (`TabSwitch`) | Both panes shift by `motion_tab_shift` (30% of width) in the tab-order direction | `motion_tab_ms` (120ms) | Emphasized decelerate |
+| Switch bottom-nav / rail tabs (`TabSwitch`) | Opaque incoming pane slides in by `motion_tab_shift` (30% of width) over the outgoing pane, which stays put until covered and dropped; saveable state is kept per tab | `motion_tab_ms` (120ms) | Emphasized decelerate |
 
 RTL mirrors start/end automatically: Compose uses `SlideDirection.Start`/`End`, and Activity XML ships mirrored sets under `anim-ldrtl/`. Predictive back on Android 14+ drives the same close motion for Activities (theme `windowAnimationStyle`) and for in-Activity stacks (`SeekableTransitionState` in `ScreenStack`).
 

@@ -146,6 +146,28 @@ for path in kotlin.rglob('*.kt'):
             violations.append(f'{rel(path)}: must define EmphasizedDecelerate')
         if 'clipToBounds' not in text:
             violations.append(f'{rel(path)}: ScreenStack/TabSwitch must clipToBounds to drop off-host exit frames')
+        # TabSwitch: opaque cover over a stationary outgoing pane (not a mutual tabShift slide).
+        if 'rememberSaveableStateHolder' not in text or 'SaveableStateProvider' not in text:
+            violations.append(
+                f'{rel(path)}: TabSwitch must keep saveable state per tab (SaveableStateHolder)'
+            )
+        if 'colorScheme.surface' not in text or 'Surface(Modifier.fillMaxSize(), color = surface)' not in text:
+            violations.append(
+                f'{rel(path)}: TabSwitch panes must paint an opaque Material Surface so the old tab cannot show through'
+            )
+        if 'targetOffset = { 0 }' not in text:
+            violations.append(
+                f'{rel(path)}: TabSwitch exit must stay put (targetOffset 0) under the opaque incoming cover'
+            )
+        if re.search(
+            r'targetOffset\s*=\s*\{\s*fullWidth\s*->\s*\(fullWidth\s*\*\s*tokens\.tabShift\)',
+            text,
+        ):
+            violations.append(
+                f'{rel(path)}: TabSwitch must not exit by tabShift; that leaves ~70% of the old pane on screen'
+            )
+        if 'targetContentZIndex = 1f' not in text:
+            violations.append(f'{rel(path)}: TabSwitch incoming pane must sit above the outgoing pane')
         continue
     if path == INBOX:
         for number, line in enumerate(text.splitlines(), 1):
