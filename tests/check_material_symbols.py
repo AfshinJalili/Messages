@@ -23,9 +23,8 @@ fixtures = root / 'tests/fixtures/material_symbols'
 
 # Non-icon art that may remain as vectors. Shortcut layers are not <vector> files.
 VECTOR_EXCEPTIONS = {
-    'ic_launcher_foreground',   # adaptive launcher foreground (app brand mark)
-    'ic_launcher_monochrome',   # themed-icon / monochrome launcher mark
-    'ic_message_bubble',        # notification small-icon brand mark
+    'ic_launcher_foreground',   # adaptive / themed / splash brand mark (single source)
+    'ic_message_bubble',        # notification small-icon; generated from the foreground
 }
 
 
