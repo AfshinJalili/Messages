@@ -172,7 +172,7 @@ Done. Differences from the design above:
 - Thread-wide read state, the unread separator and the initial unread scroll all ignore spam, so the Spam screen keeps its own unread count. `OPEN_SPAM` marks all spam in the thread read after scrolling to it.
 - Phase 4 first folded consecutive spam into a collapsible `ThreadSpamGroup` row. #167 removed it, with its strings, its view type and the jump-into-group logic.
 - The spam label goes in the message footer: "Spam · Keyword · 12:44".
-- "Never spam from this sender" uses the existing "Always allow this sender" string. It adds each spam sender address in the thread to the allowlist, then removes the thread's markers.
+- "Never spam this sender" allowlists the sender and restores their spam. From Spam, Not spam always opens a two-choice sheet.
 
 The JVM test `ThreadItemsTest` (`ThreadSpamChecks` on the phone until #242, `ThreadSpamGroupChecks` before #167) covers inline spam, the unread separator and hidden messages. On 24 September 2026, 29 of 30 passed across `ThreadSpamGroupChecks`, `SpamChecks`, `InboxChecks`, `ReadStateChecks`, `DeletionChecks` and `MessageActionChecks`, with the same `completedReadUpdatesInboxFromRoom` failure. The thread UI was not opened on the device, because opening a thread marks real messages read.
 

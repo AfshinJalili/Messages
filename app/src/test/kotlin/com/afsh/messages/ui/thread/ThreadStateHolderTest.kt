@@ -360,7 +360,10 @@ class ThreadHeaderRulesTest {
     @Test
     fun `groups are renamed and say how many people`() {
         val group = ThreadFacts(title = "Family", participantCount = 3, hasConversation = true, groupSubtitle = "3 people")
-        assertTrue(ThreadMenuAction.RENAME in threadMenuActions(group))
+        val actions = threadMenuActions(group)
+        assertTrue(ThreadMenuAction.RENAME in actions)
+        assertFalse(ThreadMenuAction.NEVER_SPAM in actions)
+        assertFalse(ThreadMenuAction.BLOCK_ON_PHONE in actions)
         assertEquals("3 people", threadHeader(group, "").subtitle)
         assertTrue(threadHeader(group, "").isGroup)
         assertEquals("", greetingName(group, "Family"))

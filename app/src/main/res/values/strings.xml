@@ -306,18 +306,6 @@
         <item quantity="one">New messages from them will go to Spam with no alert, from now on. Existing messages stay where they are. Review future ones in Library → Spam.</item>
         <item quantity="other">New messages from them will go to Spam with no alert, from now on. Existing messages stay where they are. Review future ones in Library → Spam.</item>
     </plurals>
-    <plurals name="block_sender">
-        <item quantity="one">Always spam this sender</item>
-        <item quantity="other">Always spam these senders</item>
-    </plurals>
-    <plurals name="block_sender_title">
-        <item quantity="one">Always treat %s as spam?</item>
-        <item quantity="other">Always treat these %d senders as spam?</item>
-    </plurals>
-    <plurals name="block_sender_text">
-        <item quantity="one">New messages from them will go to Spam with no alert, from now on. Existing messages stay where they are.</item>
-        <item quantity="other">New messages from them will go to Spam with no alert, from now on. Existing messages stay where they are.</item>
-    </plurals>
     <plurals name="block_on_phone">
         <item quantity="one">Block on this phone</item>
         <item quantity="other">Block these senders on this phone</item>
@@ -362,6 +350,7 @@
     <string name="spam_why_sender">you marked this sender as always spam</string>
     <string name="spam_why_android">blocked on Android</string>
     <string name="spam_why_unknown">unknown number</string>
+    <string name="no_always_spam_senders">No always-spam senders</string>
     <string name="no_never_spam_senders">No never-spam senders</string>
     <string name="no_android_blocked">No numbers blocked on Android</string>
     <string name="remove_never_spam">Remove %s</string>
@@ -396,11 +385,11 @@
         <item quantity="other">%d never-spam senders</item>
     </plurals>
     <string name="rules_export_privacy">The file lists blocked numbers and phrases. Store it privately.</string>
-    <string name="export_block_list">Export block list</string>
-    <string name="have_a_block_list">Have a block list?</string>
-    <string name="have_a_block_list_text">Choose a file to merge rules with this device.</string>
+    <string name="export_filter_rules">Export filter rules</string>
+    <string name="have_filter_rules">Have filter rules?</string>
+    <string name="have_filter_rules_text">Choose a file to merge rules with this device.</string>
     <string name="filter_rules_file_name" translatable="false">messages-filter-rules.json</string>
-    <string name="filter_rules_exported">Block list exported</string>
+    <string name="filter_rules_exported">Filter rules exported</string>
     <string name="filter_rules_imported">Added %s</string>
 
     <!-- Settings (design 24–31, 48, 49) -->
@@ -662,7 +651,7 @@
     <string name="spam_why_words">Why: %1$s · %2$s</string>
     <string name="spam_why_stale">Why: %s · the current rules no longer catch it</string>
     <string name="spam_why_phrase">Blocked phrase</string>
-    <string name="spam_why_marketing">Marketing words</string>
+    <string name="spam_why_marketing">Marketing words and emojis</string>
     <string name="spam_patterns">Spam patterns</string>
     <string name="spam_patterns_card">See, test and edit the rule patterns</string>
     <string name="spam_patterns_filter_off">Filter obvious spam is off</string>

@@ -34,10 +34,7 @@ fun WhatFilterLooksForScreen(
     patterns: SpamPatterns = SpamPatterns.DEFAULT,
 ) {
     val words = remember(patterns) { plainFilterLabels(patterns[SpamPatternGroup.MARKETING]) }
-    val emojis = remember(patterns) {
-        plainFilterLabels(patterns[SpamPatternGroup.PROMO_EMOJI]) +
-            plainFilterLabels(patterns[SpamPatternGroup.PROMO_EMOJI_WEAK])
-    }
+    val emojis = remember(patterns) { plainFilterLabels(patterns[SpamPatternGroup.PROMO_EMOJI]) }
     PageScaffold(
         title = stringResource(R.string.what_filter_looks_for),
         modifier = modifier,

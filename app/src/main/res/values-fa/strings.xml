@@ -284,18 +284,6 @@
         <item quantity="one">از حالا پیام‌های تازه‌اش بی‌اعلان به هرزنامه می‌روند. پیامک‌های فعلی‌اش سر جایشان می‌مانند. پیام‌های بعدی را در کتابخانه ← هرزنامه ببینید.</item>
         <item quantity="other">از حالا پیام‌های تازه‌شان بی‌اعلان به هرزنامه می‌روند. پیامک‌های فعلی‌شان سر جایشان می‌مانند. پیام‌های بعدی را در کتابخانه ← هرزنامه ببینید.</item>
     </plurals>
-    <plurals name="block_sender">
-        <item quantity="one">همیشه این فرستنده را هرزنامه کن</item>
-        <item quantity="other">همیشه این فرستنده‌ها را هرزنامه کن</item>
-    </plurals>
-    <plurals name="block_sender_title">
-        <item quantity="one">همیشه %s هرزنامه باشد؟</item>
-        <item quantity="other">همیشه این %d فرستنده هرزنامه باشند؟</item>
-    </plurals>
-    <plurals name="block_sender_text">
-        <item quantity="one">از حالا پیام‌های تازه‌اش بی‌اعلان به هرزنامه می‌روند. پیامک‌های فعلی‌اش سر جایشان می‌مانند.</item>
-        <item quantity="other">از حالا پیام‌های تازه‌شان بی‌اعلان به هرزنامه می‌روند. پیامک‌های فعلی‌شان سر جایشان می‌مانند.</item>
-    </plurals>
     <plurals name="block_on_phone">
         <item quantity="one">مسدود کردن روی این گوشی</item>
         <item quantity="other">مسدود کردن این فرستنده‌ها روی این گوشی</item>
@@ -340,6 +328,7 @@
     <string name="spam_why_sender">این فرستنده را همیشه هرزنامه کرده‌اید</string>
     <string name="spam_why_android">مسدود در اندروید</string>
     <string name="spam_why_unknown">شمارهٔ ناشناس</string>
+    <string name="no_always_spam_senders">فرستندهٔ همیشه‌هرزنامه نیست</string>
     <string name="no_never_spam_senders">فرستندهٔ هرگز-هرزنامه نیست</string>
     <string name="no_android_blocked">شماره‌ای در اندروید مسدود نیست</string>
     <string name="remove_never_spam">حذف %s</string>
@@ -374,10 +363,10 @@
         <item quantity="other">%d فرستندهٔ هرگز-هرزنامه</item>
     </plurals>
     <string name="rules_export_privacy">این فایل شماره‌ها و عبارت‌های مسدود را فهرست می‌کند. آن را خصوصی نگه دارید.</string>
-    <string name="export_block_list">برون‌بری فهرست مسدودها</string>
-    <string name="have_a_block_list">فهرست مسدودها دارید؟</string>
-    <string name="have_a_block_list_text">فایلی انتخاب کنید تا قوانینش با این گوشی ادغام شود.</string>
-    <string name="filter_rules_exported">فهرست مسدودها برون‌بری شد</string>
+    <string name="export_filter_rules">برون‌بری قوانین فیلتر</string>
+    <string name="have_filter_rules">قوانین فیلتر دارید؟</string>
+    <string name="have_filter_rules_text">فایلی انتخاب کنید تا قوانینش با این گوشی ادغام شود.</string>
+    <string name="filter_rules_exported">قوانین فیلتر برون‌بری شد</string>
     <string name="filter_rules_imported">%s اضافه شد</string>
 
     <!-- Settings (design 24–31, 48, 49) -->
@@ -632,7 +621,7 @@
     <string name="spam_why_words">چرا: %1$s · %2$s</string>
     <string name="spam_why_stale">چرا: %s · قوانین فعلی دیگر آن را نمی‌گیرند</string>
     <string name="spam_why_phrase">عبارت مسدود</string>
-    <string name="spam_why_marketing">واژه‌های تبلیغاتی</string>
+    <string name="spam_why_marketing">واژه‌ها و اموجی‌های تبلیغاتی</string>
     <string name="spam_patterns">الگوهای هرزنامه</string>
     <string name="spam_patterns_card">دیدن، آزمودن و ویرایش الگوهای قوانین</string>
     <string name="spam_patterns_filter_off">فیلتر هرزنامه‌های آشکار خاموش است</string>

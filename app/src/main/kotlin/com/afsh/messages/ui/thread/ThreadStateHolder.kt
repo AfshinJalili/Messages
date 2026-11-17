@@ -87,7 +87,7 @@ fun threadMenuActions(facts: ThreadFacts): List<ThreadMenuAction> = with(facts) 
             ThreadMenuAction.UNARCHIVE -> hasItems && archived == true && !isRecycleBin && archiveAvailable
             ThreadMenuAction.NEVER_SPAM -> !isRecycleBin && single && !senderAllowed
             ThreadMenuAction.ALWAYS_SPAM -> !isRecycleBin && !senderBlocked
-            ThreadMenuAction.BLOCK_ON_PHONE -> !isRecycleBin
+            ThreadMenuAction.BLOCK_ON_PHONE -> !isRecycleBin && single
             ThreadMenuAction.RESTORE -> hasItems && isRecycleBin
             ThreadMenuAction.DELETE -> hasItems
         }

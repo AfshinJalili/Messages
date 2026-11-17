@@ -84,14 +84,14 @@ fun MoveRulesScreen(
                 color = colors.onSurfaceVariant,
             )
             AfshButton(
-                stringResource(R.string.export_block_list),
+                stringResource(R.string.export_filter_rules),
                 onClick = onExport,
                 modifier = Modifier.fillMaxWidth(),
                 enabled = numbers + phrases + allowed > 0,
             )
             InfoPanel(
-                title = stringResource(R.string.have_a_block_list),
-                body = stringResource(R.string.have_a_block_list_text),
+                title = stringResource(R.string.have_filter_rules),
+                body = stringResource(R.string.have_filter_rules_text),
                 modifier = Modifier
                     .clip(MaterialTheme.shapes.medium)
                     .clickable(role = Role.Button, onClick = onImport),

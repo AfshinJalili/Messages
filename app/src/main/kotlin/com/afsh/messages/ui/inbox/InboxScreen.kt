@@ -665,8 +665,13 @@ private fun NewMessageButton(expanded: Boolean, onClick: () -> Unit) {
 @Composable
 private fun InboxSelectionBar(state: InboxUiState, onAction: (InboxAction) -> Unit) {
     val count = state.selected.size.coerceAtLeast(1)
-    val actions = remember(state.selected, state.rows, state.archiveAvailable) {
-        availableActions(state.selectedRows, state.archiveAvailable).splitForBar()
+    val actions = remember(state.selected, state.rows, state.archiveAvailable, state.spamNumbers, state.allowedNumbers) {
+        availableActions(
+            state.selectedRows,
+            state.archiveAvailable,
+            spamNumbers = state.spamNumbers,
+            allowedNumbers = state.allowedNumbers,
+        ).splitForBar()
     }
     val (bar, overflow) = keptWhileLeaving(actions, empty = state.selected.isEmpty())
     SelectionBar(

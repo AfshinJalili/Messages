@@ -43,6 +43,15 @@ class ActionLabelQuantityTest {
     }
 
     @Test
+    fun `never spam and block on phone stay off a group thread`() {
+        val actions = threadMenuActions(
+            ThreadFacts(participantCount = 3, hasConversation = true, hasItems = true),
+        )
+        assertFalse(ThreadMenuAction.NEVER_SPAM in actions)
+        assertFalse(ThreadMenuAction.BLOCK_ON_PHONE in actions)
+    }
+
+    @Test
     fun `always spam is hidden when the sender is already on the list`() {
         val actions = threadMenuActions(
             ThreadFacts(participantCount = 1, hasConversation = true, hasItems = true, senderBlocked = true),

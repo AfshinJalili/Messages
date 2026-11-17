@@ -7,6 +7,7 @@ import com.afsh.messages.R
 import com.afsh.messages.helpers.ImportProgress
 import com.afsh.messages.helpers.InboxFilter
 import com.afsh.messages.helpers.SwipeAction
+import com.afsh.messages.helpers.containsNumber
 import com.afsh.messages.messaging.isShortCodeWithLetters
 import com.afsh.messages.models.Conversation
 import com.afsh.messages.ui.components.AfshIcon
@@ -38,6 +39,8 @@ data class InboxUiState(
     val recycleBinAvailable: Boolean = true,
     val swipeLeft: SwipeAction = SwipeAction.NONE,
     val swipeRight: SwipeAction = SwipeAction.NONE,
+    val spamNumbers: Set<String> = emptySet(),
+    val allowedNumbers: Set<String> = emptySet(),
 ) {
     val selecting get() = selected.isNotEmpty()
     val navCounts get() = navCounts(unreadSpam, unreadMessages, inboxCountShown)
@@ -90,10 +93,16 @@ enum class InboxAction(@AnyRes val label: Int, val icon: AfshIcon, val labelIsQu
 }
 
 /** Declaration order of [InboxAction] is the display order; the bar shows the first few, the rest overflow. */
-fun availableActions(selected: List<InboxRow>, archiveAvailable: Boolean): List<InboxAction> {
+fun availableActions(
+    selected: List<InboxRow>,
+    archiveAvailable: Boolean,
+    spamNumbers: Collection<String> = emptySet(),
+    allowedNumbers: Collection<String> = emptySet(),
+): List<InboxAction> {
     val first = selected.firstOrNull() ?: return emptyList()
     val single = selected.size == 1
     val person = single && !first.conversation.isGroupConversation
+    val oneToOne = selected.isNotEmpty() && selected.none { it.conversation.isGroupConversation }
     return InboxAction.entries.filter { action ->
         when (action) {
             InboxAction.ARCHIVE -> archiveAvailable
@@ -108,7 +117,10 @@ fun availableActions(selected: List<InboxRow>, archiveAvailable: Boolean): List<
             InboxAction.RENAME -> single && first.conversation.isGroupConversation
             InboxAction.DETAILS -> single
             InboxAction.DELETE -> true
-            InboxAction.ALWAYS_SPAM, InboxAction.NEVER_SPAM, InboxAction.BLOCK_ON_PHONE -> true
+            InboxAction.ALWAYS_SPAM -> selected.any { !spamNumbers.containsNumber(it.conversation.phoneNumber) }
+            InboxAction.NEVER_SPAM -> oneToOne &&
+                selected.any { !allowedNumbers.containsNumber(it.conversation.phoneNumber) }
+            InboxAction.BLOCK_ON_PHONE -> oneToOne
         }
     }
 }

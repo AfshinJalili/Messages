@@ -97,7 +97,7 @@ fun BlockedNumbersScreen(
                     if (always.isEmpty()) {
                         item(key = "always-empty") {
                             Text(
-                                stringResource(R.string.no_blocked_numbers),
+                                stringResource(R.string.no_always_spam_senders),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )

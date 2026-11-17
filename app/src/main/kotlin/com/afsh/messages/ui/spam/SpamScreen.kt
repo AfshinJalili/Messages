@@ -46,6 +46,8 @@ import com.afsh.messages.R
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.semantics.selected
+import com.afsh.messages.extensions.config
+import com.afsh.messages.helpers.containsNumber
 import com.afsh.messages.ui.components.BarAction
 import com.afsh.messages.ui.components.SelectableBubbleRow
 import com.afsh.messages.ui.components.PageSelection
@@ -170,6 +172,8 @@ fun SpamScreen(
     var notSpamSheet by remember { mutableStateOf<List<SpamReviewMessage>?>(null) }
     var confirmDelete by remember { mutableStateOf<List<SpamReviewMessage>?>(null) }
     var confirmDeleteAll by remember { mutableStateOf(false) }
+    val spamNumbers = context.config.spamNumbers
+    val canAlwaysSpam = chosen.any { it.address.isNotEmpty() && !spamNumbers.containsNumber(it.address) }
     PageScaffold(
         title = stringResource(R.string.inbox_spam),
         modifier = modifier,
@@ -181,16 +185,29 @@ fun SpamScreen(
                 count = chosen.size,
                 onClear = clear,
                 onSelectAll = { selected = state.messages.mapTo(HashSet()) { it.id } },
-                actions = listOf(
-                    BarAction(stringResource(R.string.not_spam_short), AfshIcon.Inbox) {
-                        notSpamSheet = chosen
-                    },
-                    BarAction(
-                        pluralStringResource(R.plurals.always_spam, chosen.map { it.sender }.distinct().size.coerceAtLeast(1)),
-                        AfshIcon.SpamShield,
-                    ) { confirmBlock = chosen },
-                    BarAction(stringResource(org.fossify.commons.R.string.delete), AfshIcon.Delete, destructive = true) { confirmDelete = chosen },
-                ),
+                actions = buildList {
+                    add(
+                        BarAction(stringResource(R.string.not_spam_short), AfshIcon.Inbox) {
+                            notSpamSheet = chosen
+                        },
+                    )
+                    if (canAlwaysSpam) {
+                        add(
+                            BarAction(
+                                pluralStringResource(
+                                    R.plurals.always_spam,
+                                    chosen.map { it.address }.filter { it.isNotEmpty() }.distinct().size.coerceAtLeast(1),
+                                ),
+                                AfshIcon.SpamShield,
+                            ) { confirmBlock = chosen },
+                        )
+                    }
+                    add(
+                        BarAction(stringResource(org.fossify.commons.R.string.delete), AfshIcon.Delete, destructive = true) {
+                            confirmDelete = chosen
+                        },
+                    )
+                },
             )
         } else {
             null

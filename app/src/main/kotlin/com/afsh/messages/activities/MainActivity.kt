@@ -448,6 +448,8 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
             recycleBinAvailable = config.useRecycleBin,
             swipeLeft = config.swipeAction(towardsRight = false),
             swipeRight = config.swipeAction(towardsRight = true),
+            spamNumbers = config.spamNumbers,
+            allowedNumbers = config.allowedNumbers,
         )
         NavBadges.publish(inbox.navCounts)
     }
