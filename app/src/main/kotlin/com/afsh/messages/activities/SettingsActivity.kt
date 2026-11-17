@@ -70,8 +70,13 @@ class SettingsActivity : ComposePageActivity() {
 
     @Composable
     override fun Page() {
-        // Its pages move like screens of their own: each zooms in over the last, and Back shrinks it away.
-        ScreenStack(screen = pages.last(), depth = pages.size) { page ->
+        // Its pages move like screens of their own: each slides in from the end over the last.
+        ScreenStack(
+            screen = pages.last(),
+            depth = pages.size,
+            previous = pages.getOrNull(pages.lastIndex - 1),
+            onPop = { if (pages.size > 1) back() },
+        ) { page ->
             SettingsScreen(
                 state = state,
                 page = page,
@@ -177,16 +182,9 @@ class SettingsActivity : ComposePageActivity() {
         version = getString(R.string.app_version_value, BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE),
     )
 
+    /** Pops a settings page or finishes. In-stack Back is also driven by ScreenStack's PredictiveBackHandler. */
     private fun back() {
         if (pages.size > 1) pages.removeAt(pages.lastIndex) else finish()
-    }
-
-    override fun onBackPressedCompat(): Boolean {
-        if (pages.size > 1) {
-            back()
-            return true
-        }
-        return super.onBackPressedCompat()
     }
 
     override fun navigateTo(destination: TopDestination) {

@@ -5,9 +5,10 @@ import com.afsh.messages.R
 import org.fossify.commons.helpers.isUpsideDownCakePlus
 
 /**
- * The one screen motion (#176): opening a screen zooms it in, Back shrinks it away. Activities
- * get it here; Compose stacks inside a screen get it from ScreenStack. Timing and scale live in
- * res/values/motion.xml.
+ * The one screen motion: opening a screen slides it in from the end with a small parallax on the
+ * screen underneath; Back reverses that. Activities get it here; Compose stacks inside a screen
+ * get it from ScreenStack. Timing and parallax live in res/values/motion.xml. On Android 14+ the
+ * close pair also drives the predictive-back gesture.
  */
 object ScreenMotion {
     /** From Android 14, sets the motion once, in onCreate, for both opening and closing. */

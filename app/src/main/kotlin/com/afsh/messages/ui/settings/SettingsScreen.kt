@@ -1,6 +1,5 @@
 package com.afsh.messages.ui.settings
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -50,7 +49,8 @@ fun SettingsScreen(
     onEvent: (SettingsEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    if (page != SettingsPage.OVERVIEW) BackHandler(onBack = onBack)
+    // Back (including predictive) is owned by ScreenStack in SettingsActivity so the gesture
+    // drives the same slide-out as the up arrow and the system back button.
     PageScaffold(
         title = stringResource(page.title),
         modifier = modifier,

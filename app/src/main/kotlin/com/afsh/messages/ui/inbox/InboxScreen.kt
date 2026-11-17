@@ -90,7 +90,7 @@ import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.layout.Layout
 import com.afsh.messages.ui.components.FloatingButton
 import com.afsh.messages.ui.components.ImportNotice
-import com.afsh.messages.ui.components.ScreenStack
+import com.afsh.messages.ui.components.TabSwitch
 import com.afsh.messages.ui.components.LocalListPane
 import com.afsh.messages.ui.components.ConversationRow
 import com.afsh.messages.ui.components.ConversationRowMaxWidth
@@ -213,8 +213,8 @@ fun InboxScreen(
                     vertical = true,
                 )
             }
-            // Inbox and Library change with the same zoom as every other screen (#176).
-            ScreenStack(libraryOpen, depth = if (libraryOpen) 1 else 0, Modifier.weight(1f)) { library ->
+            // Inbox and Library are peer tabs: a short horizontal shift, not a screen push.
+            TabSwitch(libraryOpen, tabIndex = if (libraryOpen) 1 else 0, Modifier.weight(1f)) { library ->
                 if (library) {
                     LibraryScreen(
                         destinations = LibraryDestination.entries.filter { it.isAvailable(state) },
