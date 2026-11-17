@@ -86,6 +86,7 @@ enum class InboxAction(@AnyRes val label: Int, val icon: AfshIcon, val labelIsQu
     DETAILS(R.string.conversation_details, AfshIcon.Info),
     ALWAYS_SPAM(R.plurals.always_spam, AfshIcon.SpamShield, labelIsQuantity = true),
     NEVER_SPAM(R.plurals.never_spam, AfshIcon.Verified, labelIsQuantity = true),
+    BLOCK_ON_PHONE(R.plurals.block_on_phone, AfshIcon.Block, labelIsQuantity = true),
 }
 
 /** Declaration order of [InboxAction] is the display order; the bar shows the first few, the rest overflow. */
@@ -107,7 +108,7 @@ fun availableActions(selected: List<InboxRow>, archiveAvailable: Boolean): List<
             InboxAction.RENAME -> single && first.conversation.isGroupConversation
             InboxAction.DETAILS -> single
             InboxAction.DELETE -> true
-            InboxAction.ALWAYS_SPAM, InboxAction.NEVER_SPAM -> true
+            InboxAction.ALWAYS_SPAM, InboxAction.NEVER_SPAM, InboxAction.BLOCK_ON_PHONE -> true
         }
     }
 }

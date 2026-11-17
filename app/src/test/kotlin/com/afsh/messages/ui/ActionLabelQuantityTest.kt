@@ -17,8 +17,10 @@ class ActionLabelQuantityTest {
     fun `always and never spam labels are quantity-aware`() {
         assertTrue(InboxAction.ALWAYS_SPAM.labelIsQuantity)
         assertTrue(InboxAction.NEVER_SPAM.labelIsQuantity)
+        assertTrue(InboxAction.BLOCK_ON_PHONE.labelIsQuantity)
         assertTrue(ThreadMenuAction.ALWAYS_SPAM.labelIsQuantity)
         assertTrue(ThreadMenuAction.NEVER_SPAM.labelIsQuantity)
+        assertTrue(ThreadMenuAction.BLOCK_ON_PHONE.labelIsQuantity)
     }
 
     @Test
@@ -37,6 +39,7 @@ class ActionLabelQuantityTest {
         )
         assertTrue(ThreadMenuAction.NEVER_SPAM in actions)
         assertTrue(ThreadMenuAction.ALWAYS_SPAM in actions)
+        assertTrue(ThreadMenuAction.BLOCK_ON_PHONE in actions)
     }
 
     @Test

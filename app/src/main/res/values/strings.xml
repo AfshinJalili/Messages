@@ -315,6 +315,19 @@
         <item quantity="one">New messages from them will go to Spam with no alert, from now on. Existing messages stay where they are.</item>
         <item quantity="other">New messages from them will go to Spam with no alert, from now on. Existing messages stay where they are.</item>
     </plurals>
+    <plurals name="block_on_phone">
+        <item quantity="one">Block on this phone</item>
+        <item quantity="other">Block these senders on this phone</item>
+    </plurals>
+    <plurals name="block_on_phone_title">
+        <item quantity="one">Block %s on this phone?</item>
+        <item quantity="other">Block these %d senders on this phone?</item>
+    </plurals>
+    <plurals name="block_on_phone_text">
+        <item quantity="one">Spam still saves their messages in the Spam folder. Block on this phone means the phone drops them and they never arrive.</item>
+        <item quantity="other">Spam still saves their messages in the Spam folder. Block on this phone means the phone drops them and they never arrive.</item>
+    </plurals>
+    <string name="block_on_phone_unavailable">This phone cannot block numbers.</string>
     <string name="clear_spam_title">Delete all spam?</string>
     <string name="filter_rules">Filter rules</string>
     <plurals name="blocked_senders">

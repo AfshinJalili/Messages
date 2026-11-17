@@ -91,6 +91,7 @@ import com.afsh.messages.helpers.THREAD_ID
 import com.afsh.messages.helpers.testUndoDurationMs
 import com.afsh.messages.helpers.THREAD_TITLE
 import com.afsh.messages.helpers.UndoDeletion
+import com.afsh.messages.helpers.blockNumbersOnPhone
 import com.afsh.messages.helpers.refreshConversations
 import com.afsh.messages.helpers.sortedForInbox
 import com.afsh.messages.helpers.swipeAction
@@ -705,6 +706,24 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
                     confirmLabel = resources.getQuantityString(R.plurals.never_spam, count),
                 ) {
                     selected.forEach { config.addAllowedNumber(it.phoneNumber) }
+                    clearSelection()
+                }
+            }
+
+            InboxAction.BLOCK_ON_PHONE -> {
+                val count = selected.size.coerceAtLeast(1)
+                val title = if (count == 1) {
+                    resources.getQuantityString(R.plurals.block_on_phone_title, 1, selected.first().title)
+                } else {
+                    resources.getQuantityString(R.plurals.block_on_phone_title, count, count)
+                }
+                confirm(
+                    title = title,
+                    explanation = resources.getQuantityString(R.plurals.block_on_phone_text, count),
+                    confirmLabel = resources.getQuantityString(R.plurals.block_on_phone, count),
+                    destructive = true,
+                ) {
+                    blockNumbersOnPhone(selected.map { it.phoneNumber })
                     clearSelection()
                 }
             }
