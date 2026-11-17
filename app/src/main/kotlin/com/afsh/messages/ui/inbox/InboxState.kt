@@ -1,11 +1,13 @@
 package com.afsh.messages.ui.inbox
 
+import androidx.annotation.AnyRes
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Immutable
 import com.afsh.messages.R
 import com.afsh.messages.helpers.ImportProgress
 import com.afsh.messages.helpers.InboxFilter
 import com.afsh.messages.helpers.SwipeAction
+import com.afsh.messages.helpers.containsNumber
 import com.afsh.messages.messaging.isShortCodeWithLetters
 import com.afsh.messages.models.Conversation
 import com.afsh.messages.ui.components.AfshIcon
@@ -37,6 +39,8 @@ data class InboxUiState(
     val recycleBinAvailable: Boolean = true,
     val swipeLeft: SwipeAction = SwipeAction.NONE,
     val swipeRight: SwipeAction = SwipeAction.NONE,
+    val spamNumbers: Set<String> = emptySet(),
+    val allowedNumbers: Set<String> = emptySet(),
 ) {
     val selecting get() = selected.isNotEmpty()
     val navCounts get() = navCounts(unreadSpam, unreadMessages, inboxCountShown)
@@ -69,7 +73,7 @@ fun InboxRow.section(now: Calendar): InboxSection {
 private fun Calendar.sameDayAs(other: Calendar) =
     get(Calendar.YEAR) == other.get(Calendar.YEAR) && get(Calendar.DAY_OF_YEAR) == other.get(Calendar.DAY_OF_YEAR)
 
-enum class InboxAction(@StringRes val label: Int, val icon: AfshIcon) {
+enum class InboxAction(@AnyRes val label: Int, val icon: AfshIcon, val labelIsQuantity: Boolean = false) {
     ARCHIVE(R.string.archive, AfshIcon.Archive),
     MARK_UNREAD(R.string.mark_as_unread, AfshIcon.Mail),
     MARK_READ(R.string.mark_as_read, AfshIcon.MailOpen),
@@ -83,14 +87,22 @@ enum class InboxAction(@StringRes val label: Int, val icon: AfshIcon) {
     COPY_NUMBER(org.fossify.commons.R.string.copy_number_to_clipboard, AfshIcon.Copy),
     RENAME(R.string.rename_conversation, AfshIcon.Edit),
     DETAILS(R.string.conversation_details, AfshIcon.Info),
-    BLOCK(org.fossify.commons.R.string.block_number, AfshIcon.Block),
+    ALWAYS_SPAM(R.plurals.always_spam, AfshIcon.SpamShield, labelIsQuantity = true),
+    NEVER_SPAM(R.plurals.never_spam, AfshIcon.Verified, labelIsQuantity = true),
+    BLOCK_ON_PHONE(R.plurals.block_on_phone, AfshIcon.Block, labelIsQuantity = true),
 }
 
 /** Declaration order of [InboxAction] is the display order; the bar shows the first few, the rest overflow. */
-fun availableActions(selected: List<InboxRow>, archiveAvailable: Boolean): List<InboxAction> {
+fun availableActions(
+    selected: List<InboxRow>,
+    archiveAvailable: Boolean,
+    spamNumbers: Collection<String> = emptySet(),
+    allowedNumbers: Collection<String> = emptySet(),
+): List<InboxAction> {
     val first = selected.firstOrNull() ?: return emptyList()
     val single = selected.size == 1
     val person = single && !first.conversation.isGroupConversation
+    val oneToOne = selected.isNotEmpty() && selected.none { it.conversation.isGroupConversation }
     return InboxAction.entries.filter { action ->
         when (action) {
             InboxAction.ARCHIVE -> archiveAvailable
@@ -104,7 +116,11 @@ fun availableActions(selected: List<InboxRow>, archiveAvailable: Boolean): List<
             InboxAction.ADD_TO_CONTACT, InboxAction.COPY_NUMBER -> person
             InboxAction.RENAME -> single && first.conversation.isGroupConversation
             InboxAction.DETAILS -> single
-            InboxAction.DELETE, InboxAction.BLOCK -> true
+            InboxAction.DELETE -> true
+            InboxAction.ALWAYS_SPAM -> selected.any { !spamNumbers.containsNumber(it.conversation.phoneNumber) }
+            InboxAction.NEVER_SPAM -> oneToOne &&
+                selected.any { !allowedNumbers.containsNumber(it.conversation.phoneNumber) }
+            InboxAction.BLOCK_ON_PHONE -> oneToOne
         }
     }
 }

@@ -91,6 +91,7 @@ import com.afsh.messages.helpers.THREAD_ID
 import com.afsh.messages.helpers.testUndoDurationMs
 import com.afsh.messages.helpers.THREAD_TITLE
 import com.afsh.messages.helpers.UndoDeletion
+import com.afsh.messages.helpers.blockNumbersOnPhone
 import com.afsh.messages.helpers.refreshConversations
 import com.afsh.messages.helpers.sortedForInbox
 import com.afsh.messages.helpers.swipeAction
@@ -447,6 +448,8 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
             recycleBinAvailable = config.useRecycleBin,
             swipeLeft = config.swipeAction(towardsRight = false),
             swipeRight = config.swipeAction(towardsRight = true),
+            spamNumbers = config.spamNumbers,
+            allowedNumbers = config.allowedNumbers,
         )
         NavBadges.publish(inbox.navCounts)
     }
@@ -493,8 +496,17 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
     /** Muting is harmless and instantly reversible, so it applies at once and Undo flips it back. */
     private fun toggleMute(conversation: Conversation, muted: Boolean) {
         setMuted(listOf(conversation), muted)
-        val message = if (muted) R.string.conversation_muted else R.string.conversation_unmuted
-        showUndo(message, onUndo = { setMuted(listOf(conversation), !muted) })
+        showMuteUndo(listOf(conversation), muted)
+    }
+
+    private fun showMuteUndo(conversations: List<Conversation>, muted: Boolean) {
+        val count = conversations.size.coerceAtLeast(1)
+        val message = resources.getQuantityString(
+            if (muted) R.plurals.conversation_muted else R.plurals.conversation_unmuted,
+            count,
+            count,
+        )
+        showUndo(message, onUndo = { setMuted(conversations, !muted) })
     }
 
     private fun setMuted(conversations: List<Conversation>, muted: Boolean) {
@@ -514,6 +526,10 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
     }
 
     private fun showUndo(message: Int, onUndo: () -> Unit, onTimeout: () -> Unit = {}) {
+        showUndo(getString(message), onUndo, onTimeout)
+    }
+
+    private fun showUndo(message: String, onUndo: () -> Unit, onTimeout: () -> Unit = {}) {
         launchUndo(message, undoTimeoutMs(), onUndo, onTimeout)
     }
 
@@ -522,7 +538,7 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
      * replaces this snackbar, the deletion commits then instead of lingering without an Undo.
      */
     override fun showUndo(message: Int, durationMs: Int, onUndo: () -> Unit): () -> Unit {
-        val job = launchUndo(message, durationMs.toLong(), onUndo, onTimeout = { UndoDeletion.commitNow(this) })
+        val job = launchUndo(getString(message), durationMs.toLong(), onUndo, onTimeout = { UndoDeletion.commitNow(this) })
         val settle = undoSettle
         // UndoDeletion dismisses its own snackbar when batches merge, time out or re-show; that is not
         // a replacement by another action, so the deletion must not commit early.
@@ -536,7 +552,7 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
      * Every undo shares one host. A new one dismisses the current one, which settles it through its
      * timeout path. Cancelling the job hides the snackbar without running either callback.
      */
-    private fun launchUndo(message: Int, durationMs: Long, onUndo: () -> Unit, onTimeout: () -> Unit): Job {
+    private fun launchUndo(message: String, durationMs: Long, onUndo: () -> Unit, onTimeout: () -> Unit): Job {
         // Settle and cancel the previous offer before showing this one. Only dismissing it let a second
         // showSnackbar queue behind the first, so Undo "reshowed" a snackbar instead of undoing.
         undoJob?.cancel()
@@ -545,7 +561,7 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
         return lifecycleScope.launch {
             val result = withTimeoutOrNull(durationMs) {
                 snackbarHost.showSnackbar(
-                    message = getString(message),
+                    message = message,
                     actionLabel = getString(org.fossify.commons.R.string.undo),
                     duration = SnackbarDuration.Indefinite,
                 )
@@ -632,8 +648,10 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
             InboxAction.MARK_READ -> updateInBackground { selected.filter { !it.read }.forEach { markThreadMessagesRead(it.threadId) } }
             InboxAction.MARK_UNREAD -> updateInBackground { selected.filter { it.read }.forEach { markThreadMessagesUnread(it.threadId) } }
             InboxAction.MUTE, InboxAction.UNMUTE -> {
-                setMuted(selected, muted = action == InboxAction.MUTE)
+                val muted = action == InboxAction.MUTE
+                setMuted(selected, muted = muted)
                 clearSelection()
+                showMuteUndo(selected, muted)
             }
 
             InboxAction.PIN, InboxAction.UNPIN -> {
@@ -660,16 +678,54 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
             }
 
             InboxAction.DETAILS -> launchConversationDetails(first.threadId)
-            InboxAction.BLOCK -> {
-                val names = selected.joinToString(", ") { it.title }
+            InboxAction.ALWAYS_SPAM -> {
+                val count = selected.size.coerceAtLeast(1)
+                val title = if (count == 1) {
+                    resources.getQuantityString(R.plurals.always_spam_title, 1, selected.first().title)
+                } else {
+                    resources.getQuantityString(R.plurals.always_spam_title, count, count)
+                }
                 confirm(
-                    title = getString(R.string.block_sender_title, names),
-                    explanation = getString(R.string.block_sender_text),
-                    confirmLabel = getString(R.string.block_sender),
+                    title = title,
+                    explanation = resources.getQuantityString(R.plurals.always_spam_text, count),
+                    confirmLabel = resources.getQuantityString(R.plurals.always_spam, count),
+                ) {
+                    selected.forEach { config.addSpamNumber(it.phoneNumber) }
+                    clearSelection()
+                }
+            }
+
+            InboxAction.NEVER_SPAM -> {
+                val count = selected.size.coerceAtLeast(1)
+                val title = if (count == 1) {
+                    resources.getQuantityString(R.plurals.never_spam_title, 1, selected.first().title)
+                } else {
+                    resources.getQuantityString(R.plurals.never_spam_title, count, count)
+                }
+                confirm(
+                    title = title,
+                    explanation = resources.getQuantityString(R.plurals.never_spam_text, count),
+                    confirmLabel = resources.getQuantityString(R.plurals.never_spam, count),
+                ) {
+                    selected.forEach { config.addAllowedNumber(it.phoneNumber) }
+                    clearSelection()
+                }
+            }
+
+            InboxAction.BLOCK_ON_PHONE -> {
+                val count = selected.size.coerceAtLeast(1)
+                val title = if (count == 1) {
+                    resources.getQuantityString(R.plurals.block_on_phone_title, 1, selected.first().title)
+                } else {
+                    resources.getQuantityString(R.plurals.block_on_phone_title, count, count)
+                }
+                confirm(
+                    title = title,
+                    explanation = resources.getQuantityString(R.plurals.block_on_phone_text, count),
+                    confirmLabel = resources.getQuantityString(R.plurals.block_on_phone, count),
                     destructive = true,
                 ) {
-                    // App-level block: new SMS from these numbers are stored and go to Spam. Existing messages stay where they are.
-                    selected.forEach { config.addSpamNumber(it.phoneNumber) }
+                    blockNumbersOnPhone(selected.map { it.phoneNumber })
                     clearSelection()
                 }
             }

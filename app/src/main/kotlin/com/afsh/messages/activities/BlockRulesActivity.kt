@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import org.fossify.commons.extensions.baseConfig
 import org.fossify.commons.extensions.getBlockedNumbers
 import org.fossify.commons.helpers.ensureBackgroundThread
 import com.afsh.messages.extensions.config
@@ -13,7 +14,7 @@ import com.afsh.messages.ui.spam.BlockRulesScreen
 import com.afsh.messages.ui.spam.BlockRulesUiState
 import com.afsh.messages.ui.spam.RuleKind
 
-/** 21 · Block rules: the counts, the local filter switch and the blocked phrases. */
+/** 21 · Filter rules: the sender lists, the local filter switch and the blocked phrases. */
 class BlockRulesActivity : ComposePageActivity() {
     private var state by mutableStateOf(BlockRulesUiState())
 
@@ -29,11 +30,14 @@ class BlockRulesActivity : ComposePageActivity() {
 
     override fun reload() {
         ensureBackgroundThread {
-            val numbers = blockedSenderCount()
+            val system = runCatching { getBlockedNumbers().map { it.number } }.getOrDefault(emptyList())
             val loaded = BlockRulesUiState(
-                blockedNumbers = numbers,
+                alwaysSpamCount = config.spamNumbers.size,
+                neverSpamCount = config.allowedNumbers.size,
+                androidBlockedCount = system.distinct().size,
                 phrases = config.blockedKeywords.sortedWith(String.CASE_INSENSITIVE_ORDER),
                 filterEnabled = config.ruleFilterEnabled,
+                unknownNumbers = baseConfig.blockUnknownNumbers,
             )
             runOnUiThread { state = loaded }
         }
@@ -45,6 +49,8 @@ class BlockRulesActivity : ComposePageActivity() {
             BlockRulesEvent.OpenNumbers -> startActivity(Intent(this, BlockedNumbersActivity::class.java))
             BlockRulesEvent.MoveRules -> startActivity(Intent(this, MoveBlockRulesActivity::class.java))
             BlockRulesEvent.OpenPatterns -> startActivity(Intent(this, SpamPatternsActivity::class.java))
+            BlockRulesEvent.OpenWhatFilterLooksFor ->
+                startActivity(Intent(this, WhatFilterLooksForActivity::class.java))
             BlockRulesEvent.AddPhrase -> startActivity(AddBlockRuleActivity.intent(this, RuleKind.PHRASE))
             BlockRulesEvent.AddNumber -> startActivity(AddBlockRuleActivity.intent(this, RuleKind.NUMBER))
             is BlockRulesEvent.EditPhrase ->
@@ -53,7 +59,10 @@ class BlockRulesActivity : ComposePageActivity() {
                 config.ruleFilterEnabled = event.enabled
                 state = state.copy(filterEnabled = event.enabled)
             }
-
+            is BlockRulesEvent.SetUnknownNumbers -> {
+                baseConfig.blockUnknownNumbers = event.enabled
+                state = state.copy(unknownNumbers = event.enabled)
+            }
             is BlockRulesEvent.RemovePhrase -> {
                 config.removeBlockedKeyword(event.phrase)
                 state = state.copy(phrases = state.phrases - event.phrase)
@@ -62,7 +71,7 @@ class BlockRulesActivity : ComposePageActivity() {
     }
 }
 
-/** Senders blocked in the app plus those in Android's block list, counted once each. */
+/** Always-spam senders plus those in Android's block list, counted once each. */
 internal fun android.content.Context.blockedSenderCount(): Int {
     val system = runCatching { getBlockedNumbers().map { it.number } }.getOrDefault(emptyList())
     return (config.spamNumbers + system).distinct().size

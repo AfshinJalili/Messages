@@ -15,12 +15,14 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.hasScrollToKeyAction
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToKey
 import androidx.compose.ui.test.performTouchInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.afsh.messages.models.SpamReviewMessage
@@ -35,6 +37,7 @@ import com.afsh.messages.ui.spam.BlockRulesUiState
 import com.afsh.messages.ui.spam.BlockedNumbersScreen
 import com.afsh.messages.ui.spam.BlockedNumbersUiState
 import com.afsh.messages.ui.spam.BlockedSender
+import com.afsh.messages.ui.spam.FilterSenderKind
 import com.afsh.messages.ui.spam.MoveRulesScreen
 import com.afsh.messages.ui.spam.RuleKind
 import com.afsh.messages.ui.spam.SpamEvent
@@ -90,7 +93,11 @@ class SpamPageChecks {
         compose.onNodeWithText(quantity(R.plurals.inbox_selected, 1)).assertExists()
         compose.onNodeWithText(text(R.string.not_spam_short)).assertDoesNotExist()
         compose.onNodeWithContentDescription(text(R.string.not_spam_short)).performClick()
-        check(events.last() == SpamEvent.NotSpam(listOf(messages[1]))) { "Events $events" }
+        check(events.none { it is SpamEvent.NotSpam }) { "Not spam must open the sheet first: $events" }
+        compose.onNodeWithText(text(R.string.not_spam_only)).performClick()
+        // AfshSheet.dismissThen hides first, then fires — wait like SheetChecks.
+        compose.waitUntil(5_000) { events.any { it is SpamEvent.NotSpam } }
+        check(events.last() == SpamEvent.NotSpam(listOf(messages[1]), neverSpamSender = false)) { "Events $events" }
         compose.onNodeWithContentDescription(text(R.string.not_spam_short)).assertDoesNotExist()
 
         // While selecting, a tap adds to the selection instead of opening.
@@ -98,10 +105,10 @@ class SpamPageChecks {
         compose.onNodeWithText("Last chance", substring = true).performClick()
         check(events.last() !is SpamEvent.Open) { "A tap while selecting must not open: $events" }
         compose.onNodeWithText(quantity(R.plurals.inbox_selected, 2)).assertExists()
-        compose.onNodeWithContentDescription(text(R.string.block_sender)).performClick()
-        check(events.last() !is SpamEvent.BlockSender) { "Block must ask first" }
-        compose.onNodeWithText(text(R.string.block_sender_title, "0912 418 6630, MCI offer")).assertExists()
-        compose.onNodeWithText(text(R.string.block_sender)).performClick()
+        compose.onNodeWithContentDescription(quantity(R.plurals.always_spam, 2)).performClick()
+        check(events.last() !is SpamEvent.BlockSender) { "Always spam must ask first" }
+        compose.onNodeWithText(quantity(R.plurals.always_spam_title, 2)).assertExists()
+        compose.onNodeWithText(quantity(R.plurals.always_spam, 2)).performClick()
         check(events.last() == SpamEvent.BlockSender(listOf(messages[1], messages[2]))) { "Events $events" }
 
         compose.onNodeWithText("Special offer", substring = true).performTouchInput { longClick() }
@@ -115,7 +122,9 @@ class SpamPageChecks {
     @Test
     fun rulesToggleTheFilterAndRemoveAndAddPhrases() {
         val events = mutableListOf<BlockRulesEvent>()
-        var state by mutableStateOf(BlockRulesUiState(blockedNumbers = 3, phrases = listOf("Claim your reward", "Free prize")))
+        var state by mutableStateOf(
+            BlockRulesUiState(alwaysSpamCount = 3, phrases = listOf("Claim your reward", "Free prize")),
+        )
         compose.setContent {
             AfshTheme(dark = false) { BlockRulesScreen(state, settings, { events += it }) }
         }
@@ -130,6 +139,9 @@ class SpamPageChecks {
         compose.onNodeWithText("Claim your reward").performClick()
         check(events.last() == BlockRulesEvent.EditPhrase("Claim your reward")) { "Events $events" }
 
+        // Filter rules grew (unknown-numbers, what-the-filter, patterns); the add row sits below
+        // the fold on a phone-height LazyColumn until scrolled into composition.
+        compose.onNode(hasScrollToKeyAction()).performScrollToKey("add")
         compose.onNodeWithText(text(R.string.add_phrase_or_number)).performClick()
         compose.onNodeWithText(text(R.string.block_a_number)).performClick()
         check(events.last() == BlockRulesEvent.AddNumber) { "Events $events" }
@@ -137,15 +149,15 @@ class SpamPageChecks {
 
     @Test
     fun blockedNumbersUnblockAndPhraseErrorsExplainThemselves() {
-        val unblocked = mutableListOf<BlockedSender>()
+        val removed = mutableListOf<BlockedSender>()
         var page by mutableIntStateOf(0)
-        val sender = BlockedSender("555 0183", null, inSystemList = false)
+        val sender = BlockedSender("555 0183", null, FilterSenderKind.AlwaysSpam)
         compose.setContent {
             AfshTheme(dark = false) {
                 if (page == 0) {
                     BlockedNumbersScreen(
                         BlockedNumbersUiState(loading = false, senders = listOf(sender)),
-                        settings, onBack = {}, onUnblock = { unblocked += it }, onBlockNumber = {},
+                        settings, onBack = {}, onRemove = { removed += it }, onBlockNumber = {},
                     )
                 } else {
                     AddRuleScreen(
@@ -156,7 +168,7 @@ class SpamPageChecks {
             }
         }
         compose.onNodeWithText(text(org.fossify.commons.R.string.unblock)).performClick()
-        check(unblocked == listOf(sender)) { "Unblocked $unblocked" }
+        check(removed == listOf(sender)) { "Removed $removed" }
         page = 1
         compose.onNodeWithText(text(R.string.phrase_already_blocked)).assertExists()
         compose.onNodeWithText(text(R.string.no_current_match)).assertExists()
@@ -223,24 +235,28 @@ class SpamPageChecks {
     @Test
     fun spamPagesAreCapturedInEveryVariant() {
         val senders = listOf(
-            BlockedSender("555 0183", null, false),
-            BlockedSender("+15550190", "Unknown marketing line", false),
-            BlockedSender("555 0197", null, true),
+            BlockedSender("555 0183", null, FilterSenderKind.AlwaysSpam),
+            BlockedSender("+15550190", "Unknown marketing line", FilterSenderKind.NeverSpam),
+            BlockedSender("555 0197", null, FilterSenderKind.AndroidBlocked),
         )
         val capture = VariantCapture(compose)
         capture.show { page ->
             when (page) {
                 0 -> SpamScreen(SpamUiState(loading = false, messages = messages), library, remember { SnackbarHostState() }, {})
-                1 -> BlockRulesScreen(BlockRulesUiState(3, listOf("Claim your reward", "Free prize")), settings, {})
+                1 -> BlockRulesScreen(
+                    BlockRulesUiState(alwaysSpamCount = 3, phrases = listOf("Claim your reward", "Free prize")),
+                    settings,
+                    {},
+                )
                 2 -> BlockedNumbersScreen(BlockedNumbersUiState(false, senders), settings, {}, {}, {})
                 3 -> AddRuleScreen(
                     AddRuleUiState(RuleKind.PHRASE, value = "limited offer", example = "A limited offer just for you"),
                     settings, {}, {}, {},
                 )
-                else -> MoveRulesScreen(3, 2, settings, remember { SnackbarHostState() }, {}, {}, {})
+                else -> MoveRulesScreen(3, 2, 1, settings, remember { SnackbarHostState() }, {}, {}, {})
             }
         }
-        capture.captureEach(listOf("20-spam", "21-block-rules", "38-blocked-numbers", "50-add-phrase", "51-move-rules"))
+        capture.captureEach(listOf("20-spam", "21-filter-rules", "38-blocked-numbers", "50-add-phrase", "51-move-rules"))
         // A selected message: checks beside the bubbles and the selection bar.
         capture.page = 0
         compose.onNodeWithText("50% extra data", substring = true).performTouchInput { longClick() }

@@ -1,0 +1,171 @@
+package com.afsh.messages.helpers
+
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+/**
+ * Persian marketing filter scoring through the public [RuleBasedFilter.explain] seam.
+ * Samples mirror real bank/OTP/receipt templates (with لغو11) and promo SMS.
+ */
+class RuleBasedFilterTest {
+
+    private fun explain(sender: String, body: String) =
+        RuleBasedFilter.explain(SpamPatterns.DEFAULT, sender, body)
+
+    @Test
+    fun `OTP with لغو11 is allowed as a one-time code`() {
+        val body = "کد تایید شما: 482913\nبانک ملت\nلغو11"
+        val result = explain("BANKMELLAT", body)
+        assertEquals(FilterVerdict.ALLOW, result.verdict)
+        assertEquals(FilterRule.ONE_TIME_CODE, result.rule)
+    }
+
+    @Test
+    fun `OTP with spaced لغو ۱۱ is allowed`() {
+        val body = "رمز یک‌بار مصرف: ۴۵۶۷۸۹\nلغو ۱۱"
+        val result = explain("BANK", body)
+        assertEquals(FilterVerdict.ALLOW, result.verdict)
+        assertEquals(FilterRule.ONE_TIME_CODE, result.rule)
+    }
+
+    @Test
+    fun `bank withdrawal with لغو11 is allowed as transactional`() {
+        val body = "برداشت از کارت *1234 به مبلغ 250,000 ریال\nموجودی: 1,200,000\nلغو11"
+        val result = explain("1800", body)
+        assertEquals(FilterVerdict.ALLOW, result.verdict)
+        assertEquals(FilterRule.TRANSACTIONAL, result.rule)
+    }
+
+    @Test
+    fun `bank deposit with لغو ۱۱ is allowed as transactional`() {
+        val body = "واریز 500000 ریال به حساب شما انجام شد. موجودی 3200000 ریال\nلغو ۱۱"
+        val result = explain("9035", body)
+        assertEquals(FilterVerdict.ALLOW, result.verdict)
+        assertEquals(FilterRule.TRANSACTIONAL, result.rule)
+    }
+
+    @Test
+    fun `payment receipt with لغو11 is allowed as transactional`() {
+        val body = "رسید پرداخت موفق\nتراکنش 998877\nمبلغ 45000 ریال\nلغو11"
+        val result = explain("PAYAPP", body)
+        assertEquals(FilterVerdict.ALLOW, result.verdict)
+        assertEquals(FilterRule.TRANSACTIONAL, result.rule)
+    }
+
+    @Test
+    fun `لغو alone is not a spam signal`() {
+        val result = explain("SHOP", "برای لغو11 همین پیام را بفرستید")
+        assertNotEquals(FilterVerdict.BLOCK, result.verdict)
+    }
+
+    @Test
+    fun `two marketing words block from a numeric sender`() {
+        val body = "جشنواره تخفیف ویژه آغاز شد"
+        val result = explain("09121234567", body)
+        assertEquals(FilterVerdict.BLOCK, result.verdict)
+        assertEquals(FilterRule.MARKETING, result.rule)
+    }
+
+    @Test
+    fun `one marketing word plus link blocks`() {
+        val body = "رایگان ثبت کنید https://promo.ir/deal"
+        val result = explain("09120000000", body)
+        assertEquals(FilterVerdict.BLOCK, result.verdict)
+        assertEquals(FilterRule.MARKETING, result.rule)
+    }
+
+    @Test
+    fun `one marketing word from a named sender blocks`() {
+        val body = "جشنواره تابستانی ما شروع شد"
+        val result = explain("HAMRAH_AVAL", body)
+        assertEquals(FilterVerdict.BLOCK, result.verdict)
+        assertEquals(FilterRule.MARKETING, result.rule)
+    }
+
+    @Test
+    fun `one marketing word plus strong promo emoji blocks`() {
+        val body = "جایزه ویژه برای شما 🎉"
+        val result = explain("09123334444", body)
+        assertEquals(FilterVerdict.BLOCK, result.verdict)
+        assertEquals(FilterRule.MARKETING, result.rule)
+    }
+
+    @Test
+    fun `lone marketing word from numeric sender stays in inbox`() {
+        val body = "تخفیف روی سفارش شما اعمال شد"
+        val result = explain("09125556666", body)
+        assertEquals(FilterVerdict.NO_VERDICT, result.verdict)
+    }
+
+    @Test
+    fun `lone strong emoji from numeric sender stays in inbox`() {
+        val result = explain("09125556666", "پیتزای امروز 🍕")
+        assertEquals(FilterVerdict.NO_VERDICT, result.verdict)
+    }
+
+    @Test
+    fun `weak smileys never block even with a marketing word from numeric sender`() {
+        val body = "تخفیف 😊❤"
+        val result = explain("09125556666", body)
+        assertEquals(FilterVerdict.NO_VERDICT, result.verdict)
+    }
+
+    @Test
+    fun `urgency and CTA promo pack is blocked`() {
+        val body = "فرصت محدود · بسته ویژه · همین حالا بخر"
+        val result = explain("09127778888", body)
+        assertEquals(FilterVerdict.BLOCK, result.verdict)
+        assertEquals(FilterRule.MARKETING, result.rule)
+    }
+
+    @Test
+    fun `winner phrase with named sender is blocked`() {
+        val body = "شما برنده جایزه شدید"
+        val result = explain("*8000", body)
+        assertEquals(FilterVerdict.BLOCK, result.verdict)
+        assertEquals(FilterRule.MARKETING, result.rule)
+    }
+
+    @Test
+    fun `bare بسته alone is not a marketing signal`() {
+        val body = "بسته اینترنت شما فعال شد\nلغو11"
+        val result = explain("900", body)
+        assertNotEquals(FilterVerdict.BLOCK, result.verdict)
+    }
+
+    @Test
+    fun `مجانی with link is blocked`() {
+        val body = "گوشی مجانی برای شما www.gift.ir/win"
+        val result = explain("09121112222", body)
+        assertEquals(FilterVerdict.BLOCK, result.verdict)
+        assertEquals(FilterRule.MARKETING, result.rule)
+    }
+
+    @Test
+    fun `قرعه کشی with party emoji is blocked`() {
+        val body = "در قرعه‌کشی بزرگ شرکت کنید 🎊"
+        val result = explain("09123334444", body)
+        assertEquals(FilterVerdict.BLOCK, result.verdict)
+        assertEquals(FilterRule.MARKETING, result.rule)
+    }
+
+    @Test
+    fun `defaults have no unsubscribe group`() {
+        assertTrue(SpamPatternGroup.entries.none { it.key == "unsubscribe" })
+        assertTrue(SpamPatterns.DEFAULT.groups.keys.none { it.key == "unsubscribe" })
+    }
+
+    @Test
+    fun `plain filter labels are ordinary Persian words and promo emojis`() {
+        val words = plainFilterLabels(SpamPatterns.DEFAULT[SpamPatternGroup.MARKETING])
+        assertTrue(words.contains("تخفیف"))
+        assertTrue(words.contains("جشنواره"))
+        assertTrue(words.none { it.contains("\\") || it.contains("(?:") })
+        val emojis = plainFilterLabels(SpamPatterns.DEFAULT[SpamPatternGroup.PROMO_EMOJI])
+        assertTrue(emojis.contains("🎉"))
+        assertTrue(emojis.contains("🍕"))
+        assertTrue(emojis.contains("🔥"))
+    }
+}

@@ -112,6 +112,7 @@ import com.afsh.messages.helpers.THREAD_NUMBER
 import com.afsh.messages.helpers.THREAD_TEXT
 import com.afsh.messages.helpers.THREAD_TITLE
 import com.afsh.messages.helpers.UndoDeletion
+import com.afsh.messages.helpers.blockNumbersOnPhone
 import com.afsh.messages.helpers.containsNumber
 import com.afsh.messages.helpers.contactAsText
 import com.afsh.messages.helpers.generateRandomId
@@ -136,6 +137,10 @@ import com.afsh.messages.ui.AfshTheme
 import com.afsh.messages.ui.afshDark
 import com.afsh.messages.ui.afshTextScale
 import com.afsh.messages.ui.components.confirm
+import com.afsh.messages.ui.components.showAfshDialog
+import com.afsh.messages.ui.components.AfshSheetItem
+import com.afsh.messages.ui.components.AfshSheet
+import com.afsh.messages.ui.components.AfshIcon
 import com.afsh.messages.ui.components.inform
 import com.afsh.messages.ui.components.showRenameDialog
 import com.afsh.messages.ui.newmessage.NewMessageUiState
@@ -489,8 +494,9 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
     private fun handleMenuItemAction(action: ThreadMenuAction) {
         when (action) {
             ThreadMenuAction.SEARCH -> holder.openSearch()
-            ThreadMenuAction.BLOCK -> blockNumber()
-            ThreadMenuAction.ALLOW_SENDER -> unmarkSpam(data.list.filter { data.isSpam(it) }, allowSender = true)
+            ThreadMenuAction.ALWAYS_SPAM -> alwaysSpamSender()
+            ThreadMenuAction.NEVER_SPAM -> neverSpamSender()
+            ThreadMenuAction.BLOCK_ON_PHONE -> blockOnThisPhone()
             ThreadMenuAction.DELETE -> askConfirmDelete()
             ThreadMenuAction.RESTORE -> askConfirmRestoreAll()
             ThreadMenuAction.ARCHIVE -> setArchived(true)
@@ -530,7 +536,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
             MessageAction.SAVE_AS -> selected.flatMap { it.attachment?.attachments.orEmpty() }.takeIf { it.isNotEmpty() }?.let { saveMMS(it) }
             MessageAction.NOT_SPAM -> {
                 holder.clearSelection()
-                unmarkSpam(selected)
+                askNotSpam(selected)
             }
             MessageAction.RESTORE -> confirmRestoreMessages(selected) { deleteMessages(it, false, true) }
             // The holder selects all itself.
@@ -558,6 +564,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
                 hasItems = threadItems.isNotEmpty(),
                 isRecycleBin = isRecycleBin,
                 senderBlocked = single && config.spamNumbers.containsNumber(participants.getAddresses().first()),
+                senderAllowed = single && config.allowedNumbers.containsNumber(participants.getAddresses().first()),
                 muted = config.isConversationMuted(threadId),
                 specialNumber = isSpecialNumber(),
                 hasSpam = data.list.any { data.isSpam(it) },
@@ -1108,13 +1115,41 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         }
     }
 
+    private fun askNotSpam(selected: List<Message>) {
+        showAfshDialog { dismiss ->
+            AfshSheet(title = getString(R.string.not_spam_sheet_title), onDismiss = dismiss) {
+                AfshSheetItem(
+                    label = getString(R.string.not_spam_only),
+                    icon = AfshIcon.Inbox,
+                    supporting = getString(R.string.not_spam_only_text),
+                    onClick = {
+                        dismissThen {
+                            dismiss()
+                            unmarkSpam(selected, allowSender = false)
+                        }
+                    },
+                )
+                AfshSheetItem(
+                    label = resources.getQuantityString(R.plurals.never_spam, 1),
+                    icon = AfshIcon.Verified,
+                    supporting = resources.getQuantityString(R.plurals.never_spam_text, 1),
+                    onClick = {
+                        dismissThen {
+                            dismiss()
+                            unmarkSpam(selected, allowSender = true)
+                        }
+                    },
+                )
+            }
+        }
+    }
+
     private fun unmarkSpam(selected: List<Message>, allowSender: Boolean = false) {
         ensureBackgroundThread {
             if (allowSender) {
                 (selected.map { it.senderPhoneNumber } + participants.getAddresses())
                     .filter { it.isNotEmpty() }.distinct().forEach { config.addAllowedNumber(it) }
             } else {
-                // Not spam from a blocked sender unblocks them, or their next message goes to Spam again.
                 selected.map { it.senderPhoneNumber }.filter { it.isNotEmpty() && config.spamNumbers.containsNumber(it) }
                     .distinct().forEach { config.removeSpamNumber(it) }
             }
@@ -1126,7 +1161,11 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
             runOnUiThread {
                 refreshMenuItems()
                 publishItems(items)
-                toast(if (allowSender) R.string.sender_allowed else R.string.message_restored)
+                if (allowSender) {
+                    toast(R.string.sender_allowed)
+                } else {
+                    toast(resources.getQuantityString(R.plurals.message_restored, selected.size))
+                }
             }
         }
     }
@@ -1138,25 +1177,60 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
     private fun setConversationMuted(muted: Boolean) {
         config.setConversationMuted(threadId, muted)
         refreshMenuItems()
-        toast(if (muted) R.string.conversation_muted else R.string.conversation_unmuted)
+        toast(
+            resources.getQuantityString(
+                if (muted) R.plurals.conversation_muted else R.plurals.conversation_unmuted,
+                1,
+                1,
+            ),
+        )
     }
 
-    private fun blockNumber() {
+    private fun alwaysSpamSender() {
         val numbers = participants.getAddresses()
         val names = conversation?.title ?: TextUtils.join(", ", numbers)
         confirm(
-            title = getString(R.string.block_sender_title, names),
-            explanation = getString(R.string.block_sender_text),
-            confirmLabel = getString(R.string.block_sender),
-            destructive = true,
+            title = resources.getQuantityString(R.plurals.always_spam_title, 1, names),
+            explanation = resources.getQuantityString(R.plurals.always_spam_text, 1),
+            confirmLabel = resources.getQuantityString(R.plurals.always_spam, 1),
         ) {
             ensureBackgroundThread {
-                // App-level block: new SMS from these numbers are stored and go to Spam.
-                numbers.forEach {
-                    config.addSpamNumber(it)
-                }
+                numbers.forEach { config.addSpamNumber(it) }
                 runOnUiThread { refreshMenuItems() }
             }
+        }
+    }
+
+    private fun neverSpamSender() {
+        val numbers = participants.getAddresses()
+        val names = conversation?.title ?: TextUtils.join(", ", numbers)
+        confirm(
+            title = resources.getQuantityString(R.plurals.never_spam_title, 1, names),
+            explanation = resources.getQuantityString(R.plurals.never_spam_text, 1),
+            confirmLabel = resources.getQuantityString(R.plurals.never_spam, 1),
+        ) {
+            val spam = data.list.filter { data.isSpam(it) }
+            if (spam.isNotEmpty()) {
+                unmarkSpam(spam, allowSender = true)
+            } else {
+                ensureBackgroundThread {
+                    numbers.forEach { config.addAllowedNumber(it) }
+                    runOnUiThread { refreshMenuItems() }
+                }
+            }
+        }
+    }
+
+    private fun blockOnThisPhone() {
+        val numbers = participants.getAddresses()
+        val names = conversation?.title ?: TextUtils.join(", ", numbers)
+        confirm(
+            title = resources.getQuantityString(R.plurals.block_on_phone_title, 1, names),
+            explanation = resources.getQuantityString(R.plurals.block_on_phone_text, 1),
+            confirmLabel = resources.getQuantityString(R.plurals.block_on_phone, 1),
+            destructive = true,
+        ) {
+            if (blockNumbersOnPhone(numbers)) refreshMenuItems()
         }
     }
 

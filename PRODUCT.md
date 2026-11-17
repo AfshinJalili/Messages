@@ -20,7 +20,7 @@ Phone messaging with contacts, groups, dual SIM, notifications, media attachment
 
 ## Capabilities and Constraints
 
-Current repo capabilities include SMS/MMS, group messaging, media and contact attachments, search, archive, starred messages, spam and block rules, recycle bin, scheduled sending, per-conversation settings, message backup/restore, appearance, language, accessibility-related font sizing, and notification controls. The user explicitly allows rethinking this feature set. The design explores a new UI and product structure; it does not assume implementation changes have already been made.
+Current repo capabilities include SMS/MMS, group messaging, media and contact attachments, search, archive, starred messages, spam and filter rules, recycle bin, scheduled sending, per-conversation settings, message backup/restore, appearance, language, accessibility-related font sizing, and notification controls. The user explicitly allows rethinking this feature set. The design explores a new UI and product structure; it does not assume implementation changes have already been made.
 
 ## Brand Commitments
 

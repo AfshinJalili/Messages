@@ -52,22 +52,27 @@ import com.afsh.messages.ui.forContent
 import com.afsh.messages.ui.withContentFonts
 
 private val PhraseRowHeight = 50.dp
-private const val PHRASES_HEADING_INDEX = 4
+private const val PHRASES_HEADING_INDEX = 6
 
 @Immutable
 data class BlockRulesUiState(
-    val blockedNumbers: Int = 0,
+    val alwaysSpamCount: Int = 0,
+    val neverSpamCount: Int = 0,
+    val androidBlockedCount: Int = 0,
     val phrases: List<String> = emptyList(),
     val filterEnabled: Boolean = true,
+    val unknownNumbers: Boolean = false,
 )
 
-/** Everything 21 · Block rules can ask its activity to do. */
+/** Everything 21 · Filter rules can ask its activity to do. */
 sealed interface BlockRulesEvent {
     data object Back : BlockRulesEvent
     data object OpenNumbers : BlockRulesEvent
     data object MoveRules : BlockRulesEvent
     data object OpenPatterns : BlockRulesEvent
+    data object OpenWhatFilterLooksFor : BlockRulesEvent
     data class SetFilter(val enabled: Boolean) : BlockRulesEvent
+    data class SetUnknownNumbers(val enabled: Boolean) : BlockRulesEvent
     data object AddPhrase : BlockRulesEvent
     data object AddNumber : BlockRulesEvent
     data class EditPhrase(val phrase: String) : BlockRulesEvent
@@ -75,8 +80,7 @@ sealed interface BlockRulesEvent {
 }
 
 /**
- * 21 · Spam / rules: who and what is filtered, in one short list. The phrases card jumps to the
- * phrase list on the same page; the add row offers a phrase or a number.
+ * 21 · Filter rules: who and what is filtered, the plain-language local filter, and blocked phrases.
  */
 @Composable
 fun BlockRulesScreen(
@@ -88,13 +92,12 @@ fun BlockRulesScreen(
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     PageScaffold(
-        title = stringResource(R.string.block_rules),
+        title = stringResource(R.string.filter_rules),
         modifier = modifier,
-        subtitle = stringResource(R.string.block_rules_subtitle),
         onBack = { onEvent(BlockRulesEvent.Back) },
         navigation = navigation,
         actions = {
-            PageAppBarAction(AfshIcon.Share, stringResource(R.string.move_block_rules), onClick = {
+            PageAppBarAction(AfshIcon.Share, stringResource(R.string.move_filter_rules), onClick = {
                 onEvent(BlockRulesEvent.MoveRules)
             })
         },
@@ -105,11 +108,11 @@ fun BlockRulesScreen(
             verticalArrangement = Arrangement.spacedBy(Afsh.spacing.md),
         ) {
             item(key = "numbers") {
-                val numbers = state.blockedNumbers
+                val total = state.alwaysSpamCount + state.neverSpamCount + state.androidBlockedCount
                 DestinationCard(
                     icon = AfshIcon.SpamShield,
-                    label = stringResource(org.fossify.commons.R.string.blocked_numbers),
-                    description = pluralStringResource(R.plurals.blocked_senders, numbers, numbers),
+                    label = stringResource(R.string.filter_senders),
+                    description = pluralStringResource(R.plurals.blocked_senders, total, total),
                     onClick = { onEvent(BlockRulesEvent.OpenNumbers) },
                 )
             }
@@ -122,7 +125,20 @@ fun BlockRulesScreen(
                     onClick = { scope.launch { listState.animateScrollToItem(PHRASES_HEADING_INDEX) } },
                 )
             }
-            item(key = "filter") { FilterToggle(state.filterEnabled) { onEvent(BlockRulesEvent.SetFilter(it)) } }
+            item(key = "filter") {
+                FilterToggle(state.filterEnabled) { onEvent(BlockRulesEvent.SetFilter(it)) }
+            }
+            item(key = "unknown") {
+                UnknownNumbersToggle(state.unknownNumbers) { onEvent(BlockRulesEvent.SetUnknownNumbers(it)) }
+            }
+            item(key = "what") {
+                DestinationCard(
+                    icon = AfshIcon.SpamShield,
+                    label = stringResource(R.string.what_filter_looks_for),
+                    description = stringResource(R.string.what_filter_looks_for_card),
+                    onClick = { onEvent(BlockRulesEvent.OpenWhatFilterLooksFor) },
+                )
+            }
             item(key = "patterns") {
                 DestinationCard(
                     icon = AfshIcon.SpamShield,
@@ -149,7 +165,7 @@ fun BlockRulesScreen(
     }
 }
 
-/** Rule toggle: a tile with the setting and its switch (R5-37). */
+/** Rule toggle: a tile with the setting, plain-language support, and its switch. */
 @Composable
 private fun FilterToggle(enabled: Boolean, onChange: (Boolean) -> Unit) {
     SettingItem(
@@ -158,7 +174,24 @@ private fun FilterToggle(enabled: Boolean, onChange: (Boolean) -> Unit) {
             .clip(MaterialTheme.shapes.medium)
             .background(MaterialTheme.colorScheme.surfaceContainer)
             .toggleable(value = enabled, role = Role.Switch, onValueChange = onChange),
-        value = stringResource(if (enabled) R.string.filter_obvious_spam_on else R.string.filter_obvious_spam_off),
+        value = stringResource(
+            if (enabled) R.string.filter_on_text else R.string.filter_obvious_spam_off,
+        ),
+        bleed = false,
+    ) {
+        Switch(checked = enabled, onCheckedChange = null, colors = afshSwitchColors())
+    }
+}
+
+@Composable
+private fun UnknownNumbersToggle(enabled: Boolean, onChange: (Boolean) -> Unit) {
+    SettingItem(
+        label = stringResource(R.string.unknown_numbers),
+        modifier = Modifier
+            .clip(MaterialTheme.shapes.medium)
+            .background(MaterialTheme.colorScheme.surfaceContainer)
+            .toggleable(value = enabled, role = Role.Switch, onValueChange = onChange),
+        value = stringResource(R.string.unknown_numbers_text),
         bleed = false,
     ) {
         Switch(checked = enabled, onCheckedChange = null, colors = afshSwitchColors())

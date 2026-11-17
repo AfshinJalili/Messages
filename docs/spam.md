@@ -62,7 +62,7 @@ All hiding is derived at read time. Nothing on the `conversations` row records t
 ### Classifier
 
 - Move the `allowedNumbers` check above the keyword check in `IncomingSpamClassifier.silenceReason`, so "Never spam from this sender" always applies. Today a keyword match wins over the allowlist.
-- **"Block number" in `ThreadActivity`** becomes app-level: add the number to a new `config.spamNumbers` set, which the classifier maps to `BLOCK_REASON_NUMBER`. Stop writing to `BlockedNumberContract`, because Android drops SMS from those numbers and they can never be kept. Numbers already on the system block list remain as they are; the user manages them in system settings.
+- **"Always spam this sender"** adds the number to `config.spamNumbers` (future messages only → `BLOCK_REASON_NUMBER`). **"Block on this phone"** writes `BlockedNumberContract` so the phone may drop messages. **"Never spam this sender"** uses `allowedNumbers`. Filter rules shows the three lists separately.
 
 ## UI
 
@@ -172,7 +172,7 @@ Done. Differences from the design above:
 - Thread-wide read state, the unread separator and the initial unread scroll all ignore spam, so the Spam screen keeps its own unread count. `OPEN_SPAM` marks all spam in the thread read after scrolling to it.
 - Phase 4 first folded consecutive spam into a collapsible `ThreadSpamGroup` row. #167 removed it, with its strings, its view type and the jump-into-group logic.
 - The spam label goes in the message footer: "Spam · Keyword · 12:44".
-- "Never spam from this sender" uses the existing "Always allow this sender" string. It adds each spam sender address in the thread to the allowlist, then removes the thread's markers.
+- "Never spam this sender" allowlists the sender and restores their spam. From Spam, Not spam always opens a two-choice sheet.
 
 The JVM test `ThreadItemsTest` (`ThreadSpamChecks` on the phone until #242, `ThreadSpamGroupChecks` before #167) covers inline spam, the unread separator and hidden messages. On 24 September 2026, 29 of 30 passed across `ThreadSpamGroupChecks`, `SpamChecks`, `InboxChecks`, `ReadStateChecks`, `DeletionChecks` and `MessageActionChecks`, with the same `completedReadUpdatesInboxFromRoom` failure. The thread UI was not opened on the device, because opening a thread marks real messages read.
 
@@ -195,9 +195,8 @@ Done. Differences from the design above:
 
 - The allowlist is checked first, then the new `spamNumbers`, then keywords and the rest.
 - Numbers match through `containsNumber` (`Config.kt`), which compares with commons `trimToComparableNumber`: phone numbers by their last 9 digits, sender names such as "HAMRAH_AVAL" exactly. The allowlist used an exact string match before, so "+98912…" did not match "0912…". The backfill uses the same check.
-- Allowing and blocking replace each other: `addAllowedNumber` removes the number from `spamNumbers`, and `addSpamNumber` removes it from `allowedNumbers`. "Always allow this sender" is therefore also the unblock action. In a one-person thread it shows when the sender is blocked, and "Block number" is then hidden. Commons has no "Unblock number" string.
-- Blocking from the inbox selection (`ConversationsAdapter`) is app-level too. The plan only named `ThreadActivity`.
-- Blocking only affects new messages. Existing messages are not marked, and the conversation stays in the inbox. `ThreadActivity` no longer closes after blocking, and the inbox no longer removes the row.
+- Allowing and always-spam replace each other: `addAllowedNumber` removes the number from `spamNumbers`, and `addSpamNumber` removes it from `allowedNumbers`. `removeAllowedNumber` can take a sender off the never-spam list from Filter rules. Always-spam and Never spam are offered beside Block on this phone in overflow and multi-select.
+- Always-spam only affects future messages. Existing messages are not moved. Block on this phone is a separate Android list with Unblock.
 
 `SpamClassifierChecks` (3 tests, throwaway preferences) covers allowlist over keyword, blocking across number formats, unblocking and re-blocking, and exact sender-name matching. On 24 September 2026, 33 of 34 passed, with the same `completedReadUpdatesInboxFromRoom` failure. Lint has one new warning, 106 in total: `UseKtx` on the `spamNumbers` setter. The setter is written like every other setter in `Config`.
 

@@ -27,11 +27,12 @@ import com.afsh.messages.ui.components.PageContentPadding
 import com.afsh.messages.ui.components.PageNavigation
 import com.afsh.messages.ui.components.PageScaffold
 
-/** 51 · Spam / move rule list: export this device's rules, or merge a file into them. */
+/** 51 · Filter rules export/import: includes always-spam, phrases and the never-spam allowlist. */
 @Composable
 fun MoveRulesScreen(
     numbers: Int,
     phrases: Int,
+    allowed: Int,
     navigation: PageNavigation,
     snackbarHostState: SnackbarHostState,
     onBack: () -> Unit,
@@ -41,9 +42,8 @@ fun MoveRulesScreen(
 ) {
     val colors = MaterialTheme.colorScheme
     PageScaffold(
-        title = stringResource(R.string.move_block_rules),
+        title = stringResource(R.string.move_filter_rules),
         modifier = modifier,
-        subtitle = stringResource(R.string.move_block_rules_subtitle),
         onBack = onBack,
         navigation = navigation,
         snackbarHostState = snackbarHostState,
@@ -72,6 +72,7 @@ fun MoveRulesScreen(
                         R.string.rules_summary,
                         pluralStringResource(R.plurals.blocked_number_count, numbers, numbers),
                         pluralStringResource(R.plurals.blocked_phrase_count, phrases, phrases),
+                        pluralStringResource(R.plurals.never_spam_sender_count, allowed, allowed),
                     ),
                     style = MaterialTheme.typography.bodyMedium,
                     color = colors.onSurfaceVariant,
@@ -83,14 +84,14 @@ fun MoveRulesScreen(
                 color = colors.onSurfaceVariant,
             )
             AfshButton(
-                stringResource(R.string.export_block_list),
+                stringResource(R.string.export_filter_rules),
                 onClick = onExport,
                 modifier = Modifier.fillMaxWidth(),
-                enabled = numbers + phrases > 0,
+                enabled = numbers + phrases + allowed > 0,
             )
             InfoPanel(
-                title = stringResource(R.string.have_a_block_list),
-                body = stringResource(R.string.have_a_block_list_text),
+                title = stringResource(R.string.have_filter_rules),
+                body = stringResource(R.string.have_filter_rules_text),
                 modifier = Modifier
                     .clip(MaterialTheme.shapes.medium)
                     .clickable(role = Role.Button, onClick = onImport),

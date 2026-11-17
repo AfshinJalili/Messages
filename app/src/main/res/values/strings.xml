@@ -6,9 +6,23 @@
     <string name="clear_spam">Clear all</string>
     <string name="clear_spam_confirmation">Permanently delete all blocked messages?</string>
     <string name="not_spam">Not spam (restore to inbox)</string>
-    <string name="allow_sender">Always allow this sender</string>
+    <plurals name="never_spam">
+        <item quantity="one">Never spam this sender</item>
+        <item quantity="other">Never spam these senders</item>
+    </plurals>
+    <plurals name="never_spam_title">
+        <item quantity="one">Never spam %s?</item>
+        <item quantity="other">Never spam these %d senders?</item>
+    </plurals>
+    <plurals name="never_spam_text">
+        <item quantity="one">Their messages stay in the inbox, even if they match a phrase or the marketing filter. You can change this under Filter rules.</item>
+        <item quantity="other">Their messages stay in the inbox, even if they match a phrase or the marketing filter. You can change this under Filter rules.</item>
+    </plurals>
     <string name="sender_allowed">Sender allowed and message restored</string>
-    <string name="message_restored">Message restored to inbox</string>
+    <plurals name="message_restored">
+        <item quantity="one">Message restored to inbox</item>
+        <item quantity="other">Messages restored to inbox</item>
+    </plurals>
     <string name="block_reason_ai">Legacy filter</string>
     <string name="block_reason_keyword">Keyword</string>
     <string name="block_reason_number">Blocked number</string>
@@ -133,8 +147,14 @@
     <!-- Mute -->
     <string name="mute_conversation">Mute</string>
     <string name="unmute_conversation">Unmute</string>
-    <string name="conversation_muted">Conversation muted</string>
-    <string name="conversation_unmuted">Conversation unmuted</string>
+    <plurals name="conversation_muted">
+        <item quantity="one">Conversation muted</item>
+        <item quantity="other">%d conversations muted</item>
+    </plurals>
+    <plurals name="conversation_unmuted">
+        <item quantity="one">Conversation unmuted</item>
+        <item quantity="other">%d conversations unmuted</item>
+    </plurals>
     <string name="muted">Muted</string>
     <!-- Message actions -->
     <string name="star_message">Star</string>
@@ -192,13 +212,10 @@
         <item quantity="one">%d message moved to the inbox</item>
         <item quantity="other">%d messages moved to the inbox</item>
     </plurals>
-    <string name="library_subtitle">The things you want to keep, quiet, or recover</string>
     <string name="library_starred_description">Messages you marked to return to</string>
     <string name="library_archive_description">Conversations out of your main inbox</string>
     <string name="library_spam_description">Filtered messages and rules</string>
     <string name="library_recycle_description">Recently deleted, with a way back</string>
-    <string name="library_principle_title">Your inbox stays personal.</string>
-    <string name="library_principle_body">Nothing moves here without a clear action or rule.</string>
     <!-- AFSH composer (Compose, design 11, 78, 79, 81) -->
     <string name="composer_hint">Message</string>
     <string name="composer_hint_name">Message %s</string>
@@ -247,9 +264,7 @@
 
     <!-- Library pages (design 18, 19, 22) -->
     <string name="day_and_time">%1$s · %2$s</string>
-    <string name="starred_subtitle">Little things worth finding again</string>
     <string name="starred_empty_text">Star a message to keep it here.</string>
-    <string name="archive_subtitle">Quieted, never gone</string>
     <string name="archive_hint">Archived threads leave the inbox and remain searchable.</string>
     <string name="archive_action_title">Need it in your inbox?</string>
     <string name="archive_action_text">Swipe a thread or open it and choose Unarchive.</string>
@@ -273,16 +288,39 @@
     <string name="delete_forever_title">Delete forever?</string>
     <string name="delete_forever_conversation_text">This conversation cannot be restored after permanent deletion.</string>
 
-    <!-- Spam and block rules (design 20, 21, 38, 50, 51) -->
-    <string name="spam_subtitle">Separate from the people you trust</string>
+    <!-- Spam and filter rules (design 20, 21, 38, 50, 51) -->
     <string name="spam_empty_text">Blocked and suspicious messages stay here without an inbox alert.</string>
     <string name="not_spam_short">Not spam</string>
-    <string name="block_sender">Block sender</string>
-    <string name="block_sender_title">Block %s?</string>
-    <string name="block_sender_text">Their new messages will go straight to Spam, without an alert. You can unblock them in Block rules.</string>
+    <string name="not_spam_sheet_title">Move these out of Spam?</string>
+    <string name="not_spam_only">Only these messages</string>
+    <string name="not_spam_only_text">They go back to the conversation. Future messages can still be filtered.</string>
+    <plurals name="always_spam">
+        <item quantity="one">Always spam this sender</item>
+        <item quantity="other">Always spam these senders</item>
+    </plurals>
+    <plurals name="always_spam_title">
+        <item quantity="one">Always treat %s as spam?</item>
+        <item quantity="other">Always treat these %d senders as spam?</item>
+    </plurals>
+    <plurals name="always_spam_text">
+        <item quantity="one">New messages from them will go to Spam with no alert, from now on. Existing messages stay where they are. Review future ones in Library → Spam.</item>
+        <item quantity="other">New messages from them will go to Spam with no alert, from now on. Existing messages stay where they are. Review future ones in Library → Spam.</item>
+    </plurals>
+    <plurals name="block_on_phone">
+        <item quantity="one">Block on this phone</item>
+        <item quantity="other">Block these senders on this phone</item>
+    </plurals>
+    <plurals name="block_on_phone_title">
+        <item quantity="one">Block %s on this phone?</item>
+        <item quantity="other">Block these %d senders on this phone?</item>
+    </plurals>
+    <plurals name="block_on_phone_text">
+        <item quantity="one">Spam still saves their messages in the Spam folder. Block on this phone means the phone drops them and they never arrive.</item>
+        <item quantity="other">Spam still saves their messages in the Spam folder. Block on this phone means the phone drops them and they never arrive.</item>
+    </plurals>
+    <string name="block_on_phone_unavailable">This phone cannot block numbers.</string>
     <string name="clear_spam_title">Delete all spam?</string>
-    <string name="block_rules">Block rules</string>
-    <string name="block_rules_subtitle">A short, understandable list of what gets filtered</string>
+    <string name="filter_rules">Filter rules</string>
     <plurals name="blocked_senders">
         <item quantity="one">%d sender</item>
         <item quantity="other">%d senders</item>
@@ -297,8 +335,26 @@
         <item quantity="other">%d numbers</item>
     </plurals>
     <string name="filter_obvious_spam">Filter obvious spam</string>
-    <string name="filter_obvious_spam_on">On · Uses local rules</string>
     <string name="filter_obvious_spam_off">Off</string>
+    <string name="filter_on_text">Looks for Persian marketing words and promo emojis. Two signals, or one signal plus a link or a named sender, send the message to Spam. One-time codes, bank and receipt texts, and people in your contacts are not filtered. Lines such as «لغو11» or unsubscribe are ignored.</string>
+    <string name="unknown_numbers">File messages from unknown numbers as spam</string>
+    <string name="unknown_numbers_text">Contacts are never filtered.</string>
+    <string name="always_spam_list">Always-spam senders</string>
+    <string name="never_spam_list">Never-spam senders</string>
+    <string name="android_blocked">Blocked on Android</string>
+    <string name="android_blocked_text">Messages from these senders may never arrive on the phone.</string>
+    <string name="what_filter_looks_for">What the filter looks for</string>
+    <string name="what_filter_looks_for_card">Persian marketing words and promo emojis, as plain text</string>
+    <string name="what_filter_words">Marketing words</string>
+    <string name="what_filter_emojis">Promo emojis</string>
+    <string name="spam_why_sender">you marked this sender as always spam</string>
+    <string name="spam_why_android">blocked on Android</string>
+    <string name="spam_why_unknown">unknown number</string>
+    <string name="no_always_spam_senders">No always-spam senders</string>
+    <string name="no_never_spam_senders">No never-spam senders</string>
+    <string name="no_android_blocked">No numbers blocked on Android</string>
+    <string name="remove_never_spam">Remove %s</string>
+    <string name="filter_senders">Senders</string>
     <string name="edit_phrase">Edit phrase</string>
     <string name="remove_phrase">Remove %s</string>
     <string name="add_phrase_or_number">Add a phrase or number</string>
@@ -306,9 +362,8 @@
     <string name="block_a_phrase_subtitle">Messages matching this phrase move to Spam</string>
     <string name="block_a_number">Block a number</string>
     <string name="block_a_number_subtitle">Messages from this sender move to Spam</string>
-    <string name="blocked_numbers_subtitle">These senders cannot reach your inbox</string>
     <string name="no_blocked_numbers">No blocked numbers</string>
-    <string name="no_blocked_numbers_text">Block a sender from Spam or a conversation, or add a number here.</string>
+    <string name="no_blocked_numbers_text">Mark a sender as always spam or never spam from a conversation, block them on this phone, or add a number here.</string>
     <string name="phrase">Phrase</string>
     <string name="phone_number_label">Phone number or sender name</string>
     <string name="phrase_guidance">Matching is case-insensitive. Review filtered messages in Spam.</string>
@@ -322,44 +377,38 @@
     <string name="phrase_error_detail">Edit the blocked phrase instead, or try different words.</string>
     <string name="number_invalid">Enter a number or sender name</string>
     <string name="number_error_detail">Use the digits or the name the messages come from.</string>
-    <string name="move_block_rules">Move block rules</string>
-    <string name="move_block_rules_subtitle">Keep your filtering choices on another phone</string>
+    <string name="move_filter_rules">Move filter rules</string>
     <string name="what_will_be_exported">What will be exported</string>
-    <string name="rules_summary">%1$s · %2$s</string>
+    <string name="rules_summary">%1$s · %2$s · %3$s</string>
+    <plurals name="never_spam_sender_count">
+        <item quantity="one">%d never-spam sender</item>
+        <item quantity="other">%d never-spam senders</item>
+    </plurals>
     <string name="rules_export_privacy">The file lists blocked numbers and phrases. Store it privately.</string>
-    <string name="export_block_list">Export block list</string>
-    <string name="have_a_block_list">Have a block list?</string>
-    <string name="have_a_block_list_text">Choose a file to merge rules with this device.</string>
-    <string name="block_rules_file_name" translatable="false">messages-block-rules.json</string>
-    <string name="block_rules_exported">Block list exported</string>
-    <string name="block_rules_imported">Added %s</string>
+    <string name="export_filter_rules">Export filter rules</string>
+    <string name="have_filter_rules">Have filter rules?</string>
+    <string name="have_filter_rules_text">Choose a file to merge rules with this device.</string>
+    <string name="filter_rules_file_name" translatable="false">messages-filter-rules.json</string>
+    <string name="filter_rules_exported">Filter rules exported</string>
+    <string name="filter_rules_imported">Added %s</string>
 
     <!-- Settings (design 24–31, 48, 49) -->
-    <string name="settings_subtitle">Make Messages feel right for you</string>
     <string name="settings_your_experience">Your experience</string>
     <string name="settings_control">Control</string>
     <string name="settings_appearance">Appearance</string>
-    <string name="settings_appearance_subtitle">Comfortable reading in every light</string>
     <string name="settings_appearance_summary">Theme, text size, language, dates</string>
-    <string name="settings_notifications_subtitle">Attention when it matters, privacy where it counts</string>
     <string name="settings_notifications_summary">Alerts and lock screen</string>
     <string name="settings_writing">Writing &amp; sending</string>
-    <string name="settings_writing_subtitle">Keep the composer predictable</string>
     <string name="settings_writing_summary">Composer, MMS and delivery</string>
     <string name="settings_interactions">Interactions</string>
-    <string name="settings_interactions_subtitle">Choose shortcuts that fit your hands</string>
     <string name="settings_interactions_summary">Swipe actions and archive</string>
-    <string name="settings_block_rules_summary">Numbers, phrases, local filter</string>
+    <string name="settings_filter_rules_summary">Numbers, phrases, local filter</string>
     <string name="settings_privacy">Privacy &amp; lock</string>
-    <string name="settings_privacy_subtitle">Control what others can see</string>
     <string name="settings_privacy_summary">App lock and stored data</string>
     <string name="settings_backup">Backup &amp; restore</string>
-    <string name="settings_backup_subtitle">Your message history, in your control</string>
     <string name="settings_backup_summary">Move your messages safely</string>
     <string name="about_app">About</string>
-    <string name="about_subtitle">A private place for your SMS and MMS</string>
     <string name="about_summary">App information and help</string>
-    <string name="about_description">Built for readable, dependable conversations.</string>
     <string name="help_and_support">Help &amp; support</string>
     <string name="about_updates">Updates</string>
     <string name="check_for_updates">Check for updates</string>
@@ -566,7 +615,6 @@
 
     <!-- First run (32, 33; Persian 55, 56) -->
     <string name="welcome_title">Welcome to Messages</string>
-    <string name="welcome_subtitle">A clearer place for conversations</string>
     <string name="welcome_statement">Every message has a person at the other end.</string>
     <string name="welcome_text">Read, reply, search, and keep control of what reaches you.</string>
     <string name="set_as_default_sms_app">Set as default SMS app</string>
@@ -603,10 +651,8 @@
     <string name="spam_why_words">Why: %1$s · %2$s</string>
     <string name="spam_why_stale">Why: %s · the current rules no longer catch it</string>
     <string name="spam_why_phrase">Blocked phrase</string>
-    <string name="spam_why_unsubscribe">Unsubscribe line</string>
-    <string name="spam_why_marketing">Marketing words</string>
+    <string name="spam_why_marketing">Marketing words and emojis</string>
     <string name="spam_patterns">Spam patterns</string>
-    <string name="spam_patterns_subtitle">What the local rules look for</string>
     <string name="spam_patterns_card">See, test and edit the rule patterns</string>
     <string name="spam_patterns_filter_off">Filter obvious spam is off</string>
     <string name="spam_patterns_filter_off_text">The rules block nothing until it is on. One-time codes are still let past blocked phrases.</string>
@@ -614,19 +660,23 @@
     <string name="spam_patterns_try_message">Paste a message</string>
     <string name="spam_patterns_try_sender">Sender (optional)</string>
     <string name="spam_patterns_result_code">Allowed · one-time code</string>
-    <string name="spam_patterns_result_unsubscribe">Spam · unsubscribe line</string>
-    <string name="spam_patterns_result_marketing">Spam · marketing words with a link or a named sender</string>
+    <string name="spam_patterns_result_transactional">Allowed · bank or receipt</string>
+    <string name="spam_patterns_result_marketing">Spam · marketing words or promo emojis</string>
     <string name="spam_patterns_result_none">No rule matches · stays in the inbox</string>
     <string name="spam_patterns_code_words">One-time code words</string>
-    <string name="spam_patterns_code_words_text">With a code, the message is always allowed, even with a link or an unsubscribe line.</string>
+    <string name="spam_patterns_code_words_text">With a code, the message is always allowed, even with a link.</string>
     <string name="spam_patterns_code">Code</string>
     <string name="spam_patterns_code_text">The code itself. Both a code word and a code must match.</string>
-    <string name="spam_patterns_unsubscribe">Unsubscribe line</string>
-    <string name="spam_patterns_unsubscribe_text">Any match sends the message to Spam.</string>
+    <string name="spam_patterns_transactional">Bank and receipts</string>
+    <string name="spam_patterns_transactional_text">Any match keeps the message in the inbox. Marketing and emoji rules do not apply.</string>
     <string name="spam_patterns_links">Links</string>
-    <string name="spam_patterns_links_text">Marketing words with a link send the message to Spam.</string>
+    <string name="spam_patterns_links_text">A companion: with one marketing signal, a link sends the message to Spam.</string>
     <string name="spam_patterns_marketing">Marketing words</string>
-    <string name="spam_patterns_marketing_text">Spam when there is a link or the sender is a name.</string>
+    <string name="spam_patterns_marketing_text">Each distinct match is one signal. Two signals, or one plus a link or named sender, go to Spam.</string>
+    <string name="spam_patterns_promo_emoji">Promo emojis</string>
+    <string name="spam_patterns_promo_emoji_text">Strong promo emojis. Each distinct match is one signal, same as a marketing word.</string>
+    <string name="spam_patterns_promo_emoji_weak">Weak smileys</string>
+    <string name="spam_patterns_promo_emoji_weak_text">Smileys and hearts. They never start a block on their own.</string>
     <string name="spam_patterns_add">Add pattern</string>
     <string name="spam_patterns_edit">Edit pattern</string>
     <string name="spam_patterns_save">Save pattern</string>

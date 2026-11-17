@@ -53,7 +53,6 @@ private fun DefaultAppPage(onEvent: (FirstRunEvent) -> Unit, modifier: Modifier)
     val colors = MaterialTheme.colorScheme
     PageScaffold(
         title = stringResource(R.string.welcome_title),
-        subtitle = stringResource(R.string.welcome_subtitle),
         modifier = modifier,
     ) {
         PageColumn {

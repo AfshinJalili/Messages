@@ -63,7 +63,6 @@ fun ArchiveScreen(
     PageScaffold(
         title = stringResource(R.string.archived_conversations),
         modifier = modifier,
-        subtitle = stringResource(R.string.archive_subtitle),
         onBack = { onEvent(ArchiveEvent.Back) },
         navigation = navigation,
         snackbarHostState = snackbarHostState,

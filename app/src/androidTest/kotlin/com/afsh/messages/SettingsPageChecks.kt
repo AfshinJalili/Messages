@@ -97,7 +97,7 @@ class SettingsPageChecks {
         val events = mutableListOf<SettingsEvent>()
         show(SettingsPage.OVERVIEW) { events += it }
         link(text(R.string.settings_appearance)).performClick()
-        link(text(R.string.block_rules)).performScrollTo().performClick()
+        link(text(R.string.filter_rules)).performScrollTo().performClick()
         link(text(R.string.settings_backup)).performScrollTo().performClick()
         check(
             events == listOf(
