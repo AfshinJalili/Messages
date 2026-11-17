@@ -16,11 +16,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import com.afsh.messages.R
 import com.afsh.messages.ui.AfshTheme
 import com.afsh.messages.ui.components.DestinationCard
-import com.afsh.messages.ui.components.InfoPanel
 import com.afsh.messages.ui.components.PageAppBar
 import com.afsh.messages.ui.components.PageContentPadding
 import com.afsh.messages.ui.inbox.LibraryDestination
@@ -38,7 +36,6 @@ fun LibraryScreen(
     Column(modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection)) {
         PageAppBar(
             stringResource(R.string.inbox_nav_library),
-            subtitle = stringResource(R.string.library_subtitle),
             scrollBehavior = scrollBehavior,
         )
         Column(
@@ -57,10 +54,6 @@ fun LibraryScreen(
                     badge = if (destination == LibraryDestination.SPAM) unreadSpam else 0,
                 )
             }
-            InfoPanel(
-                title = stringResource(R.string.library_principle_title),
-                body = stringResource(R.string.library_principle_body),
-            )
         }
     }
 }

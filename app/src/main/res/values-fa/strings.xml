@@ -172,13 +172,10 @@
         <item quantity="one">%d پیام به صندوق منتقل شد</item>
         <item quantity="other">%d پیام به صندوق منتقل شد</item>
     </plurals>
-    <string name="library_subtitle">چیزهایی که می‌خواهید نگه دارید، بی‌صدا کنید یا بازگردانید</string>
     <string name="library_starred_description">پیام‌هایی که برای بازگشت علامت زده‌اید</string>
     <string name="library_archive_description">گفت‌وگوهای خارج از صندوق اصلی</string>
     <string name="library_spam_description">پیام‌های فیلترشده و قوانین</string>
     <string name="library_recycle_description">پیام‌های تازه حذف‌شده، با امکان بازگشت</string>
-    <string name="library_principle_title">صندوق شما شخصی می‌ماند.</string>
-    <string name="library_principle_body">هیچ‌چیز بدون اقدام یا قانون مشخص به اینجا نمی‌آید.</string>
     <string name="composer_hint">پیام</string>
     <string name="composer_hint_name">پیام به %s</string>
     <string name="composer_cant_reply">این فرستنده نمی‌تواند پاسخ دریافت کند</string>
@@ -226,9 +223,7 @@
 
     <!-- Library pages (design 18, 19, 22) -->
     <string name="day_and_time">%1$s · %2$s</string>
-    <string name="starred_subtitle">چیزهای کوچکی که ارزش دوباره پیدا کردن دارند</string>
     <string name="starred_empty_text">به پیامی ستاره بدهید تا اینجا بماند.</string>
-    <string name="archive_subtitle">بی‌صدا، اما هرگز گم نمی‌شود</string>
     <string name="archive_hint">گفت‌وگوهای بایگانی‌شده از صندوق بیرون می‌روند و همچنان در جست‌وجو پیدا می‌شوند.</string>
     <string name="archive_action_title">لازمش دارید در صندوق؟</string>
     <string name="archive_action_text">گفت‌وگو را بکشید، یا بازش کنید و «درآوردن از بایگانی» را بزنید.</string>
@@ -252,7 +247,6 @@
     <string name="delete_forever_conversation_text">این گفت‌وگو پس از حذف همیشگی قابل بازگرداندن نیست.</string>
 
     <!-- Spam and block rules (design 20, 21, 38, 50, 51) -->
-    <string name="spam_subtitle">جدا از کسانی که به آن‌ها اعتماد دارید</string>
     <string name="spam_empty_text">پیام‌های مسدود و مشکوک بدون اعلان در صندوق، اینجا می‌مانند.</string>
     <string name="not_spam_short">هرزنامه نیست</string>
     <string name="block_sender">مسدود کردن فرستنده</string>
@@ -260,7 +254,6 @@
     <string name="block_sender_text">پیام‌های تازه‌اش بی‌اعلان مستقیم به هرزنامه می‌روند. در قوانین مسدودسازی می‌توانید رفع مسدودی کنید.</string>
     <string name="clear_spam_title">همهٔ هرزنامه‌ها حذف شوند؟</string>
     <string name="block_rules">قوانین مسدودسازی</string>
-    <string name="block_rules_subtitle">فهرستی کوتاه و روشن از آنچه فیلتر می‌شود</string>
     <plurals name="blocked_senders">
         <item quantity="one">%d فرستنده</item>
         <item quantity="other">%d فرستنده</item>
@@ -284,7 +277,6 @@
     <string name="block_a_phrase_subtitle">پیام‌هایی که این عبارت را دارند به هرزنامه می‌روند</string>
     <string name="block_a_number">مسدود کردن شماره</string>
     <string name="block_a_number_subtitle">پیام‌های این فرستنده به هرزنامه می‌روند</string>
-    <string name="blocked_numbers_subtitle">این فرستنده‌ها به صندوق شما نمی‌رسند</string>
     <string name="no_blocked_numbers">شماره‌ی مسدودی نیست</string>
     <string name="no_blocked_numbers_text">فرستنده را از هرزنامه یا گفت‌وگو مسدود کنید، یا شماره‌ای اینجا اضافه کنید.</string>
     <string name="phrase">عبارت</string>
@@ -301,7 +293,6 @@
     <string name="number_invalid">شماره یا نام فرستنده را وارد کنید</string>
     <string name="number_error_detail">رقم‌ها یا نامی را بنویسید که پیام‌ها با آن می‌رسند.</string>
     <string name="move_block_rules">انتقال قوانین مسدودسازی</string>
-    <string name="move_block_rules_subtitle">انتخاب‌های فیلترتان را روی گوشی دیگر نگه دارید</string>
     <string name="what_will_be_exported">چه چیزی برون‌بری می‌شود</string>
     <string name="rules_summary">%1$s · %2$s</string>
     <string name="rules_export_privacy">این فایل شماره‌ها و عبارت‌های مسدود را فهرست می‌کند. آن را خصوصی نگه دارید.</string>
@@ -312,31 +303,22 @@
     <string name="block_rules_imported">%s اضافه شد</string>
 
     <!-- Settings (design 24–31, 48, 49) -->
-    <string name="settings_subtitle">پیام‌ها را برای خودتان تنظیم کنید</string>
     <string name="settings_your_experience">تجربهٔ شما</string>
     <string name="settings_control">کنترل</string>
     <string name="settings_appearance">نمایش و زبان</string>
-    <string name="settings_appearance_subtitle">خواندن راحت در روشنایی و تاریکی</string>
     <string name="settings_appearance_summary">نمای برنامه، اندازهٔ نوشته، زبان، تاریخ</string>
-    <string name="settings_notifications_subtitle">توجه وقتی مهم است، حریم خصوصی وقتی لازم است</string>
     <string name="settings_notifications_summary">اعلان‌ها و صفحهٔ قفل</string>
     <string name="settings_writing">نوشتن و ارسال</string>
-    <string name="settings_writing_subtitle">نوار نوشتن را قابل‌پیش‌بینی نگه دارید</string>
     <string name="settings_writing_summary">نوار نوشتن، MMS و تحویل</string>
     <string name="settings_interactions">تعامل‌ها</string>
-    <string name="settings_interactions_subtitle">میان‌برهایی را انتخاب کنید که به دستتان می‌آید</string>
     <string name="settings_interactions_summary">کشیدن و بایگانی</string>
     <string name="settings_block_rules_summary">شماره‌ها، عبارت‌ها، فیلتر روی گوشی</string>
     <string name="settings_privacy">حریم خصوصی و قفل</string>
-    <string name="settings_privacy_subtitle">کنترل کنید دیگران چه می‌بینند</string>
     <string name="settings_privacy_summary">قفل برنامه و داده‌های ذخیره‌شده</string>
     <string name="settings_backup">پشتیبان‌گیری و بازیابی</string>
-    <string name="settings_backup_subtitle">تاریخچهٔ پیام‌هایتان، در اختیار خودتان</string>
     <string name="settings_backup_summary">پیام‌هایتان را امن جابه‌جا کنید</string>
     <string name="about_app">درباره</string>
-    <string name="about_subtitle">جایی خصوصی برای پیامک‌ها و MMSهای شما</string>
     <string name="about_summary">اطلاعات برنامه و راهنما</string>
-    <string name="about_description">ساخته‌شده برای گفت‌وگوهای خوانا و قابل‌اعتماد.</string>
     <string name="help_and_support">راهنما و پشتیبانی</string>
     <string name="about_updates">به‌روزرسانی</string>
     <string name="check_for_updates">بررسی به‌روزرسانی</string>
@@ -536,7 +518,6 @@
 
     <!-- First run (32, 33; Persian 55, 56) -->
     <string name="welcome_title">به پیام‌ها خوش آمدید</string>
-    <string name="welcome_subtitle">پیام‌هایتان را راحت‌تر بخوانید</string>
     <string name="welcome_statement">ارتباط با کسانی که برایتان مهم‌اند</string>
     <string name="welcome_text">پیام بخوانید، پاسخ دهید و پیام‌های ناخواسته را مدیریت کنید.</string>
     <string name="set_as_default_sms_app">انتخاب به‌عنوان برنامهٔ پیامک</string>
@@ -576,7 +557,6 @@
     <string name="spam_why_unsubscribe">خط لغو</string>
     <string name="spam_why_marketing">واژه‌های تبلیغاتی</string>
     <string name="spam_patterns">الگوهای هرزنامه</string>
-    <string name="spam_patterns_subtitle">آنچه قوانین روی گوشی دنبالش می‌گردند</string>
     <string name="spam_patterns_card">دیدن، آزمودن و ویرایش الگوهای قوانین</string>
     <string name="spam_patterns_filter_off">فیلتر هرزنامه‌های آشکار خاموش است</string>
     <string name="spam_patterns_filter_off_text">تا روشن نشود، قوانین چیزی را مسدود نمی‌کنند. رمزهای یک‌بار مصرف همچنان از عبارت‌های مسدود رد می‌شوند.</string>

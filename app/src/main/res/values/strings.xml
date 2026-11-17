@@ -192,13 +192,10 @@
         <item quantity="one">%d message moved to the inbox</item>
         <item quantity="other">%d messages moved to the inbox</item>
     </plurals>
-    <string name="library_subtitle">The things you want to keep, quiet, or recover</string>
     <string name="library_starred_description">Messages you marked to return to</string>
     <string name="library_archive_description">Conversations out of your main inbox</string>
     <string name="library_spam_description">Filtered messages and rules</string>
     <string name="library_recycle_description">Recently deleted, with a way back</string>
-    <string name="library_principle_title">Your inbox stays personal.</string>
-    <string name="library_principle_body">Nothing moves here without a clear action or rule.</string>
     <!-- AFSH composer (Compose, design 11, 78, 79, 81) -->
     <string name="composer_hint">Message</string>
     <string name="composer_hint_name">Message %s</string>
@@ -247,9 +244,7 @@
 
     <!-- Library pages (design 18, 19, 22) -->
     <string name="day_and_time">%1$s · %2$s</string>
-    <string name="starred_subtitle">Little things worth finding again</string>
     <string name="starred_empty_text">Star a message to keep it here.</string>
-    <string name="archive_subtitle">Quieted, never gone</string>
     <string name="archive_hint">Archived threads leave the inbox and remain searchable.</string>
     <string name="archive_action_title">Need it in your inbox?</string>
     <string name="archive_action_text">Swipe a thread or open it and choose Unarchive.</string>
@@ -274,7 +269,6 @@
     <string name="delete_forever_conversation_text">This conversation cannot be restored after permanent deletion.</string>
 
     <!-- Spam and block rules (design 20, 21, 38, 50, 51) -->
-    <string name="spam_subtitle">Separate from the people you trust</string>
     <string name="spam_empty_text">Blocked and suspicious messages stay here without an inbox alert.</string>
     <string name="not_spam_short">Not spam</string>
     <string name="block_sender">Block sender</string>
@@ -282,7 +276,6 @@
     <string name="block_sender_text">Their new messages will go straight to Spam, without an alert. You can unblock them in Block rules.</string>
     <string name="clear_spam_title">Delete all spam?</string>
     <string name="block_rules">Block rules</string>
-    <string name="block_rules_subtitle">A short, understandable list of what gets filtered</string>
     <plurals name="blocked_senders">
         <item quantity="one">%d sender</item>
         <item quantity="other">%d senders</item>
@@ -306,7 +299,6 @@
     <string name="block_a_phrase_subtitle">Messages matching this phrase move to Spam</string>
     <string name="block_a_number">Block a number</string>
     <string name="block_a_number_subtitle">Messages from this sender move to Spam</string>
-    <string name="blocked_numbers_subtitle">These senders cannot reach your inbox</string>
     <string name="no_blocked_numbers">No blocked numbers</string>
     <string name="no_blocked_numbers_text">Block a sender from Spam or a conversation, or add a number here.</string>
     <string name="phrase">Phrase</string>
@@ -323,7 +315,6 @@
     <string name="number_invalid">Enter a number or sender name</string>
     <string name="number_error_detail">Use the digits or the name the messages come from.</string>
     <string name="move_block_rules">Move block rules</string>
-    <string name="move_block_rules_subtitle">Keep your filtering choices on another phone</string>
     <string name="what_will_be_exported">What will be exported</string>
     <string name="rules_summary">%1$s · %2$s</string>
     <string name="rules_export_privacy">The file lists blocked numbers and phrases. Store it privately.</string>
@@ -335,31 +326,22 @@
     <string name="block_rules_imported">Added %s</string>
 
     <!-- Settings (design 24–31, 48, 49) -->
-    <string name="settings_subtitle">Make Messages feel right for you</string>
     <string name="settings_your_experience">Your experience</string>
     <string name="settings_control">Control</string>
     <string name="settings_appearance">Appearance</string>
-    <string name="settings_appearance_subtitle">Comfortable reading in every light</string>
     <string name="settings_appearance_summary">Theme, text size, language, dates</string>
-    <string name="settings_notifications_subtitle">Attention when it matters, privacy where it counts</string>
     <string name="settings_notifications_summary">Alerts and lock screen</string>
     <string name="settings_writing">Writing &amp; sending</string>
-    <string name="settings_writing_subtitle">Keep the composer predictable</string>
     <string name="settings_writing_summary">Composer, MMS and delivery</string>
     <string name="settings_interactions">Interactions</string>
-    <string name="settings_interactions_subtitle">Choose shortcuts that fit your hands</string>
     <string name="settings_interactions_summary">Swipe actions and archive</string>
     <string name="settings_block_rules_summary">Numbers, phrases, local filter</string>
     <string name="settings_privacy">Privacy &amp; lock</string>
-    <string name="settings_privacy_subtitle">Control what others can see</string>
     <string name="settings_privacy_summary">App lock and stored data</string>
     <string name="settings_backup">Backup &amp; restore</string>
-    <string name="settings_backup_subtitle">Your message history, in your control</string>
     <string name="settings_backup_summary">Move your messages safely</string>
     <string name="about_app">About</string>
-    <string name="about_subtitle">A private place for your SMS and MMS</string>
     <string name="about_summary">App information and help</string>
-    <string name="about_description">Built for readable, dependable conversations.</string>
     <string name="help_and_support">Help &amp; support</string>
     <string name="about_updates">Updates</string>
     <string name="check_for_updates">Check for updates</string>
@@ -566,7 +548,6 @@
 
     <!-- First run (32, 33; Persian 55, 56) -->
     <string name="welcome_title">Welcome to Messages</string>
-    <string name="welcome_subtitle">A clearer place for conversations</string>
     <string name="welcome_statement">Every message has a person at the other end.</string>
     <string name="welcome_text">Read, reply, search, and keep control of what reaches you.</string>
     <string name="set_as_default_sms_app">Set as default SMS app</string>
@@ -606,7 +587,6 @@
     <string name="spam_why_unsubscribe">Unsubscribe line</string>
     <string name="spam_why_marketing">Marketing words</string>
     <string name="spam_patterns">Spam patterns</string>
-    <string name="spam_patterns_subtitle">What the local rules look for</string>
     <string name="spam_patterns_card">See, test and edit the rule patterns</string>
     <string name="spam_patterns_filter_off">Filter obvious spam is off</string>
     <string name="spam_patterns_filter_off_text">The rules block nothing until it is on. One-time codes are still let past blocked phrases.</string>

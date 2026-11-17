@@ -22,7 +22,6 @@ import com.afsh.messages.ui.Afsh
 import com.afsh.messages.ui.components.AfshIcon
 import com.afsh.messages.ui.components.Choice
 import com.afsh.messages.ui.components.ChoiceDialog
-import com.afsh.messages.ui.components.InfoPanel
 import com.afsh.messages.ui.components.MessageDialog
 import com.afsh.messages.ui.components.NavigationSetting
 import com.afsh.messages.ui.components.PageNavigation
@@ -57,7 +56,7 @@ fun SettingsScreen(
     PageScaffold(
         title = stringResource(page.title),
         modifier = modifier,
-        subtitle = stringResource(page.subtitle),
+        subtitle = page.subtitle?.let { stringResource(it) },
         // The overview is a top-level tab: no back button there (R1-01).
         onBack = onBack.takeIf { page != SettingsPage.OVERVIEW },
         navigation = navigation.takeUnless { embedded },
@@ -192,12 +191,6 @@ private fun InteractionsPage(state: SettingsUiState, onEvent: (SettingsEvent) ->
 private fun AboutPage(state: SettingsUiState, onEvent: (SettingsEvent) -> Unit) {
     var privacyOpen by rememberSaveable { mutableStateOf(false) }
     var licensesOpen by rememberSaveable { mutableStateOf(false) }
-    InfoPanel(
-        title = stringResource(R.string.app_launcher_name),
-        body = stringResource(R.string.about_description),
-        prominent = true,
-        modifier = Modifier.padding(bottom = Afsh.spacing.sm),
-    )
     NavigationSetting(
         stringResource(R.string.help_and_support),
         onClick = { onEvent(SettingsEvent.OpenHelp) },

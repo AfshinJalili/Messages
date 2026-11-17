@@ -43,7 +43,6 @@ fun MoveRulesScreen(
     PageScaffold(
         title = stringResource(R.string.move_block_rules),
         modifier = modifier,
-        subtitle = stringResource(R.string.move_block_rules_subtitle),
         onBack = onBack,
         navigation = navigation,
         snackbarHostState = snackbarHostState,

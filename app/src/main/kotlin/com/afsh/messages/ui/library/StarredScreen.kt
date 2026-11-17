@@ -54,7 +54,6 @@ fun StarredScreen(
     PageScaffold(
         title = stringResource(R.string.starred_messages),
         modifier = modifier,
-        subtitle = stringResource(R.string.starred_subtitle),
         onBack = onBack,
         navigation = navigation,
     ) {

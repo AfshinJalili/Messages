@@ -61,7 +61,6 @@ fun BlockedNumbersScreen(
     PageScaffold(
         title = stringResource(org.fossify.commons.R.string.blocked_numbers),
         modifier = modifier,
-        subtitle = stringResource(R.string.blocked_numbers_subtitle),
         onBack = onBack,
         navigation = navigation,
     ) {

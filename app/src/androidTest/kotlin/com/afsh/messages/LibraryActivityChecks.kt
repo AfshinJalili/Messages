@@ -21,7 +21,7 @@ class LibraryActivityChecks {
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
 
     @Test
-    fun starredOpens() = opens(StarredMessagesActivity::class.java, R.string.starred_subtitle, "starred")
+    fun starredOpens() = opens(StarredMessagesActivity::class.java, R.string.starred_messages, "starred")
 
     @Test
     fun archiveOpens() = opens(ArchivedConversationsActivity::class.java, R.string.archive_hint, "archive")
