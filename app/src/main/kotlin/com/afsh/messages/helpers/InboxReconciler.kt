@@ -59,7 +59,7 @@ object InboxReconciler {
                 app.getMessagesDB().runInTransaction {
                     conversations.forEach { clonedConversation ->
                         if (cachedIds.add(clonedConversation.threadId)) {
-                            app.conversationsDB.insertOrUpdate(clonedConversation)
+                            app.insertOrUpdateConversation(clonedConversation, cachedConv = null)
                             if (!clonedConversation.isArchived) {
                                 cachedConversations.add(clonedConversation)
                             }

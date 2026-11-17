@@ -20,6 +20,12 @@ data class Conversation(
     @ColumnInfo(name = "archived") var isArchived: Boolean = false,
     @ColumnInfo(name = "unread_count") var unreadCount: Int = 0,
     @ColumnInfo(name = "message_count") var messageCount: Int = 0,
+    /** Latest non-spam, non-recycled body; null keeps [snippet] for the inbox. */
+    @ColumnInfo(name = "preview_snippet") var previewSnippet: String? = null,
+    /** When the thread has spam, the latest visible message date; otherwise null keeps [date]. */
+    @ColumnInfo(name = "preview_date") var previewDate: Int? = null,
+    /** True when every Telephony message is a spam SMS; the inbox hides the row. */
+    @ColumnInfo(name = "all_spam") var allSpam: Boolean = false,
 ) {
 
     companion object {
@@ -39,7 +45,10 @@ data class Conversation(
                 old.isArchived == new.isArchived &&
                 old.isScheduled == new.isScheduled &&
                 old.usesCustomTitle == new.usesCustomTitle &&
-                old.messageCount == new.messageCount
+                old.messageCount == new.messageCount &&
+                old.previewSnippet == new.previewSnippet &&
+                old.previewDate == new.previewDate &&
+                old.allSpam == new.allSpam
         }
     }
 }

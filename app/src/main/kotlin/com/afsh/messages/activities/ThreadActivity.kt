@@ -93,6 +93,7 @@ import com.afsh.messages.helpers.FILE_SIZE_NONE
 import com.afsh.messages.helpers.IS_LAUNCHED_FROM_SHORTCUT
 import com.afsh.messages.helpers.IS_RECYCLE_BIN
 import com.afsh.messages.helpers.ImageCompressor
+import com.afsh.messages.helpers.ConversationPreview
 import com.afsh.messages.helpers.InboxRepository
 import com.afsh.messages.helpers.MESSAGES_LIMIT
 import com.afsh.messages.helpers.OPEN_SPAM
@@ -1154,6 +1155,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
                     .distinct().forEach { config.removeSpamNumber(it) }
             }
             selected.forEach { messagesDB.deleteSpamMarker(it.id) }
+            ConversationPreview.refresh(applicationContext, threadId)
             InboxRepository.refreshUnreadCounts(applicationContext, listOf(threadId))
             loadSpamReasons()
             threadItems = getThreadItems()
@@ -1892,6 +1894,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
             }
         }
         messagesDB.insertOrUpdate(message)
+        ConversationPreview.refresh(this, message.threadId)
         val isOutgoing = !message.isReceivedMessage() && !message.isScheduled
         if (isOutgoing) {
             InboxRepository.bumpAfterOutgoing(this, message.threadId, message.body)

@@ -59,7 +59,13 @@ object SpamBackfill {
             if (moved) db.execSQL("DELETE FROM $TABLE WHERE id = ?", arrayOf(row.id)) else failed = true
         }
         if (!failed) db.execSQL("DROP TABLE IF EXISTS $TABLE")
-        if (rows.isNotEmpty()) InboxRepository.scheduleProviderReconcile(app, immediate = true)
+        if (rows.isNotEmpty()) {
+            val threads = rows.mapNotNull { row ->
+                runCatching { app.getThreadId(row.address) }.getOrNull()?.takeIf { it != 0L }
+            }.distinct()
+            ConversationPreview.refresh(app, threads)
+            InboxRepository.scheduleProviderReconcile(app, immediate = true)
+        }
     }
 
     private fun Context.moveRow(row: Row): Boolean {

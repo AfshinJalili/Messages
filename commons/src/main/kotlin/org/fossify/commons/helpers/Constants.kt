@@ -460,11 +460,16 @@ const val VIEW_TYPE_UNEVEN_GRID = 3
 
 fun isOnMainThread() = Looper.myLooper() == Looper.getMainLooper()
 
+private val backgroundExecutor: java.util.concurrent.ExecutorService =
+    java.util.concurrent.Executors.newFixedThreadPool(
+        Runtime.getRuntime().availableProcessors().coerceIn(2, 4)
+    ) { runnable ->
+        Thread(runnable, "fossify-bg").apply { isDaemon = true }
+    }
+
 fun ensureBackgroundThread(callback: () -> Unit) {
     if (isOnMainThread()) {
-        Thread {
-            callback()
-        }.start()
+        backgroundExecutor.execute(callback)
     } else {
         callback()
     }

@@ -9,35 +9,26 @@ import androidx.room.Query
 import com.afsh.messages.models.Conversation
 import com.afsh.messages.models.ConversationWithSnippetOverride
 
-private const val LATEST_VISIBLE_MESSAGE = "FROM messages LEFT OUTER JOIN recycle_bin_messages ON messages.id = recycle_bin_messages.id " +
-    "WHERE recycle_bin_messages.id IS NULL AND messages.thread_id = conversations.thread_id " +
-    "AND NOT (messages.is_mms = 0 AND messages.id IN (SELECT id FROM spam_messages)) ORDER BY messages.date DESC LIMIT 1"
-
-private const val THREAD_SPAM_COUNT = "(SELECT COUNT(*) FROM spam_messages WHERE spam_messages.thread_id = conversations.thread_id)"
-
-// Only threads with spam take their date from Room, so drafts and scheduled dates keep working elsewhere.
-private const val VISIBLE_COLUMNS = "(SELECT body $LATEST_VISIBLE_MESSAGE) as new_snippet, " +
-    "CASE WHEN $THREAD_SPAM_COUNT > 0 THEN (SELECT date $LATEST_VISIBLE_MESSAGE) END as new_date, *"
-
-// message_count comes from Telephony and includes MMS, so any unmarked message keeps the thread visible.
-private const val NOT_ALL_SPAM = "NOT (message_count > 0 AND $THREAD_SPAM_COUNT >= message_count)"
+// Inbox and archive read denormalized preview_* / all_spam columns. Correlated per-row
+// subqueries over messages belonged to an earlier schema and must not return here.
+private const val PREVIEW_COLUMNS = "preview_snippet as new_snippet, preview_date as new_date, *"
 
 @Dao
 interface ConversationsDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertOrUpdate(conversation: Conversation): Long
 
-    @Query("SELECT $VISIBLE_COLUMNS FROM conversations WHERE archived = 0 AND $NOT_ALL_SPAM")
+    @Query("SELECT $PREVIEW_COLUMNS FROM conversations WHERE archived = 0 AND all_spam = 0")
     fun getNonArchivedWithLatestSnippet(): List<ConversationWithSnippetOverride>
 
     fun getNonArchived(): List<Conversation> {
         return getNonArchivedWithLatestSnippet().map { it.toConversation() }
     }
 
-    @Query("SELECT $VISIBLE_COLUMNS FROM conversations WHERE archived = 0 AND $NOT_ALL_SPAM")
+    @Query("SELECT $PREVIEW_COLUMNS FROM conversations WHERE archived = 0 AND all_spam = 0")
     fun observeNonArchivedWithLatestSnippet(): LiveData<List<ConversationWithSnippetOverride>>
 
-    @Query("SELECT $VISIBLE_COLUMNS FROM conversations WHERE archived = 1 AND $NOT_ALL_SPAM")
+    @Query("SELECT $PREVIEW_COLUMNS FROM conversations WHERE archived = 1 AND all_spam = 0")
     fun getAllArchivedWithLatestSnippet(): List<ConversationWithSnippetOverride>
 
     fun getAllArchived(): List<Conversation> {
@@ -54,17 +45,23 @@ interface ConversationsDao {
     @Query("SELECT * FROM conversations")
     fun getAll(): List<Conversation>
 
+    @Query("SELECT COUNT(*) FROM conversations")
+    fun getCount(): Int
+
+    @Query("SELECT COALESCE(MAX(date), 0) FROM conversations")
+    fun getLatestDate(): Int
+
     @Query("SELECT * FROM conversations WHERE thread_id = :threadId")
     fun getConversationWithThreadId(threadId: Long): Conversation?
 
     @Query(
-        """SELECT * FROM conversations WHERE $NOT_ALL_SPAM
+        """SELECT $PREVIEW_COLUMNS FROM conversations WHERE all_spam = 0
         AND (title LIKE :pattern ESCAPE '\' OR phone_number LIKE :pattern ESCAPE '\')
-        AND (EXISTS (SELECT 1 $LATEST_VISIBLE_MESSAGE)
+        AND (preview_snippet IS NOT NULL
             OR NOT EXISTS (SELECT 1 FROM messages WHERE messages.thread_id = conversations.thread_id))
         ORDER BY date DESC"""
     )
-    fun searchPeople(pattern: String): List<Conversation>
+    fun searchPeople(pattern: String): List<ConversationWithSnippetOverride>
 
     @Query("UPDATE conversations SET read = 1, unread_count = 0 WHERE thread_id = :threadId")
     fun markRead(threadId: Long)
@@ -84,6 +81,11 @@ interface ConversationsDao {
 
     @Query("UPDATE conversations SET archived = 0 WHERE thread_id = :threadId")
     fun unarchive(threadId: Long)
+
+    @Query(
+        "UPDATE conversations SET preview_snippet = :snippet, preview_date = :date, all_spam = :allSpam WHERE thread_id = :threadId"
+    )
+    fun updatePreview(threadId: Long, snippet: String?, date: Int?, allSpam: Boolean)
 
     @Query("DELETE FROM conversations WHERE thread_id = :threadId")
     fun deleteThreadId(threadId: Long)

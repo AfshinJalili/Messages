@@ -7,6 +7,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import com.afsh.messages.models.Message
+import com.afsh.messages.models.MessagePreview
 import com.afsh.messages.models.RecycleBinMessage
 import com.afsh.messages.models.RecycleBinSummary
 import com.afsh.messages.models.SpamMessage
@@ -82,6 +83,22 @@ interface MessagesDao {
 
     @Query("SELECT COUNT(*) FROM recycle_bin_messages")
     fun getArchivedCount(): Int
+
+    @Query("SELECT COUNT(*) FROM spam_messages WHERE thread_id = :threadId")
+    fun getThreadSpamCount(threadId: Long): Int
+
+    @Query("SELECT thread_id FROM messages WHERE id = :id LIMIT 1")
+    fun getThreadIdForMessage(id: Long): Long?
+
+    @Query(
+        """SELECT messages.body AS body, messages.date AS date FROM messages
+        LEFT OUTER JOIN recycle_bin_messages ON messages.id = recycle_bin_messages.id
+        WHERE recycle_bin_messages.id IS NULL
+        AND messages.thread_id = :threadId
+        AND NOT (messages.is_mms = 0 AND messages.id IN (SELECT id FROM spam_messages))
+        ORDER BY messages.date DESC LIMIT 1"""
+    )
+    fun getLatestVisiblePreview(threadId: Long): MessagePreview?
 
     @Query("SELECT messages.* FROM messages LEFT OUTER JOIN recycle_bin_messages ON messages.id = recycle_bin_messages.id WHERE recycle_bin_messages.id IS NULL AND body LIKE :text")
     fun getMessagesWithText(text: String): List<Message>

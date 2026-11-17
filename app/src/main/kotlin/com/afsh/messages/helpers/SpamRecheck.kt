@@ -23,6 +23,7 @@ object SpamRecheck {
         if (released.isEmpty()) return 0
         released.forEach { context.messagesDB.deleteSpamMarker(it.id) }
         val threads = released.map { it.threadId }.distinct()
+        ConversationPreview.refresh(context, threads)
         InboxRepository.refreshUnreadCounts(context, threads)
         InboxRepository.scheduleProviderReconcile(context, immediate = true)
         return released.size

@@ -310,7 +310,7 @@ class InboxChecks {
     fun migration11to12() = migratedDatabase(
         name = "inbox-migration-check.db",
         version = 11,
-        migrations = listOf("MIGRATION_11_12", "MIGRATION_12_13", "MIGRATION_13_14"),
+        migrations = listOf("MIGRATION_11_12", "MIGRATION_12_13", "MIGRATION_13_14", "MIGRATION_14_15"),
         seed = { db ->
             db.execSQL("INSERT INTO drafts (thread_id, body, date) VALUES (1, 'keep draft', 123)")
             db.execSQL("INSERT INTO blocked_messages (address, body, date, reason) VALUES ('test', 'keep spam', 123, 1)")
@@ -324,5 +324,38 @@ class InboxChecks {
             while (cursor.moveToNext()) columns.add(cursor.getString(2))
             check(columns == listOf("thread_id", "date"))
         }
+        db.query("PRAGMA table_info(conversations)").use { cursor ->
+            val columns = mutableSetOf<String>()
+            while (cursor.moveToNext()) columns.add(cursor.getString(1))
+            check("preview_snippet" in columns && "preview_date" in columns && "all_spam" in columns)
+        }
+    }
+
+    @Test
+    fun migration14to15() = migratedDatabase(
+        name = "inbox-preview-migration-check.db",
+        version = 14,
+        migrations = listOf("MIGRATION_14_15"),
+        seed = { db ->
+            db.execSQL(
+                "INSERT INTO conversations (thread_id, snippet, date, read, title, photo_uri, is_group_conversation, phone_number, is_scheduled, uses_custom_title, archived, unread_count, message_count) " +
+                    "VALUES (3, 'provider', 1, 1, 'Preview', '', 0, '5550200', 0, 0, 0, 0, 2)"
+            )
+            db.execSQL(
+                "INSERT INTO messages (id, body, type, participants, date, read, thread_id, is_mms, sender_phone_number, sender_name, sender_photo_uri, subscription_id, status, is_scheduled) " +
+                    "VALUES (10, 'visible-body', 1, '[]', 5, 1, 3, 0, '', '', '', -1, -1, 0)"
+            )
+            db.execSQL(
+                "INSERT INTO messages (id, body, type, participants, date, read, thread_id, is_mms, sender_phone_number, sender_name, sender_photo_uri, subscription_id, status, is_scheduled) " +
+                    "VALUES (11, 'spam-body', 1, '[]', 9, 1, 3, 0, '', '', '', -1, -1, 0)"
+            )
+            db.execSQL("INSERT INTO spam_messages (id, thread_id, reason, marked_ts) VALUES (11, 3, 1, 1)")
+        },
+    ) { room ->
+        val row = room.ConversationsDao().getNonArchived().single()
+        check(row.threadId == 3L)
+        check(row.snippet == "visible-body") { "Migration must backfill the visible preview as the inbox snippet" }
+        check(row.date == 5) { "Spam threads must take their date from the latest visible message" }
+        check(!row.allSpam)
     }
 }
