@@ -98,10 +98,10 @@ class SpamPageChecks {
         compose.onNodeWithText("Last chance", substring = true).performClick()
         check(events.last() !is SpamEvent.Open) { "A tap while selecting must not open: $events" }
         compose.onNodeWithText(quantity(R.plurals.inbox_selected, 2)).assertExists()
-        compose.onNodeWithContentDescription(text(R.string.block_sender)).performClick()
+        compose.onNodeWithContentDescription(quantity(R.plurals.block_sender, 2)).performClick()
         check(events.last() !is SpamEvent.BlockSender) { "Block must ask first" }
-        compose.onNodeWithText(text(R.string.block_sender_title, "0912 418 6630, MCI offer")).assertExists()
-        compose.onNodeWithText(text(R.string.block_sender)).performClick()
+        compose.onNodeWithText(quantity(R.plurals.block_sender_title, 2)).assertExists()
+        compose.onNodeWithText(quantity(R.plurals.block_sender, 2)).performClick()
         check(events.last() == SpamEvent.BlockSender(listOf(messages[1], messages[2]))) { "Events $events" }
 
         compose.onNodeWithText("Special offer", substring = true).performTouchInput { longClick() }

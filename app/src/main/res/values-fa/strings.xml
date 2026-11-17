@@ -84,9 +84,15 @@
     <string name="clear_spam">پاک کردن همه</string>
     <string name="clear_spam_confirmation">همه‌ی پیام‌های مسدودشده برای همیشه حذف شوند؟</string>
     <string name="not_spam">هرزنامه نیست (بازگشت به صندوق)</string>
-    <string name="allow_sender">همیشه این فرستنده را مجاز کن</string>
+    <plurals name="allow_sender">
+        <item quantity="one">همیشه این فرستنده را مجاز کن</item>
+        <item quantity="other">همیشه این فرستنده‌ها را مجاز کن</item>
+    </plurals>
     <string name="sender_allowed">فرستنده مجاز شد و پیام بازگردانده شد</string>
-    <string name="message_restored">پیام به صندوق بازگردانده شد</string>
+    <plurals name="message_restored">
+        <item quantity="one">پیام به صندوق بازگردانده شد</item>
+        <item quantity="other">پیام‌ها به صندوق بازگردانده شدند</item>
+    </plurals>
     <string name="block_reason_ai">فیلتر قدیمی</string>
     <string name="block_reason_keyword">کلیدواژه</string>
     <string name="block_reason_number">شماره‌ی مسدودشده</string>
@@ -110,8 +116,14 @@
     <string name="recent_searches">جست‌وجوهای اخیر</string>
     <string name="mute_conversation">بی‌صدا</string>
     <string name="unmute_conversation">لغو بی‌صدا</string>
-    <string name="conversation_muted">گفت‌وگو بی‌صدا شد</string>
-    <string name="conversation_unmuted">صدای گفت‌وگو برگشت</string>
+    <plurals name="conversation_muted">
+        <item quantity="one">گفت‌وگو بی‌صدا شد</item>
+        <item quantity="other">%d گفت‌وگو بی‌صدا شد</item>
+    </plurals>
+    <plurals name="conversation_unmuted">
+        <item quantity="one">صدای گفت‌وگو برگشت</item>
+        <item quantity="other">صدای %d گفت‌وگو برگشت</item>
+    </plurals>
     <string name="muted">بی‌صدا</string>
     <string name="star_message">ستاره‌دار کردن</string>
     <string name="unstar_message">برداشتن ستاره</string>
@@ -246,12 +258,25 @@
     <string name="delete_forever_title">برای همیشه حذف شود؟</string>
     <string name="delete_forever_conversation_text">این گفت‌وگو پس از حذف همیشگی قابل بازگرداندن نیست.</string>
 
-    <!-- Spam and block rules (design 20, 21, 38, 50, 51) -->
+    <!-- Spam and filter rules (design 20, 21, 38, 50, 51) -->
     <string name="spam_empty_text">پیام‌های مسدود و مشکوک بدون اعلان در صندوق، اینجا می‌مانند.</string>
     <string name="not_spam_short">هرزنامه نیست</string>
-    <string name="block_sender">مسدود کردن فرستنده</string>
-    <string name="block_sender_title">%s مسدود شود؟</string>
-    <string name="block_sender_text">پیام‌های تازه‌اش بی‌اعلان مستقیم به هرزنامه می‌روند. در قوانین فیلتر می‌توانید رفع مسدودی کنید.</string>
+    <plurals name="block_number">
+        <item quantity="one">مسدود کردن شماره</item>
+        <item quantity="other">مسدود کردن شماره‌ها</item>
+    </plurals>
+    <plurals name="block_sender">
+        <item quantity="one">مسدود کردن فرستنده</item>
+        <item quantity="other">مسدود کردن فرستنده‌ها</item>
+    </plurals>
+    <plurals name="block_sender_title">
+        <item quantity="one">%s مسدود شود؟</item>
+        <item quantity="other">این %d فرستنده مسدود شوند؟</item>
+    </plurals>
+    <plurals name="block_sender_text">
+        <item quantity="one">پیام‌های تازه‌اش بی‌اعلان مستقیم به هرزنامه می‌روند. در قوانین فیلتر می‌توانید رفع مسدودی کنید.</item>
+        <item quantity="other">پیام‌های تازه‌شان بی‌اعلان مستقیم به هرزنامه می‌روند. در قوانین فیلتر می‌توانید رفع مسدودی کنید.</item>
+    </plurals>
     <string name="clear_spam_title">همهٔ هرزنامه‌ها حذف شوند؟</string>
     <string name="filter_rules">قوانین فیلتر</string>
     <plurals name="blocked_senders">

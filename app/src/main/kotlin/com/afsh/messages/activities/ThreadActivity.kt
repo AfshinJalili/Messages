@@ -1126,7 +1126,11 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
             runOnUiThread {
                 refreshMenuItems()
                 publishItems(items)
-                toast(if (allowSender) R.string.sender_allowed else R.string.message_restored)
+                if (allowSender) {
+                    toast(R.string.sender_allowed)
+                } else {
+                    toast(resources.getQuantityString(R.plurals.message_restored, selected.size))
+                }
             }
         }
     }
@@ -1138,16 +1142,22 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
     private fun setConversationMuted(muted: Boolean) {
         config.setConversationMuted(threadId, muted)
         refreshMenuItems()
-        toast(if (muted) R.string.conversation_muted else R.string.conversation_unmuted)
+        toast(
+            resources.getQuantityString(
+                if (muted) R.plurals.conversation_muted else R.plurals.conversation_unmuted,
+                1,
+                1,
+            ),
+        )
     }
 
     private fun blockNumber() {
         val numbers = participants.getAddresses()
         val names = conversation?.title ?: TextUtils.join(", ", numbers)
         confirm(
-            title = getString(R.string.block_sender_title, names),
-            explanation = getString(R.string.block_sender_text),
-            confirmLabel = getString(R.string.block_sender),
+            title = resources.getQuantityString(R.plurals.block_sender_title, 1, names),
+            explanation = resources.getQuantityString(R.plurals.block_sender_text, 1),
+            confirmLabel = resources.getQuantityString(R.plurals.block_sender, 1),
             destructive = true,
         ) {
             ensureBackgroundThread {

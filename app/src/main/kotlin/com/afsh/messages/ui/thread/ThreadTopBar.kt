@@ -64,6 +64,7 @@ import com.afsh.messages.R
 import com.afsh.messages.ui.Afsh
 import com.afsh.messages.ui.Avatar
 import com.afsh.messages.ui.components.AfshIcon
+import com.afsh.messages.ui.components.actionLabel
 import com.afsh.messages.ui.components.selectionTitle
 
 const val THREAD_TOP_BAR_TAG = "thread_top_bar"
@@ -216,7 +217,12 @@ private fun OverflowMenu(actions: List<ThreadMenuAction>, onEvent: (ThreadEvent)
         DropdownMenu(expanded = open, onDismissRequest = { open = false }, containerColor = MaterialTheme.colorScheme.surfaceContainer, shape = MaterialTheme.shapes.medium) {
             actions.forEach { action ->
                 DropdownMenuItem(
-                    text = { Text(stringResource(action.label), style = MaterialTheme.typography.bodyMedium) },
+                    text = {
+                        Text(
+                            actionLabel(action.label, count = 1, quantity = action.labelIsQuantity),
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    },
                     leadingIcon = { Icon(action.icon.painter(), contentDescription = null) },
                     colors = if (action.destructive) {
                         MenuDefaults.itemColors(

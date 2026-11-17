@@ -183,7 +183,11 @@ fun SpamScreen(
                         clear()
                         onEvent(SpamEvent.NotSpam(chosen))
                     },
-                    BarAction(stringResource(R.string.block_sender), AfshIcon.Block, destructive = true) { confirmBlock = chosen },
+                    BarAction(
+                        pluralStringResource(R.plurals.block_sender, chosen.size.coerceAtLeast(1)),
+                        AfshIcon.Block,
+                        destructive = true,
+                    ) { confirmBlock = chosen },
                     BarAction(stringResource(org.fossify.commons.R.string.delete), AfshIcon.Delete, destructive = true) { confirmDelete = chosen },
                 ),
             )
@@ -242,11 +246,16 @@ fun SpamScreen(
         }
     }
     confirmBlock?.let { messages ->
+        val senderCount = remember(messages) { messages.map { it.sender }.distinct().size.coerceAtLeast(1) }
         val senders = remember(messages) { messages.map { it.sender }.distinct().joinToString(", ") }
         ConfirmationDialog(
-            title = stringResource(R.string.block_sender_title, senders),
-            explanation = stringResource(R.string.block_sender_text),
-            confirmLabel = stringResource(R.string.block_sender),
+            title = if (senderCount == 1) {
+                pluralStringResource(R.plurals.block_sender_title, 1, senders)
+            } else {
+                pluralStringResource(R.plurals.block_sender_title, senderCount, senderCount)
+            },
+            explanation = pluralStringResource(R.plurals.block_sender_text, senderCount),
+            confirmLabel = pluralStringResource(R.plurals.block_sender, senderCount),
             dismissLabel = stringResource(org.fossify.commons.R.string.cancel),
             onConfirm = {
                 confirmBlock = null
