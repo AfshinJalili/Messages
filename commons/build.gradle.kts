@@ -7,7 +7,6 @@ plugins {
     alias(libs.plugins.library)
     alias(libs.plugins.ksp)
     alias(libs.plugins.kotlinSerialization)
-    alias(libs.plugins.compose.compiler)
     alias(libs.plugins.parcelize)
 }
 
@@ -27,7 +26,6 @@ android {
 
     buildFeatures {
         viewBinding = true
-        compose = true
     }
 
     compileOptions {
@@ -43,10 +41,6 @@ android {
         )
         compilerOptions.freeCompilerArgs.addAll(
             "-opt-in=kotlin.RequiresOptIn",
-            "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
-            "-opt-in=androidx.compose.material.ExperimentalMaterialApi",
-            "-opt-in=androidx.compose.foundation.ExperimentalFoundationApi",
-            "-opt-in=com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi",
         )
     }
 
@@ -62,7 +56,6 @@ android {
 
 dependencies {
     implementation(libs.kotlinx.serialization.json)
-    api(libs.kotlin.immutable.collections)
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.documentfile)
     implementation(libs.androidx.swiperefreshlayout)
@@ -72,9 +65,6 @@ dependencies {
     implementation(libs.ez.vcard)
 
     implementation(libs.bundles.lifecycle)
-    implementation(libs.bundles.commons.compose)
-    implementation(libs.commons.compose.view.binding)
-    debugImplementation(libs.bundles.commons.compose.preview)
 
     api(libs.joda.time)
     api(libs.recyclerView.fastScroller)
@@ -85,7 +75,6 @@ dependencies {
     api(libs.material)
     api(libs.gson)
 
-    implementation(libs.glide.compose)
     api(libs.glide)
     ksp(libs.glide.compiler)
 

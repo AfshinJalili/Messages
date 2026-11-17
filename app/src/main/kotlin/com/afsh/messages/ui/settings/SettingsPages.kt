@@ -185,7 +185,7 @@ private fun fontSizeLabel(size: Int) = when (size) {
     else -> org.fossify.commons.R.string.medium
 }
 
-/** A theme card: its name over a line in the colour it leads with; the chosen one is lilac. */
+/** A theme card: its name over a line in the colour it leads with; the chosen one uses secondaryContainer. */
 @Composable
 private fun ThemeCard(theme: ThemeChoice, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val colors = MaterialTheme.colorScheme
@@ -211,9 +211,8 @@ private fun ThemeCard(theme: ThemeChoice, selected: Boolean, onClick: () -> Unit
 }
 
 /**
- * A small picture of the theme itself: a light page with a pine line, a dark page with a lime
- * line, or the two side by side for System. Showing only the line colour read reversed, since the
- * dark theme leads with the brighter colour.
+ * A small picture of the theme itself: a light page with a primary line, a dark page with its
+ * primary line, or the two side by side for System.
  */
 @Composable
 private fun ThemeSwatch(theme: ThemeChoice) {

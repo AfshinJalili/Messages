@@ -2,4 +2,4 @@
 <ImageView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="@dimen/divider_height"
-    android:background="@color/divider_grey" />
+    android:background="@color/m3_outline_variant" />

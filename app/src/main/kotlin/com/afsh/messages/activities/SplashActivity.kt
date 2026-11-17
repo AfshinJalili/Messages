@@ -26,13 +26,13 @@ class SplashActivity : ComponentActivity() {
                 if (isSystemThemeEnabled) {
                     val isUsingSystemDarkTheme = isSystemInDarkMode()
                     textColor = resources.getColor(
-                        if (isUsingSystemDarkTheme) CommonsR.color.theme_dark_text_color
-                        else CommonsR.color.theme_light_text_color,
+                        if (isUsingSystemDarkTheme) CommonsR.color.m3_on_surface_dark
+                        else CommonsR.color.m3_on_surface,
                         theme
                     )
                     backgroundColor = resources.getColor(
-                        if (isUsingSystemDarkTheme) CommonsR.color.theme_dark_background_color
-                        else CommonsR.color.theme_light_background_color,
+                        if (isUsingSystemDarkTheme) CommonsR.color.m3_surface_dark
+                        else CommonsR.color.m3_surface,
                         theme
                     )
                 }

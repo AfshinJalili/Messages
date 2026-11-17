@@ -3,7 +3,7 @@
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:id="@+id/shortcut_new_conversation_background">
         <shape android:shape="oval">
-            <solid android:color="@color/afsh_pine" />
+            <solid android:color="@color/m3_primary" />
         </shape>
     </item>
     <item

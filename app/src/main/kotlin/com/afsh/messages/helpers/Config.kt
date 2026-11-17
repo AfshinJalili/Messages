@@ -10,29 +10,26 @@ import org.fossify.commons.helpers.TEXT_COLOR
 import com.afsh.messages.R
 import com.afsh.messages.extensions.getDefaultKeyboardHeight
 import com.afsh.messages.models.Conversation
-import com.afsh.messages.ui.afshDark
-
 class Config(context: Context) : BaseConfig(context) {
     companion object {
         fun newInstance(context: Context) = Config(context)
     }
 
     /**
-     * Runs at every start. The first run opts implicit system-theme defaults into the app's own
-     * light or dark theme; every run points Commons' stored accent at the theme's primary role,
-     * so nothing (app lock, Commons widgets) keeps an older palette.
+     * Runs at every start. The first run defaults Appearance to System (follow device light/dark);
+     * every run points Commons' stored accent at the theme's primary role, so nothing (app lock,
+     * Commons widgets) keeps an older palette. Wallpaper / Material You never applies.
      */
     fun applyThemeDefaults() {
         if (!prefs.getBoolean(THEME_DEFAULTS_APPLIED, false)) {
             if (!prefs.contains(IS_SYSTEM_THEME_ENABLED)) {
-                val light = !context.afshDark()
+                isSystemThemeEnabled = true
                 if (!prefs.contains(BACKGROUND_COLOR)) {
-                    backgroundColor = ContextCompat.getColor(context, if (light) R.color.surface_light else R.color.surface_dark)
+                    backgroundColor = ContextCompat.getColor(context, org.fossify.commons.R.color.m3_surface)
                 }
                 if (!prefs.contains(TEXT_COLOR)) {
-                    textColor = ContextCompat.getColor(context, if (light) R.color.on_surface_light else R.color.on_surface_dark)
+                    textColor = ContextCompat.getColor(context, org.fossify.commons.R.color.m3_on_surface)
                 }
-                isSystemThemeEnabled = false
             }
             prefs.edit().putBoolean(THEME_DEFAULTS_APPLIED, true).apply()
         }

@@ -5,28 +5,25 @@ import android.view.Window
 import android.view.WindowManager
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
-import org.fossify.commons.helpers.DARK_GREY
 
 fun Window.insetsController(view: View? = null): WindowInsetsControllerCompat {
     return WindowInsetsControllerCompat(this, view ?: decorView)
 }
 
 fun Window.setSystemBarsAppearance(backgroundColor: Int) {
-    val isLightBackground = backgroundColor.getContrastColor() == DARK_GREY
+    val lightIconsOnDarkChrome = !backgroundColor.isLightColor()
     insetsController().apply {
-        isAppearanceLightStatusBars = isLightBackground
-        isAppearanceLightNavigationBars = isLightBackground
+        isAppearanceLightStatusBars = !lightIconsOnDarkChrome
+        isAppearanceLightNavigationBars = !lightIconsOnDarkChrome
     }
 }
 
 fun Window.setStatusBarAppearance(backgroundColor: Int) {
-    val isLightBackground = backgroundColor.getContrastColor() == DARK_GREY
-    insetsController().isAppearanceLightStatusBars = isLightBackground
+    insetsController().isAppearanceLightStatusBars = backgroundColor.isLightColor()
 }
 
 fun Window.setNavigationBarAppearance(backgroundColor: Int) {
-    val isLightBackground = backgroundColor.getContrastColor() == DARK_GREY
-    insetsController().isAppearanceLightNavigationBars = isLightBackground
+    insetsController().isAppearanceLightNavigationBars = backgroundColor.isLightColor()
 }
 
 fun Window.showBars() = insetsController().apply {

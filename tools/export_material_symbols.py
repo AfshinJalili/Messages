@@ -3,7 +3,7 @@
 
 Material Symbols (Apache 2.0, google/material-design-icons) is fetched here at development time only; the app stays
 offline and ships just the icons listed in SYMBOLS. Each becomes res/drawable/ic_msym_<name>.xml, filled with
-@color/icon_mask so Compose tints it. They live in the commons module (the app depends on commons). Icons in MIRRORED flip under RTL. Icons ending in _fill use FILL 1 for selected/active
+@color/m3_on_primary so Compose tints it. They live in the commons module (the app depends on commons). Icons in MIRRORED flip under RTL. Icons ending in _fill use FILL 1 for selected/active
 states; everything else is FILL 0. ui/components/AfshIcon.kt names each by meaning; tests/check_material_symbols.py
 keeps the two in step.
 
@@ -65,7 +65,7 @@ def render(name, upstream):
     paths = re.findall(r'android:pathData="([^"]+)"', upstream)
     assert paths, f"{name}: no path in upstream"
     body = "\n".join(
-        f'    <path\n        android:fillColor="@color/icon_mask"\n        android:pathData="{d}" />' for d in paths)
+        f'    <path\n        android:fillColor="@color/m3_on_primary"\n        android:pathData="{d}" />' for d in paths)
     base_name = name.removesuffix("_fill")
     mirror = '\n    android:autoMirrored="true"' if base_name in MIRRORED else ""
     fill_note = " FILL 1" if name.endswith("_fill") else ""
