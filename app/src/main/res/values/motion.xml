@@ -3,7 +3,7 @@
     Screen and tab motion, the single source of truth. Activity animations in res/anim and
     Compose stacks in ui/components/Motion.kt both read these values. No alpha crossfade:
     screens slide from the end with a small parallax on the screen underneath; tabs use a
-    shorter shared-axis shift. Easing is emphasized decelerate (res/interpolator).
+    short opaque cover slide (incoming only). Easing is emphasized decelerate (res/interpolator).
 -->
 <resources>
     <integer name="motion_open_ms">220</integer>
@@ -11,6 +11,6 @@
     <integer name="motion_tab_ms">120</integer>
     <!-- Underneath screen shifts this fraction of its width toward the start when covered. -->
     <item name="motion_parallax" type="dimen" format="float">0.25</item>
-    <!-- Tab content shifts this fraction of its width in the tab-order direction. -->
+    <!-- Incoming tab starts this fraction of its width off-screen, then covers the outgoing tab. -->
     <item name="motion_tab_shift" type="dimen" format="float">0.30</item>
 </resources>

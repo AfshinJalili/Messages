@@ -12,10 +12,14 @@ import androidx.compose.animation.core.rememberTransition
 import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.platform.LocalContext
@@ -92,13 +96,20 @@ private fun AnimatedContentTransitionScope<*>.screenClose(tokens: NavigationMoti
     return transform
 }
 
-/** Tab change: both panes shift a short distance in the tab-order direction. No alpha. */
+/**
+ * Tab change: the incoming pane slides in a short distance over the outgoing one, which stays put
+ * until the enter finishes and is then dropped while fully covered. No alpha.
+ *
+ * A mutual [NavigationMotionTokens.tabShift] slide left ~70% of the old pane in the viewport for
+ * the whole tween (and until AnimatedContent disposed it), so with non-opaque tab roots the
+ * previous tab showed through and flashed away at the end.
+ */
 private fun AnimatedContentTransitionScope<*>.tabSwitch(
     tokens: NavigationMotionTokens,
     forward: Boolean,
 ): ContentTransform {
     val direction = if (forward) SlideDirection.Start else SlideDirection.End
-    return (
+    val transform = (
         slideIntoContainer(
             direction,
             openSpec(tokens.tabMs),
@@ -106,9 +117,12 @@ private fun AnimatedContentTransitionScope<*>.tabSwitch(
         ) togetherWith slideOutOfContainer(
             direction,
             openSpec(tokens.tabMs),
-            targetOffset = { fullWidth -> (fullWidth * tokens.tabShift).roundToInt() },
+            // Stay put under the opaque incoming cover; do not shift by tabShift.
+            targetOffset = { 0 },
         )
-        ) using SizeTransform(clip = false) { _, _ -> snap() }
+        ) using SizeTransform(clip = true) { _, _ -> snap() }
+    transform.targetContentZIndex = 1f
+    return transform
 }
 
 /**
@@ -162,9 +176,9 @@ fun <T : Any> ScreenStack(
 }
 
 /**
- * Bottom-nav (or rail) tab content: a short horizontal shift in the direction of [tabIndex], with
- * no crossfade. Use this for peer destinations such as Inbox and Library; pushed screens use
- * [ScreenStack] instead.
+ * Bottom-nav (or rail) tab content: a short cover slide in the direction of [tabIndex], with no
+ * crossfade. Each pane paints an opaque surface and keeps saveable state across switches. Use this
+ * for peer destinations such as Inbox and Library; pushed screens use [ScreenStack] instead.
  */
 @Composable
 fun <T> TabSwitch(
@@ -174,6 +188,8 @@ fun <T> TabSwitch(
     content: @Composable (T) -> Unit,
 ) {
     val tokens = rememberNavigationMotionTokens()
+    val holder = rememberSaveableStateHolder()
+    val surface = MaterialTheme.colorScheme.surface
     AnimatedContent(
         targetState = TabEntry(tabIndex, tab),
         modifier = modifier.clipToBounds(),
@@ -181,5 +197,12 @@ fun <T> TabSwitch(
             tabSwitch(tokens, forward = targetState.index >= initialState.index)
         },
         label = "tab switch",
-    ) { entry -> content(entry.tab) }
+    ) { entry ->
+        holder.SaveableStateProvider(entry.index) {
+            // Opaque root: without it the outgoing sibling shows through for the whole cover.
+            Surface(Modifier.fillMaxSize(), color = surface) {
+                content(entry.tab)
+            }
+        }
+    }
 }
