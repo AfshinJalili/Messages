@@ -20,7 +20,7 @@ class MarkAsReadReceiver : BroadcastReceiver() {
                 ensureBackgroundThread {
                     context.markThreadMessagesRead(threadId)
                     context.conversationsDB.markRead(threadId)
-                    refreshConversations()
+                    refreshConversations(reconcile = false)
                 }
             }
         }

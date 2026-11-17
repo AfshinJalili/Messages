@@ -138,7 +138,8 @@ class SmsReceiver : BroadcastReceiver() {
         }
 
         refreshMessages()
-        refreshConversations()
+        // Room already has this thread; a full provider reconcile on every SMS drains battery.
+        refreshConversations(reconcile = false)
 
         if (spamReason == null) {
             context.showReceivedMessageNotification(

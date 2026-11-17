@@ -43,15 +43,13 @@ object InboxReconciler {
                 }
                 // An empty cache means the first import: the inbox shows how far it has got.
                 val firstImport = allCached.isEmpty()
-                val conversations = try {
-                    app.getConversations(
-                        privateContacts = privateContacts,
-                        failOnError = true,
-                        onProgress = if (firstImport) InboxImport::reportConversations else null,
-                    )
-                } finally {
-                    if (firstImport) InboxImport.conversationsDone()
-                }
+                val conversations = app.getConversations(
+                    privateContacts = privateContacts,
+                    failOnError = true,
+                    onProgress = if (firstImport) InboxImport::reportConversations else null,
+                )
+                // Hold the bar through Room writes; message indexing continues the same percent.
+                if (firstImport) InboxImport.conversationsDone()
                 val cachedIds = allCached.mapTo(HashSet()) { it.threadId }
                 val conversationsById = conversations.associateBy { it.threadId }
                 val conversationsByNumber = conversations.asReversed().associateBy { it.phoneNumber }
@@ -95,7 +93,9 @@ object InboxReconciler {
                         }
                     }
 
-                    cachedConversations.forEach { conversation ->
+                    // Only temporary scheduled threads can expire; querying every inbox row
+                    // on each reconcile was a free CPU tax after every resume and SMS.
+                    allCached.filter { it.isScheduled }.forEach { conversation ->
                         app.clearExpiredScheduledMessages(conversation.threadId)
                     }
                 }
@@ -108,6 +108,7 @@ object InboxReconciler {
 
                 onFinished()
             } catch (e: Exception) {
+                InboxImport.abort()
                 appContext(context).showErrorToast(e)
                 onFailed()
             }

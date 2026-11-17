@@ -24,7 +24,7 @@ class DeleteSmsReceiver : BroadcastReceiver() {
             context.deleteMessage(messageId, isMms)
             context.updateLastConversationMessage(threadId)
             refreshMessages()
-            refreshConversations()
+            refreshConversations(reconcile = false)
         }
     }
 }
