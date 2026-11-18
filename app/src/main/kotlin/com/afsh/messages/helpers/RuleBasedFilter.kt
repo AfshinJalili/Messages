@@ -24,15 +24,16 @@ object RuleBasedFilter {
 
     /**
      * Signal weights used by [explain]: a marketing / event / CTA word is [WORD_WEIGHT], a strong
-     * promo or layout emoji is [EMOJI_WEIGHT]. Opt-out lines and links are companions, not scored
+     * promo or layout emoji is [EMOJI_WEIGHT]. Links and named senders are companions, not scored
      * signals — emoji alone (even with a link) must not block, so a delivery SMS with 📍 and a
      * tracking URL stays in the inbox, while an event word plus a bare short link does not.
+     * Opt-out lines such as «لغو11» are never a signal or companion.
      */
     const val WORD_WEIGHT = 2
     const val EMOJI_WEIGHT = 1
     /** Block without a companion when total weight reaches this (e.g. one word + one emoji). */
     const val BLOCK_WEIGHT = 3
-    /** With a link, named sender, or opt-out companion, this weight is enough (one marketing word). */
+    /** With a link or named sender, this weight is enough (one marketing word). */
     const val BLOCK_WEIGHT_WITH_COMPANION = 2
 
     fun evaluate(context: Context, sender: String, body: String): FilterVerdict = explain(context, sender, body).verdict
@@ -45,8 +46,8 @@ object RuleBasedFilter {
     /**
      * Ordered, high-precision first. A one-time code (a code word and a code) and transactional
      * bank/receipt language are always allowed: service SMS carry links and the mandatory "لغو11"
-     * line, which must not send them to Spam. Marketing scores word and emoji weights; a link,
-     * named sender, or opt-out line is a companion for word signals — never an emoji-only shortcut.
+     * line, which must not send them to Spam. Marketing scores word and emoji weights, with a link
+     * or named sender as a companion — never an unsubscribe shortcut, and never emoji-only.
      */
     fun explain(patterns: SpamPatterns, sender: String, body: String): FilterResult {
         if (body.isBlank()) return FilterResult.NONE
@@ -72,10 +73,8 @@ object RuleBasedFilter {
 
         val weight = marketing.size * WORD_WEIGHT + strongEmoji.size * EMOJI_WEIGHT
         val links = find(SpamPatternGroup.LINKS)
-        val optOut = find(SpamPatternGroup.OPT_OUT)
         val namedSender = isAlphaSender(sender)
-        // Opt-out is a companion like a link. It is not returned in matches so Why never highlights «لغو».
-        val companion = links.isNotEmpty() || namedSender || optOut.isNotEmpty()
+        val companion = links.isNotEmpty() || namedSender
         val block = weight >= BLOCK_WEIGHT || (weight >= BLOCK_WEIGHT_WITH_COMPANION && companion)
         if (block) {
             return FilterResult(

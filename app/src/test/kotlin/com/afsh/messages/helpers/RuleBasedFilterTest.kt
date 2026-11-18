@@ -143,7 +143,7 @@ class RuleBasedFilterTest {
         assertEquals(FilterRule.MARKETING, result.rule)
         assertTrue(result.matches.any { it.group == SpamPatternGroup.MARKETING })
         assertTrue(result.matches.any { it.group == SpamPatternGroup.LINKS })
-        assertTrue(result.matches.none { it.group == SpamPatternGroup.OPT_OUT })
+        assertTrue(result.matches.any { it.group == SpamPatternGroup.PROMO_EMOJI })
     }
 
     @Test
@@ -155,8 +155,8 @@ class RuleBasedFilterTest {
     }
 
     @Test
-    fun `خرید pointer with opt-out and link is blocked`() {
-        val body = "بلیت موجود\nخرید👇\nbit.ly/x\nلغو11"
+    fun `خرید pointer with link is blocked`() {
+        val body = "بلیت موجود\nخرید👇\nbit.ly/x"
         val result = explain("09120000002", body)
         assertEquals(FilterVerdict.BLOCK, result.verdict)
     }
@@ -217,10 +217,9 @@ class RuleBasedFilterTest {
     }
 
     @Test
-    fun `defaults have no unsubscribe group`() {
-        assertTrue(SpamPatternGroup.entries.none { it.key == "unsubscribe" })
-        assertTrue(SpamPatterns.DEFAULT.groups.keys.none { it.key == "unsubscribe" })
-        assertTrue(SpamPatterns.DEFAULT[SpamPatternGroup.OPT_OUT].isNotEmpty())
+    fun `defaults have no unsubscribe or opt-out group`() {
+        assertTrue(SpamPatternGroup.entries.none { it.key == "unsubscribe" || it.key == "opt_out" })
+        assertTrue(SpamPatterns.DEFAULT.groups.keys.none { it.key == "unsubscribe" || it.key == "opt_out" })
     }
 
     @Test

@@ -19,13 +19,6 @@ enum class SpamPatternGroup(val key: String) {
     TRANSACTIONAL("transactional"),
 
     LINKS("links"),
-
-    /**
-     * Bulk-sender opt-out line («لغو11»). A companion like [LINKS], never a marketing signal on
-     * its own — bank and OTP SMS carry the same line and are allowed earlier.
-     */
-    OPT_OUT("opt_out"),
-
     MARKETING("marketing"),
 
     /** Strong promo emojis: each distinct match is one marketing signal. */
@@ -88,9 +81,6 @@ data class SpamPatterns(val groups: Map<SpamPatternGroup, List<String>>) {
                     "https?://",
                     "www\\.",
                     "(?<![\\w.@])[\\w-]+\\.(?:$TLD)(?:/[\\w./-]*)?(?![\\w.])",
-                ),
-                SpamPatternGroup.OPT_OUT to listOf(
-                    "لغو\\s*$DIGIT{1,4}",
                 ),
                 SpamPatternGroup.MARKETING to listOf(
                     "مجانی",

@@ -85,7 +85,6 @@ private fun SpamPatternGroup.title() = when (this) {
     SpamPatternGroup.CODE -> R.string.spam_patterns_code
     SpamPatternGroup.TRANSACTIONAL -> R.string.spam_patterns_transactional
     SpamPatternGroup.LINKS -> R.string.spam_patterns_links
-    SpamPatternGroup.OPT_OUT -> R.string.spam_patterns_opt_out
     SpamPatternGroup.MARKETING -> R.string.spam_patterns_marketing
     SpamPatternGroup.PROMO_EMOJI -> R.string.spam_patterns_promo_emoji
     SpamPatternGroup.PROMO_EMOJI_WEAK -> R.string.spam_patterns_promo_emoji_weak
@@ -97,7 +96,6 @@ private fun SpamPatternGroup.description() = when (this) {
     SpamPatternGroup.CODE -> R.string.spam_patterns_code_text
     SpamPatternGroup.TRANSACTIONAL -> R.string.spam_patterns_transactional_text
     SpamPatternGroup.LINKS -> R.string.spam_patterns_links_text
-    SpamPatternGroup.OPT_OUT -> R.string.spam_patterns_opt_out_text
     SpamPatternGroup.MARKETING -> R.string.spam_patterns_marketing_text
     SpamPatternGroup.PROMO_EMOJI -> R.string.spam_patterns_promo_emoji_text
     SpamPatternGroup.PROMO_EMOJI_WEAK -> R.string.spam_patterns_promo_emoji_weak_text
