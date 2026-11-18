@@ -1,10 +1,16 @@
 package com.afsh.messages.models
 
+import androidx.compose.runtime.Immutable
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 
+/**
+ * Room entity. Fields are `var` for Room; Compose treats the type as immutable so inbox rows
+ * stay skippable while scrolling (callers pass fresh instances from queries, never mutate in place).
+ */
+@Immutable
 @Entity(tableName = "conversations", indices = [(Index(value = ["thread_id"], unique = true))])
 data class Conversation(
     @PrimaryKey @ColumnInfo(name = "thread_id") var threadId: Long,

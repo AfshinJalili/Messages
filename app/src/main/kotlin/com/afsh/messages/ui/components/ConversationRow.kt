@@ -77,25 +77,55 @@ fun ConversationRow(
     val unread = !conversation.read
     val fontScale = LocalDensity.current.fontScale
     val unreadCount = conversation.unreadCount.coerceAtLeast(1)
+    // Only resolve accessibility strings the row actually announces.
     val unreadLabel = if (unread) pluralStringResource(R.plurals.inbox_row_unread, unreadCount, unreadCount) else null
-    val mutedLabel = stringResource(R.string.muted)
-    val pinnedLabel = stringResource(R.string.inbox_section_pinned)
+    val mutedLabel = if (row.muted) stringResource(R.string.muted) else null
+    val pinnedLabel = if (row.pinned) stringResource(R.string.inbox_section_pinned) else null
     val time = rememberRowTime(conversation.date)
-    val description = listOfNotNull(
-        conversation.title, unreadLabel, row.draft ?: conversation.snippet, time,
-        mutedLabel.takeIf { row.muted }, pinnedLabel.takeIf { row.pinned },
-    ).joinToString(", ")
+    val description = remember(conversation.title, unreadLabel, row.draft, conversation.snippet, time, mutedLabel, pinnedLabel) {
+        listOfNotNull(
+            conversation.title, unreadLabel, row.draft ?: conversation.snippet, time,
+            mutedLabel, pinnedLabel,
+        ).joinToString(", ")
+    }
+    val titleMedium = MaterialTheme.typography.titleMedium
+    val titleTextStyle = remember(conversation.title, titleMedium) {
+        titleMedium.forContent(conversation.title)
+    }
+    val titleAnnotated = remember(conversation.title) {
+        val plain = AnnotatedString(conversation.title)
+        val styled = plain.withContentFonts()
+        if (styled === plain) null else styled
+    }
+    val selectLabel = stringResource(R.string.inbox_select)
     val inlineMetadata = fontScale >= INLINE_METADATA_SCALE
+    val titleMaxLines = if (fontScale >= TWO_LINE_TITLE_SCALE) 2 else 1
+    val itemColors = ListItemDefaults.colors(
+        containerColor = if (selected) colors.secondaryContainer else colors.surface,
+    )
     ListItem(
         // The row's own description replaces its parts for TalkBack; the parts stay in the unmerged tree.
         headlineContent = {
-            Box(Modifier.clearAndSetSemantics { }) {
+            val titleModifier = Modifier.clearAndSetSemantics { }
+            if (titleAnnotated != null) {
                 Text(
-                    remember(conversation.title) { AnnotatedString(conversation.title).withContentFonts() },
-                    style = MaterialTheme.typography.titleMedium.forContent(conversation.title),
+                    titleAnnotated,
+                    style = titleTextStyle,
                     color = colors.onSurface,
-                    maxLines = if (fontScale >= TWO_LINE_TITLE_SCALE) 2 else 1,
+                    maxLines = titleMaxLines,
+                    softWrap = titleMaxLines > 1,
                     overflow = TextOverflow.Ellipsis,
+                    modifier = titleModifier,
+                )
+            } else {
+                Text(
+                    conversation.title,
+                    style = titleTextStyle,
+                    color = colors.onSurface,
+                    maxLines = titleMaxLines,
+                    softWrap = titleMaxLines > 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = titleModifier,
                 )
             }
         },
@@ -113,7 +143,7 @@ fun ConversationRow(
             .combinedClickable(
                 onClick = onClick,
                 onLongClick = onLongClick,
-                onLongClickLabel = stringResource(R.string.inbox_select),
+                onLongClickLabel = selectLabel,
             )
             .semantics(mergeDescendants = true) {
                 if (selecting) this.selected = selected
@@ -121,7 +151,7 @@ fun ConversationRow(
                 if (!selecting) customActions = actions
             },
         // Square on purpose: the selection fill and the swiped row are full rectangles.
-        colors = ListItemDefaults.colors(containerColor = if (selected) colors.secondaryContainer else colors.surface),
+        colors = itemColors,
     )
 }
 
@@ -165,22 +195,32 @@ internal fun SnippetText(row: InboxRow, unread: Boolean) {
     when {
         !draft.isNullOrEmpty() -> {
             val label = stringResource(R.string.inbox_draft_label)
-            Text(
+            val draftText = remember(label, draft, colors.error) {
                 buildAnnotatedString {
                     withStyle(SpanStyle(color = colors.error, fontWeight = FontWeight.Bold)) { append(label) }
                     append(' ')
                     append(draft)
-                }.withContentFonts(),
-                style = MaterialTheme.typography.bodyMedium.forContent(draft).copy(textDirection = TextDirection.ContentOrLtr),
+                }.withContentFonts()
+            }
+            val bodyMedium = MaterialTheme.typography.bodyMedium
+            val draftStyle = remember(draft, bodyMedium) {
+                bodyMedium.forContent(draft).copy(textDirection = TextDirection.ContentOrLtr)
+            }
+            Text(
+                draftText,
+                style = draftStyle,
                 color = colors.onSurfaceVariant,
                 textAlign = rowStart,
                 maxLines = 1,
+                softWrap = false,
                 overflow = TextOverflow.Ellipsis,
             )
         }
 
         conversation.isScheduled -> {
-            val time = android.text.format.DateFormat.format("EEE HH:mm", conversation.date * 1000L).toString()
+            val time = remember(conversation.date) {
+                android.text.format.DateFormat.format("EEE HH:mm", conversation.date * 1000L).toString()
+            }
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.xs)) {
                 Icon(
                     AfshIcon.Schedule.painter(),
@@ -194,19 +234,45 @@ internal fun SnippetText(row: InboxRow, unread: Boolean) {
                     fontWeight = FontWeight.Bold,
                     color = colors.primary,
                     maxLines = 1,
+                    softWrap = false,
                     overflow = TextOverflow.Ellipsis,
                 )
             }
         }
 
-        else -> Text(
-            remember(conversation.snippet) { AnnotatedString(conversation.snippet).withContentFonts() },
-            style = MaterialTheme.typography.bodyMedium.forContent(conversation.snippet).copy(textDirection = TextDirection.ContentOrLtr),
-            color = if (unread) colors.onSurface else colors.onSurfaceVariant,
-            textAlign = rowStart,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
+        else -> {
+            val bodyMedium = MaterialTheme.typography.bodyMedium
+            val snippetStyle = remember(conversation.snippet, bodyMedium) {
+                bodyMedium.forContent(conversation.snippet).copy(textDirection = TextDirection.ContentOrLtr)
+            }
+            val snippetAnnotated = remember(conversation.snippet) {
+                val plain = AnnotatedString(conversation.snippet)
+                val styled = plain.withContentFonts()
+                if (styled === plain) null else styled
+            }
+            val snippetColor = if (unread) colors.onSurface else colors.onSurfaceVariant
+            if (snippetAnnotated != null) {
+                Text(
+                    snippetAnnotated,
+                    style = snippetStyle,
+                    color = snippetColor,
+                    textAlign = rowStart,
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            } else {
+                Text(
+                    conversation.snippet,
+                    style = snippetStyle,
+                    color = snippetColor,
+                    textAlign = rowStart,
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
     }
 }
 

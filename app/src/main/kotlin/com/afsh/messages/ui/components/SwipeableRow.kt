@@ -1,7 +1,6 @@
 package com.afsh.messages.ui.components
 
 import androidx.annotation.StringRes
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -69,6 +68,9 @@ internal fun SwipeToDismissBoxValue.towardsRight(rtl: Boolean): Boolean? = when 
  * The Material 3 swipe-to-dismiss box with physical [left] and [right] gestures. [onSwipe] reports
  * whether the finger moved towards the right; the row then settles back, so an action that removes
  * it (and is undone) brings it back in place.
+ *
+ * When swipe is disabled or both gestures are absent, the Material state machine is skipped so
+ * selection mode and empty-gesture rows do not pay for AnchoredDraggable.
  */
 @Composable
 fun SwipeableRow(
@@ -79,6 +81,10 @@ fun SwipeableRow(
     modifier: Modifier = Modifier,
     content: @Composable RowScope.() -> Unit,
 ) {
+    if (!enabled || (left == null && right == null)) {
+        Row(modifier, content = content)
+        return
+    }
     val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     var width by remember { mutableFloatStateOf(0f) }
     val state = rememberHalfRowSwipeState { width }
@@ -96,8 +102,8 @@ fun SwipeableRow(
     SwipeToDismissBox(
         state = state,
         modifier = modifier.onSizeChanged { width = it.width.toFloat() },
-        enableDismissFromStartToEnd = enabled && gesture(SwipeToDismissBoxValue.StartToEnd) != null,
-        enableDismissFromEndToStart = enabled && gesture(SwipeToDismissBoxValue.EndToStart) != null,
+        enableDismissFromStartToEnd = gesture(SwipeToDismissBoxValue.StartToEnd) != null,
+        enableDismissFromEndToStart = gesture(SwipeToDismissBoxValue.EndToStart) != null,
         onDismiss = { value ->
             // Reset state before calling onSwipe, so if the row leaves composition and returns
             // (e.g. archive/undo), it starts Settled instead of firing onDismiss again.
@@ -141,14 +147,13 @@ private fun SwipeBackground(gesture: SwipeGesture, armed: Boolean, alignStart: B
         SwipeTone.QUIET -> colors.surfaceContainerHigh to colors.onSurfaceVariant
         SwipeTone.PRIMARY -> Afsh.colors.swipeAction.container to Afsh.colors.swipeAction.content
     }
-    val background by animateColorAsState(panel, label = "swipe background")
-    val tint by animateColorAsState(onPanel, label = "swipe icon")
+    // Tone is fixed for a gesture; animating color on every swipe frame only burned UI-thread time.
     val scale by animateFloatAsState(
         if (armed) ARMED_ICON_SCALE else 1f,
         spring(dampingRatio = Spring.DampingRatioMediumBouncy),
         label = "swipe icon scale",
     )
-    Surface(Modifier.fillMaxSize(), color = background, contentColor = tint) {
+    Surface(Modifier.fillMaxSize(), color = panel, contentColor = onPanel) {
         Row(
             Modifier.fillMaxSize().padding(horizontal = Afsh.spacing.xxl),
             verticalAlignment = Alignment.CenterVertically,
