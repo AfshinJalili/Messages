@@ -48,6 +48,22 @@ fi
 echo "role holders: $(adb shell cmd role get-role-holders android.app.role.SMS | tr -d '\r')"
 echo "settings default: $(adb shell settings get secure sms_default_application | tr -d '\r')"
 
+echo "== wipe prior Telephony SMS so seed delta is exactly TARGET_MESSAGES"
+# content://sms delete is a no-op without WRITE_SMS + default role in some builds,
+# and still leaves provider-cached rows. On the emulator, clear mmssms.db directly.
+adb shell 'su 0 sqlite3 /data/data/com.android.providers.telephony/databases/mmssms.db "
+  DELETE FROM sms;
+  DELETE FROM pdu;
+  DELETE FROM part;
+  DELETE FROM addr;
+  DELETE FROM threads;
+  DELETE FROM canonical_addresses;
+"' >/dev/null
+adb shell 'su 0 am force-stop com.android.providers.telephony' >/dev/null
+sms_left=$(adb shell content query --uri content://sms --projection _id 2>/dev/null | grep -c '^Row:' || true)
+echo "sms rows after wipe: $sms_left"
+[ "$sms_left" = "0" ] || { echo "refusing: SMS wipe left rows"; exit 1; }
+
 echo "== seed synthetic inbox (~2k threads / ~25k messages)"
 adb shell am instrument --user 0 -w -r \
   -e seedInbox 1 \
@@ -72,23 +88,34 @@ fi
 echo "role holders: $(adb shell cmd role get-role-holders android.app.role.SMS | tr -d '\r')"
 
 # Typical cold start after the app has been used: import once, then force-stop.
-echo "== warm Room (wait until inbox list is scrollable)"
+# After the Room-first cold-start work the inbox LazyColumn is scrollable while
+# import is still running — wait until the import overlay is gone, not just for
+# scrollable=true, or the benchmark measures a half-empty inbox.
+echo "== warm Room (wait until import finishes and inbox is scrollable)"
 adb shell am force-stop $BENCH_APP
-adb shell am start -W -n $BENCH_APP/.activities.SplashActivity >/dev/null || \
+adb shell am start -W -n $BENCH_APP/.activities.MainActivity >/dev/null || \
   adb shell monkey -p $BENCH_APP -c android.intent.category.LAUNCHER 1 >/dev/null
 deadline=$((SECONDS + ${WARM_TIMEOUT:-900}))
 ready=0
 while [ $SECONDS -lt $deadline ]; do
   adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1 || true
-  if adb shell cat /sdcard/ui.xml 2>/dev/null | grep -q "package=\"$BENCH_APP\"[^>]*scrollable=\"true\""; then
+  ui=$(adb shell cat /sdcard/ui.xml 2>/dev/null || true)
+  importing=0
+  # Match the import overlay title only — message bodies can contain bare "N%".
+  echo "$ui" | grep -Eqi 'text="Importing your messages"|text="در حال ورود' && importing=1
+  scrollable=0
+  echo "$ui" | grep -q "package=\"$BENCH_APP\"[^>]*scrollable=\"true\"" && scrollable=1
+  if [ "$scrollable" = 1 ] && [ "$importing" = 0 ]; then
     ready=1
-    echo "inbox scrollable after $((SECONDS))s"
+    echo "inbox ready after ${SECONDS}s (import done, list scrollable)"
     break
   fi
+  pct=$(echo "$ui" | tr '>' '>\n' | grep -Eo 'text="[0-9]+%"' | head -1 || true)
+  echo "warm progress: scrollable=$scrollable importing=$importing $pct t=${SECONDS}s"
   # Keep the process alive while import runs.
   if ! adb shell pidof $BENCH_APP >/dev/null 2>&1; then
     echo "benchmark app died during warm; relaunching"
-    adb shell am start -W -n $BENCH_APP/.activities.SplashActivity >/dev/null || true
+    adb shell am start -W -n $BENCH_APP/.activities.MainActivity >/dev/null || true
   fi
   sleep 15
 done

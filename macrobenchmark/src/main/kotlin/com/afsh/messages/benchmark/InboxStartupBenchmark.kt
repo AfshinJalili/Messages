@@ -27,7 +27,7 @@ import org.junit.runner.RunWith
  * for the plan's frameOverrunMs gate.
  *
  * TTFD is not asserted: the inbox does not yet call reportFullyDrawn, so TTID alone
- * is the honest signal (avoids touching MainActivity from open PR #286).
+ * is the honest cold-start signal until that lands.
  */
 @RunWith(AndroidJUnit4::class)
 class InboxStartupBenchmark {
