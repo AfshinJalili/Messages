@@ -106,16 +106,18 @@ class RuleBasedFilterTest {
     }
 
     @Test
-    fun `layout emoji plus tracking link alone stays in inbox`() {
-        val body = "مرسوله شما ارسال شد\n📍تهران، خیابان ولیعصر\nپیگیری: track.ir/abc123"
-        val result = explain("09125556666", body)
-        assertEquals(FilterVerdict.NO_VERDICT, result.verdict)
+    fun `checkmark or pin with bare link is blocked`() {
+        val check = explain("09120000003", "✅8آذر\nIu4.ir/e")
+        assertEquals(FilterVerdict.BLOCK, check.verdict)
+        val pin = explain("09120000004", "📍اسپیناس\nIu4.ir/e")
+        assertEquals(FilterVerdict.BLOCK, pin.verdict)
     }
 
     @Test
-    fun `single check mark alone stays in inbox`() {
-        val result = explain("09125556666", "کار انجام شد ✅")
-        assertEquals(FilterVerdict.NO_VERDICT, result.verdict)
+    fun `checkmark and pin together are blocked`() {
+        val result = explain("09120000005", "✅8آذر\n📍اسپیناس پالاس")
+        assertEquals(FilterVerdict.BLOCK, result.verdict)
+        assertEquals(FilterRule.MARKETING, result.rule)
     }
 
     @Test

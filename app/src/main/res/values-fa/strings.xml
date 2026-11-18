@@ -314,7 +314,7 @@
     </plurals>
     <string name="filter_obvious_spam">فیلتر هرزنامه‌های آشکار</string>
     <string name="filter_obvious_spam_off">خاموش</string>
-    <string name="filter_on_text">به واژه‌های تبلیغاتی و رویداد فارسی و اموجی‌های چیدمان تبلیغاتی نگاه می‌کند. یک واژهٔ تبلیغاتی به‌علاوهٔ پیوند یا فرستندهٔ نام‌دار به هرزنامه می‌رود؛ ترکیب قوی‌تر واژه و اموجی هم همین‌طور. اموجی به‌تنهایی، حتی با پیوند پیگیری، کافی نیست. رمز یک‌بارمصرف، پیام بانک و رسید، و افراد دفترچه مخاطبان فیلتر نمی‌شوند. خط‌هایی مثل «لغو11» یا unsubscribe نادیده گرفته می‌شوند.</string>
+    <string name="filter_on_text">به واژه‌های تبلیغاتی و رویداد فارسی و اموجی‌های قوی تبلیغاتی (از جمله ✅ و 📍) نگاه می‌کند. دو نشانه، یا یک نشانه به‌علاوهٔ پیوند یا فرستندهٔ نام‌دار، به هرزنامه می‌رود. رمز یک‌بارمصرف، پیام بانک و رسید، و افراد دفترچه مخاطبان فیلتر نمی‌شوند. خط‌هایی مثل «لغو11» یا unsubscribe نادیده گرفته می‌شوند.</string>
     <string name="unknown_numbers">پیام‌های شماره‌های ناشناس را هرزنامه کن</string>
     <string name="unknown_numbers_text">مخاطبان هرگز فیلتر نمی‌شوند.</string>
     <string name="always_spam_list">فرستنده‌های همیشه‌هرزنامه</string>
@@ -644,7 +644,7 @@
     <string name="spam_patterns_marketing">واژه‌های تبلیغاتی</string>
     <string name="spam_patterns_marketing_text">هر تطبیق متمایز وزن ۲ دارد. یک واژه به‌علاوهٔ پیوند یا فرستندهٔ نام‌دار به هرزنامه می‌رود؛ واژه به‌علاوهٔ اموجی تبلیغاتی هم همین‌طور.</string>
     <string name="spam_patterns_promo_emoji">اموجی‌های تبلیغاتی</string>
-    <string name="spam_patterns_promo_emoji_text">اموجی‌های قوی و چیدمان تبلیغاتی (🎉، ✅، 📍، …). هر کدام وزن ۱ دارد. به‌تنهایی، حتی با پیوند، مسدود نمی‌کنند.</string>
+    <string name="spam_patterns_promo_emoji_text">اموجی‌های قوی و چیدمان تبلیغاتی (🎉، ✅، 📍، …). هر کدام وزن ۲ دارد، مثل واژه‌ی تبلیغاتی. یکی به‌علاوهٔ پیوند یا فرستندهٔ نام‌دار به هرزنامه می‌رود.</string>
     <string name="spam_patterns_promo_emoji_weak">شکلک‌های ضعیف</string>
     <string name="spam_patterns_promo_emoji_weak_text">شکلک و قلب. به‌تنهایی هرگز مسدود نمی‌کنند.</string>
     <string name="spam_patterns_add">افزودن الگو</string>

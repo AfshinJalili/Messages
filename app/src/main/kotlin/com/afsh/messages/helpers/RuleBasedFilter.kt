@@ -23,17 +23,16 @@ data class FilterResult(
 object RuleBasedFilter {
 
     /**
-     * Signal weights used by [explain]: a marketing / event / CTA word is [WORD_WEIGHT], a strong
-     * promo or layout emoji is [EMOJI_WEIGHT]. Links and named senders are companions, not scored
-     * signals — emoji alone (even with a link) must not block, so a delivery SMS with 📍 and a
-     * tracking URL stays in the inbox, while an event word plus a bare short link does not.
-     * Opt-out lines such as «لغو11» are never a signal or companion.
+     * Signal weights used by [explain]: a marketing / event / CTA word is [WORD_WEIGHT], and a
+     * strong promo or layout emoji (🎉, ✅, 📍, …) is the same weight. Links and named senders are
+     * companions. One strong signal alone from a numeric sender stays in the inbox; one plus a
+     * companion, or two signals, goes to Spam. Opt-out lines such as «لغو11» are never a signal.
      */
     const val WORD_WEIGHT = 2
-    const val EMOJI_WEIGHT = 1
+    const val EMOJI_WEIGHT = 2
     /** Block without a companion when total weight reaches this (e.g. one word + one emoji). */
     const val BLOCK_WEIGHT = 3
-    /** With a link or named sender, this weight is enough (one marketing word). */
+    /** With a link or named sender, this weight is enough (one marketing word or one strong emoji). */
     const val BLOCK_WEIGHT_WITH_COMPANION = 2
 
     fun evaluate(context: Context, sender: String, body: String): FilterVerdict = explain(context, sender, body).verdict
@@ -46,8 +45,8 @@ object RuleBasedFilter {
     /**
      * Ordered, high-precision first. A one-time code (a code word and a code) and transactional
      * bank/receipt language are always allowed: service SMS carry links and the mandatory "لغو11"
-     * line, which must not send them to Spam. Marketing scores word and emoji weights, with a link
-     * or named sender as a companion — never an unsubscribe shortcut, and never emoji-only.
+     * line, which must not send them to Spam. Marketing scores word and strong-emoji weights
+     * equally, with a link or named sender as a companion — never an unsubscribe shortcut.
      */
     fun explain(patterns: SpamPatterns, sender: String, body: String): FilterResult {
         if (body.isBlank()) return FilterResult.NONE

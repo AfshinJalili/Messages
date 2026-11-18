@@ -336,7 +336,7 @@
     </plurals>
     <string name="filter_obvious_spam">Filter obvious spam</string>
     <string name="filter_obvious_spam_off">Off</string>
-    <string name="filter_on_text">Looks for Persian marketing and event words and promo layout emojis. A marketing word plus a link or named sender goes to Spam; so do stronger combinations of words and emojis. Emoji alone, even with a tracking link, does not. One-time codes, bank and receipt texts, and people in your contacts are not filtered. Lines such as «لغو11» or unsubscribe are ignored.</string>
+    <string name="filter_on_text">Looks for Persian marketing and event words and strong promo emojis (including ✅ and 📍). Two signals, or one signal plus a link or named sender, go to Spam. One-time codes, bank and receipt texts, and people in your contacts are not filtered. Lines such as «لغو11» or unsubscribe are ignored.</string>
     <string name="unknown_numbers">File messages from unknown numbers as spam</string>
     <string name="unknown_numbers_text">Contacts are never filtered.</string>
     <string name="always_spam_list">Always-spam senders</string>
@@ -674,7 +674,7 @@
     <string name="spam_patterns_marketing">Marketing words</string>
     <string name="spam_patterns_marketing_text">Each distinct match weighs 2. One word plus a link or named sender goes to Spam; a word plus a promo emoji does too.</string>
     <string name="spam_patterns_promo_emoji">Promo emojis</string>
-    <string name="spam_patterns_promo_emoji_text">Strong promo and layout emojis (🎉, ✅, 📍, …). Each weighs 1. Alone, even with a link, they do not block.</string>
+    <string name="spam_patterns_promo_emoji_text">Strong promo and layout emojis (🎉, ✅, 📍, …). Each weighs 2, same as a marketing word. One plus a link or named sender goes to Spam.</string>
     <string name="spam_patterns_promo_emoji_weak">Weak smileys</string>
     <string name="spam_patterns_promo_emoji_weak_text">Smileys and hearts. They never start a block on their own.</string>
     <string name="spam_patterns_add">Add pattern</string>
