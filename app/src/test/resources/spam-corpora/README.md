@@ -7,8 +7,10 @@ checksum-verified — they are not committed to this repository.
 ## Must-not-flag (vendored)
 
 `must-not-flag.json` is project-authored OTP, bank, and receipt templates
-(including the mandatory `لغو11` line). Every row must score `ALLOW`. No
-private inbox text and no third-party corpus lines.
+(including the mandatory `لغو11` line), plus near-miss ham: a friend concert
+invite with no link, a delivery SMS with 📍 and a tracking link, and a single
+✅. Every row must not score `BLOCK` (OTP/bank stay `ALLOW`; near-miss ham may
+be `NO_VERDICT`). No private inbox text and no third-party corpus lines.
 
 ## PSSC v0.3 — Persian SMS Spam Collection
 

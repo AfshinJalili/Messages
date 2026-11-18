@@ -22,6 +22,19 @@ data class FilterResult(
 
 object RuleBasedFilter {
 
+    /**
+     * Signal weights used by [explain]: a marketing / event / CTA word is [WORD_WEIGHT], a strong
+     * promo or layout emoji is [EMOJI_WEIGHT]. Opt-out lines and links are companions, not scored
+     * signals — emoji alone (even with a link) must not block, so a delivery SMS with 📍 and a
+     * tracking URL stays in the inbox, while an event word plus a bare short link does not.
+     */
+    const val WORD_WEIGHT = 2
+    const val EMOJI_WEIGHT = 1
+    /** Block without a companion when total weight reaches this (e.g. one word + one emoji). */
+    const val BLOCK_WEIGHT = 3
+    /** With a link, named sender, or opt-out companion, this weight is enough (one marketing word). */
+    const val BLOCK_WEIGHT_WITH_COMPANION = 2
+
     fun evaluate(context: Context, sender: String, body: String): FilterVerdict = explain(context, sender, body).verdict
 
     fun explain(context: Context, sender: String, body: String): FilterResult {
@@ -32,14 +45,15 @@ object RuleBasedFilter {
     /**
      * Ordered, high-precision first. A one-time code (a code word and a code) and transactional
      * bank/receipt language are always allowed: service SMS carry links and the mandatory "لغو11"
-     * line, which must not send them to Spam. Marketing is a score of distinct word and strong
-     * emoji signals, with a link or named sender as a companion — never an unsubscribe shortcut.
+     * line, which must not send them to Spam. Marketing scores word and emoji weights; a link,
+     * named sender, or opt-out line is a companion for word signals — never an emoji-only shortcut.
      */
     fun explain(patterns: SpamPatterns, sender: String, body: String): FilterResult {
         if (body.isBlank()) return FilterResult.NONE
+        val normalized = normalizeSpamText(body)
         val compiled = CompiledPatterns.of(patterns)
-        fun find(group: SpamPatternGroup) = compiled.find(group, body)
-        fun signals(group: SpamPatternGroup) = compiled.signalMatches(group, body)
+        fun find(group: SpamPatternGroup) = compiled.find(group, normalized)
+        fun signals(group: SpamPatternGroup) = compiled.signalMatches(group, normalized)
 
         val codeWords = find(SpamPatternGroup.CODE_WORDS)
         val codes = find(SpamPatternGroup.CODE)
@@ -54,13 +68,16 @@ object RuleBasedFilter {
 
         val marketing = signals(SpamPatternGroup.MARKETING)
         val strongEmoji = signals(SpamPatternGroup.PROMO_EMOJI)
-        val signalCount = marketing.size + strongEmoji.size
-        if (signalCount == 0) return FilterResult.NONE
+        if (marketing.isEmpty() && strongEmoji.isEmpty()) return FilterResult.NONE
 
+        val weight = marketing.size * WORD_WEIGHT + strongEmoji.size * EMOJI_WEIGHT
         val links = find(SpamPatternGroup.LINKS)
+        val optOut = find(SpamPatternGroup.OPT_OUT)
         val namedSender = isAlphaSender(sender)
-        val companion = links.isNotEmpty() || namedSender
-        if (signalCount >= 2 || (signalCount >= 1 && companion)) {
+        // Opt-out is a companion like a link. It is not returned in matches so Why never highlights «لغو».
+        val companion = links.isNotEmpty() || namedSender || optOut.isNotEmpty()
+        val block = weight >= BLOCK_WEIGHT || (weight >= BLOCK_WEIGHT_WITH_COMPANION && companion)
+        if (block) {
             return FilterResult(
                 FilterVerdict.BLOCK,
                 FilterRule.MARKETING,
