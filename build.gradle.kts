@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android).apply(false)
     alias(libs.plugins.library).apply(false)
+    alias(libs.plugins.android.test).apply(false)
     alias(libs.plugins.parcelize).apply(false)
     alias(libs.plugins.kotlinSerialization).apply(false)
     alias(libs.plugins.compose.compiler).apply(false)

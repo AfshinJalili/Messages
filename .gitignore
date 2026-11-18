@@ -22,5 +22,6 @@ keystore.properties
 # Gradle module outputs
 app/build/
 commons/build/
+macrobenchmark/build/
 __pycache__/
 *.py[cod]
