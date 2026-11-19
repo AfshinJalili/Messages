@@ -20,8 +20,8 @@ import com.afsh.messages.ui.AfshSystemBars
 import com.afsh.messages.ui.AfshTheme
 import com.afsh.messages.ui.afshDark
 import com.afsh.messages.ui.applock.SecuritySetupDialog
-import org.fossify.commons.extensions.appLockManager
-import org.fossify.commons.extensions.baseConfig
+import com.afsh.commons.extensions.appLockManager
+import com.afsh.commons.extensions.baseConfig
 
 /**
  * Lock screen that blocks app access when app lock is enabled. Shows PIN/pattern/biometric verification.

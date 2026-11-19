@@ -393,7 +393,7 @@
     <string name="privacy_information">اطلاعات حریم خصوصی</string>
     <string name="privacy_information_text">پیام‌ها روی همین گوشی می‌مانند. برنامه به حساب کاربری نیاز ندارد و جز به اپراتور شما چیزی نمی‌فرستد. پشتیبان‌ها فایل‌هایی هستند که خودتان می‌سازید و نگه می‌دارید.</string>
     <string name="open_source_licenses">مجوزهای متن‌باز</string>
-    <string name="open_source_licenses_text">پیام‌های AFSH نسخهٔ تغییریافتهٔ Fossify Messages است (GPL-3.0). از Fossify Commons ‏(GPL-3.0)، آیکون‌های Material Symbols ‏(Apache 2.0) و قلم‌های Funnel Sans، Atkinson Hyperlegible و وزیرمتن (SIL Open Font License 1.1) استفاده می‌کند.</string>
+    <string name="open_source_licenses_text">پیام‌های AFSH نرم‌افزار آزاد تحت GPL-3.0 است. کتابخانهٔ Commons در همین برنامه کد تغییریافتهٔ GPL-3.0 است. پیام‌های تصویری و گروهی از mmslib ‏(Apache 2.0) استفاده می‌کنند. آیکون‌ها Material Symbols ‏(Apache 2.0) هستند. قلم‌های Funnel Sans، Atkinson Hyperlegible و وزیرمتن تحت SIL Open Font License 1.1 هستند.</string>
     <string name="swipe_in_the_inbox">کشیدن در صندوق</string>
     <string name="swipe_right">کشیدن به راست</string>
     <string name="swipe_left">کشیدن به چپ</string>

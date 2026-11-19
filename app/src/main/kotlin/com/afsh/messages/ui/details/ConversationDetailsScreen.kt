@@ -135,9 +135,9 @@ fun ConversationDetailsScreen(state: ConversationDetailsUiState, onEvent: (Detai
             Row(horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.md)) {
                 val tile = Modifier.weight(1f)
                 if (state.canDial) {
-                    ActionTile(AfshIcon.Call, stringResource(org.fossify.commons.R.string.call), { onEvent(DetailsEvent.Call) }, tile)
+                    ActionTile(AfshIcon.Call, stringResource(com.afsh.commons.R.string.call), { onEvent(DetailsEvent.Call) }, tile)
                 }
-                ActionTile(AfshIcon.Search, stringResource(org.fossify.commons.R.string.search), { onEvent(DetailsEvent.Search) }, tile)
+                ActionTile(AfshIcon.Search, stringResource(com.afsh.commons.R.string.search), { onEvent(DetailsEvent.Search) }, tile)
                 ActionTile(
                     if (state.muted) AfshIcon.Notifications else AfshIcon.NotificationsOff,
                     stringResource(if (state.muted) R.string.unmute else R.string.mute),
@@ -190,7 +190,7 @@ fun ConversationDetailsScreen(state: ConversationDetailsUiState, onEvent: (Detai
             title = stringResource(R.string.sim),
             choices = listOf(Choice(0, stringResource(R.string.sim_default))) + state.sims.map { Choice(it.subscriptionId, it.label) },
             selected = state.sim,
-            dismissLabel = stringResource(org.fossify.commons.R.string.cancel),
+            dismissLabel = stringResource(com.afsh.commons.R.string.cancel),
             onChoose = {
                 choosingSim = false
                 onEvent(DetailsEvent.SetSim(it))
@@ -213,7 +213,7 @@ private fun DetailsHeader(state: ConversationDetailsUiState, onEvent: (DetailsEv
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.sm),
         ) {
-            val back = stringResource(org.fossify.commons.R.string.back)
+            val back = stringResource(com.afsh.commons.R.string.back)
             IconButton(onClick = { onEvent(DetailsEvent.Back) }, modifier = Modifier.semantics { contentDescription = back }) {
                 Icon(AfshIcon.ArrowBack.painter(), contentDescription = null)
             }
@@ -232,7 +232,7 @@ private fun DetailsHeader(state: ConversationDetailsUiState, onEvent: (DetailsEv
                 )
             }
             if (state.canDial) {
-                val call = stringResource(org.fossify.commons.R.string.call)
+                val call = stringResource(com.afsh.commons.R.string.call)
                 IconButton(onClick = { onEvent(DetailsEvent.Call) }, modifier = Modifier.semantics { contentDescription = call }) {
                     Icon(AfshIcon.Call.painter(), contentDescription = null)
                 }

@@ -106,7 +106,7 @@ class ConversationPageChecks {
     fun detailsActionsAndSimChoice() {
         val events = mutableListOf<DetailsEvent>()
         compose.setContent { DesignVariantContent(DesignVariant.LIGHT) { ConversationDetailsScreen(details, { events += it }) } }
-        compose.onAllNodesWithText(text(org.fossify.commons.R.string.call)).let { it[it.fetchSemanticsNodes().size - 1].performClick() }
+        compose.onAllNodesWithText(text(com.afsh.commons.R.string.call)).let { it[it.fetchSemanticsNodes().size - 1].performClick() }
         compose.onNodeWithText(text(R.string.mute)).performClick()
         compose.onNodeWithText(text(R.string.conversation_name)).performScrollTo().performClick()
         compose.onNodeWithText(text(R.string.sim)).performScrollTo().performClick()
@@ -127,7 +127,7 @@ class ConversationPageChecks {
                     placeholder = "Book club",
                     explanation = text(R.string.rename_explanation),
                     confirmLabel = text(R.string.save_name),
-                    dismissLabel = text(org.fossify.commons.R.string.cancel),
+                    dismissLabel = text(com.afsh.commons.R.string.cancel),
                     onRename = { renamed = it },
                     onDismiss = {},
                 )
@@ -217,15 +217,15 @@ class ConversationPageChecks {
                     placeholder = "Book club",
                     explanation = text(R.string.rename_explanation),
                     confirmLabel = text(R.string.save_name),
-                    dismissLabel = text(org.fossify.commons.R.string.cancel),
+                    dismissLabel = text(com.afsh.commons.R.string.cancel),
                     onRename = {},
                     onDismiss = {},
                 )
                 7 -> ConfirmationDialog(
                     title = compose.activity.quantity(R.plurals.delete_conversations_title, 3),
                     explanation = compose.activity.resources.getQuantityString(R.plurals.delete_conversations_to_bin_text, 3),
-                    confirmLabel = text(org.fossify.commons.R.string.delete),
-                    dismissLabel = text(org.fossify.commons.R.string.cancel),
+                    confirmLabel = text(com.afsh.commons.R.string.delete),
+                    dismissLabel = text(com.afsh.commons.R.string.cancel),
                     onConfirm = {},
                     onDismiss = {},
                 )

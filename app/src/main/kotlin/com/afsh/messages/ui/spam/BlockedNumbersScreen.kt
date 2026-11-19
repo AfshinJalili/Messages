@@ -168,7 +168,7 @@ private fun SenderSectionRow(sender: BlockedSender, onRemove: () -> Unit) {
     val action = when (sender.kind) {
         FilterSenderKind.NeverSpam -> stringResource(R.string.remove_never_spam, label)
         FilterSenderKind.AlwaysSpam, FilterSenderKind.AndroidBlocked ->
-            stringResource(org.fossify.commons.R.string.unblock)
+            stringResource(com.afsh.commons.R.string.unblock)
     }
     Column(verticalArrangement = Arrangement.spacedBy(Afsh.spacing.md)) {
         Row(
@@ -201,8 +201,8 @@ private fun SenderSectionRow(sender: BlockedSender, onRemove: () -> Unit) {
             )
             TextAction(
                 when (sender.kind) {
-                    FilterSenderKind.NeverSpam -> stringResource(org.fossify.commons.R.string.remove)
-                    else -> stringResource(org.fossify.commons.R.string.unblock)
+                    FilterSenderKind.NeverSpam -> stringResource(com.afsh.commons.R.string.remove)
+                    else -> stringResource(com.afsh.commons.R.string.unblock)
                 },
                 onClick = onRemove,
                 modifier = Modifier.semantics { contentDescription = action },

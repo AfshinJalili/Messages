@@ -2,7 +2,7 @@ package com.afsh.messages.helpers
 
 import android.content.Context
 import android.provider.Telephony.Sms
-import org.fossify.commons.helpers.ensureBackgroundThread
+import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.messages.extensions.config
 import com.afsh.messages.extensions.getMessages
 import com.afsh.messages.extensions.getMessagesDB

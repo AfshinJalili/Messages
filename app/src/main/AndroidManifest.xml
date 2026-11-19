@@ -22,14 +22,6 @@
         android:name="android.permission.USE_BIOMETRIC"
         tools:node="remove" />
 
-    <!-- Commons asks for Fossify's companion apps; this app uses none of them. -->
-    <queries>
-        <package android:name="org.fossify.contacts" tools:node="remove" />
-        <package android:name="org.fossify.contacts.debug" tools:node="remove" />
-        <package android:name="org.fossify.thankyou" tools:node="remove" />
-        <package android:name="org.fossify.thankyou.debug" tools:node="remove" />
-    </queries>
-
     <uses-feature android:name="android.hardware.telephony" />
 
     <application

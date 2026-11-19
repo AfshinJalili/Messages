@@ -9,11 +9,8 @@
     <string name="file_saved">File saved successfully</string>
     <string name="invalid_file_format">Invalid file format</string>
     <string name="error">Error: %s</string>
-    <string name="open_with">Open with</string>
-    <string name="edit_with">Edit with</string>
     <string name="no_app_found">No valid app found</string>
     <string name="no_browser_found">No browser found</string>
-    <string name="set_as">Set as</string>
     <string name="copy_number_to_clipboard">Copy number to clipboard</string>
     <string name="value_copied_to_clipboard_show">Value copied to clipboard:\n%s</string>
     <string name="dial_number">Dial number</string>
@@ -199,16 +196,13 @@
     <!-- For example: Time remaining till the alarm goes off: 6 hours, 5 minutes -->
 
     <!-- Alarms -->
-    <string name="alarm">Alarm</string>
     <string name="no_reminder">No reminder</string>
     <string name="at_start">At start</string>
-    <string name="no_sound">No sound</string>
     <string name="during_day_at_hh_mm">During the day at hh:mm</string>
     <string name="during_day_at">During the day at %1$02d:%2$02d</string>
 
     <!-- Settings -->
     <string name="settings">Settings</string>
-    <string name="feature_locked">Locked</string>
     <string name="use_english_language">Use English language</string>
     <string name="language">Language</string>
     <string name="small">Small</string>
@@ -322,15 +316,6 @@
     <string name="label_with_badge">%1$s %2$s</string>
 
     <!-- FAQ -->
-
-    <!-- Contributors -->
-    <string name="contributors_label">
-        <![CDATA[
-            This list contains everyone that noticeably helped any app within the Fossify suite, not only this one. Translations are handled by volunteers,
-            let us know if you want to help too. The guide to translating is at <a href="https://github.com/FossifyOrg/General-Discussion#how-can-i-suggest-an-edit-to-a-file">this website</a>, or just contact us at <a href="mailto:hello@fossify.org">hello@fossify.org</a> if you have any questions.
-            Thanks to all contributors and other supporters!
-        ]]>
-    </string>
 
     <string name="translation_english">English</string>
 

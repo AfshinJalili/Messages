@@ -49,7 +49,7 @@ import com.afsh.messages.ui.Avatar
 import com.afsh.messages.ui.forContent
 import com.afsh.messages.ui.inbox.InboxRow
 import com.afsh.messages.ui.withContentFonts
-import org.fossify.commons.extensions.getTimeFormat
+import com.afsh.commons.extensions.getTimeFormat
 
 private const val TWO_LINE_TITLE_SCALE = 1.3f
 private const val INLINE_METADATA_SCALE = 1.5f

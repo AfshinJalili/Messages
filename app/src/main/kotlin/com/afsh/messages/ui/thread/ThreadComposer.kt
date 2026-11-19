@@ -282,7 +282,7 @@ private fun ReplyDisabledField(onEvent: (ComposerEvent) -> Unit, modifier: Modif
             .heightIn(min = RowHeight)
             .clip(shape)
             // Explains why, as the old notice's info button did.
-            .clickable(onClickLabel = stringResource(org.fossify.commons.R.string.more_info)) { onEvent(ComposerEvent.ReplyInfo) },
+            .clickable(onClickLabel = stringResource(com.afsh.commons.R.string.more_info)) { onEvent(ComposerEvent.ReplyInfo) },
         shape = shape,
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
     ) {

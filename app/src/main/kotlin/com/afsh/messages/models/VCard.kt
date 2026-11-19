@@ -3,7 +3,7 @@ package com.afsh.messages.models
 import android.content.Context
 import ezvcard.VCard
 import ezvcard.property.*
-import org.fossify.commons.extensions.normalizePhoneNumber
+import com.afsh.commons.extensions.normalizePhoneNumber
 import com.afsh.messages.extensions.config
 import com.afsh.messages.extensions.format
 import com.afsh.messages.helpers.parseNameFromVCard
@@ -37,9 +37,9 @@ data class VCardPropertyWrapper(val value: String, val type: String, val propert
 
         private fun VCardProperty.getPropertyTypeString(context: Context): String {
             return when (parameters.type) {
-                CELL -> context.getString(org.fossify.commons.R.string.mobile)
-                HOME -> context.getString(org.fossify.commons.R.string.home)
-                WORK -> context.getString(org.fossify.commons.R.string.work)
+                CELL -> context.getString(com.afsh.commons.R.string.mobile)
+                HOME -> context.getString(com.afsh.commons.R.string.home)
+                WORK -> context.getString(com.afsh.commons.R.string.work)
                 else -> ""
             }
         }
@@ -51,23 +51,23 @@ data class VCardPropertyWrapper(val value: String, val type: String, val propert
                     is Email -> VCardPropertyWrapper(value, getPropertyTypeString(context), property)
                     is Organization -> VCardPropertyWrapper(
                         value = values.joinToString(),
-                        type = context.getString(org.fossify.commons.R.string.work),
+                        type = context.getString(com.afsh.commons.R.string.work),
                         property = property
                     )
 
                     is Birthday -> VCardPropertyWrapper(
                         value = date.format(context.config.dateFormat),
-                        type = context.getString(org.fossify.commons.R.string.birthday),
+                        type = context.getString(com.afsh.commons.R.string.birthday),
                         property = property
                     )
 
                     is Anniversary -> VCardPropertyWrapper(
                         value = date.format(context.config.dateFormat),
-                        type = context.getString(org.fossify.commons.R.string.anniversary),
+                        type = context.getString(com.afsh.commons.R.string.anniversary),
                         property = property
                     )
 
-                    is Note -> VCardPropertyWrapper(value, context.getString(org.fossify.commons.R.string.notes), property)
+                    is Note -> VCardPropertyWrapper(value, context.getString(com.afsh.commons.R.string.notes), property)
                     else -> VCardPropertyWrapper("", "", property)
                 }
             }

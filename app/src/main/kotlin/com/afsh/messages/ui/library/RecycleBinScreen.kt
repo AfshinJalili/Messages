@@ -79,7 +79,7 @@ fun RecycleBinScreen(
     var pendingThread by rememberSaveable { mutableStateOf<Long?>(null) }
     var pendingAll by rememberSaveable { mutableStateOf(false) }
     PageScaffold(
-        title = stringResource(org.fossify.commons.R.string.recycle_bin),
+        title = stringResource(com.afsh.commons.R.string.recycle_bin),
         modifier = modifier,
         subtitle = stringResource(R.string.recycle_bin_subtitle),
         onBack = { onEvent(RecycleBinEvent.Back) },
@@ -141,7 +141,7 @@ fun RecycleBinScreen(
             confirmLabel = stringResource(
                 if (pending is PendingErase.All) R.string.recycle_bin_empty else R.string.delete_forever,
             ),
-            dismissLabel = stringResource(org.fossify.commons.R.string.cancel),
+            dismissLabel = stringResource(com.afsh.commons.R.string.cancel),
             onConfirm = {
                 dismiss()
                 when (pending) {

@@ -81,10 +81,10 @@ enum class InboxAction(@AnyRes val label: Int, val icon: AfshIcon, val labelIsQu
     UNMUTE(R.string.unmute_conversation, AfshIcon.Notifications),
     PIN(R.string.pin_conversation, AfshIcon.Pin),
     UNPIN(R.string.unpin_conversation, AfshIcon.Unpin),
-    DELETE(org.fossify.commons.R.string.delete, AfshIcon.Delete),
-    DIAL(org.fossify.commons.R.string.dial_number, AfshIcon.Call),
-    ADD_TO_CONTACT(org.fossify.commons.R.string.add_number_to_contact, AfshIcon.PersonAdd),
-    COPY_NUMBER(org.fossify.commons.R.string.copy_number_to_clipboard, AfshIcon.Copy),
+    DELETE(com.afsh.commons.R.string.delete, AfshIcon.Delete),
+    DIAL(com.afsh.commons.R.string.dial_number, AfshIcon.Call),
+    ADD_TO_CONTACT(com.afsh.commons.R.string.add_number_to_contact, AfshIcon.PersonAdd),
+    COPY_NUMBER(com.afsh.commons.R.string.copy_number_to_clipboard, AfshIcon.Copy),
     RENAME(R.string.rename_conversation, AfshIcon.Edit),
     DETAILS(R.string.conversation_details, AfshIcon.Info),
     ALWAYS_SPAM(R.plurals.always_spam, AfshIcon.SpamShield, labelIsQuantity = true),
@@ -149,7 +149,7 @@ enum class LibraryDestination(@StringRes val label: Int, @StringRes val descript
     STARRED(R.string.starred_messages, R.string.library_starred_description, AfshIcon.Star),
     ARCHIVE(R.string.archived_conversations, R.string.library_archive_description, AfshIcon.Archive),
     SPAM(R.string.inbox_spam, R.string.library_spam_description, AfshIcon.SpamShield),
-    RECYCLE_BIN(org.fossify.commons.R.string.recycle_bin, R.string.library_recycle_description, AfshIcon.Delete);
+    RECYCLE_BIN(com.afsh.commons.R.string.recycle_bin, R.string.library_recycle_description, AfshIcon.Delete);
 
     fun isAvailable(state: InboxUiState) = when (this) {
         ARCHIVE -> state.archiveAvailable

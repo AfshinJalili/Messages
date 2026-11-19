@@ -152,7 +152,7 @@ fun PageScaffold(
                         scrollBehavior = scrollBehavior,
                     ) {
                         selection.onSelectAll?.let { selectAll ->
-                            PageAppBarAction(AfshIcon.CheckAll, stringResource(org.fossify.commons.R.string.select_all), onClick = selectAll)
+                            PageAppBarAction(AfshIcon.CheckAll, stringResource(com.afsh.commons.R.string.select_all), onClick = selectAll)
                         }
                     }
                 } else {

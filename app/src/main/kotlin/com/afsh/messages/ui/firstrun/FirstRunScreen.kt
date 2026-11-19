@@ -99,7 +99,7 @@ private fun PermissionsPage(onEvent: (FirstRunEvent) -> Unit, modifier: Modifier
             PermissionCard(AfshIcon.Contact, stringResource(R.string.contacts), stringResource(R.string.contacts_permission_text))
             PermissionCard(
                 AfshIcon.Notifications,
-                stringResource(org.fossify.commons.R.string.notifications),
+                stringResource(com.afsh.commons.R.string.notifications),
                 stringResource(R.string.notifications_permission_text),
             )
             AfshButton(

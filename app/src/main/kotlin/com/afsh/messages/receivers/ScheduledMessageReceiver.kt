@@ -6,8 +6,8 @@ import android.content.Intent
 import android.os.Handler
 import android.os.Looper
 import android.os.PowerManager
-import org.fossify.commons.extensions.showErrorToast
-import org.fossify.commons.helpers.ensureBackgroundThread
+import com.afsh.commons.extensions.showErrorToast
+import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.messages.extensions.conversationsDB
 import com.afsh.messages.extensions.deleteScheduledMessage
 import com.afsh.messages.extensions.getAddresses
@@ -72,7 +72,7 @@ class ScheduledMessageReceiver : BroadcastReceiver() {
             context.showErrorToast(e)
         } catch (e: Error) {
             context.showErrorToast(
-                e.localizedMessage ?: context.getString(org.fossify.commons.R.string.unknown_error_occurred)
+                e.localizedMessage ?: context.getString(com.afsh.commons.R.string.unknown_error_occurred)
             )
         }
     }

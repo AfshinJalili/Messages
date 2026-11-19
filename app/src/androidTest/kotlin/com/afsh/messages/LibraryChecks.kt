@@ -45,7 +45,7 @@ class LibraryChecks {
             }
         }
         compose.onNodeWithText(text(R.string.archived_conversations)).assertDoesNotExist()
-        compose.onNodeWithText(text(org.fossify.commons.R.string.recycle_bin)).assertDoesNotExist()
+        compose.onNodeWithText(text(com.afsh.commons.R.string.recycle_bin)).assertDoesNotExist()
         compose.onNodeWithText(compose.activity.localizedNumber(7)).assertExists()
     }
 }

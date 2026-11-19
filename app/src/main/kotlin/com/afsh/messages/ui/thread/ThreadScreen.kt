@@ -133,9 +133,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
-import org.fossify.commons.extensions.formatSize
-import org.fossify.commons.extensions.formatTime
-import org.fossify.commons.models.SimpleContact
+import com.afsh.commons.extensions.formatSize
+import com.afsh.commons.extensions.formatTime
+import com.afsh.commons.models.SimpleContact
 import com.afsh.messages.R
 import com.afsh.messages.ui.components.DatePill
 import com.afsh.messages.ui.components.BarEnter
@@ -801,7 +801,7 @@ private fun ImageAttachment(attachment: Attachment, clickable: Modifier) {
 @Composable
 internal fun rememberVCardSummary(uri: Uri): Pair<String, String> {
     val context = LocalContext.current
-    val unknown = stringResource(org.fossify.commons.R.string.unknown_error_occurred)
+    val unknown = stringResource(com.afsh.commons.R.string.unknown_error_occurred)
     val summary by produceState<Pair<String, Int>?>(null, uri) {
         // Cancellable: the parser calls back on its own thread, possibly after the tile has left.
         value = suspendCancellableCoroutine { continuation ->

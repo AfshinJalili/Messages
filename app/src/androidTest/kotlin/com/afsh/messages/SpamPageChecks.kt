@@ -112,7 +112,7 @@ class SpamPageChecks {
         check(events.last() == SpamEvent.BlockSender(listOf(messages[1], messages[2]))) { "Events $events" }
 
         compose.onNodeWithText("Special offer", substring = true).performTouchInput { longClick() }
-        compose.onNodeWithContentDescription(text(org.fossify.commons.R.string.delete)).performClick()
+        compose.onNodeWithContentDescription(text(com.afsh.commons.R.string.delete)).performClick()
         check(events.last() !is SpamEvent.Delete) { "Delete must ask first" }
         compose.onNodeWithText(text(R.string.delete_forever)).performClick()
         check(events.last() == SpamEvent.Delete(listOf(messages[0]))) { "Events $events" }
@@ -167,7 +167,7 @@ class SpamPageChecks {
                 }
             }
         }
-        compose.onNodeWithText(text(org.fossify.commons.R.string.unblock)).performClick()
+        compose.onNodeWithText(text(com.afsh.commons.R.string.unblock)).performClick()
         check(removed == listOf(sender)) { "Removed $removed" }
         page = 1
         compose.onNodeWithText(text(R.string.phrase_already_blocked)).assertExists()

@@ -10,7 +10,7 @@ enum class SwipeAction(
 ) {
     NONE(0, R.string.swipe_action_none),
     ARCHIVE(1, R.string.archive),
-    DELETE(2, org.fossify.commons.R.string.delete),
+    DELETE(2, com.afsh.commons.R.string.delete),
     MUTE(3, R.string.mute_conversation);
 
     companion object {

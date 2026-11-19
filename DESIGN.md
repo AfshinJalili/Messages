@@ -2,7 +2,7 @@
 
 Personal messaging as a clear, living line between people. The inbox favors sender, latest meaning, and urgency over decorative conversation cards. The palette is Google Material 3 (GM3) system colors — primary blue `#0B57D0` and its tonal surface and container roles — matching Google Messages when dynamic color is off. A fine route line, round contact markers, flat slabs, and strong typography.
 
-The design source is `design/afsh.pen` (encrypted; edit only through the pen CLI or pencil MCP). PNG exports in `design/exports/` are previews only; the canvas is the truth. Screens are fixed 390 × 844 frames and the design decides open questions through issues labeled `design-gap`.
+This file is the design source. PNG exports in `design/exports/` are previews. Screens are specified at 390 × 844, and open questions are issues labeled `design-gap`.
 
 Theme: `ui/AfshTheme.kt`. The palette is Google Material 3 (GM3) system colors defined once in `commons/src/main/res/values/colors.xml` (`m3_*`, with `gm3-sys-color-*` sources cited in that file) because `tests/check_design_tokens.py` rejects inline colors, framework `@android:color/*` (except transparent), and duplicate color names across modules. Roles and type are in Kotlin, and only the theme looks up color resources: screens read `MaterialTheme.colorScheme` or `Afsh.colors` (for example `liftScrim` and `themePreview`), and `tests/check_ui_contract.py` rejects `colorResource` elsewhere. Light or dark follows Appearance → System (device night mode) or the explicit light/dark choice. There is no Material You / dynamic-color path — `afshColorScheme` always reads the static GM3 tokens. The Commons accent and custom color pickers do not apply to Compose screens. Fonts are bundled from google/fonts (OFL): Funnel Sans, Atkinson Hyperlegible, and Vazirmatn for RTL labels. Message content, previews, drafts, and search excerpts use Atkinson for Latin and Vazirmatn for Arabic-script runs regardless of app language, preserving weight and link styling. Content containing Arabic script uses 1.7em leading; other content uses 1.45em.
 
@@ -12,9 +12,9 @@ The inbox acts like an open line: sender, latest meaning, and urgency are visibl
 
 The palette is Google Material 3 (GM3) static system colors (primary blue `#0B57D0` and its tonal roles), the same tokens Google Messages / Gmail / Drive use when dynamic color is off. Color also appears with words, shape, or line weight so status does not depend on hue alone. Sender initials identify contacts when a photo is unavailable.
 
-## Screen map (numbers are frames in the design file)
+## Screen map
 
-| Area | Views in the canvas |
+| Area | Views |
 | --- | --- |
 | Inbox and finding people | 01 everyday inbox, 02 unread, 03 search entry, 04 results, 05 new recipient, 23 delete with Undo, 34 empty inbox, 41 multi-select, 42 invalid number, 53 no search matches |
 | Conversations and composing | 06 personal, 07 media, 08 group, 09 details, 10 selected message, 11 attachments, 12 schedule, 13 message details, 14 contact card, 15 thread search, 16 new group, 35 failed send, 36 dark theme, 37 Persian RTL, 39 rename, 40 thread actions, 43 delete confirmation, 44 selectable text, 45 media viewer, 47 scheduled edit, 52 jump to new messages, 54 saved draft |
@@ -40,7 +40,7 @@ In the app, the reusable parts of board `00b` live in `ui/components/`: primary 
 
 Every dialog, popup and picker in the app is drawn by one component, `AfshDialog` in `ui/components/AfshDialog.kt`, which is the stock Material 3 `AlertDialog` with its theme roles: a `surfaceContainerHigh` card in the `extraLarge` shape (28dp), 24dp padding, a `headlineSmall` title and `bodyLarge` text, 16dp between parts of the content, and the content scrolling when short of room. The actions are Material text buttons at the end: the dismiss label, then the confirming action passed as a `DialogConfirm` (painted in the `error` role when `destructive`, disabled until the dialog has a valid value). Fields in a dialog are the stock `OutlinedTextField`, with the explanation or the error as its supporting text. The calendar is `AfshDatePickerDialog`, the stock Material 3 `DatePickerDialog` with the same actions; the clock is a `TimePicker` inside `AfshDialog`.
 
-Use the dialog that fits before writing a new one: `ConfirmationDialog` (decide), `MessageDialog` (inform), `ChoiceDialog` (pick one), `RenameDialog` and `TextInputDialog` (type a value). An activity outside one Compose tree calls `confirm`, `inform`, `choose` or `showAfshDialog` from `DialogHost.kt`. Never use Compose `Dialog`, `AlertDialog`, `DatePickerDialog`, `TimePickerDialog`, Android or Material dialog builders outside `AfshDialog.kt`, or a Fossify Commons dialog. `tests/check_dialogs.py` fails on any of them, and on a hand-built frame (window `Dialog`, `Surface` card or fixed corner) inside `AfshDialog.kt`. App lock uses `SecuritySetupDialog` (Compose, in `ui/applock/`). `MainActivity` is the launcher and keeps the AndroidX splash on screen until the first Room inbox snapshot.
+Use the dialog that fits before writing a new one: `ConfirmationDialog` (decide), `MessageDialog` (inform), `ChoiceDialog` (pick one), `RenameDialog` and `TextInputDialog` (type a value). An activity outside one Compose tree calls `confirm`, `inform`, `choose` or `showAfshDialog` from `DialogHost.kt`. Never use Compose `Dialog`, `AlertDialog`, `DatePickerDialog`, `TimePickerDialog`, Android or Material dialog builders outside `AfshDialog.kt`, or a dialog from `commons`. `tests/check_dialogs.py` fails on any of them, and on a hand-built frame (window `Dialog`, `Surface` card or fixed corner) inside `AfshDialog.kt`. App lock uses `SecuritySetupDialog` (Compose, in `ui/applock/`). `MainActivity` is the launcher and keeps the AndroidX splash on screen until the first Room inbox snapshot.
 
 System bar icons follow the theme, never a constant. Each activity calls `AfshSystemBars(window)` (`ui/SystemBars.kt`) inside its `AfshTheme`: the status bar icons take whichever of black or white has more contrast on the `header` role, and the navigation bar icons do the same on `surface`. Recoloring the header needs no status bar change.
 
@@ -58,17 +58,17 @@ Every numbered phone frame is a fixed 390 × 844 design viewport. Long lists and
 
 ## Asset provenance
 
-`design/afsh.pen` contains fictional message content and names for visual demonstration.
+The screen examples use fictional message content and names.
 
 The family-album image in the media message and full-screen viewer was generated in Pendev with this prompt:
 
 > Documentary overhead photograph of a well-loved family photo album open on a wooden dining table, a few candid printed photographs of ordinary family gatherings tucked into the pages, soft afternoon window light, realistic subtle wear and paper texture, warm natural colors, no readable text, no logos, landscape composition with the album centered.
 
-The generated asset is saved as `design/generated.png` beside the `.pen` file so the image fills can resolve when the canvas is reopened.
+The generated asset is `design/generated.png`.
 
 ### Icons
 
-Every interface icon is a Material Symbol (Rounded, weight 400, grade 0, optical size 24, Apache 2.0) in `commons/.../res/drawable/ic_msym_*.xml`, written by `python3 tools/export_material_symbols.py` (`--check` verifies them against upstream). One copy only: commons holds them and the app depends on commons. Arrows and chevrons mirror under RTL. Icons use FILL 0 by default; filled variants (FILL 1, `ic_msym_*_fill`) are used for selected/active states as in Google Messages: selected bottom navigation destinations, pinned row signals, and starred messages. Unpin uses `keep_off`; the unstar action uses `StarFilled`. `ui/components/AfshIcon.kt` is the Compose entry point (`org.fossify.commons.R.drawable`): call sites request an icon by meaning (`AfshIcon.Search.painter()`), never a drawable id, and pass `filled = true` where applicable; XML-only surfaces (notifications, shortcuts, commons menus) use the same `ic_msym_*` drawables. To add an icon, add its symbol to the exporter, run it, and add the `AfshIcon` entry. `tests/check_material_symbols.py` fails on an entry without a shipped symbol, a shipped symbol no entry uses, any `ic_msym_*` under `app/res`, or a non-`ic_msym_` vector outside the documented exceptions (launcher foreground/monochrome and the notification message-bubble brand mark). `tests/check_ui_contract.py` fails on Lucide, material-icons `Icons.*`, inline `ImageVector.Builder`, or `painterResource(R.drawable…)` outside `AfshIcon`. The design file still draws the earlier icon paths until it is redrawn.
+Every interface icon is a Material Symbol (Rounded, weight 400, grade 0, optical size 24, Apache 2.0) in `commons/.../res/drawable/ic_msym_*.xml`, written by `python3 tools/export_material_symbols.py` (`--check` verifies them against upstream). One copy only: commons holds them and the app depends on commons. Arrows and chevrons mirror under RTL. Icons use FILL 0 by default; filled variants (FILL 1, `ic_msym_*_fill`) are used for selected/active states as in Google Messages: selected bottom navigation destinations, pinned row signals, and starred messages. Unpin uses `keep_off`; the unstar action uses `StarFilled`. `ui/components/AfshIcon.kt` is the Compose entry point (`com.afsh.commons.R.drawable`): call sites request an icon by meaning (`AfshIcon.Search.painter()`), never a drawable id, and pass `filled = true` where applicable; XML-only surfaces (notifications, shortcuts, commons menus) use the same `ic_msym_*` drawables. To add an icon, add its symbol to the exporter, run it, and add the `AfshIcon` entry. `tests/check_material_symbols.py` fails on an entry without a shipped symbol, a shipped symbol no entry uses, any `ic_msym_*` under `app/res`, or a non-`ic_msym_` vector outside the documented exceptions (launcher foreground/monochrome and the notification message-bubble brand mark). `tests/check_ui_contract.py` fails on Lucide, material-icons `Icons.*`, inline `ImageVector.Builder`, or `painterResource(R.drawable…)` outside `AfshIcon`. The design file still draws the earlier icon paths until it is redrawn.
 
 ### Fonts
 
@@ -77,7 +77,7 @@ The app bundles the design's fonts in `app/src/main/res/font/`, copied unmodifie
 
 ## Commons resources
 
-Every screen is Compose and the app has no XML layouts. Fossify Commons provides XML theme definitions and resources for internal helper screens; the app's Compose UI does not use Commons layouts. Android resources are the source of truth; this document does not keep a second palette or sizing table.
+Every screen is Compose. The app and Commons have no XML layouts. Commons still provides XML theme definitions, drawables, and other resources. Android resources are the source of truth; this document does not keep a second palette or sizing table.
 
 Android resources are the source of truth. This document describes how to use them; it does not maintain a second palette or a second sizing table.
 

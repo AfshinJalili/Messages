@@ -1,6 +1,6 @@
 package com.afsh.messages.activities
 
-import org.fossify.commons.activities.BaseSimpleActivity
+import com.afsh.commons.activities.BaseSimpleActivity
 import com.afsh.messages.R
 import com.afsh.messages.helpers.afshXmlTheme
 
@@ -23,7 +23,7 @@ open class SimpleActivity : BaseSimpleActivity() {
         super.setTheme(afshXmlTheme(root = isTaskRootTheme))
     }
 
-    // One launcher icon: the colour variants were a Fossify customisation the app no longer offers.
+    // One launcher icon.
     override fun getAppIconIDs() = arrayListOf(R.mipmap.ic_launcher)
 
     override fun getAppLauncherName() = getString(R.string.app_launcher_name)

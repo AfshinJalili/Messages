@@ -3,7 +3,7 @@ package com.afsh.messages.receivers
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import org.fossify.commons.helpers.ensureBackgroundThread
+import com.afsh.commons.helpers.ensureBackgroundThread
 
 abstract class SendStatusReceiver : BroadcastReceiver() {
     // Updates the status of the message in the internal database
@@ -21,8 +21,8 @@ abstract class SendStatusReceiver : BroadcastReceiver() {
     }
 
     companion object {
-        const val SMS_SENT_ACTION = "org.fossify.com.afsh.messages.receiver.SMS_SENT"
-        const val SMS_DELIVERED_ACTION = "org.fossify.com.afsh.messages.receiver.SMS_DELIVERED"
+        const val SMS_SENT_ACTION = "com.afsh.messages.receiver.SMS_SENT"
+        const val SMS_DELIVERED_ACTION = "com.afsh.messages.receiver.SMS_DELIVERED"
 
         // Defined by platform, but no constant provided. See docs for SmsManager.sendTextMessage.
         const val EXTRA_ERROR_CODE = "errorCode"

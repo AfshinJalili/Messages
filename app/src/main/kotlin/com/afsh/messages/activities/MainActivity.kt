@@ -35,27 +35,27 @@ import com.afsh.messages.ui.search.SEARCH_DEBOUNCE_MS
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
-import org.fossify.commons.extensions.applyColorFilter
-import org.fossify.commons.extensions.appLaunched
-import org.fossify.commons.extensions.appLockManager
-import org.fossify.commons.extensions.baseConfig
-import org.fossify.commons.extensions.convertToBitmap
-import org.fossify.commons.extensions.copyToClipboard
-import org.fossify.commons.extensions.hideKeyboard
-import org.fossify.commons.extensions.isSystemInDarkMode
-import org.fossify.commons.extensions.launchActivityIntent
-import org.fossify.commons.extensions.notificationManager
-import org.fossify.commons.extensions.openNotificationSettings
-import org.fossify.commons.extensions.syncGlobalConfig
-import org.fossify.commons.extensions.toast
-import org.fossify.commons.helpers.KEY_PHONE
-import org.fossify.commons.extensions.hasPermission
-import org.fossify.commons.helpers.PERMISSION_READ_CONTACTS
-import org.fossify.commons.helpers.PERMISSION_READ_SMS
-import org.fossify.commons.helpers.PERMISSION_SEND_SMS
-import org.fossify.commons.helpers.ensureBackgroundThread
-import org.fossify.commons.helpers.isQPlus
-import org.fossify.commons.R as CommonsR
+import com.afsh.commons.extensions.applyColorFilter
+import com.afsh.commons.extensions.appLaunched
+import com.afsh.commons.extensions.appLockManager
+import com.afsh.commons.extensions.baseConfig
+import com.afsh.commons.extensions.convertToBitmap
+import com.afsh.commons.extensions.copyToClipboard
+import com.afsh.commons.extensions.hideKeyboard
+import com.afsh.commons.extensions.isSystemInDarkMode
+import com.afsh.commons.extensions.launchActivityIntent
+import com.afsh.commons.extensions.notificationManager
+import com.afsh.commons.extensions.openNotificationSettings
+import com.afsh.commons.extensions.syncGlobalConfig
+import com.afsh.commons.extensions.toast
+import com.afsh.commons.helpers.KEY_PHONE
+import com.afsh.commons.extensions.hasPermission
+import com.afsh.commons.helpers.PERMISSION_READ_CONTACTS
+import com.afsh.commons.helpers.PERMISSION_READ_SMS
+import com.afsh.commons.helpers.PERMISSION_SEND_SMS
+import com.afsh.commons.helpers.ensureBackgroundThread
+import com.afsh.commons.helpers.isQPlus
+import com.afsh.commons.R as CommonsR
 import com.afsh.messages.App
 import com.afsh.messages.BuildConfig
 import com.afsh.messages.R
@@ -330,7 +330,7 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
     /** 32 until the app is the SMS app; 33 while SMS access is missing; otherwise straight to the inbox. */
     private fun loadMessages() {
         if (isQPlus() && getSystemService(RoleManager::class.java)?.isRoleAvailable(RoleManager.ROLE_SMS) != true) {
-            toast(org.fossify.commons.R.string.unknown_error_occurred)
+            toast(com.afsh.commons.R.string.unknown_error_occurred)
             finish()
             return
         }
@@ -595,7 +595,7 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
             val result = withTimeoutOrNull(durationMs) {
                 snackbarHost.showSnackbar(
                     message = message,
-                    actionLabel = getString(org.fossify.commons.R.string.undo),
+                    actionLabel = getString(com.afsh.commons.R.string.undo),
                     duration = SnackbarDuration.Indefinite,
                 )
             }
@@ -775,7 +775,7 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
                 if (toRecycleBin) R.plurals.delete_conversations_to_bin_text else R.plurals.delete_conversations_forever_text,
                 count,
             ),
-            confirmLabel = getString(if (toRecycleBin) org.fossify.commons.R.string.delete else R.string.delete_forever),
+            confirmLabel = getString(if (toRecycleBin) com.afsh.commons.R.string.delete else R.string.delete_forever),
             destructive = !toRecycleBin,
         ) { deleteWithUndo(conversations) }
     }

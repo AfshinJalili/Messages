@@ -84,10 +84,10 @@ class MessageActionChecks {
         val events = mutableListOf<ThreadEvent>()
         show(ThreadUiState(items = listOf(fixture))) { events += it }
         compose.onNode(hasContentDescription(context.getString(R.string.message_delivered), substring = true)).performClick()
-        compose.onNode(sheetAction(context.getString(org.fossify.commons.R.string.copy))).assertIsDisplayed()
-        compose.onNode(sheetAction(context.getString(org.fossify.commons.R.string.delete))).assertIsDisplayed()
+        compose.onNode(sheetAction(context.getString(com.afsh.commons.R.string.copy))).assertIsDisplayed()
+        compose.onNode(sheetAction(context.getString(com.afsh.commons.R.string.delete))).assertIsDisplayed()
         compose.onNode(sheetAction(context.getString(R.string.star_message))).assertIsDisplayed()
-        compose.onNode(sheetAction(context.getString(org.fossify.commons.R.string.share))).assertExists()
+        compose.onNode(sheetAction(context.getString(com.afsh.commons.R.string.share))).assertExists()
         compose.onNode(sheetAction(context.getString(R.string.forward_message))).performClick()
         // The sheet acts only once it has slid away.
         compose.waitUntil(5_000) { events.any { it is ThreadEvent.Act } }
@@ -142,7 +142,7 @@ class MessageActionChecks {
     @Test fun largeTextMenuKeepsLastActionReachable() {
         show(ThreadUiState(items = listOf(message(987654322, "Bottom message"))), textScale = 2.5f) {}
         compose.onNode(hasContentDescription(context.getString(R.string.message_delivered), substring = true)).performClick()
-        compose.onNodeWithText(context.getString(org.fossify.commons.R.string.share)).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText(context.getString(com.afsh.commons.R.string.share)).performScrollTo().assertIsDisplayed()
     }
 
     @Test fun selectionBarAndActionRules() {
@@ -186,6 +186,6 @@ class MessageActionChecks {
             compose.onNodeWithContentDescription(context.getString(it.label)).assertIsDisplayed()
             compose.onAllNodesWithText(context.getString(it.label)).assertCountEquals(0)
         }
-        compose.onNodeWithContentDescription(context.getString(org.fossify.commons.R.string.more_options)).assertIsDisplayed()
+        compose.onNodeWithContentDescription(context.getString(com.afsh.commons.R.string.more_options)).assertIsDisplayed()
     }
 }

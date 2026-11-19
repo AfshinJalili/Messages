@@ -8,10 +8,7 @@
     <string name="save_as">ذخیره به عنوان</string>
     <string name="file_saved">پرونده با موفقیت ذخیره شد</string>
     <string name="invalid_file_format">قالب پروندهٔ نامعتبر</string>
-    <string name="open_with">بازکردن با</string>
-    <string name="edit_with">ویرایش با</string>
     <string name="no_app_found">برنامهٔ معتبری پیدا نشد</string>
-    <string name="set_as">تنظیم به عنوان</string>
     <string name="copy_number_to_clipboard">رونوشت شماره به بریده‌دان</string>
     <string name="value_copied_to_clipboard_show">مقدار به بریده‌دان رونوشت شد:\n%s</string>
     <string name="dial_number">شماره گردان</string>
@@ -71,7 +68,6 @@
     <string name="seconds_letter">%dث</string>
     <string name="minutes_letter">%dد</string>
     <string name="hours_letter">%dس</string>
-    <string name="alarm">هشدار</string>
     <string name="settings">تنظیمات</string>
     <string name="use_english_language">استفاده از زبان انگلیسی</string>
     <string name="small">کوچک</string>
@@ -153,7 +149,6 @@
     <string name="value">مقدار</string>
     <string name="notifications">اعلان‌ها</string>
     <string name="allow_alarm_scheduled_messages">باید اجازه‌ی دسترسی به هشدارهای داخلی را بدهید، وگرنه برنامه نمی‌تواند پیام‌های زمان‌بندی‌شده را بفرستد.</string>
-    <string name="no_sound">بی‌صدا</string>
     <string name="permission_required">اجازه لازم است</string>
     <string name="grant_permission">دادن اجازه</string>
     <string name="confirm_selection">تأیید انتخاب</string>

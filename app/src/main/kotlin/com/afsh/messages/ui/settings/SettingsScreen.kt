@@ -97,7 +97,7 @@ private fun ColumnScope.Overview(onEvent: (SettingsEvent) -> Unit) {
         value = stringResource(R.string.settings_appearance_summary),
     )
     NavigationSetting(
-        stringResource(org.fossify.commons.R.string.notifications),
+        stringResource(com.afsh.commons.R.string.notifications),
         onClick = { open(SettingsPage.NOTIFICATIONS) },
         icon = AfshIcon.Notifications,
         value = stringResource(R.string.settings_notifications_summary),
@@ -176,7 +176,7 @@ private fun InteractionsPage(state: SettingsUiState, onEvent: (SettingsEvent) ->
             title = stringResource(if (towardsRight) R.string.swipe_right else R.string.swipe_left),
             choices = actions.map { Choice(it, stringResource(it.label)) },
             selected = current,
-            dismissLabel = stringResource(org.fossify.commons.R.string.cancel),
+            dismissLabel = stringResource(com.afsh.commons.R.string.cancel),
             onChoose = {
                 choosing = null
                 onEvent(SettingsEvent.SetSwipe(towardsRight, it))
@@ -210,7 +210,7 @@ private fun AboutPage(state: SettingsUiState, onEvent: (SettingsEvent) -> Unit) 
         disclosure = false,
     )
     SectionHeading(stringResource(R.string.about_updates))
-    SettingItem(stringResource(org.fossify.commons.R.string.app_version), icon = AfshIcon.Info, value = ltr(state.version))
+    SettingItem(stringResource(com.afsh.commons.R.string.app_version), icon = AfshIcon.Info, value = ltr(state.version))
     // The app stays offline (#214): the browser fetches the release and Android installs it.
     NavigationSetting(
         stringResource(R.string.check_for_updates),
@@ -223,7 +223,7 @@ private fun AboutPage(state: SettingsUiState, onEvent: (SettingsEvent) -> Unit) 
         MessageDialog(
             title = stringResource(R.string.privacy_information),
             text = stringResource(R.string.privacy_information_text),
-            dismissLabel = stringResource(org.fossify.commons.R.string.ok),
+            dismissLabel = stringResource(com.afsh.commons.R.string.ok),
             onDismiss = { privacyOpen = false },
         )
     }
@@ -231,7 +231,7 @@ private fun AboutPage(state: SettingsUiState, onEvent: (SettingsEvent) -> Unit) 
         MessageDialog(
             title = stringResource(R.string.open_source_licenses),
             text = stringResource(R.string.open_source_licenses_text),
-            dismissLabel = stringResource(org.fossify.commons.R.string.ok),
+            dismissLabel = stringResource(com.afsh.commons.R.string.ok),
             onDismiss = { licensesOpen = false },
         )
     }

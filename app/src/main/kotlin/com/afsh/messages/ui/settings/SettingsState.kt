@@ -7,10 +7,10 @@ import com.afsh.messages.helpers.SwipeAction
 
 /** The Settings pages, each reached from the overview (24) by a row of the same name (R5-35). */
 enum class SettingsPage(@StringRes val title: Int, @StringRes val subtitle: Int?) {
-    OVERVIEW(org.fossify.commons.R.string.settings, null),
+    OVERVIEW(com.afsh.commons.R.string.settings, null),
     APPEARANCE(R.string.settings_appearance, null),
     WRITING(R.string.settings_writing, null),
-    NOTIFICATIONS(org.fossify.commons.R.string.notifications, null),
+    NOTIFICATIONS(com.afsh.commons.R.string.notifications, null),
     INTERACTIONS(R.string.settings_interactions, null),
     PRIVACY(R.string.settings_privacy, null),
     BACKUP(R.string.settings_backup, null),

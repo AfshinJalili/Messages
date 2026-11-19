@@ -37,7 +37,7 @@ class InboxHeaderScrollChecks {
     private fun fieldTop(): Dp = compose.onNodeWithText(text(R.string.inbox_search_hint), useUnmergedTree = true).getUnclippedBoundsInRoot().top
 
     private fun selectAllTop(): Dp =
-        compose.onNodeWithText(text(org.fossify.commons.R.string.select_all), useUnmergedTree = true).getUnclippedBoundsInRoot().top
+        compose.onNodeWithText(text(com.afsh.commons.R.string.select_all), useUnmergedTree = true).getUnclippedBoundsInRoot().top
 
     private fun near(a: Dp, b: Dp) = abs((a - b).value) < 1f
 

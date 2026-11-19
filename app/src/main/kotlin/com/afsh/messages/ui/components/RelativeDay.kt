@@ -6,7 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
-import org.fossify.commons.extensions.getTimeFormat
+import com.afsh.commons.extensions.getTimeFormat
 import com.afsh.messages.R
 import java.util.Calendar
 

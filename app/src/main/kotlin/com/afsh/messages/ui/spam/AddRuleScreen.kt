@@ -117,7 +117,7 @@ fun AddRuleScreen(
                     when {
                         state.editing -> R.string.save_phrase
                         phrase -> R.string.add_phrase
-                        else -> org.fossify.commons.R.string.block_number
+                        else -> com.afsh.commons.R.string.block_number
                     },
                 ),
                 onClick = onSave,

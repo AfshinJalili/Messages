@@ -15,10 +15,10 @@ import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.Until
 import com.afsh.messages.activities.AppLockActivity
 import com.afsh.messages.activities.MainActivity
-import org.fossify.commons.R as CommonsR
-import org.fossify.commons.extensions.appLockManager
-import org.fossify.commons.extensions.baseConfig
-import org.fossify.commons.helpers.PROTECTION_PIN
+import com.afsh.commons.R as CommonsR
+import com.afsh.commons.extensions.appLockManager
+import com.afsh.commons.extensions.baseConfig
+import com.afsh.commons.helpers.PROTECTION_PIN
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
@@ -29,7 +29,7 @@ import java.security.MessageDigest
 
 /**
  * App lock checks: verify that the Compose lock screen appears when the app is locked and that
- * correct credentials unlock it. Tests PIN SHA-1 compatibility with Fossify.
+ * correct credentials unlock it. The PIN hash matches hashes already stored on the device.
  */
 @RunWith(AndroidJUnit4::class)
 class AppLockChecks {
@@ -121,7 +121,7 @@ class AppLockChecks {
         context.appLockManager.lock()
     }
 
-    /** SHA-1 hash compatible with Fossify PinTab. Hex lowercase, matching stored hashes. */
+    /** SHA-1, hex lowercase, matching stored PIN hashes. */
     private fun hashPin(pin: String): String {
         val md = MessageDigest.getInstance("SHA-1")
         md.update(pin.toByteArray())

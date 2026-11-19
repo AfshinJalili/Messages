@@ -59,7 +59,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.dp
-import org.fossify.commons.extensions.normalizeString
+import com.afsh.commons.extensions.normalizeString
 import com.afsh.messages.R
 import com.afsh.messages.ui.Afsh
 import com.afsh.messages.ui.Avatar
@@ -175,7 +175,7 @@ fun NewMessageScreen(state: NewMessageUiState, onEvent: (NewMessageEvent) -> Uni
             title = person.name,
             choices = person.phones.map { Choice(it.number, it.number, it.label) },
             selected = null,
-            dismissLabel = stringResource(org.fossify.commons.R.string.cancel),
+            dismissLabel = stringResource(com.afsh.commons.R.string.cancel),
             onChoose = { number ->
                 choosingNumber = null
                 pick(Recipient(number, person.name))

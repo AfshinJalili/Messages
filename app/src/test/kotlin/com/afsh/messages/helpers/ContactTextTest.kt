@@ -1,7 +1,7 @@
 package com.afsh.messages.helpers
 
 import com.afsh.messages.ui.thread.AttachOption
-import org.fossify.commons.models.PhoneNumber
+import com.afsh.commons.models.PhoneNumber
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test

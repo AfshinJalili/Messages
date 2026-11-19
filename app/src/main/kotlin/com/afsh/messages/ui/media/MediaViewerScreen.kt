@@ -160,7 +160,7 @@ fun MediaViewerScreen(items: List<MediaItem>, initial: Int, onEvent: (MediaEvent
             horizontalArrangement = Arrangement.SpaceAround,
         ) {
             MediaAction(AfshIcon.Download, stringResource(R.string.save)) { onEvent(MediaEvent.Save(current)) }
-            MediaAction(AfshIcon.Share, stringResource(org.fossify.commons.R.string.share)) { onEvent(MediaEvent.Share(current)) }
+            MediaAction(AfshIcon.Share, stringResource(com.afsh.commons.R.string.share)) { onEvent(MediaEvent.Share(current)) }
             MediaAction(AfshIcon.Info, stringResource(R.string.media_details)) { onEvent(MediaEvent.Details(current)) }
         }
     }
@@ -176,7 +176,7 @@ private fun TopControls(page: Int, count: Int, current: MediaItem, onEvent: (Med
             .padding(horizontal = Afsh.spacing.sm, vertical = Afsh.spacing.sm),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        val close = stringResource(org.fossify.commons.R.string.close)
+        val close = stringResource(com.afsh.commons.R.string.close)
         IconButton(onClick = { onEvent(MediaEvent.Close) }, modifier = Modifier.semantics { contentDescription = close }) {
             Icon(AfshIcon.Close.painter(), contentDescription = null, tint = colors.onSurface)
         }
@@ -188,7 +188,7 @@ private fun TopControls(page: Int, count: Int, current: MediaItem, onEvent: (Med
             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
         )
         Box {
-            val more = stringResource(org.fossify.commons.R.string.more_options)
+            val more = stringResource(com.afsh.commons.R.string.more_options)
             IconButton(onClick = { menu = true }, modifier = Modifier.semantics { contentDescription = more }) {
                 Icon(AfshIcon.More.painter(), contentDescription = null, tint = colors.onSurface)
             }

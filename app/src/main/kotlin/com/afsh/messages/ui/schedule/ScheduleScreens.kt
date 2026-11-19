@@ -46,7 +46,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import org.fossify.commons.extensions.getTimeFormat
+import com.afsh.commons.extensions.getTimeFormat
 import com.afsh.messages.R
 import com.afsh.messages.ui.components.AfshButton
 import com.afsh.messages.ui.components.AfshDatePickerDialog
@@ -214,9 +214,9 @@ private fun DateChoice(millis: Long, now: Long, onChange: (Long) -> Unit) {
         AfshDatePickerDialog(
             otherDate,
             onDismiss = { calendarOpen = false },
-            dismissLabel = stringResource(org.fossify.commons.R.string.cancel),
+            dismissLabel = stringResource(com.afsh.commons.R.string.cancel),
             confirm = DialogConfirm(
-                stringResource(org.fossify.commons.R.string.ok),
+                stringResource(com.afsh.commons.R.string.ok),
                 pick,
                 enabled = pickerState.selectedDateMillis != null,
             ),
@@ -285,8 +285,8 @@ private fun TimeChoice(millis: Long, onChange: (Long) -> Unit) {
         AfshDialog(
             changeTime,
             onDismiss = { clockOpen = false },
-            dismissLabel = stringResource(org.fossify.commons.R.string.cancel),
-            confirm = DialogConfirm(stringResource(org.fossify.commons.R.string.ok), {
+            dismissLabel = stringResource(com.afsh.commons.R.string.cancel),
+            confirm = DialogConfirm(stringResource(com.afsh.commons.R.string.ok), {
                 clockOpen = false
                 onChange(
                     calendar.apply {

@@ -34,9 +34,9 @@ class PageScaffoldChecks {
     @get:Rule
     val compose = createAndroidComposeRule<ComponentActivity>()
     private fun text(id: Int) = compose.activity.getString(id)
-    private val back get() = text(org.fossify.commons.R.string.back)
-    private val close get() = text(org.fossify.commons.R.string.close)
-    private val selectAll get() = text(org.fossify.commons.R.string.select_all)
+    private val back get() = text(com.afsh.commons.R.string.back)
+    private val close get() = text(com.afsh.commons.R.string.close)
+    private val selectAll get() = text(com.afsh.commons.R.string.select_all)
     private fun heading(title: String) = compose.onNode(hasText(title) and isHeading())
 
     private fun page(

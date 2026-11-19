@@ -28,7 +28,7 @@ room = "2.8.5"
 junit = "4.13.2"
 androidx-test-runner = "1.7.0"
 androidx-test-ext-junit = "1.3.0"
-#Vendored commons module (pinned to what org.fossify:commons 6.1.6 declared)
+#Vendored commons module
 kotlin-immutable-collections = "0.4.0"
 androidx-customView = "1.2.0"
 androidx-customViewPooling = "1.1.0"
@@ -39,19 +39,14 @@ androidx-coreKtx = "1.17.0"
 androidx-coreSplashscreen = "1.2.0"
 androidx-appcompat = "1.7.1"
 material = "1.13.0"
-patternLockView = "a90b0d4bf0"
 reprint = "2cb206415d"
-recyclerviewFastscroller = "5a95285b1f"
-rtlViewpager = "2.0.2"
 commons-compose = "1.7.6"
 commons-composeMaterial3 = "1.4.0"
 glide = "5.0.5"
 glideCompose = "1.0.0-beta08"
 gson = "2.13.2"
 jodaTime = "2.14.0"
-#Fossify
 mmslib = "1.0.0"
-indicator-fast-scroll = "4524cd0b61"
 #Gradle
 gradlePlugins-agp = "9.4.1"
 #build
@@ -115,14 +110,9 @@ glide = { module = "com.github.bumptech.glide:glide", version.ref = "glide" }
 glide-compose = { module = "com.github.bumptech.glide:compose", version.ref = "glideCompose" }
 glide-compiler = { module = "com.github.bumptech.glide:compiler", version.ref = "glide" }
 material = { module = "com.google.android.material:material", version.ref = "material" }
-patternLockView = { module = "com.github.aritraroy:patternLockView", version.ref = "patternLockView" }
 reprint = { module = "com.github.tibbi:reprint", version.ref = "reprint" }
-recyclerView-fastScroller = { module = "com.github.tibbi:RecyclerView-FastScroller", version.ref = "recyclerviewFastscroller" }
-rtl-viewpager = { module = "com.github.naveensingh:rtl-viewpager", version.ref = "rtlViewpager" }
 gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
 joda-time = { module = "joda-time:joda-time", version.ref = "jodaTime" }
-#Fossify
-indicator-fast-scroll = { module = "org.fossify:IndicatorFastScroll", version.ref = "indicator-fast-scroll" }
 mmslib = { module = "org.fossify:mmslib", version.ref = "mmslib" }
 #EventBus
 eventbus = { module = "org.greenrobot:eventbus", version.ref = "eventbus" }

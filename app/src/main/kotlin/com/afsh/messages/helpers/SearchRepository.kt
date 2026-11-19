@@ -5,7 +5,7 @@ import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
-import org.fossify.commons.extensions.formatDateOrTime
+import com.afsh.commons.extensions.formatDateOrTime
 import com.afsh.messages.extensions.conversationsDB
 import com.afsh.messages.extensions.messageSearchResult
 import com.afsh.messages.extensions.messagesDB

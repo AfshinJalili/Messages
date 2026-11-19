@@ -186,7 +186,7 @@ fun SpamPatternsScreen(
             current = current.current,
             explanation = stringResource(R.string.spam_patterns_regex_hint),
             confirmLabel = stringResource(R.string.spam_patterns_save),
-            dismissLabel = stringResource(org.fossify.commons.R.string.cancel),
+            dismissLabel = stringResource(com.afsh.commons.R.string.cancel),
             error = { SpamPatterns.error(it) },
             onSave = {
                 editing = null
@@ -200,7 +200,7 @@ fun SpamPatternsScreen(
             title = stringResource(R.string.spam_patterns_reset),
             explanation = stringResource(R.string.spam_patterns_reset_text),
             confirmLabel = stringResource(R.string.spam_patterns_reset),
-            dismissLabel = stringResource(org.fossify.commons.R.string.cancel),
+            dismissLabel = stringResource(com.afsh.commons.R.string.cancel),
             onConfirm = {
                 confirmReset = false
                 onEvent(SpamPatternsEvent.Reset)
@@ -214,7 +214,7 @@ fun SpamPatternsScreen(
             title = stringResource(R.string.spam_patterns_recheck),
             explanation = stringResource(R.string.spam_patterns_recheck_text),
             confirmLabel = stringResource(R.string.spam_patterns_recheck),
-            dismissLabel = stringResource(org.fossify.commons.R.string.cancel),
+            dismissLabel = stringResource(com.afsh.commons.R.string.cancel),
             onConfirm = {
                 confirmRecheck = false
                 onEvent(SpamPatternsEvent.Recheck)

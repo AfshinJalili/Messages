@@ -105,7 +105,7 @@ class LibraryPageChecks {
 
         state = state.copy(selected = setOf(12))
         compose.onNodeWithText(compose.activity.quantity(R.plurals.inbox_selected, 1)).assertExists()
-        compose.onNodeWithContentDescription(text(org.fossify.commons.R.string.delete)).performClick()
+        compose.onNodeWithContentDescription(text(com.afsh.commons.R.string.delete)).performClick()
         check((events.last() as ArchiveEvent.Delete).conversations.single().threadId == 12L) { "Events $events" }
     }
 
@@ -137,7 +137,7 @@ class LibraryPageChecks {
 
         compose.onNodeWithText(text(R.string.recycle_bin_empty)).performClick()
         compose.onNodeWithText(text(R.string.empty_bin_title)).assertExists()
-        compose.onNodeWithText(text(org.fossify.commons.R.string.cancel)).performClick()
+        compose.onNodeWithText(text(com.afsh.commons.R.string.cancel)).performClick()
         check(events.last() !is RecycleBinEvent.EmptyBin) { "Cancel must not empty the bin" }
     }
 

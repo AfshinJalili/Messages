@@ -5,9 +5,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import org.fossify.commons.extensions.baseConfig
-import org.fossify.commons.extensions.getBlockedNumbers
-import org.fossify.commons.helpers.ensureBackgroundThread
+import com.afsh.commons.extensions.baseConfig
+import com.afsh.commons.extensions.getBlockedNumbers
+import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.messages.extensions.config
 import com.afsh.messages.ui.spam.BlockRulesEvent
 import com.afsh.messages.ui.spam.BlockRulesScreen

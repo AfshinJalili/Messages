@@ -4,7 +4,7 @@ import com.afsh.messages.extensions.getMessagesDB
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
-import org.fossify.commons.helpers.ensureBackgroundThread
+import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.messages.extensions.conversationsDB
 import com.afsh.messages.extensions.getConversations
 import com.afsh.messages.extensions.getUnreadCountsByThread

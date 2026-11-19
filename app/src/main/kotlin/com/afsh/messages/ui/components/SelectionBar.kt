@@ -190,7 +190,7 @@ private fun SelectionOverflow(actions: List<BarAction>) {
     val colors = MaterialTheme.colorScheme
     var open by remember { mutableStateOf(false) }
     Box {
-        SelectionIconAction(AfshIcon.More, stringResource(org.fossify.commons.R.string.more_options)) { open = true }
+        SelectionIconAction(AfshIcon.More, stringResource(com.afsh.commons.R.string.more_options)) { open = true }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }, containerColor = colors.surfaceContainer, shape = MaterialTheme.shapes.medium) {
             actions.forEach { action ->
                 DropdownMenuItem(

@@ -13,8 +13,8 @@ import com.afsh.messages.ui.ltr
 import com.afsh.messages.ui.media.MediaItem
 import com.afsh.messages.ui.message.DeliveryMark
 import com.afsh.messages.ui.message.MessageFacts
-import org.fossify.commons.extensions.formatTime
-import org.fossify.commons.extensions.getTimeFormatWithSeconds
+import com.afsh.commons.extensions.formatTime
+import com.afsh.commons.extensions.getTimeFormatWithSeconds
 import org.joda.time.DateTime
 
 /** "Mina Farahani · 12:41" or "You · 12:41": who wrote [message], and when. */

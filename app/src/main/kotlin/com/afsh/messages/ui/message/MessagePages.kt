@@ -139,7 +139,7 @@ fun SelectTextScreen(sender: String, body: String, onBack: () -> Unit, onCopy: (
     val selection = value.selection
     val selected = if (selection.collapsed) "" else body.substring(selection.min, selection.max)
     PageScaffold(
-        title = stringResource(org.fossify.commons.R.string.select_text),
+        title = stringResource(com.afsh.commons.R.string.select_text),
         subtitle = stringResource(R.string.select_text_subtitle),
         onBack = onBack,
         modifier = modifier,

@@ -9,8 +9,8 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.compose.ui.graphics.toArgb
-import org.fossify.commons.extensions.getProperPrimaryColor
-import org.fossify.commons.extensions.getThemeId
+import com.afsh.commons.extensions.getProperPrimaryColor
+import com.afsh.commons.extensions.getThemeId
 import com.afsh.messages.activities.MainActivity
 import com.afsh.messages.helpers.Config
 import com.afsh.messages.helpers.afshXmlTheme

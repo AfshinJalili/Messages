@@ -417,7 +417,7 @@
     <string name="privacy_information">Privacy information</string>
     <string name="privacy_information_text">Messages stay on this phone. The app needs no account and sends nothing anywhere but your carrier. Backups are files you create and keep yourself.</string>
     <string name="open_source_licenses">Open-source licenses</string>
-    <string name="open_source_licenses_text">AFSH Messages is a modified version of Fossify Messages (GPL-3.0). It uses Fossify Commons (GPL-3.0), Material Symbols icons (Apache 2.0), and the Funnel Sans, Atkinson Hyperlegible and Vazirmatn fonts (SIL Open Font License 1.1).</string>
+    <string name="open_source_licenses_text">AFSH Messages is free software under GPL-3.0. Its commons library is modified GPL-3.0 code. Picture and group messages use mmslib (Apache 2.0). Icons are Material Symbols (Apache 2.0). Funnel Sans, Atkinson Hyperlegible and Vazirmatn are under the SIL Open Font License 1.1.</string>
     <string name="swipe_in_the_inbox">Swipe in the inbox</string>
     <string name="swipe_right">Swipe right</string>
     <string name="swipe_left">Swipe left</string>

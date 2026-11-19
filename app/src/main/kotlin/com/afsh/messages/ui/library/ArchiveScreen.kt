@@ -74,7 +74,7 @@ fun ArchiveScreen(
                 onSelectAll = { onEvent(ArchiveEvent.SelectAll) },
                 actions = listOf(
                     BarAction(stringResource(R.string.unarchive), AfshIcon.Inbox) { onEvent(ArchiveEvent.Unarchive(selected)) },
-                    BarAction(stringResource(org.fossify.commons.R.string.delete), AfshIcon.Delete, destructive = true) {
+                    BarAction(stringResource(com.afsh.commons.R.string.delete), AfshIcon.Delete, destructive = true) {
                         onEvent(ArchiveEvent.Delete(selected))
                     },
                 ),
@@ -144,7 +144,7 @@ private fun ArchivedRow(
     modifier: Modifier = Modifier,
 ) {
     val unarchiveLabel = stringResource(R.string.unarchive)
-    val deleteLabel = stringResource(org.fossify.commons.R.string.delete)
+    val deleteLabel = stringResource(com.afsh.commons.R.string.delete)
     val conversations = listOf(row.conversation)
     val actions = remember(row, unarchiveLabel, deleteLabel) {
         listOf(

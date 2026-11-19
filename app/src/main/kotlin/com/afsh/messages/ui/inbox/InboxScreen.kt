@@ -456,7 +456,7 @@ private fun StaticBar(
     ) {
         if (state.selecting) {
             IconButton(onClick = onClearSelection) {
-                Icon(AfshIcon.Close.painter(), stringResource(org.fossify.commons.R.string.close), tint = Afsh.colors.header.content)
+                Icon(AfshIcon.Close.painter(), stringResource(com.afsh.commons.R.string.close), tint = Afsh.colors.header.content)
             }
         }
         Text(
@@ -471,7 +471,7 @@ private fun StaticBar(
         )
         if (state.selecting) {
             TextButton(onClick = onSelectAll) {
-                Text(stringResource(org.fossify.commons.R.string.select_all), style = MaterialTheme.typography.labelMedium, color = Afsh.colors.header.content)
+                Text(stringResource(com.afsh.commons.R.string.select_all), style = MaterialTheme.typography.labelMedium, color = Afsh.colors.header.content)
             }
         } else {
             IconButton(onClick = onSearch) {
@@ -520,13 +520,13 @@ private fun SelectionControls(onSelectAll: () -> Unit, onClearSelection: () -> U
         IconButton(onClick = onClearSelection) {
             Icon(
                 AfshIcon.Close.painter(),
-                contentDescription = stringResource(org.fossify.commons.R.string.close),
+                contentDescription = stringResource(com.afsh.commons.R.string.close),
                 tint = onBand,
             )
         }
         Box(Modifier.weight(1f))
         TextButton(onClick = onSelectAll) {
-            Text(stringResource(org.fossify.commons.R.string.select_all), style = MaterialTheme.typography.labelMedium, color = onBand)
+            Text(stringResource(com.afsh.commons.R.string.select_all), style = MaterialTheme.typography.labelMedium, color = onBand)
         }
     }
 }
@@ -587,7 +587,7 @@ private fun SwipeAction.gesture(): SwipeGesture? = when (this) {
 @Composable
 private fun rowActions(row: InboxRow, archiveAvailable: Boolean, onAction: (SwipeAction) -> Unit): List<CustomAccessibilityAction> {
     val archive = stringResource(R.string.archive)
-    val delete = stringResource(org.fossify.commons.R.string.delete)
+    val delete = stringResource(com.afsh.commons.R.string.delete)
     val mute = stringResource(if (row.muted) R.string.unmute_conversation else R.string.mute_conversation)
     return listOfNotNull(
         CustomAccessibilityAction(archive) { onAction(SwipeAction.ARCHIVE); true }.takeIf { archiveAvailable },

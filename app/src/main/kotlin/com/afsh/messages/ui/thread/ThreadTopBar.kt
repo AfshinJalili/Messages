@@ -144,13 +144,13 @@ fun ThreadTopBar(state: ThreadUiState, onEvent: (ThreadEvent) -> Unit, modifier:
         },
         navigationIcon = {
             when (mode) {
-                ThreadTopBarMode.SELECTION -> TopBarAction(AfshIcon.Close, stringResource(org.fossify.commons.R.string.close)) {
+                ThreadTopBarMode.SELECTION -> TopBarAction(AfshIcon.Close, stringResource(com.afsh.commons.R.string.close)) {
                     onEvent(ThreadEvent.ClearSelection)
                 }
-                ThreadTopBarMode.SEARCH -> TopBarAction(AfshIcon.ArrowBack, stringResource(org.fossify.commons.R.string.close)) {
+                ThreadTopBarMode.SEARCH -> TopBarAction(AfshIcon.ArrowBack, stringResource(com.afsh.commons.R.string.close)) {
                     onEvent(ThreadEvent.SearchClose)
                 }
-                ThreadTopBarMode.CONVERSATION -> TopBarAction(AfshIcon.ArrowBack, stringResource(org.fossify.commons.R.string.back)) {
+                ThreadTopBarMode.CONVERSATION -> TopBarAction(AfshIcon.ArrowBack, stringResource(com.afsh.commons.R.string.back)) {
                     onEvent(ThreadEvent.Back)
                 }
             }
@@ -158,7 +158,7 @@ fun ThreadTopBar(state: ThreadUiState, onEvent: (ThreadEvent) -> Unit, modifier:
         actions = {
             if (mode == ThreadTopBarMode.CONVERSATION) {
                 if (header.canDial) {
-                    TopBarAction(AfshIcon.Call, stringResource(org.fossify.commons.R.string.dial_number)) { onEvent(ThreadEvent.Dial) }
+                    TopBarAction(AfshIcon.Call, stringResource(com.afsh.commons.R.string.dial_number)) { onEvent(ThreadEvent.Dial) }
                 }
                 if (header.actions.isNotEmpty()) {
                     OverflowMenu(header.actions, onEvent)
@@ -213,7 +213,7 @@ private fun Identity(title: String, subtitle: String, modifier: Modifier = Modif
 private fun OverflowMenu(actions: List<ThreadMenuAction>, onEvent: (ThreadEvent) -> Unit) {
     var open by remember { mutableStateOf(false) }
     Box {
-        TopBarAction(AfshIcon.More, stringResource(org.fossify.commons.R.string.more_options)) { open = true }
+        TopBarAction(AfshIcon.More, stringResource(com.afsh.commons.R.string.more_options)) { open = true }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }, containerColor = MaterialTheme.colorScheme.surfaceContainer, shape = MaterialTheme.shapes.medium) {
             actions.forEach { action ->
                 DropdownMenuItem(

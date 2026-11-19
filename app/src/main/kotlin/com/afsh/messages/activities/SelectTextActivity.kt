@@ -3,7 +3,7 @@ package com.afsh.messages.activities
 import android.content.Context
 import android.content.Intent
 import androidx.compose.runtime.Composable
-import org.fossify.commons.extensions.copyToClipboard
+import com.afsh.commons.extensions.copyToClipboard
 import com.afsh.messages.ui.message.SelectTextScreen
 
 /** 44 · Message / select text. [EXTRA_SENDER] is the "Mina Farahani · 12:41" line above the text. */
