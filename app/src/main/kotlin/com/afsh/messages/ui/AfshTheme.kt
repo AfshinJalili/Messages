@@ -160,11 +160,7 @@ private val body = FontFamily(
     Font(R.font.atkinson_hyperlegible_regular, FontWeight.Normal),
     Font(R.font.atkinson_hyperlegible_bold, FontWeight.Bold),
 )
-// Inbox content only needs regular/bold; fewer variable-font instances speeds text layout.
-private val persian = FontFamily(
-    variableFont(R.font.vazirmatn, 400),
-    variableFont(R.font.vazirmatn, 700),
-)
+private val persian = FontFamily((400..800 step 100).map { variableFont(R.font.vazirmatn, it) })
 
 private fun isArabicLetter(c: Char): Boolean {
     val block = Character.UnicodeBlock.of(c)

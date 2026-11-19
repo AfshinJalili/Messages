@@ -41,6 +41,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
@@ -66,6 +67,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import kotlinx.coroutines.yield
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
@@ -257,7 +259,17 @@ private fun InboxList(
     }
     val swipeLeft = remember(state.swipeLeft) { state.swipeLeft.gesture() }
     val swipeRight = remember(state.swipeRight) { state.swipeRight.gesture() }
-    // No Modifier.animateItem: placement springs showed up as Recomposer:animation during scroll.
+    // First paint skips placement animation; later inserts/removals still animate (no fades).
+    var animateListChanges by remember { mutableStateOf(false) }
+    LaunchedEffect(state.rows.isNotEmpty()) {
+        if (state.rows.isNotEmpty() && !animateListChanges) {
+            yield()
+            animateListChanges = true
+        }
+    }
+    fun LazyItemScope.listItem(): Modifier =
+        if (animateListChanges) Modifier.animateItem(fadeInSpec = null, fadeOutSpec = null) else Modifier
+    // Clears the extended FAB so the last row stays reachable.
     LazyColumn(
         modifier = modifier,
         state = listState,
@@ -269,12 +281,12 @@ private fun InboxList(
         }
         if (state.refreshFailed) {
             item(key = "refresh-failed", contentType = "notice") {
-                RefreshFailedNotice(onRetryRefresh, Modifier.widthIn(max = 640.dp).fillMaxWidth())
+                RefreshFailedNotice(onRetryRefresh, Modifier.widthIn(max = 640.dp).fillMaxWidth().then(listItem()))
             }
         }
         state.importProgress?.let { progress ->
             item(key = "import", contentType = "notice") {
-                ImportNotice(progress, Modifier.widthIn(max = 640.dp).fillMaxWidth().padding(horizontal = Afsh.spacing.xl, vertical = Afsh.spacing.sm))
+                ImportNotice(progress, Modifier.widthIn(max = 640.dp).fillMaxWidth().then(listItem()).padding(horizontal = Afsh.spacing.xl, vertical = Afsh.spacing.sm))
             }
         }
         when {
@@ -283,7 +295,7 @@ private fun InboxList(
             state.rows.isEmpty() -> item(key = "empty") { EmptyState(state.filter) }
             else -> sections.forEach { (section, rows) ->
                 item(key = "section-${section.name}", contentType = "section") {
-                    SectionHeader(section, Modifier.widthIn(max = 640.dp).fillMaxWidth())
+                    SectionHeader(section, Modifier.widthIn(max = 640.dp).fillMaxWidth().then(listItem()))
                 }
                 items(rows, key = { it.threadId }, contentType = { "row" }) { row ->
                     val selected = row.threadId in state.selected
@@ -292,7 +304,7 @@ private fun InboxList(
                         right = swipeRight,
                         enabled = !state.selecting,
                         onSwipe = { towardsRight -> onSwipe(row, if (towardsRight) state.swipeRight else state.swipeLeft) },
-                        modifier = Modifier.widthIn(max = ConversationRowMaxWidth).fillMaxWidth(),
+                        modifier = Modifier.widthIn(max = ConversationRowMaxWidth).fillMaxWidth().then(listItem()),
                     ) {
                         ConversationRow(
                             row = row,
