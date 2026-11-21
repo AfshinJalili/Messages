@@ -8,13 +8,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.union
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.DropdownMenu
@@ -25,7 +24,7 @@ import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
-import androidx.compose.material3.Surface
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -42,7 +41,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
@@ -62,9 +60,12 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.afsh.messages.R
 import com.afsh.messages.ui.Afsh
+import com.afsh.messages.ui.forLabel
 import com.afsh.messages.ui.Avatar
 import com.afsh.messages.ui.components.AfshIcon
 import com.afsh.messages.ui.components.actionLabel
+import com.afsh.messages.ui.components.afshFieldColors
+import com.afsh.messages.ui.components.fieldMinHeight
 import com.afsh.messages.ui.components.selectionTitle
 
 const val THREAD_TOP_BAR_TAG = "thread_top_bar"
@@ -74,7 +75,6 @@ private const val COMPACT_HEIGHT_DP = 480
 private val CompactBarHeight = 56.dp
 private val BarHeight = 72.dp
 private val AvatarSize = 44.dp
-private val FieldHeight = 48.dp
 
 /** What the conversation top bar shows. Selection wins over search, as the selection bar covers the composer. */
 enum class ThreadTopBarMode { CONVERSATION, SEARCH, SELECTION }
@@ -88,11 +88,12 @@ val ThreadUiState.topBarMode: ThreadTopBarMode
 
 /**
  * The bar is never shorter than its design height, and grows with the title (and subtitle) it holds, so a large
- * font scale or Persian's taller line height never clips the name.
+ * font scale or Persian's taller line height never clips the name. [minContent] raises the floor for SEARCH
+ * mode, where the field's [fieldMinHeight] exceeds the compact 56 dp bar.
  */
-internal fun threadTopBarHeight(compact: Boolean, title: Dp, subtitle: Dp?, padding: Dp): Dp {
+internal fun threadTopBarHeight(compact: Boolean, title: Dp, subtitle: Dp?, padding: Dp, minContent: Dp = 0.dp): Dp {
     val base = if (compact) CompactBarHeight else BarHeight
-    val identity = maxOf(AvatarSize, title + (subtitle ?: 0.dp))
+    val identity = maxOf(AvatarSize, title + (subtitle ?: 0.dp), minContent)
     return maxOf(base, identity + padding * 2)
 }
 
@@ -120,13 +121,14 @@ fun ThreadTopBar(state: ThreadUiState, onEvent: (ThreadEvent) -> Unit, modifier:
             title = typography.titleLarge.lineHeightSp().toDp(),
             subtitle = if (subtitle.isEmpty()) null else typography.bodySmall.lineHeightSp().toDp() + spacing.xxs,
             padding = spacing.sm,
+            minContent = if (mode == ThreadTopBarMode.SEARCH) fieldMinHeight() else 0.dp,
         )
     }
     val content = Afsh.colors.header.content
     TopAppBar(
         title = {
             when (mode) {
-                ThreadTopBarMode.SEARCH -> SearchField(onEvent, Modifier.fillMaxWidth())
+                ThreadTopBarMode.SEARCH -> SearchField(onEvent, Modifier.fillMaxWidth().padding(end = spacing.md))
                 ThreadTopBarMode.SELECTION -> Identity(header.title, subtitle)
                 ThreadTopBarMode.CONVERSATION -> Row(
                     Modifier
@@ -198,7 +200,7 @@ private fun Identity(title: String, subtitle: String, modifier: Modifier = Modif
     Column(modifier, verticalArrangement = Arrangement.spacedBy(Afsh.spacing.xxs)) {
         Text(
             title,
-            style = MaterialTheme.typography.titleLarge,
+            style = MaterialTheme.typography.titleLarge.forLabel(title),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.semantics { heading() },
@@ -244,45 +246,53 @@ private fun OverflowMenu(actions: List<ThreadMenuAction>, onEvent: (ThreadEvent)
 
 @Composable
 private fun SearchField(onEvent: (ThreadEvent) -> Unit, modifier: Modifier = Modifier) {
-    val colors = MaterialTheme.colorScheme
-    val spacing = Afsh.spacing
     var query by rememberSaveable { mutableStateOf("") }
     val focus = remember { FocusRequester() }
     LaunchedEffect(Unit) { focus.requestFocus() }
-    Surface(shape = MaterialTheme.shapes.medium, color = colors.surfaceContainer, modifier = modifier.height(FieldHeight)) {
-        Row(Modifier.padding(horizontal = spacing.md), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(spacing.sm)) {
-            Icon(AfshIcon.Search.painter(), contentDescription = null, tint = colors.onSurfaceVariant)
-            Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
-                if (query.isEmpty()) {
-                    Text(stringResource(R.string.search_in_conversation), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, maxLines = 1)
-                }
-                BasicTextField(
-                    value = query,
-                    onValueChange = {
-                        query = it
-                        onEvent(ThreadEvent.SearchChanged)
-                    },
-                    singleLine = true,
-                    textStyle = MaterialTheme.typography.bodyMedium.copy(color = colors.onSurface),
-                    cursorBrush = SolidColor(colors.primary),
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                    keyboardActions = KeyboardActions(onSearch = { if (query.isNotBlank()) onEvent(ThreadEvent.SearchSubmit(query)) }),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .focusRequester(focus)
-                        // Hardware keyboards and some IMEs send Enter instead of the search action.
-                        .onPreviewKeyEvent {
-                            val enter = it.key == Key.Enter || it.key == Key.NumPadEnter
-                            if (enter && it.type == KeyEventType.KeyUp && query.isNotBlank()) onEvent(ThreadEvent.SearchSubmit(query))
-                            enter
-                        },
-                )
-            }
-            if (query.isNotEmpty()) {
-                TopBarAction(AfshIcon.ChevronUp, stringResource(R.string.thread_search_next), tint = colors.onSurface) {
+    OutlinedTextField(
+        value = query,
+        onValueChange = {
+            query = it
+            onEvent(ThreadEvent.SearchChanged)
+        },
+        modifier = modifier
+            .fillMaxWidth()
+            .heightIn(min = fieldMinHeight())
+            .focusRequester(focus)
+            // Hardware keyboards and some IMEs send Enter instead of the search action.
+            .onPreviewKeyEvent {
+                val enter = it.key == Key.Enter || it.key == Key.NumPadEnter
+                if (enter && it.type == KeyEventType.KeyUp && query.isNotBlank()) onEvent(ThreadEvent.SearchSubmit(query))
+                enter
+            },
+        placeholder = {
+            Text(
+                stringResource(R.string.search_in_conversation),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        },
+        leadingIcon = {
+            Icon(
+                AfshIcon.Search.painter(),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        },
+        trailingIcon = if (query.isNotEmpty()) {
+            {
+                TopBarAction(AfshIcon.ChevronUp, stringResource(R.string.thread_search_next)) {
                     onEvent(ThreadEvent.SearchSubmit(query))
                 }
             }
-        }
-    }
+        } else {
+            null
+        },
+        singleLine = true,
+        textStyle = MaterialTheme.typography.bodyMedium,
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+        keyboardActions = KeyboardActions(onSearch = { if (query.isNotBlank()) onEvent(ThreadEvent.SearchSubmit(query)) }),
+        shape = MaterialTheme.shapes.medium,
+        colors = afshFieldColors(),
+    )
 }

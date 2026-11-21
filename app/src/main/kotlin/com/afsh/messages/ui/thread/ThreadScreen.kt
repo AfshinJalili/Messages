@@ -5,6 +5,7 @@ import com.afsh.messages.ui.components.UnreadDivider
 import com.afsh.messages.ui.components.AfshIcon
 import com.afsh.messages.ui.components.AfshSheet
 import com.afsh.messages.ui.components.AfshSheetItem
+import com.afsh.messages.ui.components.AfshSnackbarHost
 import android.content.res.Configuration
 import android.text.format.DateFormat
 import androidx.compose.animation.core.Animatable
@@ -81,7 +82,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.customActions
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -102,6 +102,7 @@ import androidx.compose.ui.AbsoluteAlignment
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
@@ -253,7 +254,7 @@ fun ThreadTimeline(
             if (state.empty && shown.isEmpty()) EmptyConversation(state.firstName)
             StickyDate(newestFirst, listState, Modifier.align(Alignment.TopCenter))
             JumpToLatest(state, newestFirst, listState, onEvent, Modifier.align(Alignment.BottomEnd))
-            SnackbarHost(snackbarHostState, Modifier.align(Alignment.BottomCenter))
+            AfshSnackbarHost(snackbarHostState, Modifier.align(Alignment.BottomCenter))
             lifted?.let { lift -> LiftOverlay(lift, sheetOpen, sheetTop, state, onDim, onGone = { if (lifted === lift) lifted = null }) }
         }
     }
@@ -588,7 +589,7 @@ private fun Bubble(
             tone,
             shape,
             Modifier
-                .then(if (attachments.isNotEmpty()) Modifier.fillMaxWidth() else Modifier.width(IntrinsicSize.Max))
+                .then(if (attachments.isNotEmpty() || failed) Modifier.fillMaxWidth() else Modifier.width(IntrinsicSize.Max))
                 .onGloballyPositioned { coordinates[0] = it }
                 .clip(shape)
                 .longPressToSelect(selectLabel) { onEvent(ThreadEvent.ToggleSelection(message)) }
@@ -617,19 +618,27 @@ private fun Bubble(
                 Metadata(message, state, content, Modifier.align(if (failed) Alignment.Start else Alignment.End))
             }
             if (failed) {
-                // R6-46: Retry sends on the SIM shown; the switcher beside it only changes that SIM.
-                Row(horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.sm), verticalAlignment = Alignment.CenterVertically) {
+                // R6-46: Retry sends on the SIM shown. The switcher beside it is the composer's glyph
+                // and only changes that SIM. The words "سیم ۱" wrap once the font is large.
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.sm),
+                ) {
                     Button(
                         onClick = { onEvent(ThreadEvent.Retry(message)) },
                         colors = ButtonDefaults.buttonColors(containerColor = colors.surfaceContainerLowest, contentColor = colors.primary),
-                        modifier = Modifier
-                            .weight(1f)
-                            .heightIn(min = TargetSize),
+                        contentPadding = PaddingValues(horizontal = Afsh.spacing.lg),
+                        modifier = Modifier.heightIn(min = TargetSize),
                     ) {
-                        Text(stringResource(R.string.thread_retry), style = MaterialTheme.typography.labelMedium)
+                        Text(
+                            stringResource(R.string.thread_retry),
+                            style = MaterialTheme.typography.labelLarge,
+                            maxLines = 1,
+                            softWrap = false,
+                        )
                     }
                     if (state.sendSim > 0) {
-                        SimSwitcher(state.sendSim, carrier = "", expanded = true, onClick = { onEvent(ThreadEvent.NextSim) })
+                        SimSwitcher(state.sendSim, carrier = "", onClick = { onEvent(ThreadEvent.NextSim) })
                     }
                 }
             }
@@ -719,7 +728,7 @@ private fun Metadata(message: Message, state: ThreadUiState, content: Color, mod
     val description = (listOfNotNull(starredLabel.takeIf { starred }) + parts + listOfNotNull(statusLabel, sendingLabel)).joinToString(", ")
     Row(
         modifier.semantics(mergeDescendants = true) { contentDescription = description },
-        // Top, so the warning stays beside the first line when the failure line wraps.
+        // Failed status wraps on narrow / Persian / large text; top-align with the warning icon.
         verticalAlignment = if (failed) Alignment.Top else Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.xs),
     ) {
@@ -728,7 +737,7 @@ private fun Metadata(message: Message, state: ThreadUiState, content: Color, mod
             message.isScheduled ->
                 Icon(AfshIcon.Schedule.painter(), null, tint = metaColor, modifier = Modifier.size(14.dp))
 
-            failed -> Icon(AfshIcon.Warning.painter(), null, tint = colors.error, modifier = Modifier.size(16.dp))
+            failed -> Icon(AfshIcon.Warning.painter(), null, tint = colors.error, modifier = Modifier.size(18.dp))
         }
         if (parts.isNotEmpty()) {
             Text(
@@ -877,7 +886,9 @@ private fun DatePill(seconds: Int, modifier: Modifier = Modifier) {
 
 /**
  * Follows the top visible day while scrolling, hides while its inline pill is on screen, and is
- * pushed up by the next day's pill. Fades 700 ms after scrolling stops (design board, dates).
+ * pushed up by the next day's pill. The push is a translation, and the timeline is drawn after the
+ * header, so the slot is clipped: otherwise the outgoing pill paints over the title. Fades 700 ms
+ * after scrolling stops (design board, dates).
  */
 @Composable
 private fun StickyDate(newestFirst: List<ThreadItem>, listState: LazyListState, modifier: Modifier = Modifier) {
@@ -915,7 +926,7 @@ private fun StickyDate(newestFirst: List<ThreadItem>, listState: LazyListState, 
         visible = current != null && !current.second && scrolledRecently,
         enter = fadeIn(tween(0)),
         exit = fadeOut(tween(STICKY_DATE_FADE_MS)),
-        modifier = modifier,
+        modifier = modifier.clipToBounds(),
     ) {
         val (date, _, push) = lastShown[0] ?: return@AnimatedVisibility
         DatePill(
