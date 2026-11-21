@@ -22,10 +22,8 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
@@ -86,9 +84,15 @@ fun SwipeableRow(
         return
     }
     val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
-    var width by remember { mutableFloatStateOf(0f) }
-    val state = rememberHalfRowSwipeState { width }
-    val armed by remember { derivedStateOf { swipeCommits(state.offsetOrZero(), width) } }
+    val width = remember { floatArrayOf(0f) }
+    val state = rememberHalfRowSwipeState { width[0] }
+    // Avoid calling requireOffset() on settled rows before layout/drag, which throws+catches every scroll frame.
+    val armed by remember {
+        derivedStateOf {
+            state.dismissDirection != SwipeToDismissBoxValue.Settled &&
+                swipeCommits(state.offsetOrZero(), width[0])
+        }
+    }
     val haptics = LocalHapticFeedback.current
     LaunchedEffect(armed) {
         if (armed) haptics.performHapticFeedback(HapticFeedbackType.GestureThresholdActivate)
@@ -101,7 +105,7 @@ fun SwipeableRow(
     }
     SwipeToDismissBox(
         state = state,
-        modifier = modifier.onSizeChanged { width = it.width.toFloat() },
+        modifier = modifier.onSizeChanged { width[0] = it.width.toFloat() },
         enableDismissFromStartToEnd = gesture(SwipeToDismissBoxValue.StartToEnd) != null,
         enableDismissFromEndToStart = gesture(SwipeToDismissBoxValue.EndToStart) != null,
         onDismiss = { value ->

@@ -1,12 +1,14 @@
 package com.afsh.messages.models
 
 import android.provider.Telephony
+import androidx.compose.runtime.Immutable
 import org.joda.time.DateTime
 import org.joda.time.LocalDate
 
 /**
- * Thread item representations for the main thread recyclerview. [Message] is also a [ThreadItem]
+ * Thread item representations for the main thread timeline. [Message] is also a [ThreadItem].
  */
+@Immutable
 sealed class ThreadItem {
     data class ThreadDateTime(val date: Int) : ThreadItem()
     data class ThreadError(val messageId: Long, val messageText: String) : ThreadItem()

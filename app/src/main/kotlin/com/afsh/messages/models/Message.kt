@@ -1,6 +1,7 @@
 package com.afsh.messages.models
 
 import android.provider.Telephony
+import androidx.compose.runtime.Immutable
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
@@ -10,6 +11,12 @@ import com.afsh.messages.helpers.THREAD_RECEIVED_MESSAGE
 import com.afsh.messages.helpers.THREAD_SENT_MESSAGE
 import com.afsh.messages.helpers.generateStableId
 
+/**
+ * Room entity. Two fields (`senderName`, `subscriptionId`, `isScheduled`) are `var` for Room/helper
+ * construction; Compose treats the type as immutable so timeline rows stay skippable while scrolling
+ * (callers pass fresh instances from queries, never mutate live state in place).
+ */
+@Immutable
 @Entity(tableName = "messages", indices = [Index(value = ["thread_id", "date"])])
 data class Message(
     @PrimaryKey val id: Long,

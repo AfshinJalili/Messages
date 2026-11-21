@@ -260,6 +260,10 @@ private fun InboxList(
     }
     val swipeLeft = remember(state.swipeLeft) { state.swipeLeft.gesture() }
     val swipeRight = remember(state.swipeRight) { state.swipeRight.gesture() }
+    val archiveLabel = stringResource(R.string.archive)
+    val deleteLabel = stringResource(com.afsh.commons.R.string.delete)
+    val muteLabel = stringResource(R.string.mute_conversation)
+    val unmuteLabel = stringResource(R.string.unmute_conversation)
     // First paint skips placement animation; later inserts/removals still animate (no fades).
     var animateListChanges by remember { mutableStateOf(false) }
     LaunchedEffect(state.rows.isNotEmpty()) {
@@ -307,6 +311,20 @@ private fun InboxList(
                 }
                 items(rows, key = { it.threadId }, contentType = { "row" }) { row ->
                     val selected = row.threadId in state.selected
+                    val actions = remember(
+                        row.threadId,
+                        row.muted,
+                        state.archiveAvailable,
+                        archiveLabel,
+                        deleteLabel,
+                        muteLabel,
+                        unmuteLabel,
+                        onSwipe,
+                    ) {
+                        rowActions(row, state.archiveAvailable, archiveLabel, deleteLabel, muteLabel, unmuteLabel) {
+                            onSwipe(row, it)
+                        }
+                    }
                     SwipeableRow(
                         left = swipeLeft,
                         right = swipeRight,
@@ -320,7 +338,7 @@ private fun InboxList(
                             selecting = state.selecting,
                             onClick = { if (state.selecting) onToggleSelection(row) else onOpen(row) },
                             onLongClick = { onToggleSelection(row) },
-                            actions = rowActions(row, state.archiveAvailable) { onSwipe(row, it) },
+                            actions = actions,
                         )
                     }
                 }
@@ -606,14 +624,19 @@ private fun SwipeAction.gesture(): SwipeGesture? = when (this) {
 }
 
 /** TalkBack equivalents of the swipe actions, available whatever the swipe settings are. */
-@Composable
-private fun rowActions(row: InboxRow, archiveAvailable: Boolean, onAction: (SwipeAction) -> Unit): List<CustomAccessibilityAction> {
-    val archive = stringResource(R.string.archive)
-    val delete = stringResource(com.afsh.commons.R.string.delete)
-    val mute = stringResource(if (row.muted) R.string.unmute_conversation else R.string.mute_conversation)
+private fun rowActions(
+    row: InboxRow,
+    archiveAvailable: Boolean,
+    archiveLabel: String,
+    deleteLabel: String,
+    muteLabel: String,
+    unmuteLabel: String,
+    onAction: (SwipeAction) -> Unit,
+): List<CustomAccessibilityAction> {
+    val mute = if (row.muted) unmuteLabel else muteLabel
     return listOfNotNull(
-        CustomAccessibilityAction(archive) { onAction(SwipeAction.ARCHIVE); true }.takeIf { archiveAvailable },
-        CustomAccessibilityAction(delete) { onAction(SwipeAction.DELETE); true },
+        CustomAccessibilityAction(archiveLabel) { onAction(SwipeAction.ARCHIVE); true }.takeIf { archiveAvailable },
+        CustomAccessibilityAction(deleteLabel) { onAction(SwipeAction.DELETE); true },
         CustomAccessibilityAction(mute) { onAction(SwipeAction.MUTE); true },
     )
 }

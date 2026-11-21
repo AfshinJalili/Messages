@@ -791,8 +791,8 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
             finish()
             return
         }
-        val privateCursor = getMyContactsCursor(favoritesOnly = false, withPhoneNumbersOnly = true)
         ensureBackgroundThread {
+            val privateCursor = getMyContactsCursor(favoritesOnly = false, withPhoneNumbersOnly = true)
             privateContacts = MyContactsContentProvider.getSimpleContacts(this, privateCursor)
 
             val cachedMessagesCode = ArrayList(data.list).hashCode()
@@ -805,23 +805,30 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
                 data.list = messages
             }
 
+            val hadParticipants = participants.isNotEmpty()
             val hasParticipantWithoutName = participants.any { contact ->
                 contact.phoneNumbers.map { it.normalizedNumber }.contains(contact.name)
             }
+            val messagesUnchanged = try {
+                data.list.hashCode() == cachedMessagesCode
+            } catch (_: Exception) {
+                false
+            }
 
-            try {
-                if (participants.isNotEmpty() && data.list.hashCode() == cachedMessagesCode && !hasParticipantWithoutName) {
-                    data.providerReady = true
-                    setupAdapter()
-                    runOnUiThread { callback() }
-                    return@ensureBackgroundThread
+            if (hadParticipants && messagesUnchanged && !hasParticipantWithoutName) {
+                data.providerReady = true
+                runOnUiThread {
+                    if (data.isEmpty) publishItems()
+                    holder.land(true, ::landingTarget)
+                    callback()
                 }
-            } catch (ignored: Exception) {
+                return@ensureBackgroundThread
             }
 
             setupParticipants()
 
             // check if no participant came from a privately stored contact in Simple Contacts
+            var replacedPrivateNames = false
             if (privateContacts.isNotEmpty()) {
                 val senderNumbersToReplace = HashMap<String, String>()
                 participants.filter { it.doesHavePhoneNumber(it.name) }.forEach { participant ->
@@ -833,12 +840,23 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
                             participant.photoUri = photoUri
                         }
                 }
+                if (senderNumbersToReplace.isNotEmpty()) replacedPrivateNames = true
 
                 data.list.forEach { message ->
                     if (senderNumbersToReplace.keys.contains(message.senderName)) {
                         message.senderName = senderNumbersToReplace[message.senderName]!!
                     }
                 }
+            }
+
+            if (hadParticipants && messagesUnchanged && !replacedPrivateNames) {
+                data.providerReady = true
+                runOnUiThread {
+                    if (data.isEmpty) publishItems()
+                    holder.land(true, ::landingTarget)
+                    callback()
+                }
+                return@ensureBackgroundThread
             }
 
             if (participants.isEmpty()) {

@@ -12,24 +12,29 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.onLongClick
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import kotlin.math.roundToInt
 
 /*
  * Bubble selection, one source for every bubble list: the conversation (ThreadScreen) and Spam (SpamScreen).
@@ -62,6 +67,20 @@ fun SelectableBubbleRow(
     above: (@Composable (Modifier) -> Unit)? = null,
     bubble: @Composable ColumnScope.() -> Unit,
 ) {
+    val align = if (incoming) Alignment.Start else Alignment.End
+    val boxAlign = if (incoming) Alignment.CenterStart else Alignment.CenterEnd
+    // Skip animation, AnimatedVisibility, and tap-intercept machinery for rows that never entered selection.
+    var everSelected by remember { mutableStateOf(selecting) }
+    if (selecting) everSelected = true
+    if (!everSelected) {
+        Column(modifier.fillMaxWidth(), horizontalAlignment = align) {
+            above?.invoke(Modifier)
+            Box(Modifier.fillMaxWidth(), contentAlignment = boxAlign) {
+                Column(Modifier.bubbleSlotWidth(), horizontalAlignment = align, content = bubble)
+            }
+        }
+        return
+    }
     // A layout offset, not a narrower slot: the bubble moves as one piece.
     val shift by animateDpAsState(
         if (selecting && incoming) CheckSlot else 0.dp,
@@ -69,25 +88,34 @@ fun SelectableBubbleRow(
         label = "selection shift",
     )
     val toggle by rememberUpdatedState(onToggle)
-    val align = if (incoming) Alignment.Start else Alignment.End
+    val shiftModifier = Modifier.offset { IntOffset(shift.roundToPx(), 0) }
     Column(modifier.fillMaxWidth(), horizontalAlignment = align) {
-        above?.invoke(Modifier.offset(x = shift))
-        BoxWithConstraints(
+        above?.invoke(shiftModifier)
+        Box(
             Modifier
                 .fillMaxWidth()
                 .then(if (selecting) Modifier.pointerInput(Unit) { detectTapGestures { toggle() } } else Modifier),
-            contentAlignment = if (incoming) Alignment.CenterStart else Alignment.CenterEnd,
+            contentAlignment = boxAlign,
         ) {
             Column(
-                Modifier
-                    .offset(x = shift)
-                    .width(minOf(maxWidth * BUBBLE_WIDTH_FRACTION, MaxBubbleWidth)),
+                shiftModifier.bubbleSlotWidth(),
                 horizontalAlignment = align,
                 content = bubble,
             )
             RowCheck(selecting, checked, Modifier.align(Alignment.CenterStart))
         }
     }
+}
+
+private fun Modifier.bubbleSlotWidth(): Modifier = layout { measurable, constraints ->
+    val maxPx = MaxBubbleWidth.roundToPx()
+    val slotWidth = if (constraints.hasBoundedWidth) {
+        minOf((constraints.maxWidth * BUBBLE_WIDTH_FRACTION).toInt(), maxPx)
+    } else {
+        maxPx
+    }
+    val placeable = measurable.measure(constraints.copy(minWidth = slotWidth, maxWidth = slotWidth))
+    layout(placeable.width, placeable.height) { placeable.placeRelative(0, 0) }
 }
 
 /** The selection check at the start of a row; outside any Column or Row scope so it gets the plain AnimatedVisibility. */

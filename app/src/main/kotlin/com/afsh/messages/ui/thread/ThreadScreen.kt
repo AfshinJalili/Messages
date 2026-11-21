@@ -50,7 +50,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -62,7 +61,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.only
@@ -72,12 +70,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.semantics.CustomAccessibilityAction
@@ -86,11 +82,11 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -218,15 +214,20 @@ fun ThreadTimeline(
     }
     val newestFirst = remember(shown) { shown.asReversed() }
     val event by rememberUpdatedState(onEvent)
-    TimelineEffects(state, newestFirst, listState) { event(it) }
+    val stableOnEvent = remember { { e: ThreadEvent -> event(e) } }
+    val strings = rememberBubbleStrings()
+    TimelineEffects(state, newestFirst, listState, stableOnEvent)
     var lifted by remember { mutableStateOf<LiftedBubble?>(null) }
     var sheetOpen by remember { mutableStateOf(false) }
     var sheetTop by remember { mutableFloatStateOf(Float.NaN) }
-    val openSheet = { message: Message, groupedBelow: Boolean, coordinates: LayoutCoordinates ->
-        lifted = LiftedBubble(message, groupedBelow, Rect(coordinates.positionOnScreen(), coordinates.size.toSize()))
-        sheetTop = Float.NaN
-        sheetOpen = true
+    val openSheet = remember {
+        { message: Message, groupedBelow: Boolean, coordinates: LayoutCoordinates ->
+            lifted = LiftedBubble(message, groupedBelow, Rect(coordinates.positionOnScreen(), coordinates.size.toSize()))
+            sheetTop = Float.NaN
+            sheetOpen = true
+        }
     }
+    val liftedId = lifted?.message?.getStableId()
 
     Column(modifier.background(MaterialTheme.colorScheme.surface)) {
         Box(Modifier.weight(1f).fillMaxWidth().windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)), contentAlignment = Alignment.Center) {
@@ -245,7 +246,26 @@ fun ThreadTimeline(
                     val older = newestFirst.getOrNull(index + 1)
                     val newer = newestFirst.getOrNull(index - 1)
                     when (item) {
-                        is Message -> MessageRow(item, older, newer, state, onEvent, lifted?.message?.getStableId(), openSheet)
+                        is Message -> {
+                            val stableId = item.getStableId()
+                            MessageRow(
+                                message = item,
+                                older = older,
+                                newer = newer,
+                                selecting = state.selecting,
+                                selected = stableId in state.selected,
+                                starred = state.isStarred(item),
+                                spamReason = state.spamReason(item),
+                                simLabel = state.simLabels[item.subscriptionId],
+                                sendSim = state.sendSim,
+                                isGroup = state.isGroup,
+                                isRecycleBin = state.isRecycleBin,
+                                hidden = liftedId == stableId,
+                                strings = strings,
+                                onEvent = stableOnEvent,
+                                onOpen = openSheet,
+                            )
+                        }
                         is ThreadItem.ThreadDateTime -> DatePill(item.date, Modifier.padding(vertical = Afsh.spacing.md))
                         is ThreadItem.ThreadUnreadSeparator -> UnreadDivider()
                         else -> Unit
@@ -254,14 +274,31 @@ fun ThreadTimeline(
             }
             if (state.empty && shown.isEmpty()) EmptyConversation(state.firstName)
             StickyDate(newestFirst, listState, Modifier.align(Alignment.TopCenter))
-            JumpToLatest(state, newestFirst, listState, onEvent, Modifier.align(Alignment.BottomEnd))
+            JumpToLatest(state, newestFirst, listState, stableOnEvent, Modifier.align(Alignment.BottomEnd))
             AfshSnackbarHost(snackbarHostState, Modifier.align(Alignment.BottomCenter))
-            lifted?.let { lift -> LiftOverlay(lift, sheetOpen, sheetTop, state, onDim, onGone = { if (lifted === lift) lifted = null }) }
+            lifted?.let { lift ->
+                val liftMsg = lift.message
+                LiftOverlay(
+                    lift = lift,
+                    up = sheetOpen,
+                    sheetTop = sheetTop,
+                    selecting = state.selecting,
+                    selected = liftMsg.getStableId() in state.selected,
+                    starred = state.isStarred(liftMsg),
+                    spamReason = state.spamReason(liftMsg),
+                    simLabel = state.simLabels[liftMsg.subscriptionId],
+                    sendSim = state.sendSim,
+                    isRecycleBin = state.isRecycleBin,
+                    strings = strings,
+                    onDim = onDim,
+                    onGone = { if (lifted === lift) lifted = null },
+                )
+            }
         }
     }
     val lift = lifted
     if (sheetOpen && lift != null) {
-        MessageSheet(lift.message, state, onRestingTop = { sheetTop = it }, onEvent = onEvent, onDismiss = { sheetOpen = false })
+        MessageSheet(lift.message, state, onRestingTop = { sheetTop = it }, onEvent = stableOnEvent, onDismiss = { sheetOpen = false })
     }
 }
 
@@ -274,8 +311,83 @@ private class LiftedBubble(val message: Message, val groupedBelow: Boolean, val 
  * it never follows the sheet's edge while the sheet slides in or out. The sheet's own scrim is off; onDim lets the
  * host dim the header views outside this one. A bubble taller than the free space shows its top, fading out at the bottom.
  */
+/** Hoisted once in [ThreadTimeline] so scrolling bubbles do not resolve strings per row. */
+@Immutable
+private data class BubbleStrings(
+    val selectLabel: String,
+    val copyLabel: String,
+    val forwardLabel: String,
+    val starLabel: String,
+    val unstarLabel: String,
+    val deleteLabel: String,
+    val notSentLabel: String,
+    val spamLabel: String,
+    val scheduledLabel: String,
+    val deliveredLabel: String,
+    val sentLabel: String,
+    val starredLabel: String,
+    val sendingLabel: String,
+    val retryLabel: String,
+)
+
 @Composable
-private fun LiftOverlay(lift: LiftedBubble, up: Boolean, sheetTop: Float, state: ThreadUiState, onDim: (Float) -> Unit, onGone: () -> Unit) {
+private fun rememberBubbleStrings(): BubbleStrings {
+    val selectLabel = stringResource(R.string.inbox_select)
+    val copyLabel = stringResource(MessageAction.COPY.label)
+    val forwardLabel = stringResource(MessageAction.FORWARD.label)
+    val starLabel = stringResource(MessageAction.STAR.label)
+    val unstarLabel = stringResource(MessageAction.UNSTAR.label)
+    val deleteLabel = stringResource(MessageAction.DELETE.label)
+    val notSentLabel = stringResource(R.string.message_not_sent_short)
+    val spamLabel = stringResource(R.string.inbox_spam)
+    val scheduledLabel = stringResource(R.string.scheduled_message)
+    val deliveredLabel = stringResource(R.string.message_delivered)
+    val sentLabel = stringResource(R.string.message_sent)
+    val starredLabel = stringResource(R.string.starred_messages)
+    val sendingLabel = stringResource(R.string.sending)
+    val retryLabel = stringResource(R.string.thread_retry)
+    return remember(
+        selectLabel, copyLabel, forwardLabel, starLabel, unstarLabel, deleteLabel,
+        notSentLabel, spamLabel, scheduledLabel, deliveredLabel, sentLabel,
+        starredLabel, sendingLabel, retryLabel,
+    ) {
+        BubbleStrings(
+            selectLabel = selectLabel,
+            copyLabel = copyLabel,
+            forwardLabel = forwardLabel,
+            starLabel = starLabel,
+            unstarLabel = unstarLabel,
+            deleteLabel = deleteLabel,
+            notSentLabel = notSentLabel,
+            spamLabel = spamLabel,
+            scheduledLabel = scheduledLabel,
+            deliveredLabel = deliveredLabel,
+            sentLabel = sentLabel,
+            starredLabel = starredLabel,
+            sendingLabel = sendingLabel,
+            retryLabel = retryLabel,
+        )
+    }
+}
+
+private val NoOpThreadEvent: (ThreadEvent) -> Unit = {}
+
+@Composable
+private fun LiftOverlay(
+    lift: LiftedBubble,
+    up: Boolean,
+    sheetTop: Float,
+    selecting: Boolean,
+    selected: Boolean,
+    starred: Boolean,
+    spamReason: Int?,
+    simLabel: String?,
+    sendSim: Int,
+    isRecycleBin: Boolean,
+    strings: BubbleStrings,
+    onDim: (Float) -> Unit,
+    onGone: () -> Unit,
+) {
     val progress = remember(lift) { Animatable(0f) }
     LaunchedEffect(progress) { snapshotFlow { progress.value }.collect(onDim) }
     LaunchedEffect(lift, up) {
@@ -336,7 +448,19 @@ private fun LiftOverlay(lift: LiftedBubble, up: Boolean, sheetTop: Float, state:
                     .wrapContentHeight(Alignment.Top, unbounded = true)
                     .shadow(LiftElevation * progress.value, messageBubbleShape(incoming, lift.groupedBelow), clip = false),
             ) {
-                Bubble(lift.message, state, onEvent = {}, groupedBelow = lift.groupedBelow)
+                Bubble(
+                    message = lift.message,
+                    selecting = selecting,
+                    selected = selected,
+                    starred = starred,
+                    spamReason = spamReason,
+                    simLabel = simLabel,
+                    sendSim = sendSim,
+                    isRecycleBin = isRecycleBin,
+                    strings = strings,
+                    onEvent = NoOpThreadEvent,
+                    groupedBelow = lift.groupedBelow,
+                )
             }
         }
     }
@@ -518,9 +642,17 @@ private fun MessageRow(
     message: Message,
     older: ThreadItem?,
     newer: ThreadItem?,
-    state: ThreadUiState,
+    selecting: Boolean,
+    selected: Boolean,
+    starred: Boolean,
+    spamReason: Int?,
+    simLabel: String?,
+    sendSim: Int,
+    isGroup: Boolean,
+    isRecycleBin: Boolean,
+    hidden: Boolean,
+    strings: BubbleStrings,
     onEvent: (ThreadEvent) -> Unit,
-    lifted: Long?,
     onOpen: (Message, Boolean, LayoutCoordinates) -> Unit,
 ) {
     val incoming = message.isReceivedMessage()
@@ -530,13 +662,14 @@ private fun MessageRow(
         groupedAbove -> Afsh.spacing.xs
         else -> Afsh.spacing.md
     }
+    val onToggle = remember(message, onEvent) { { onEvent(ThreadEvent.ToggleSelection(message)) } }
     SelectableBubbleRow(
-        selecting = state.selecting,
-        checked = message.getStableId() in state.selected,
+        selecting = selecting,
+        checked = selected,
         incoming = incoming,
-        onToggle = { onEvent(ThreadEvent.ToggleSelection(message)) },
+        onToggle = onToggle,
         modifier = Modifier.padding(start = Afsh.spacing.lg, end = Afsh.spacing.lg, top = topGap),
-        above = if (incoming && state.isGroup && !groupedAbove && message.senderName.isNotEmpty()) {
+        above = if (incoming && isGroup && !groupedAbove && message.senderName.isNotEmpty()) {
             { shift ->
                 ContentText(
                     message.senderName.uppercase(),
@@ -552,14 +685,49 @@ private fun MessageRow(
         },
     ) {
         val groupedBelow = groupedWith(message, newer)
-        Bubble(message, state, onEvent, groupedBelow, hidden = lifted == message.getStableId()) { onOpen(message, groupedBelow, it) }
+        val openBubble = remember(message, groupedBelow, onOpen) {
+            { coords: LayoutCoordinates -> onOpen(message, groupedBelow, coords) }
+        }
+        Bubble(
+            message = message,
+            selecting = selecting,
+            selected = selected,
+            starred = starred,
+            spamReason = spamReason,
+            simLabel = simLabel,
+            sendSim = sendSim,
+            isRecycleBin = isRecycleBin,
+            strings = strings,
+            onEvent = onEvent,
+            groupedBelow = groupedBelow,
+            hidden = hidden,
+            onOpen = openBubble,
+        )
     }
+}
+
+private fun isRtlParagraph(text: CharSequence): Boolean {
+    for (i in text.indices) {
+        when (Character.getDirectionality(text[i])) {
+            Character.DIRECTIONALITY_RIGHT_TO_LEFT,
+            Character.DIRECTIONALITY_RIGHT_TO_LEFT_ARABIC -> return true
+            Character.DIRECTIONALITY_LEFT_TO_RIGHT -> return false
+        }
+    }
+    return false
 }
 
 @Composable
 private fun Bubble(
     message: Message,
-    state: ThreadUiState,
+    selecting: Boolean,
+    selected: Boolean,
+    starred: Boolean,
+    spamReason: Int?,
+    simLabel: String?,
+    sendSim: Int,
+    isRecycleBin: Boolean,
+    strings: BubbleStrings,
     onEvent: (ThreadEvent) -> Unit,
     groupedBelow: Boolean,
     hidden: Boolean = false,
@@ -568,55 +736,82 @@ private fun Bubble(
     val colors = MaterialTheme.colorScheme
     val incoming = message.isReceivedMessage()
     val failed = message.type == Telephony.Sms.MESSAGE_TYPE_FAILED
-    val selected = message.getStableId() in state.selected
     val tone = BubbleTone.of(incoming, failed, selected)
     val content = tone.role().content
     val shape = messageBubbleShape(incoming, groupedBelow)
     val attachments = message.attachment?.attachments.orEmpty()
+    val fullWidth = attachments.isNotEmpty() || failed
     val coordinates = remember { arrayOfNulls<LayoutCoordinates>(1) }
-    val selectLabel = stringResource(R.string.inbox_select)
-    val accessibleActions = listOfNotNull(
-        MessageAction.COPY.takeIf { message.body.isNotEmpty() },
-        MessageAction.FORWARD,
-        (if (state.isStarred(message)) MessageAction.UNSTAR else MessageAction.STAR).takeIf { !state.isRecycleBin },
-        MessageAction.DELETE,
-    ).map { action ->
-        val label = stringResource(action.label)
-        CustomAccessibilityAction(label) { onEvent(ThreadEvent.Act(action, listOf(message))); true }
+    val hasBody = message.body.isNotEmpty()
+    val accessibleActions = remember(message.id, message.isMMS, hasBody, starred, isRecycleBin, strings, onEvent) {
+        buildList {
+            if (hasBody) {
+                add(CustomAccessibilityAction(strings.copyLabel) { onEvent(ThreadEvent.Act(MessageAction.COPY, listOf(message))); true })
+            }
+            add(CustomAccessibilityAction(strings.forwardLabel) { onEvent(ThreadEvent.Act(MessageAction.FORWARD, listOf(message))); true })
+            if (!isRecycleBin) {
+                val starText = if (starred) strings.unstarLabel else strings.starLabel
+                val starAction = if (starred) MessageAction.UNSTAR else MessageAction.STAR
+                add(CustomAccessibilityAction(starText) { onEvent(ThreadEvent.Act(starAction, listOf(message))); true })
+            }
+            add(CustomAccessibilityAction(strings.deleteLabel) { onEvent(ThreadEvent.Act(MessageAction.DELETE, listOf(message))); true })
+        }
     }
+    val onCopy = remember(onEvent) { { value: String -> onEvent(ThreadEvent.CopyText(value)) } }
     // Hidden while its copy sits lifted above the sheet.
     Box(Modifier.graphicsLayer { alpha = if (hidden) 0f else 1f }) {
         MessageBubble(
             tone,
             shape,
             Modifier
-                .then(if (attachments.isNotEmpty() || failed) Modifier.fillMaxWidth() else Modifier.width(IntrinsicSize.Max))
+                .then(if (fullWidth) Modifier.fillMaxWidth() else Modifier)
                 .onGloballyPositioned { coordinates[0] = it }
                 .clip(shape)
-                .longPressToSelect(selectLabel) { onEvent(ThreadEvent.ToggleSelection(message)) }
+                .longPressToSelect(strings.selectLabel) { onEvent(ThreadEvent.ToggleSelection(message)) }
                 .clickable(enabled = onOpen != null) {
-                    if (state.selecting) {
+                    if (selecting) {
                         onEvent(ThreadEvent.ToggleSelection(message))
                     } else {
                         coordinates[0]?.takeIf { it.isAttached }?.let { onOpen?.invoke(it) }
                     }
                 }
                 .semantics {
-                    if (state.selecting) this.selected = selected
+                    if (selecting) this.selected = selected
                     customActions = accessibleActions
                 },
         ) {
             attachments.forEach { attachment ->
                 AttachmentView(attachment) {
-                    if (state.selecting) onEvent(ThreadEvent.ToggleSelection(message)) else onEvent(ThreadEvent.OpenAttachment(message, attachment))
+                    if (selecting) onEvent(ThreadEvent.ToggleSelection(message)) else onEvent(ThreadEvent.OpenAttachment(message, attachment))
                 }
             }
-            if (message.body.isNotEmpty()) {
-                MessageText(message.body, content, linkColor = colors.primary, links = !state.selecting, onCopy = { onEvent(ThreadEvent.CopyText(it)) })
+            if (hasBody) {
+                val textModifier = if (fullWidth) {
+                    Modifier.fillMaxWidth()
+                } else {
+                    Modifier.align(if (isRtlParagraph(message.body)) AbsoluteAlignment.Right else AbsoluteAlignment.Left)
+                }
+                MessageText(
+                    body = message.body,
+                    color = content,
+                    linkColor = colors.primary,
+                    links = !selecting,
+                    modifier = textModifier,
+                    onCopy = onCopy,
+                )
             }
             // Never hide a failure, in-flight send, scheduled time, star, or spam explanation in a run.
-            if (!groupedBelow || failed || message.isScheduled || message.type == Telephony.Sms.MESSAGE_TYPE_OUTBOX || state.isStarred(message) || state.spamReason(message) != null) {
-                Metadata(message, state, content, Modifier.align(if (failed) Alignment.Start else Alignment.End))
+            if (!groupedBelow || failed || message.isScheduled || message.type == Telephony.Sms.MESSAGE_TYPE_OUTBOX || starred || spamReason != null) {
+                Metadata(
+                    message = message,
+                    selected = selected,
+                    starred = starred,
+                    spamReason = spamReason,
+                    simLabel = simLabel,
+                    strings = strings,
+                    content = content,
+                    modifier = Modifier.align(if (failed) Alignment.Start else Alignment.End),
+                )
             }
             if (failed) {
                 // R6-46: Retry sends on the SIM shown. The switcher beside it is the composer's glyph
@@ -632,14 +827,14 @@ private fun Bubble(
                         modifier = Modifier.heightIn(min = TargetSize),
                     ) {
                         Text(
-                            stringResource(R.string.thread_retry),
+                            strings.retryLabel,
                             style = MaterialTheme.typography.labelLarge,
                             maxLines = 1,
                             softWrap = false,
                         )
                     }
-                    if (state.sendSim > 0) {
-                        SimSwitcher(state.sendSim, carrier = "", onClick = { onEvent(ThreadEvent.NextSim) })
+                    if (sendSim > 0) {
+                        SimSwitcher(sendSim, carrier = "", onClick = { onEvent(ThreadEvent.NextSim) })
                     }
                 }
             }
@@ -650,13 +845,70 @@ private fun Bubble(
 // The tail corner marks the last bubble of a run, on the sender's side.
 /** Web links and email addresses open; standalone numbers copy, as in the View timeline. */
 @Composable
-internal fun MessageText(body: String, color: Color, linkColor: Color, links: Boolean, onCopy: (String) -> Unit) {
-    val text = remember(body, links, linkColor) {
-        if (links) linkify(body, linkColor, onCopy) else AnnotatedString(body)
-    }
+internal fun MessageText(
+    body: String,
+    color: Color,
+    linkColor: Color,
+    links: Boolean,
+    modifier: Modifier = Modifier,
+    onCopy: (String) -> Unit,
+) {
+    val currentOnCopy by rememberUpdatedState(onCopy)
+    val detected = remember(body, links) { if (links) detectLinks(body) else emptyList() }
     // Each paragraph takes its direction from its first letter, whatever the app language, and one
     // with no letters (a number, emoji) reads left to right, as in Telegram and WhatsApp.
-    ContentText(text, style = MaterialTheme.typography.bodyLarge, color = color, modifier = Modifier.fillMaxWidth(), direction = ContentDirection.Text)
+    if (detected.isEmpty()) {
+        ContentText(body, style = MaterialTheme.typography.bodyLarge, color = color, modifier = modifier, direction = ContentDirection.Text)
+    } else {
+        val text = remember(body, detected, linkColor) {
+            buildLinkifiedText(body, detected, linkColor) { currentOnCopy(it) }
+        }
+        ContentText(text, style = MaterialTheme.typography.bodyLarge, color = color, modifier = modifier, direction = ContentDirection.Text)
+    }
+}
+
+private data class DetectedLink(val start: Int, val end: Int, val value: String, val isUrl: Boolean)
+
+private val linkScanCache = object : android.util.LruCache<String, List<DetectedLink>>(512) {}
+
+private fun detectLinks(body: String): List<DetectedLink> {
+    if (body.isEmpty()) return emptyList()
+    linkScanCache.get(body)?.let { return it }
+    var hasUrlHint = false
+    var hasDigit = false
+    for (i in body.indices) {
+        val c = body[i]
+        if (c == '.' || c == '@' || c == ':') hasUrlHint = true
+        else if (c.isDigit()) hasDigit = true
+        if (hasUrlHint && hasDigit) break
+    }
+    if (!hasUrlHint && !hasDigit) {
+        linkScanCache.put(body, emptyList())
+        return emptyList()
+    }
+    val urls = if (hasUrlHint) {
+        val spannable = SpannableString(body)
+        LinkifyCompat.addLinks(spannable, Linkify.WEB_URLS or Linkify.EMAIL_ADDRESSES)
+        spannable.getSpans(0, body.length, URLSpan::class.java)
+            .map { DetectedLink(spannable.getSpanStart(it), spannable.getSpanEnd(it), it.url, isUrl = true) }
+    } else {
+        emptyList()
+    }
+    val numbers = if (hasDigit) {
+        NUMBER.findAll(body)
+            .filter { match -> urls.none { match.range.first < it.end && match.range.last >= it.start } }
+            .map { DetectedLink(it.range.first, it.range.last + 1, it.value, isUrl = false) }
+            .toList()
+    } else {
+        emptyList()
+    }
+    val combined = when {
+        urls.isEmpty() -> numbers
+        numbers.isEmpty() -> urls
+        else -> (urls + numbers).sortedBy { it.start }
+    }
+    linkScanCache.put(body, combined)
+    return combined
 }
 
 // A match is the whole number or nothing. Isolating only part of it, as "000,000" out of
@@ -666,20 +918,16 @@ private val NUMBER = Regex(
     "(?<![\\p{L}\\p{N}]|\\p{N}$NUMBER_SEPARATOR)\\+?\\p{Nd}+(?:$NUMBER_SEPARATOR\\p{Nd}+)*(?![\\p{L}\\p{N}]|$NUMBER_SEPARATOR\\p{N})"
 )
 
-internal fun linkify(body: String, linkColor: Color = Color.Unspecified, onCopy: (String) -> Unit): AnnotatedString {
-    val spannable = SpannableString(body)
-    LinkifyCompat.addLinks(spannable, Linkify.WEB_URLS or Linkify.EMAIL_ADDRESSES)
-    val urls = spannable.getSpans(0, body.length, URLSpan::class.java)
-        .map { Triple(spannable.getSpanStart(it), spannable.getSpanEnd(it), it.url) }
-    val numbers = NUMBER.findAll(body)
-        .filter { match -> urls.none { match.range.first < it.second && match.range.last >= it.first } }
-        .map { Triple(it.range.first, it.range.last + 1, it.value) }
+private fun buildLinkifiedText(
+    body: String,
+    links: List<DetectedLink>,
+    linkColor: Color,
+    onCopy: (String) -> Unit,
+): AnnotatedString {
     val style = TextLinkStyles(SpanStyle(color = linkColor, fontWeight = FontWeight.Bold, textDecoration = TextDecoration.Underline))
-    val links = (urls.map { it to true } + numbers.map { it to false }).sortedBy { it.first.first }
     return buildAnnotatedString {
         var cursor = 0
-        links.forEach { (range, isUrl) ->
-            val (start, end, value) = range
+        links.forEach { (start, end, value, isUrl) ->
             append(body, cursor, start)
             val link = if (isUrl) {
                 LinkAnnotation.Url(value, style)
@@ -696,37 +944,51 @@ internal fun linkify(body: String, linkColor: Color = Color.Unspecified, onCopy:
     }
 }
 
+internal fun linkify(body: String, linkColor: Color = Color.Unspecified, onCopy: (String) -> Unit): AnnotatedString {
+    val links = detectLinks(body)
+    return if (links.isEmpty()) AnnotatedString(body) else buildLinkifiedText(body, links, linkColor, onCopy)
+}
+
 @Composable
-private fun Metadata(message: Message, state: ThreadUiState, content: Color, modifier: Modifier = Modifier) {
+private fun Metadata(
+    message: Message,
+    selected: Boolean,
+    starred: Boolean,
+    spamReason: Int?,
+    simLabel: String?,
+    strings: BubbleStrings,
+    content: Color,
+    modifier: Modifier = Modifier,
+) {
     val context = LocalContext.current
     val colors = MaterialTheme.colorScheme
     val incoming = message.isReceivedMessage()
     val metaColor = when {
         message.type == Telephony.Sms.MESSAGE_TYPE_FAILED -> content
-        incoming || message.getStableId() in state.selected -> colors.onSurfaceVariant
+        incoming || selected -> colors.onSurfaceVariant
         else -> Afsh.colors.onBandVariant
     }
     val time = remember(message.date) { (message.date * 1000L).formatTime(context) }
     val failed = message.type == Telephony.Sms.MESSAGE_TYPE_FAILED
     // R6-47: the clock alone says sending, where the tick will go; TalkBack still hears the word.
     val sending = message.type == Telephony.Sms.MESSAGE_TYPE_OUTBOX && !message.isScheduled
+    val spamKind = spamReason?.let { stringResource(spamReasonLabel(it)) }
+    val simPart = simLabel?.let { stringResource(R.string.message_sim_label, it) }
     val parts = buildList {
-        if (failed) add(stringResource(R.string.message_not_sent_short))
-        state.spamReason(message)?.let {
-            add(stringResource(R.string.inbox_spam))
-            add(stringResource(spamReasonLabel(it)))
+        if (failed) add(strings.notSentLabel)
+        if (spamKind != null) {
+            add(strings.spamLabel)
+            add(spamKind)
         }
         if (!sending) add(time)
-        state.simLabels[message.subscriptionId]?.let { add(stringResource(R.string.message_sim_label, it)) }
-        if (message.isScheduled) add(stringResource(R.string.scheduled_message))
+        if (simPart != null) add(simPart)
+        if (message.isScheduled) add(strings.scheduledLabel)
     }
     val delivered = message.status == Telephony.Sms.STATUS_COMPLETE
     val sent = message.type == Telephony.Sms.MESSAGE_TYPE_SENT && !message.isScheduled
-    val statusLabel = if (sent) stringResource(if (delivered) R.string.message_delivered else R.string.message_sent) else null
-    val starredLabel = stringResource(R.string.starred_messages)
-    val starred = state.isStarred(message)
-    val sendingLabel = stringResource(R.string.sending).takeIf { sending }
-    val description = (listOfNotNull(starredLabel.takeIf { starred }) + parts + listOfNotNull(statusLabel, sendingLabel)).joinToString(", ")
+    val statusLabel = if (sent) (if (delivered) strings.deliveredLabel else strings.sentLabel) else null
+    val sendingLabel = if (sending) strings.sendingLabel else null
+    val description = (listOfNotNull(strings.starredLabel.takeIf { starred }) + parts + listOfNotNull(statusLabel, sendingLabel)).joinToString(", ")
     Row(
         modifier.semantics(mergeDescendants = true) { contentDescription = description },
         // Failed status wraps on narrow / Persian / large text; top-align with the warning icon.
@@ -891,23 +1153,21 @@ private fun DatePill(seconds: Int, modifier: Modifier = Modifier) {
  * header, so the slot is clipped: otherwise the outgoing pill paints over the title. Fades 700 ms
  * after scrolling stops (design board, dates).
  */
+@Immutable
+private data class StickyDay(val date: Int, val dayIndex: Int, val inlineShowing: Boolean)
+
 @Composable
 private fun StickyDate(newestFirst: List<ThreadItem>, listState: LazyListState, modifier: Modifier = Modifier) {
-    var pillHeight by remember { mutableIntStateOf(0) }
+    val pillHeight = remember { intArrayOf(0) }
     val margin = with(LocalDensity.current) { Afsh.spacing.sm.roundToPx() }
     val sticky by remember(newestFirst) {
         derivedStateOf {
-            val info = listState.layoutInfo
-            val visible = info.visibleItemsInfo
+            val visible = listState.layoutInfo.visibleItemsInfo
             val top = visible.lastOrNull() ?: return@derivedStateOf null
             val dayIndex = (top.index until newestFirst.size).firstOrNull { newestFirst[it] is ThreadItem.ThreadDateTime }
                 ?: return@derivedStateOf null
             val inlineShowing = visible.any { it.index == dayIndex }
-            // The next (newer) day's pill, if on screen, pushes this one up as it arrives.
-            val next = visible.filter { it.index < dayIndex && newestFirst[it.index] is ThreadItem.ThreadDateTime }.maxByOrNull { it.index }
-            val nextTop = next?.let { info.viewportEndOffset - it.offset - it.size }
-            val push = nextTop?.let { minOf(0, it - (pillHeight + margin)) } ?: 0
-            Triple((newestFirst[dayIndex] as ThreadItem.ThreadDateTime).date, inlineShowing, push)
+            StickyDay((newestFirst[dayIndex] as ThreadItem.ThreadDateTime).date, dayIndex, inlineShowing)
         }
     }
     var scrolledRecently by remember { mutableStateOf(false) }
@@ -920,22 +1180,32 @@ private fun StickyDate(newestFirst: List<ThreadItem>, listState: LazyListState, 
         }
     }
     // Keeps the last label while fading out, after the value itself has gone.
-    val lastShown = remember { arrayOfNulls<Triple<Int, Boolean, Int>>(1) }
+    val lastShown = remember { arrayOfNulls<StickyDay>(1) }
     val current = sticky
     if (current != null) lastShown[0] = current
     AnimatedVisibility(
-        visible = current != null && !current.second && scrolledRecently,
+        visible = current != null && !current.inlineShowing && scrolledRecently,
         enter = fadeIn(tween(0)),
         exit = fadeOut(tween(STICKY_DATE_FADE_MS)),
         modifier = modifier.clipToBounds(),
     ) {
-        val (date, _, push) = lastShown[0] ?: return@AnimatedVisibility
+        val shown = lastShown[0] ?: return@AnimatedVisibility
         DatePill(
-            remember(date) { ThreadDates.label(date) },
+            remember(shown.date) { ThreadDates.label(shown.date) },
             Modifier
                 .padding(top = Afsh.spacing.sm)
-                .onSizeChanged { pillHeight = it.height }
-                .graphicsLayer { translationY = push.toFloat() }
+                .onSizeChanged { pillHeight[0] = it.height }
+                .graphicsLayer {
+                    val info = listState.layoutInfo
+                    val next = info.visibleItemsInfo
+                        .filter { it.index < shown.dayIndex && newestFirst.getOrNull(it.index) is ThreadItem.ThreadDateTime }
+                        .maxByOrNull { it.index }
+                    val push = next?.let {
+                        val nextTop = info.viewportEndOffset - it.offset - it.size
+                        minOf(0, nextTop - (pillHeight[0] + margin))
+                    } ?: 0
+                    translationY = push.toFloat()
+                }
                 .testTag(THREAD_STICKY_DATE_TAG),
         )
     }

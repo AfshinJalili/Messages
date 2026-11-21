@@ -72,22 +72,91 @@ fun conversationListTimestamp(
     RelativeDay.EARLIER -> compactListDate(millis, now, locale, sameYearPattern, priorYearPattern)
 }
 
+private data class ListTimestampFormatKey(
+    val localeTag: String,
+    val yesterdayLabel: String,
+)
+
+private class CachedListTimestampFormatter(
+    val key: ListTimestampFormatKey,
+    val locale: Locale,
+    val yesterdayLabel: String,
+    val sameYearPattern: String,
+    val priorYearPattern: String,
+) {
+    private val perThread = object : ThreadLocal<PerThreadState>() {
+        override fun initialValue() = PerThreadState(
+            dayCal = GregorianCalendar(),
+            yesterdayCal = Calendar.getInstance(),
+            gregorianCal = GregorianCalendar(),
+            sameYearFormat = SimpleDateFormat(sameYearPattern, locale).apply { calendar = GregorianCalendar() },
+            priorYearFormat = SimpleDateFormat(priorYearPattern, locale).apply { calendar = GregorianCalendar() },
+        )
+    }
+
+    private class PerThreadState(
+        val dayCal: Calendar,
+        val yesterdayCal: Calendar,
+        val gregorianCal: GregorianCalendar,
+        val sameYearFormat: SimpleDateFormat,
+        val priorYearFormat: SimpleDateFormat,
+    )
+
+    fun format(context: Context, millis: Long, now: Calendar?): String {
+        val state = perThread.get()!!
+        val ref = now ?: state.yesterdayCal.apply { timeInMillis = System.currentTimeMillis() }
+        val refYear = ref.get(Calendar.YEAR)
+        val refDayOfYear = ref.get(Calendar.DAY_OF_YEAR)
+        val day = state.dayCal.apply { timeInMillis = millis }
+        val dayYear = day.get(Calendar.YEAR)
+        val dayOfYear = day.get(Calendar.DAY_OF_YEAR)
+        if (dayYear == refYear && dayOfYear == refDayOfYear) {
+            return DateFormat.format(context.getTimeFormat(), millis).toString()
+        }
+        // Compute yesterday without cloning `now` on every row.
+        val prevDay = if (refDayOfYear > 1) {
+            dayYear == refYear && dayOfYear == refDayOfYear - 1
+        } else {
+            val yest = state.yesterdayCal
+            yest.timeInMillis = ref.timeInMillis
+            yest.add(Calendar.DAY_OF_YEAR, -1)
+            dayYear == yest.get(Calendar.YEAR) && dayOfYear == yest.get(Calendar.DAY_OF_YEAR)
+        }
+        if (prevDay) return yesterdayLabel
+
+        val greg = state.gregorianCal
+        greg.timeInMillis = millis
+        val gregDayYear = greg.get(Calendar.YEAR)
+        greg.timeInMillis = ref.timeInMillis
+        val gregNowYear = greg.get(Calendar.YEAR)
+        return (if (gregDayYear == gregNowYear) state.sameYearFormat else state.priorYearFormat).format(millis)
+    }
+}
+
+@Volatile
+private var cachedListTimestampFormatter: CachedListTimestampFormatter? = null
+
 /** Conversation and search list timestamps. Keeps the app's 12/24-hour time setting for today. */
 fun conversationListTimestamp(
     context: Context,
     millis: Long,
-    now: Calendar = Calendar.getInstance(),
+    now: Calendar? = null,
 ): String {
     val locale = context.resources.configuration.locales[0]
-    return conversationListTimestamp(
-        millis = millis,
-        now = now,
-        timeText = DateFormat.format(context.getTimeFormat(), millis).toString(),
-        yesterdayLabel = context.getString(R.string.inbox_section_yesterday),
-        locale = locale,
-        sameYearPattern = DateFormat.getBestDateTimePattern(locale, "MMMd"),
-        priorYearPattern = DateFormat.getBestDateTimePattern(locale, "yyMd"),
-    )
+    val yesterdayLabel = context.getString(R.string.inbox_section_yesterday)
+    val key = ListTimestampFormatKey(locale.toLanguageTag(), yesterdayLabel)
+    var formatter = cachedListTimestampFormatter
+    if (formatter == null || formatter.key != key) {
+        formatter = CachedListTimestampFormatter(
+            key = key,
+            locale = locale,
+            yesterdayLabel = yesterdayLabel,
+            sameYearPattern = DateFormat.getBestDateTimePattern(locale, "MMMd"),
+            priorYearPattern = DateFormat.getBestDateTimePattern(locale, "yyMd"),
+        )
+        cachedListTimestampFormatter = formatter
+    }
+    return formatter.format(context, millis, now)
 }
 
 /** Today, Yesterday, or [shortDate]. */
