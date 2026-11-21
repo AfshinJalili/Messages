@@ -2,6 +2,7 @@ package com.afsh.messages
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material3.MaterialTheme
@@ -87,7 +88,14 @@ class ContentFontChecks {
                         AfshTheme(dark = false, textScale = 1.2f) {
                             samples.forEachIndexed { i, body ->
                                 Box(Modifier.width(280.dp).testTag("bubble-$scale-$direction-$i")) {
-                                    MessageText(body, MaterialTheme.colorScheme.onSurface, MaterialTheme.colorScheme.primary, links = true) {}
+                                    // Tight width avoids Compose's ParagraphLayoutCache.slowCreateTextLayoutResultOrNull false didOverflowWidth on short String text under loose constraints.
+                                    MessageText(
+                                        body,
+                                        MaterialTheme.colorScheme.onSurface,
+                                        MaterialTheme.colorScheme.primary,
+                                        links = true,
+                                        modifier = Modifier.fillMaxWidth(),
+                                    ) {}
                                 }
                                 for (draft in listOf(false, true)) {
                                     Box(Modifier.width(280.dp).testTag("preview-$draft-$scale-$direction-$i")) {
@@ -115,7 +123,7 @@ class ContentFontChecks {
                     assertEquals("$surface sample $i offset $offset", ltr.getPathForRange(offset, offset + 1).getBounds().width,
                         rtl.getPathForRange(offset, offset + 1).getBounds().width, 0.1f)
                 }
-                if (surface == "bubble") assertFalse(ltr.hasVisualOverflow)
+                if (surface == "bubble") assertFalse("bubble sample $i scale $scale overflowed", ltr.hasVisualOverflow)
             }
             for (direction in LayoutDirection.entries) {
                 val draft = layout("preview-true-$scale-$direction-$i")
