@@ -14,4 +14,4 @@ dependencyResolutionManagement {
         mavenLocal()
     }
 }
-include(":app", ":commons", ":macrobenchmark")
+include(":app", ":commons")
