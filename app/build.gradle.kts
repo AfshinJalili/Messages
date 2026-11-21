@@ -73,6 +73,20 @@ android {
                 signingConfig = signingConfigs.getByName("debug")
             }
         }
+        // Release-like, debug-signed, profileable — target for :macrobenchmark only.
+        create("benchmark") {
+            initWith(getByName("release"))
+            matchingFallbacks += listOf("release")
+            signingConfig = signingConfigs.getByName("debug")
+            isDebuggable = false
+            isProfileable = true
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
     }
 
     sourceSets {
@@ -156,6 +170,7 @@ dependencies {
     androidTestImplementation(libs.compose.ui.test.junit4)
     ksp(libs.androidx.room.compiler)
     testImplementation(libs.junit)
+    testImplementation(libs.sqlite.jdbc)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation("androidx.test.uiautomator:uiautomator:2.3.0")

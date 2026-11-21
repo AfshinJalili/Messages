@@ -309,6 +309,8 @@
     </plurals>
     <string name="filter_obvious_spam">فیلتر هرزنامه‌های آشکار</string>
     <string name="spam_feature_summary">پیام‌های تبلیغاتی، فرستنده‌های مسدود و عبارت‌هایی که انتخاب می‌کنید در هرزنامه می‌مانند، نه در صندوق.</string>
+    <string name="filter_obvious_spam_off">خاموش</string>
+    <string name="filter_on_text">به واژه‌های تبلیغاتی و رویداد فارسی و اموجی‌های قوی تبلیغاتی (از جمله ✅ و 📍) نگاه می‌کند. دو نشانه، یا یک نشانه به‌علاوهٔ پیوند یا فرستندهٔ نام‌دار، به هرزنامه می‌رود. رمز یک‌بارمصرف، پیام بانک و رسید، و افراد دفترچه مخاطبان فیلتر نمی‌شوند. خط‌هایی مثل «لغو11» یا unsubscribe نادیده گرفته می‌شوند.</string>
     <string name="unknown_numbers">شماره‌های ناشناس</string>
     <string name="unknown_numbers_summary">پیام شماره‌هایی که در مخاطبان نیستند به هرزنامه می‌رود.</string>
     <string name="always_spam_list">فرستنده‌های همیشه‌هرزنامه</string>
@@ -636,11 +638,11 @@
     <string name="spam_patterns_transactional">بانک و رسید</string>
     <string name="spam_patterns_transactional_text">هر تطبیقی پیام را در صندوق نگه می‌دارد. قوانین تبلیغاتی و اموجی اعمال نمی‌شوند.</string>
     <string name="spam_patterns_links">پیوندها</string>
-    <string name="spam_patterns_links_text">همراه: با یک نشانهٔ تبلیغاتی، پیوند پیام را به هرزنامه می‌برد.</string>
+    <string name="spam_patterns_links_text">همراه: با یک واژهٔ تبلیغاتی، پیوند کامل یا کوتاه بدون طرح (مثل Iu4.ir/e) پیام را به هرزنامه می‌برد.</string>
     <string name="spam_patterns_marketing">واژه‌های تبلیغاتی</string>
-    <string name="spam_patterns_marketing_text">هر تطبیق متمایز یک نشانه است. دو نشانه، یا یکی به‌علاوهٔ پیوند یا فرستندهٔ نام‌دار، به هرزنامه می‌رود.</string>
+    <string name="spam_patterns_marketing_text">هر تطبیق متمایز وزن ۲ دارد. یک واژه به‌علاوهٔ پیوند یا فرستندهٔ نام‌دار به هرزنامه می‌رود؛ واژه به‌علاوهٔ اموجی تبلیغاتی هم همین‌طور.</string>
     <string name="spam_patterns_promo_emoji">اموجی‌های تبلیغاتی</string>
-    <string name="spam_patterns_promo_emoji_text">اموجی‌های قوی تبلیغاتی. هر تطبیق متمایز یک نشانه است، مثل واژه‌ی تبلیغاتی.</string>
+    <string name="spam_patterns_promo_emoji_text">اموجی‌های قوی و چیدمان تبلیغاتی (🎉، ✅، 📍، …). هر کدام وزن ۲ دارد، مثل واژه‌ی تبلیغاتی. یکی به‌علاوهٔ پیوند یا فرستندهٔ نام‌دار به هرزنامه می‌رود.</string>
     <string name="spam_patterns_promo_emoji_weak">شکلک‌های ضعیف</string>
     <string name="spam_patterns_promo_emoji_weak_text">شکلک و قلب. به‌تنهایی هرگز مسدود نمی‌کنند.</string>
     <string name="spam_patterns_add">افزودن الگو</string>

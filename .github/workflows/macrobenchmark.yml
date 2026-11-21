@@ -1,0 +1,104 @@
+name: Macrobenchmark
+
+# Not on every PR emulator run. Cold-start / scroll gate on the seeded inbox.
+on:
+  workflow_dispatch:
+  push:
+    branches: [redesign-groundwork]
+  pull_request:
+    types: [labeled, synchronize, opened, reopened]
+
+concurrency:
+  group: macrobenchmark-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  macrobenchmark:
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'push' ||
+      (github.event_name == 'pull_request' &&
+        (contains(github.event.pull_request.labels.*.name, 'run-macrobenchmark') ||
+         contains(github.event.pull_request.labels.*.name, 'area:performance')))
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      SPAM_CORPORA_CACHE: ${{ github.workspace }}/.cache/spam-corpora
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-read-only: false
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: AVD cache
+        uses: actions/cache@v4
+        id: avd-cache
+        with:
+          path: |
+            ~/.android/avd/*
+            ~/.android/adb*
+          key: avd-35-google_apis-x86_64-pixel_7
+
+      - name: Spam corpora cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.SPAM_CORPORA_CACHE }}
+          key: spam-corpora-pssc-v03-uci-v1
+
+      - name: Create AVD and generate snapshot for caching
+        if: steps.avd-cache.outputs.cache-hit != 'true'
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_7
+          force-avd-creation: false
+          disable-animations: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: echo "Generated AVD snapshot for caching."
+
+      - name: Build app, androidTest, macrobenchmark
+        run: |
+          ./gradlew \
+            :app:assembleDebug \
+            :app:assembleDebugAndroidTest \
+            :app:assembleBenchmark \
+            :macrobenchmark:assembleBenchmark \
+            :app:testDebugUnitTest \
+            --stacktrace
+
+      - name: Seed inbox, warm Room, run macrobenchmark
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_7
+          force-avd-creation: false
+          disable-animations: true
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: bash tools/run_macrobenchmark.sh
+
+      - name: Upload benchmark results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: macrobenchmark-results
+          path: |
+            macrobenchmark/build/outputs/
+            .scratch/macrobenchmark/
+          retention-days: 30
+          if-no-files-found: warn

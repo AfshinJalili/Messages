@@ -231,7 +231,10 @@ fun InboxScreen(
                         if (search.open) {
                             SearchContent(search, onSearchQuery, onSearchFilter, onSearchResult, onSearchRetry)
                         } else {
-                            InboxList(state, listState, onOpen, onToggleSelection, onSwipe, onFilter, onRetryRefresh)
+                            InboxList(
+                                state, listState, onOpen, onToggleSelection, onSwipe, onFilter, onRetryRefresh,
+                                modifier = Modifier.weight(1f),
+                            )
                         }
                     }
                 }
@@ -249,11 +252,14 @@ private fun InboxList(
     onSwipe: (InboxRow, SwipeAction) -> Unit,
     onFilter: (InboxFilter) -> Unit,
     onRetryRefresh: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val sections = remember(state.rows) {
         val now = Calendar.getInstance()
         state.rows.groupBy { it.section(now) }
     }
+    val swipeLeft = remember(state.swipeLeft) { state.swipeLeft.gesture() }
+    val swipeRight = remember(state.swipeRight) { state.swipeRight.gesture() }
     // First paint skips placement animation; later inserts/removals still animate (no fades).
     var animateListChanges by remember { mutableStateOf(false) }
     LaunchedEffect(state.rows.isNotEmpty()) {
@@ -265,7 +271,12 @@ private fun InboxList(
     fun LazyItemScope.listItem(): Modifier =
         if (animateListChanges) Modifier.animateItem(fadeInSpec = null, fadeOutSpec = null) else Modifier
     // Clears the extended FAB so the last row stays reachable.
-    LazyColumn(state = listState, contentPadding = PaddingValues(bottom = FabClearance), horizontalAlignment = Alignment.CenterHorizontally) {
+    LazyColumn(
+        modifier = modifier,
+        state = listState,
+        contentPadding = PaddingValues(bottom = FabClearance),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
         item(key = "filters", contentType = "filters") {
             FilterRow(state.filter, onFilter)
         }
@@ -297,8 +308,8 @@ private fun InboxList(
                 items(rows, key = { it.threadId }, contentType = { "row" }) { row ->
                     val selected = row.threadId in state.selected
                     SwipeableRow(
-                        left = state.swipeLeft.gesture(),
-                        right = state.swipeRight.gesture(),
+                        left = swipeLeft,
+                        right = swipeRight,
                         enabled = !state.selecting,
                         onSwipe = { towardsRight -> onSwipe(row, if (towardsRight) state.swipeRight else state.swipeLeft) },
                         modifier = Modifier.widthIn(max = ConversationRowMaxWidth).fillMaxWidth().then(listItem()),
