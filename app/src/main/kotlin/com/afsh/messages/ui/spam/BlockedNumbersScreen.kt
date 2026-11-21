@@ -19,7 +19,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -27,14 +26,13 @@ import com.afsh.messages.R
 import com.afsh.messages.ui.Afsh
 import com.afsh.messages.ui.components.AfshButton
 import com.afsh.messages.ui.components.AfshIcon
+import com.afsh.messages.ui.components.ContentText
 import com.afsh.messages.ui.components.EmptyState
 import com.afsh.messages.ui.components.PageContentPadding
 import com.afsh.messages.ui.components.PageNavigation
 import com.afsh.messages.ui.components.PageScaffold
 import com.afsh.messages.ui.components.SectionHeading
 import com.afsh.messages.ui.components.TextAction
-import com.afsh.messages.ui.forLabel
-import com.afsh.messages.ui.withContentFonts
 
 private val SenderRowHeight = 58.dp
 
@@ -175,9 +173,9 @@ private fun SenderSectionRow(sender: BlockedSender, onRemove: () -> Unit) {
                 .heightIn(min = SenderRowHeight),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                remember(label) { AnnotatedString(label).withContentFonts() },
-                style = MaterialTheme.typography.bodyMedium.forLabel(label).copy(fontWeight = FontWeight.Bold),
+            ContentText(
+                label,
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,

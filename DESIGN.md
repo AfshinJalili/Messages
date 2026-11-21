@@ -70,7 +70,20 @@ Every interface icon is a Material Symbol (Rounded, weight 400, grade 0, optical
 
 ### Fonts
 
-The app bundles the design's fonts in `app/src/main/res/font/`, copied unmodified from [google/fonts](https://github.com/google/fonts) under the SIL Open Font License 1.1: Funnel Sans (variable), Atkinson Hyperlegible Regular and Bold, and Vazirmatn (variable).
+The app bundles the design's fonts in `app/src/main/res/font/`, copied unmodified from [google/fonts](https://github.com/google/fonts) under the SIL Open Font License 1.1: Funnel Sans (variable), Atkinson Hyperlegible Regular and Bold, and Vazirmatn (variable). All four font files include OpenType tabular numerals (`tnum`).
+
+`ui/AfshTheme.kt` is the single owner of font families and typography roles, and `ui/components/ContentText.kt` is the single owner of script-aware text composables. Never reference `FontFamily` (including `FontFamily.Monospace` or `FontFamily.Default`) anywhere outside `ui/AfshTheme.kt`, and never pair `Text` with `.withContentFonts()` or `.forLabel()` by hand — Funnel Sans, Atkinson Hyperlegible, and system monospace have no Arabic/Persian glyphs, so any Persian character without a Vazirmatn span or RTL typography slot falls back to Android's system Arabic font instead of Vazirmatn.
+
+| Surface | API to use | Font behavior |
+| --- | --- | --- |
+| Static localized UI labels & headings | `Text(..., style = MaterialTheme.typography.*)` | All 15 Material 3 slots are configured in `AfshTheme.kt`: Funnel Sans (display/headline) + Atkinson (body/title/label) in LTR; Vazirmatn everywhere in RTL. |
+| Tabular numbers (percentages, counters) | `MaterialTheme.typography.*.tabular()` | Sets `fontFeatureSettings = "tnum"` on the active theme font (Vazirmatn in Persian, Atkinson in English) so localized digits and `٪` stay in the bundled font. |
+| User-authored or dynamic text (messages, names, titles, captions, queries, filenames, initials, detail values) | `ContentText(...)` in `ui/components/ContentText.kt` | Atkinson for Latin, Vazirmatn for Arabic script, `1.7em`/`1.45em` leading, and `ContentDirection` (`Text`, `Label`, `Inherit`) regardless of app language. |
+| Localized UI text that interpolates a contact/user name (dialog titles, composer hints, empty states) | `MixedLocaleText(...)` in `ui/components/ContentText.kt` | Preserves the base `TextStyle` font (e.g. Funnel Sans on English dialog titles) while applying Vazirmatn spans to Arabic-script runs. |
+| Editable or selectable text fields | `TextFieldSlab` (applies fonts automatically), or `BasicTextField` / `OutlinedTextField` with `forFieldContent(value)` (or `forUserText`) + `ContentFontVisualTransformation` | Keeps UI locale style while empty (matching placeholder and cursor height), then renders Latin in Atkinson and Persian in Vazirmatn as typed or selected. |
+| Regex / spam patterns | `PatternText(...)` for display; `forPattern(value)` + `PatternFontVisualTransformation` for inputs | Keeps ASCII regex syntax monospace LTR while rendering Persian words inside the pattern in Vazirmatn. |
+
+`tests/check_ui_contract.py` fails on any `FontFamily` outside `ui/AfshTheme.kt`, any direct `.withContentFonts()` / `.withPatternFonts()` / `.forLabel()` outside `AfshTheme.kt` and `ContentText.kt`, and any `BasicTextField` / `OutlinedTextField` without `visualTransformation`. `tests/check_import_progress.py` rejects `FontFamily.Monospace` on the import percent indicator and requires `.tabular()`.
 
 
 ## Commons resources
@@ -85,6 +98,8 @@ Android resources are the source of truth. This document describes how to use th
 | --- | --- |
 | GM3 palette values (`m3_*` light and `m3_*_dark`) | `commons/src/main/res/values/colors.xml` |
 | Color roles (Material slots and `Afsh.colors`) | `afshColorScheme` and `AfshTheme` in `app/src/main/kotlin/com/afsh/messages/ui/AfshTheme.kt` |
+| Typography, font families, tabular/pattern styles, and field visual transformations | `app/src/main/kotlin/com/afsh/messages/ui/AfshTheme.kt` (`typography`, `tabular()`, `forPattern()`, `forFieldContent()`, `ContentFontVisualTransformation`, `PatternFontVisualTransformation`) |
+| Script-aware content, pattern, and mixed-locale text composables | `app/src/main/kotlin/com/afsh/messages/ui/components/ContentText.kt` (`ContentText`, `PatternText`, `MixedLocaleText`) |
 | Light and dark XML themes for Commons screens, mirroring the roles | `app/src/main/res/values/styles.xml` |
 | Component spacing | `AfshSpacing` in `app/src/main/kotlin/com/afsh/messages/ui/AfshTheme.kt` (`Afsh.spacing`) |
 | Component sizes | `app/src/main/res/values/dimens.xml` (notification icon, keyboard height) |

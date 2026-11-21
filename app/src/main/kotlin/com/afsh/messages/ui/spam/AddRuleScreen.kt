@@ -30,12 +30,12 @@ import com.afsh.messages.ui.Afsh
 import com.afsh.messages.ui.components.AfshButton
 import com.afsh.messages.ui.components.AfshIcon
 import com.afsh.messages.ui.components.AttentionNotice
+import com.afsh.messages.ui.components.ContentDirection
+import com.afsh.messages.ui.components.ContentText
 import com.afsh.messages.ui.components.PageContentPadding
 import com.afsh.messages.ui.components.PageNavigation
 import com.afsh.messages.ui.components.PageScaffold
 import com.afsh.messages.ui.components.TextFieldSlab
-import com.afsh.messages.ui.forContent
-import com.afsh.messages.ui.withContentFonts
 
 /** What 50 adds: a phrase, or a number (the same page pattern). */
 enum class RuleKind { PHRASE, NUMBER }
@@ -151,10 +151,11 @@ private fun ExampleMatch(example: String?) {
                 color = colors.onSecondaryContainer,
             )
             val text = example?.let { stringResource(R.string.quoted, it) } ?: stringResource(R.string.no_current_match)
-            Text(
-                remember(text) { AnnotatedString(text).withContentFonts() },
-                style = MaterialTheme.typography.bodyMedium.forContent(text),
+            ContentText(
+                text,
+                style = MaterialTheme.typography.bodyMedium,
                 color = Afsh.colors.onSecondaryContainerVariant,
+                direction = ContentDirection.Inherit,
             )
         }
     }

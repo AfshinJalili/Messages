@@ -19,10 +19,12 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
-import androidx.compose.ui.text.style.TextDirection
+import com.afsh.messages.ui.ContentFontVisualTransformation
+import com.afsh.messages.ui.PatternFontVisualTransformation
+import com.afsh.messages.ui.forFieldContent
+import com.afsh.messages.ui.forPattern
 
 /**
  * Component / confirmation dialog: a title, what will happen, then Cancel and the confirming
@@ -74,6 +76,8 @@ fun RenameDialog(
             value = name,
             onValueChange = { name = it },
             modifier = Modifier.fillMaxWidth().heightIn(min = fieldMinHeight()).focusRequester(focus).semantics { contentDescription = title },
+            textStyle = MaterialTheme.typography.bodyLarge.forFieldContent(name),
+            visualTransformation = ContentFontVisualTransformation,
             placeholder = { Text(placeholder) },
             supportingText = { Text(explanation) },
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
@@ -112,7 +116,8 @@ fun TextInputDialog(
             value = value,
             onValueChange = { value = it },
             modifier = Modifier.fillMaxWidth().heightIn(min = fieldMinHeight()).focusRequester(focus).semantics { contentDescription = title },
-            textStyle = MaterialTheme.typography.bodyLarge.copy(fontFamily = FontFamily.Monospace, textDirection = TextDirection.Ltr),
+            textStyle = MaterialTheme.typography.bodyLarge.forPattern(value),
+            visualTransformation = PatternFontVisualTransformation,
             supportingText = { Text(problem ?: explanation) },
             isError = problem != null,
             shape = MaterialTheme.shapes.medium,

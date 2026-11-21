@@ -8,7 +8,10 @@ Fails on, anywhere in the app's Kotlin outside ui/AfshTheme.kt:
 - primaryContainer or onPrimaryContainer (read the job's role through Afsh.colors),
 - colorResource, and in Compose code (ui/) also R.color and getColor (use Afsh.colors or MaterialTheme.colorScheme),
 - Icons.* from material-icons, ImageVector.Builder / inline path icons, and painterResource(R.drawable…) for icons
-  outside AfshIcon.kt (request AfshIcon instead);
+  outside AfshIcon.kt (request AfshIcon instead),
+- FontFamily outside ui/AfshTheme.kt (use MaterialTheme.typography, ContentText, PatternText, tabular(), or forPattern()),
+- direct .withContentFonts(), .withPatternFonts(), or .forLabel() calls outside ui/AfshTheme.kt and ui/components/ContentText.kt,
+- BasicTextField or OutlinedTextField without visualTransformation (pass ContentFontVisualTransformation or PatternFontVisualTransformation, or use TextFieldSlab);
 and any Lucide drawable, reference or tool in the app, its resources, Gradle files or tools/.
 Also scans commons Kotlin for Icons.* and ImageVector.Builder.
 
@@ -23,6 +26,7 @@ kotlin = root / 'app/src/main/kotlin/com/afsh/messages'
 commons_kotlin = root / 'commons/src/main/kotlin'
 theme = kotlin / 'ui/AfshTheme.kt'
 afsh_icon = kotlin / 'ui/components/AfshIcon.kt'
+content_text = kotlin / 'ui/components/ContentText.kt'
 fixtures = root / 'tests/fixtures/ui_contract'
 
 SPACING_CALL = re.compile(r'\b(padding|absolutePadding|spacedBy|PaddingValues)\(')
@@ -36,6 +40,9 @@ LUCIDE = re.compile(r'lucide', re.IGNORECASE)
 MATERIAL_ICONS = re.compile(r'\bIcons\.(Default|Filled|Outlined|Rounded|Sharp|TwoTone|AutoMirrored)\b')
 IMAGE_VECTOR_BUILDER = re.compile(r'\bImageVector\.Builder\b|\bPathBuilder\s*\(')
 PAINTER_DRAWABLE = re.compile(r'\bpainterResource\s*\(\s*(?:R|com\.afsh\.commons\.R)\.drawable\.')
+FONT_FAMILY = re.compile(r'\bFontFamily\b')
+CONTENT_FONT_HELPER = re.compile(r'\.(?:withContentFonts|withPatternFonts|forLabel)\s*\(')
+TEXT_FIELD_CALL = re.compile(r'\b(?:BasicTextField|OutlinedTextField)\(')
 
 RULES = {
     'lucide': 'references Lucide; request an AfshIcon (Material Symbols) instead',
@@ -46,6 +53,9 @@ RULES = {
     'materialIcons': 'uses material-icons Icons.*; request an AfshIcon (Material Symbols) instead',
     'imageVector': 'builds an inline ImageVector/path icon; request an AfshIcon instead',
     'painterDrawable': 'loads a drawable painter outside AfshIcon; request an AfshIcon instead',
+    'fontFamily': 'references FontFamily outside ui/AfshTheme.kt; use MaterialTheme.typography, ContentText, PatternText, tabular() or forPattern()',
+    'contentFontHelper': 'calls script-font helpers directly; use ContentText, PatternText or ContentFontVisualTransformation',
+    'textFieldFonts': 'omits visualTransformation on a text field; pass ContentFontVisualTransformation or PatternFontVisualTransformation (or use TextFieldSlab)',
 }
 
 
@@ -59,7 +69,7 @@ def call_args(text, pattern):
         yield text.count('\n', 0, match.start()) + 1, text[match.end():end - 1]
 
 
-def kotlin_problems(text, compose=True, allow_painter=False):
+def kotlin_problems(text, compose=True, allow_painter=False, allow_content_font_helpers=False):
     """(line, rule) for every contract break in one Kotlin source."""
     found = []
     for number, args in call_args(text, SPACING_CALL):
@@ -68,6 +78,9 @@ def kotlin_problems(text, compose=True, allow_painter=False):
     for number, args in call_args(text, RADIUS_CALL):
         if LITERAL_DP.search(args):
             found.append((number, 'radius'))
+    for number, args in call_args(text, TEXT_FIELD_CALL):
+        if 'visualTransformation' not in args:
+            found.append((number, 'textFieldFonts'))
     for number, line in enumerate(text.splitlines(), 1):
         if LUCIDE.search(line):
             found.append((number, 'lucide'))
@@ -83,6 +96,10 @@ def kotlin_problems(text, compose=True, allow_painter=False):
             found.append((number, 'imageVector'))
         if not allow_painter and PAINTER_DRAWABLE.search(line):
             found.append((number, 'painterDrawable'))
+        if FONT_FAMILY.search(line):
+            found.append((number, 'fontFamily'))
+        if not allow_content_font_helpers and CONTENT_FONT_HELPER.search(line):
+            found.append((number, 'contentFontHelper'))
     return found
 
 
@@ -101,7 +118,8 @@ for path in sorted(kotlin.rglob('*.kt')):
         continue
     compose = (kotlin / 'ui') in path.parents
     allow_painter = path == afsh_icon
-    for number, rule in kotlin_problems(path.read_text(), compose, allow_painter=allow_painter):
+    allow_helpers = path == content_text
+    for number, rule in kotlin_problems(path.read_text(), compose, allow_painter=allow_painter, allow_content_font_helpers=allow_helpers):
         problems.append(f'{path.relative_to(root)}:{number} {RULES[rule]}')
 
 # Commons must not bring back material-icons Icons.* or inline ImageVector builders.

@@ -63,10 +63,10 @@ import com.afsh.messages.R
 import com.afsh.messages.ui.Afsh
 import com.afsh.messages.ui.Avatar
 import com.afsh.messages.ui.ltr
-import com.afsh.messages.ui.withNumberOrder
 import com.afsh.messages.ui.components.AfshIcon
 import com.afsh.messages.ui.components.AttentionNotice
 import com.afsh.messages.ui.components.Choice
+import com.afsh.messages.ui.components.ContentText
 import com.afsh.messages.ui.components.DisabledComposer
 import com.afsh.messages.ui.components.ChoiceDialog
 import com.afsh.messages.ui.components.InfoPanel
@@ -470,7 +470,7 @@ private fun PersonRow(person: Person, onClick: () -> Unit) {
     ) {
         Avatar(person.name, person.photoUri, isGroup = false, size = RowAvatarSize)
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Afsh.spacing.xs)) {
-            Text(person.name, style = MaterialTheme.typography.titleMedium.copy(textDirection = TextDirection.Content).withNumberOrder(person.name), color = colors.onSurface)
+            ContentText(person.name, style = MaterialTheme.typography.titleMedium.copy(textDirection = TextDirection.Content), color = colors.onSurface)
             if (detail.isNotEmpty()) Text(detail, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
         }
     }
@@ -505,7 +505,7 @@ private fun ChosenChip(recipient: Recipient, onRemove: (() -> Unit)?) {
             .padding(start = Afsh.spacing.md, end = if (onRemove == null) Afsh.spacing.md else 0.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(recipient.name, style = MaterialTheme.typography.labelMedium.withNumberOrder(recipient.name), color = colors.onSecondaryContainer)
+        ContentText(recipient.name, style = MaterialTheme.typography.labelMedium, color = colors.onSecondaryContainer)
         if (onRemove != null) {
             IconButton(onClick = onRemove, modifier = Modifier.semantics { contentDescription = remove }) {
                 Icon(AfshIcon.Close.painter(), contentDescription = null, tint = colors.primary, modifier = Modifier.size(ChipRemoveSize))

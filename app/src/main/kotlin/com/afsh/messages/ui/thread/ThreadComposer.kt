@@ -81,27 +81,25 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
-import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.text.input.TransformedText
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.afsh.messages.R
+import com.afsh.messages.ui.ContentFontVisualTransformation
+import com.afsh.messages.ui.components.ContentText
 import com.afsh.messages.ui.components.DisabledComposer
 import com.afsh.messages.ui.components.DisabledComposerText
+import com.afsh.messages.ui.components.MixedLocaleText
 import com.afsh.messages.extensions.isImageMimeType
 import com.afsh.messages.extensions.isVCardMimeType
 import com.afsh.messages.extensions.isVideoMimeType
 import com.afsh.messages.helpers.attachmentIcon
 import com.afsh.messages.models.AttachmentSelection
 import com.afsh.messages.ui.components.SendButton
-import com.afsh.messages.ui.forContent
-import com.afsh.messages.ui.lineHeightSp
+import com.afsh.messages.ui.forFieldContent
 import com.afsh.messages.ui.rememberBitmap
-import com.afsh.messages.ui.withContentFonts
 import java.util.Locale
 
 private val TargetSize = 48.dp
@@ -229,18 +227,8 @@ private fun EntryField(
     val send = { if (composer.hasContent(text.text)) onEvent(ComposerEvent.Send) }
     val bodyLarge = MaterialTheme.typography.bodyLarge
     // Empty: keep the UI locale's bodyLarge so the cursor and placeholder share one line box.
-    // Typed: script fonts via forContent, but never shrink leading below bodyLarge (English in a Persian UI
-    // would otherwise drop 1.7.em → 1.45.em and reopen bottom slack against fieldMinHeight).
-    val fieldStyle = if (text.text.isEmpty()) {
-        bodyLarge
-    } else {
-        val content = bodyLarge.forContent(text.text)
-        if (content.lineHeightSp().value < bodyLarge.lineHeightSp().value) {
-            content.copy(lineHeight = bodyLarge.lineHeight)
-        } else {
-            content
-        }
-    }
+    // Typed: script fonts via forFieldContent, never shrinking leading below bodyLarge.
+    val fieldStyle = bodyLarge.forFieldContent(text.text)
     OutlinedTextField(
         value = text,
         onValueChange = onTextChange,
@@ -260,10 +248,8 @@ private fun EntryField(
             textDirection = if (text.text.isEmpty()) TextDirection.Content else TextDirection.ContentOrLtr,
         ),
         // The placeholder belongs to the edit box's own node, and TalkBack reads it only while empty.
-        placeholder = { Text(hint, style = bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-        visualTransformation = remember {
-            VisualTransformation { TransformedText(it.withContentFonts(), OffsetMapping.Identity) }
-        },
+        placeholder = { MixedLocaleText(hint, style = bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+        visualTransformation = ContentFontVisualTransformation,
         keyboardOptions = KeyboardOptions(
             capitalization = KeyboardCapitalization.Sentences,
             imeAction = if (sendOnEnter) ImeAction.Send else ImeAction.Default,
@@ -487,7 +473,7 @@ private fun FileTile(icon: AfshIcon, title: String, subtitle: String, open: Modi
         ) {
             Icon(icon.painter(), contentDescription = null, tint = colors.primary, modifier = Modifier.size(22.dp))
             Column {
-                Text(title, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = colors.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                ContentText(title, style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold), color = colors.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 if (subtitle.isNotEmpty()) Text(subtitle, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant, maxLines = 1)
             }
         }

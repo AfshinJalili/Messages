@@ -36,8 +36,10 @@ if 'ImportProgress.Phase' in notice or 'progress.done' in notice or 'progress.to
     violations.append('ImportNotice.kt: must not show phase- or count-based detail text')
 if 'import_progress_percent' not in notice:
     violations.append('ImportNotice.kt: must show import_progress_percent beside the bar')
-if 'fontFeatureSettings' not in notice and 'FontFamily.Monospace' not in notice:
-    violations.append('ImportNotice.kt: percent digits must be tabular or monospace')
+if 'FontFamily.Monospace' in notice:
+    violations.append('ImportNotice.kt: use .tabular() in the theme font, never FontFamily.Monospace (breaks Persian ٪)')
+if '.tabular()' not in notice and 'fontFeatureSettings' not in notice:
+    violations.append('ImportNotice.kt: percent digits must use .tabular()')
 if not re.search(r'\bLinearProgressIndicator\s*\(', notice):
     violations.append('ImportNotice.kt: must draw one LinearProgressIndicator')
 if len(re.findall(r'\bLinearProgressIndicator\s*\(', notice)) != 1:

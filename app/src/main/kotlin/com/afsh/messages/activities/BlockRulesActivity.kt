@@ -29,7 +29,9 @@ import com.afsh.commons.extensions.getBlockedNumbers
 import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.messages.R
 import com.afsh.messages.extensions.config
+import com.afsh.messages.ui.ContentFontVisualTransformation
 import com.afsh.messages.ui.components.AfshDialog
+import com.afsh.messages.ui.forFieldContent
 import com.afsh.messages.ui.components.DialogConfirm
 import com.afsh.messages.ui.components.ScreenStack
 import com.afsh.messages.ui.components.afshFieldColors
@@ -209,6 +211,8 @@ private fun EditPhraseDialog(
                 .heightIn(min = fieldMinHeight())
                 .focusRequester(focus)
                 .semantics { contentDescription = title },
+            textStyle = MaterialTheme.typography.bodyLarge.forFieldContent(value),
+            visualTransformation = ContentFontVisualTransformation,
             isError = problem != null,
             supportingText = { problem?.let { Text(it) } },
             keyboardOptions = KeyboardOptions(

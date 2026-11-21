@@ -1,8 +1,8 @@
 package com.afsh.messages.ui.message
 
 import androidx.compose.ui.text.style.TextDirection
+import com.afsh.messages.ui.ContentFontVisualTransformation
 import com.afsh.messages.ui.forUserText
-import com.afsh.messages.ui.withNumberOrder
 import android.os.Bundle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -39,6 +39,8 @@ import androidx.compose.ui.unit.dp
 import com.afsh.messages.R
 import com.afsh.messages.ui.Afsh
 import com.afsh.messages.ui.components.AfshIcon
+import com.afsh.messages.ui.components.ContentDirection
+import com.afsh.messages.ui.components.ContentText
 import com.afsh.messages.ui.components.DetailRow
 import com.afsh.messages.ui.components.BubbleTone
 import com.afsh.messages.ui.components.MessageBubble
@@ -99,7 +101,7 @@ fun MessageDetailsScreen(facts: MessageFacts, onBack: () -> Unit, modifier: Modi
         ) {
             MessageBubble(BubbleTone.Sent, MaterialTheme.shapes.medium, Modifier.fillMaxWidth(), contentPadding = PaddingValues(Afsh.spacing.lg)) {
                 if (facts.body.isNotEmpty()) {
-                    Text(facts.body, style = MaterialTheme.typography.bodyLarge.forUserText(facts.body))
+                    ContentText(facts.body, style = MaterialTheme.typography.bodyLarge, direction = ContentDirection.Text)
                 }
                 DeliveryLine(facts.time, facts.mark)
             }
@@ -159,7 +161,11 @@ fun SelectTextScreen(sender: String, body: String, onBack: () -> Unit, onCopy: (
                     .padding(horizontal = Afsh.spacing.lg, vertical = Afsh.spacing.xl),
                 verticalArrangement = Arrangement.spacedBy(Afsh.spacing.sm),
             ) {
-                Text(sender, style = MaterialTheme.typography.labelMedium.copy(textDirection = TextDirection.Content).withNumberOrder(sender), color = colors.onSurfaceVariant)
+                ContentText(
+                    sender,
+                    style = MaterialTheme.typography.labelMedium.copy(textDirection = TextDirection.Content),
+                    color = colors.onSurfaceVariant,
+                )
                 CompositionLocalProvider(
                     LocalTextSelectionColors provides TextSelectionColors(colors.primary, colors.secondaryContainer),
                 ) {
@@ -169,6 +175,7 @@ fun SelectTextScreen(sender: String, body: String, onBack: () -> Unit, onCopy: (
                         onValueChange = { value = it.copy(text = body, selection = it.selection.coerceIn(body.length)) },
                         readOnly = true,
                         textStyle = MaterialTheme.typography.bodyLarge.forUserText(body).copy(color = colors.onSurface),
+                        visualTransformation = ContentFontVisualTransformation,
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }

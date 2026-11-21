@@ -16,22 +16,18 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.afsh.messages.ui.Afsh
 import com.afsh.messages.ui.Avatar
-import com.afsh.messages.ui.withContentFonts
-import com.afsh.messages.ui.withNumberOrder
 
 private val ActionIconSize = 22.dp
 private val DetailRowHeight = 40.dp
@@ -55,17 +51,17 @@ fun IdentityCard(
         spacing = Afsh.spacing.sm,
     ) {
         Avatar(name, photoUri, isGroup, size = avatarSize)
-        Text(
-            remember(name) { AnnotatedString(name).withContentFonts() },
+        ContentText(
+            name,
             style = MaterialTheme.typography.titleLarge.copy(
                 fontSize = MaterialTheme.typography.headlineSmall.fontSize,
                 fontWeight = FontWeight.ExtraBold,
                 textDirection = TextDirection.Content,
-            ).withNumberOrder(name),
+            ),
             modifier = Modifier.semantics { heading() },
         )
         if (detail.isNotEmpty()) {
-            Text(detail, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+            ContentText(detail, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
         }
     }
 }
@@ -112,11 +108,10 @@ fun DetailRow(label: String, value: String, modifier: Modifier = Modifier) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(label, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
-        Text(
+        ContentText(
             value,
             // Names and numbers keep their own order; the column still ends at the row's end.
-            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold, textDirection = TextDirection.Content)
-                .withNumberOrder(value),
+            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold, textDirection = TextDirection.Content),
             color = colors.onSurface,
             textAlign = TextAlign.End,
             modifier = Modifier.weight(1f),
@@ -141,6 +136,6 @@ fun LabeledField(label: String, value: String, modifier: Modifier = Modifier, on
         verticalArrangement = Arrangement.spacedBy(Afsh.spacing.xs),
     ) {
         Text(label.uppercase(), style = MaterialTheme.typography.labelMedium, color = colors.onSurfaceVariant)
-        Text(value, style = MaterialTheme.typography.titleMedium.copy(textDirection = TextDirection.Content).withNumberOrder(value), color = colors.onSurface)
+        ContentText(value, style = MaterialTheme.typography.titleMedium.copy(textDirection = TextDirection.Content), color = colors.onSurface)
     }
 }

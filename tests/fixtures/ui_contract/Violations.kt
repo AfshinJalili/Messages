@@ -12,3 +12,6 @@ fun role() = MaterialTheme.colorScheme.onPrimaryContainer
 fun materialIcons() = Icon(Icons.Default.Search, null)
 fun imageVector() = ImageVector.Builder("x", 24.dp, 24.dp, 24f, 24f).build()
 fun painterDrawable() = painterResource(R.drawable.ic_msym_search)
+fun fontFamily() = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace)
+fun contentFontHelper() = Text(AnnotatedString(x).withContentFonts(), style = MaterialTheme.typography.titleMedium.forLabel(x))
+fun textFieldFonts() = BasicTextField(value = v, onValueChange = {})

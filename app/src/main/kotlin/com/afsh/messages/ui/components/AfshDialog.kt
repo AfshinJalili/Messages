@@ -58,7 +58,7 @@ fun AfshDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         modifier = Modifier.semantics { paneTitle = title },
-        title = { Text(title, Modifier.semantics { heading() }) },
+        title = { MixedLocaleText(title, Modifier.semantics { heading() }) },
         text = {
             Column(
                 if (scroll) Modifier.verticalScroll(rememberScrollState()) else Modifier,

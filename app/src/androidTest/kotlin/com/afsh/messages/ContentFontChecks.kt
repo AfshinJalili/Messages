@@ -15,6 +15,7 @@ import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onChild
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
@@ -31,9 +32,13 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.afsh.messages.helpers.ImportProgress
 import com.afsh.messages.ui.AfshTheme
 import com.afsh.messages.ui.forContent
+import com.afsh.messages.ui.components.ImportNotice
+import com.afsh.messages.ui.components.PatternText
 import com.afsh.messages.ui.components.SnippetText
+import com.afsh.messages.ui.message.SelectTextScreen
 import com.afsh.messages.ui.thread.MessageText
 import com.afsh.messages.ui.thread.COMPOSER_FIELD_TAG
 import com.afsh.messages.ui.thread.ComposerState
@@ -197,5 +202,59 @@ class ContentFontChecks {
             assertEquals(TextStyle().forContent(sample).lineHeight, result.layoutInput.style.lineHeight)
             assertEquals(AnnotatedString(sample).withContentFonts().spanStyles, result.layoutInput.text.spanStyles)
         }
+    }
+
+    @Test
+    fun selectTextScreenAppliesScriptFontsInBothDirections() {
+        val sample = "Hello می\u200Cروم سَلَام 123"
+        val sender = "مینا فراهانی · 12:41"
+        val direction = mutableStateOf(LayoutDirection.Ltr)
+        compose.setContent {
+            CompositionLocalProvider(LocalLayoutDirection provides direction.value) {
+                AfshTheme(dark = false) {
+                    SelectTextScreen(sender = sender, body = sample, onBack = {}, onCopy = {})
+                }
+            }
+        }
+        for (uiDirection in LayoutDirection.entries) {
+            compose.runOnIdle { direction.value = uiDirection }
+            val bodyLayout = compose.onNodeWithText(sample).textLayout()
+            assertEquals(TextStyle().forContent(sample).lineHeight, bodyLayout.layoutInput.style.lineHeight)
+            assertEquals(AnnotatedString(sample).withContentFonts().spanStyles, bodyLayout.layoutInput.text.spanStyles)
+            val senderLayout = compose.onNodeWithText(sender).textLayout()
+            assertEquals(AnnotatedString(sender).withContentFonts().spanStyles, senderLayout.layoutInput.text.spanStyles)
+        }
+    }
+
+    @Test
+    fun importNoticeUsesThemeFontWithTabularDigitsNotMonospace() {
+        val direction = mutableStateOf(LayoutDirection.Ltr)
+        compose.setContent {
+            CompositionLocalProvider(LocalLayoutDirection provides direction.value) {
+                AfshTheme(dark = false) {
+                    ImportNotice(ImportProgress(55))
+                }
+            }
+        }
+        val percentText = compose.activity.getString(R.string.import_progress_percent, 55)
+        for (uiDirection in LayoutDirection.entries) {
+            compose.runOnIdle { direction.value = uiDirection }
+            val result = compose.onNodeWithText(percentText, useUnmergedTree = true).textLayout()
+            assertEquals("tnum", result.layoutInput.style.fontFeatureSettings)
+            assertFalse(result.layoutInput.style.fontFamily == FontFamily.Monospace)
+        }
+    }
+
+    @Test
+    fun patternTextKeepsMonospaceAsciiAndVazirmatnPersian() {
+        val pattern = "\\b(رمز|کد)\\b"
+        compose.setContent {
+            AfshTheme(dark = false) {
+                PatternText(pattern)
+            }
+        }
+        val result = compose.onNodeWithText(pattern).textLayout()
+        assertEquals(FontFamily.Monospace, result.layoutInput.style.fontFamily)
+        assertTrue(result.layoutInput.text.spanStyles.any { it.item.fontFamily != null && it.item.fontFamily != FontFamily.Monospace })
     }
 }

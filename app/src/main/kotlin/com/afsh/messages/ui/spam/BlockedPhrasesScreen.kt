@@ -29,12 +29,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.afsh.messages.R
 import com.afsh.messages.ui.Afsh
 import com.afsh.messages.ui.components.AfshIcon
+import com.afsh.messages.ui.components.ContentDirection
+import com.afsh.messages.ui.components.ContentText
 import com.afsh.messages.ui.components.EmptyState
 import com.afsh.messages.ui.components.PageContentPadding
 import com.afsh.messages.ui.components.PageNavigation
@@ -42,8 +43,6 @@ import com.afsh.messages.ui.components.PageScaffold
 import com.afsh.messages.ui.components.SendButton
 import com.afsh.messages.ui.components.TextFieldSlab
 import com.afsh.messages.ui.components.fieldMinHeight
-import com.afsh.messages.ui.forContent
-import com.afsh.messages.ui.withContentFonts
 
 private val PhraseRowHeight = 50.dp
 
@@ -158,11 +157,12 @@ private fun PhraseRow(phrase: String, onEdit: () -> Unit, onRemove: () -> Unit) 
             .clickable(role = Role.Button, onClickLabel = stringResource(R.string.edit_phrase), onClick = onEdit),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            remember(phrase) { AnnotatedString(phrase).withContentFonts() },
-            style = MaterialTheme.typography.bodyMedium.forContent(phrase),
+        ContentText(
+            phrase,
+            style = MaterialTheme.typography.bodyMedium,
             color = colors.onSurface,
             modifier = Modifier.weight(1f),
+            direction = ContentDirection.Inherit,
         )
         IconButton(onClick = onRemove) {
             Icon(

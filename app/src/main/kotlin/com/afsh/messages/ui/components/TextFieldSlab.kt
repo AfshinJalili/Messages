@@ -11,6 +11,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldColors
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
@@ -18,9 +19,12 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.afsh.messages.ui.Afsh
+import com.afsh.messages.ui.ContentFontVisualTransformation
+import com.afsh.messages.ui.forFieldContent
 import com.afsh.messages.ui.lineHeightSp
 
 private val FieldMin = 56.dp
@@ -68,9 +72,11 @@ fun TextFieldSlab(
     keyboardActions: KeyboardActions = KeyboardActions.Default,
     singleLine: Boolean = true,
     textStyle: TextStyle = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+    visualTransformation: VisualTransformation = ContentFontVisualTransformation,
     containerColor: Color = MaterialTheme.colorScheme.surfaceContainer,
     isError: Boolean = false,
 ) {
+    val fieldStyle = remember(value, textStyle) { textStyle.forFieldContent(value) }
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
@@ -78,9 +84,10 @@ fun TextFieldSlab(
             .fillMaxWidth()
             .heightIn(min = fieldMinHeight())
             .semantics { accessibilityLabel?.let { contentDescription = it } },
-        textStyle = textStyle,
+        textStyle = fieldStyle,
         label = label?.let { { Text(it.uppercase(), style = MaterialTheme.typography.labelMedium) } },
         placeholder = placeholder?.let { { Text(it, style = textStyle.copy(fontWeight = FontWeight.Normal)) } },
+        visualTransformation = visualTransformation,
         isError = isError,
         singleLine = singleLine,
         keyboardOptions = keyboardOptions,

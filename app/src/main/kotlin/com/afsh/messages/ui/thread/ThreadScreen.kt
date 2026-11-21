@@ -173,8 +173,9 @@ import com.afsh.messages.models.spamReasonLabel
 import com.afsh.messages.ui.Avatar
 import com.afsh.messages.ui.Afsh
 import com.afsh.messages.ui.AfshTheme
-import com.afsh.messages.ui.forContent
-import com.afsh.messages.ui.withContentFonts
+import com.afsh.messages.ui.components.ContentDirection
+import com.afsh.messages.ui.components.ContentText
+import com.afsh.messages.ui.components.MixedLocaleText
 import com.afsh.messages.ui.rememberBitmap
 import kotlin.coroutines.resume
 
@@ -396,7 +397,7 @@ private fun EmptyConversation(firstName: String) {
         Icon(AfshIcon.Chat.painter(), contentDescription = null, tint = colors.primary, modifier = Modifier.size(32.dp))
         Text(stringResource(R.string.thread_empty_title), style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
         if (firstName.isNotEmpty()) {
-            Text(stringResource(R.string.thread_empty_text, firstName), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+            MixedLocaleText(stringResource(R.string.thread_empty_text, firstName), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
         }
     }
 }
@@ -537,7 +538,7 @@ private fun MessageRow(
         modifier = Modifier.padding(start = Afsh.spacing.lg, end = Afsh.spacing.lg, top = topGap),
         above = if (incoming && state.isGroup && !groupedAbove && message.senderName.isNotEmpty()) {
             { shift ->
-                Text(
+                ContentText(
                     message.senderName.uppercase(),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -651,11 +652,11 @@ private fun Bubble(
 @Composable
 internal fun MessageText(body: String, color: Color, linkColor: Color, links: Boolean, onCopy: (String) -> Unit) {
     val text = remember(body, links, linkColor) {
-        (if (links) linkify(body, linkColor, onCopy) else AnnotatedString(body)).withContentFonts()
+        if (links) linkify(body, linkColor, onCopy) else AnnotatedString(body)
     }
     // Each paragraph takes its direction from its first letter, whatever the app language, and one
     // with no letters (a number, emoji) reads left to right, as in Telegram and WhatsApp.
-    Text(text, style = MaterialTheme.typography.bodyLarge.forContent(body).copy(textDirection = TextDirection.ContentOrLtr), color = color, modifier = Modifier.fillMaxWidth())
+    ContentText(text, style = MaterialTheme.typography.bodyLarge, color = color, modifier = Modifier.fillMaxWidth(), direction = ContentDirection.Text)
 }
 
 // A match is the whole number or nothing. Isolating only part of it, as "000,000" out of
@@ -869,7 +870,7 @@ private fun AttachmentTile(icon: AfshIcon, title: String, subtitle: String, clic
                 }
             }
             Column(Modifier.weight(1f)) {
-                Text(title, style = MaterialTheme.typography.labelMedium, color = colors.onSurface, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                ContentText(title, style = MaterialTheme.typography.labelMedium, color = colors.onSurface, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 if (subtitle.isNotEmpty()) Text(subtitle, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant, maxLines = 1)
             }
         }

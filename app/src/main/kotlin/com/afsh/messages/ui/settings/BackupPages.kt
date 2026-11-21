@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import com.afsh.messages.R
 import com.afsh.messages.ui.Afsh
 import com.afsh.messages.ui.components.AfshIcon
+import com.afsh.messages.ui.components.ContentText
 import com.afsh.messages.ui.components.InfoPanel
 import com.afsh.messages.ui.components.AfshButton
 import com.afsh.messages.ui.components.SectionHeading
@@ -133,7 +134,7 @@ internal fun ImportReviewPage(state: SettingsUiState, onEvent: (SettingsEvent) -
             .padding(Afsh.spacing.lg),
         verticalArrangement = Arrangement.spacedBy(Afsh.spacing.xs),
     ) {
-        Text(review.fileName, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold), color = colors.onSurface)
+        ContentText(review.fileName, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold), color = colors.onSurface)
         Text(
             stringResource(
                 R.string.detail_pair,

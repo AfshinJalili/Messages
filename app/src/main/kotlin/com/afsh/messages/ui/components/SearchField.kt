@@ -17,6 +17,8 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.afsh.messages.R
+import com.afsh.messages.ui.ContentFontVisualTransformation
+import com.afsh.messages.ui.forFieldContent
 
 private val SearchIconSize = 24.dp
 
@@ -46,8 +48,9 @@ fun SearchField(
             .fillMaxWidth()
             .heightIn(min = fieldMinHeight())
             .semantics { contentDescription = hint },
-        textStyle = MaterialTheme.typography.bodyMedium,
+        textStyle = MaterialTheme.typography.bodyMedium.forFieldContent(query),
         placeholder = { Text(hint, style = MaterialTheme.typography.bodyMedium) },
+        visualTransformation = ContentFontVisualTransformation,
         leadingIcon = leadingIcon ?: {
             Icon(AfshIcon.Search.painter(), contentDescription = null, modifier = Modifier.size(SearchIconSize))
         },

@@ -67,10 +67,9 @@ import com.afsh.messages.ui.components.PageScaffold
 import com.afsh.messages.ui.components.dayLabel
 import com.afsh.messages.ui.components.messageBubbleShape
 import com.afsh.messages.ui.components.BubbleTone
+import com.afsh.messages.ui.components.ContentDirection
+import com.afsh.messages.ui.components.ContentText
 import com.afsh.messages.ui.components.MessageBubble
-import com.afsh.messages.ui.forContent
-import com.afsh.messages.ui.forLabel
-import com.afsh.messages.ui.withContentFonts
 import java.util.Calendar
 
 /** Everything 20 · Spam can ask its activity to do. */
@@ -417,15 +416,13 @@ private fun SpamMessage(line: SpamLine.Item, selecting: Boolean, checked: Boolea
 
 @Composable
 private fun SenderLabel(sender: String, color: Color, modifier: Modifier = Modifier) {
-    Text(senderText(sender), style = senderStyle(sender), color = color, modifier = modifier)
+    ContentText(
+        sender,
+        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.ExtraBold),
+        color = color,
+        modifier = modifier,
+    )
 }
-
-@Composable
-private fun senderText(sender: String) = remember(sender) { AnnotatedString(sender).withContentFonts() }
-
-@Composable
-private fun senderStyle(sender: String) =
-    MaterialTheme.typography.bodySmall.forLabel(sender).copy(fontWeight = FontWeight.ExtraBold)
 
 @Composable
 private fun Bubble(message: SpamReviewMessage, selected: Boolean, modifier: Modifier = Modifier) {
@@ -437,9 +434,10 @@ private fun Bubble(message: SpamReviewMessage, selected: Boolean, modifier: Modi
     MessageBubble(BubbleTone.of(incoming = true, selected = selected), messageBubbleShape(incoming = true), modifier) {
         val ranges = message.why?.ranges.orEmpty()
         val highlight = SpanStyle(background = colors.errorContainer, color = colors.onErrorContainer)
-        Text(
-            remember(message.body, ranges, highlight) { highlighted(message.body, ranges, highlight).withContentFonts() },
-            style = MaterialTheme.typography.bodyLarge.forContent(message.body),
+        ContentText(
+            remember(message.body, ranges, highlight) { highlighted(message.body, ranges, highlight) },
+            style = MaterialTheme.typography.bodyLarge,
+            direction = ContentDirection.Inherit,
         )
         val meta = if (selected) Afsh.colors.onSecondaryContainerVariant else colors.onSurfaceVariant
         message.why?.let { WhyLine(message.body, it, meta) }
@@ -463,9 +461,10 @@ private fun WhyLine(body: String, why: SpamWhy, color: Color) {
         words.isEmpty() -> stringResource(R.string.spam_why, rule)
         else -> stringResource(R.string.spam_why_words, rule, words.joinToString(stringResource(R.string.spam_why_separator)) { "«$it»" })
     }
-    Text(
-        remember(text) { AnnotatedString(text).withContentFonts() },
-        style = MaterialTheme.typography.bodySmall.forContent(text).copy(fontWeight = FontWeight.Bold),
+    ContentText(
+        text,
+        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
         color = color,
+        direction = ContentDirection.Inherit,
     )
 }

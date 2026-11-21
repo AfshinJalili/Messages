@@ -59,13 +59,15 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.afsh.messages.R
 import com.afsh.messages.ui.Afsh
-import com.afsh.messages.ui.forLabel
 import com.afsh.messages.ui.Avatar
+import com.afsh.messages.ui.ContentFontVisualTransformation
 import com.afsh.messages.ui.components.AfshIcon
+import com.afsh.messages.ui.components.ContentText
 import com.afsh.messages.ui.components.actionLabel
 import com.afsh.messages.ui.components.afshFieldColors
 import com.afsh.messages.ui.components.fieldMinHeight
 import com.afsh.messages.ui.components.selectionTitle
+import com.afsh.messages.ui.forFieldContent
 import com.afsh.messages.ui.lineHeightSp
 
 const val THREAD_TOP_BAR_TAG = "thread_top_bar"
@@ -191,9 +193,9 @@ private fun TopBarAction(icon: AfshIcon, label: String, tint: Color = LocalConte
 @Composable
 private fun Identity(title: String, subtitle: String, modifier: Modifier = Modifier) {
     Column(modifier, verticalArrangement = Arrangement.spacedBy(Afsh.spacing.xxs)) {
-        Text(
+        ContentText(
             title,
-            style = MaterialTheme.typography.titleLarge.forLabel(title),
+            style = MaterialTheme.typography.titleLarge,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.semantics { heading() },
@@ -258,6 +260,7 @@ private fun SearchField(onEvent: (ThreadEvent) -> Unit, modifier: Modifier = Mod
                 if (enter && it.type == KeyEventType.KeyUp && query.isNotBlank()) onEvent(ThreadEvent.SearchSubmit(query))
                 enter
             },
+        visualTransformation = ContentFontVisualTransformation,
         placeholder = {
             Text(
                 stringResource(R.string.search_in_conversation),
@@ -282,7 +285,7 @@ private fun SearchField(onEvent: (ThreadEvent) -> Unit, modifier: Modifier = Mod
             null
         },
         singleLine = true,
-        textStyle = MaterialTheme.typography.bodyMedium,
+        textStyle = MaterialTheme.typography.bodyMedium.forFieldContent(query),
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
         keyboardActions = KeyboardActions(onSearch = { if (query.isNotBlank()) onEvent(ThreadEvent.SearchSubmit(query)) }),
         shape = MaterialTheme.shapes.medium,

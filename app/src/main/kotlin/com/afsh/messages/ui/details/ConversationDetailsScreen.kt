@@ -31,6 +31,7 @@ import com.afsh.messages.ui.components.ActionTile
 import com.afsh.messages.ui.components.AfshIcon
 import com.afsh.messages.ui.components.Choice
 import com.afsh.messages.ui.components.ChoiceDialog
+import com.afsh.messages.ui.components.ContentText
 import com.afsh.messages.ui.components.IdentityCard
 import com.afsh.messages.ui.components.NavigationSetting
 import com.afsh.messages.ui.components.PageAppBarAction
@@ -38,7 +39,6 @@ import com.afsh.messages.ui.components.PageContentPadding
 import com.afsh.messages.ui.components.PageScaffold
 import com.afsh.messages.ui.components.SectionHeading
 import com.afsh.messages.ui.components.SwitchSetting
-import com.afsh.messages.ui.forLabel
 
 private val MemberAvatarSize = 40.dp
 
@@ -207,7 +207,7 @@ private fun MemberRow(member: Member, onClick: () -> Unit) {
     ) {
         Avatar(member.name, member.photoUri, isGroup = false, size = MemberAvatarSize)
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Afsh.spacing.xxs)) {
-            Text(member.name, style = MaterialTheme.typography.titleMedium.forLabel(member.name), color = colors.onSurface)
+            ContentText(member.name, style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
             if (member.number != member.name) {
                 Text(ltr(member.number), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
             }

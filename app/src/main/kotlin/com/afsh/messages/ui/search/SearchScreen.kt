@@ -54,11 +54,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.afsh.messages.R
 import com.afsh.messages.models.SearchResult
+import com.afsh.messages.ui.components.ContentText
 import com.afsh.messages.ui.components.ImportNotice
 import com.afsh.messages.ui.components.SearchField
 import com.afsh.messages.ui.AfshTheme
-import com.afsh.messages.ui.forLabel
-import com.afsh.messages.ui.withContentFonts
 import com.afsh.messages.ui.withNumberOrder
 
 private val ControlHeight = 56.dp
@@ -293,10 +292,10 @@ private fun HighlightedText(
             }
         }
     }
-    Text(
-        remember(highlighted) { highlighted.withContentFonts() },
+    ContentText(
+        highlighted,
         modifier,
-        style = (if (title) MaterialTheme.typography.titleMedium else MaterialTheme.typography.bodyMedium).forLabel(text),
+        style = if (title) MaterialTheme.typography.titleMedium else MaterialTheme.typography.bodyMedium,
         color = colors.onSurface,
         maxLines = if (title) 1 else EXCERPT_LINES,
         overflow = TextOverflow.Ellipsis,
@@ -316,7 +315,7 @@ private fun RecentSearchRow(query: String, onQuery: (String) -> Unit) {
             contentDescription = null,
             tint = MaterialTheme.colorScheme.primary,
         )
-        Text(query, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface)
+        ContentText(query, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface)
     }
 }
 

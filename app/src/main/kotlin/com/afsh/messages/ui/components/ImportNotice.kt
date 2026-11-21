@@ -14,13 +14,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import com.afsh.messages.R
 import com.afsh.messages.helpers.ImportProgress
 import com.afsh.messages.ui.Afsh
+import com.afsh.messages.ui.tabular
 
 /**
  * The first-run setup card in the inbox and search: one fixed label and one progress row with a
@@ -30,15 +30,13 @@ import com.afsh.messages.ui.Afsh
 @Composable
 fun ImportNotice(progress: ImportProgress, modifier: Modifier = Modifier) {
     val colors = MaterialTheme.colorScheme
-    val percentStyle = MaterialTheme.typography.bodySmall.copy(
-        fontFamily = FontFamily.Monospace,
-        fontFeatureSettings = "tnum",
-    )
+    val percentStyle = MaterialTheme.typography.bodySmall.tabular()
+    val maxPercent = stringResource(R.string.import_progress_percent, 100)
     val density = LocalDensity.current
     val textMeasurer = rememberTextMeasurer()
-    val percentWidth = remember(percentStyle, density) {
+    val percentWidth = remember(percentStyle, maxPercent, density) {
         with(density) {
-            textMeasurer.measure(text = "100%", style = percentStyle).size.width.toDp()
+            textMeasurer.measure(text = maxPercent, style = percentStyle).size.width.toDp()
         }
     }
     PanelCard(

@@ -56,7 +56,8 @@ import com.afsh.messages.R
 import com.afsh.messages.extensions.isVideoMimeType
 import com.afsh.messages.ui.Afsh
 import com.afsh.messages.ui.components.AfshIcon
-import com.afsh.messages.ui.forUserText
+import com.afsh.messages.ui.components.ContentDirection
+import com.afsh.messages.ui.components.ContentText
 import com.afsh.messages.ui.message.MessageFacts
 import com.afsh.messages.ui.rememberBitmap
 
@@ -145,10 +146,10 @@ fun MediaViewerScreen(items: List<MediaItem>, initial: Int, onEvent: (MediaEvent
             MediaPage(items[page], onZoomChange = { if (page == pager.currentPage) zoomed = it }, onPlay = { onEvent(MediaEvent.OpenElsewhere(items[page])) })
         }
         Column(Modifier.fillMaxWidth().padding(horizontal = Afsh.spacing.xl, vertical = Afsh.spacing.lg), verticalArrangement = Arrangement.spacedBy(Afsh.spacing.xs)) {
-            Text(current.sender, style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+            ContentText(current.sender, style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
             Text(current.time, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
             if (current.caption.isNotEmpty()) {
-                Text(current.caption, style = MaterialTheme.typography.bodyMedium.forUserText(current.caption), color = colors.onSurface, maxLines = 3)
+                ContentText(current.caption, style = MaterialTheme.typography.bodyMedium, color = colors.onSurface, maxLines = 3, direction = ContentDirection.Text)
             }
         }
         Row(

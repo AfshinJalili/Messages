@@ -31,6 +31,9 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.OffsetMapping
+import androidx.compose.ui.text.input.TransformedText
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
@@ -239,14 +242,13 @@ internal fun hasArabicLetter(text: CharSequence): Boolean {
 /** Survives LazyColumn disposal so recycled inbox rows skip script scanning for the same body. */
 private val contentFontCache = object : android.util.LruCache<String, AnnotatedString>(512) {}
 
-/** Content fonts follow script, independently of the language used by interface labels. */
-internal fun AnnotatedString.withContentFonts(): AnnotatedString {
+private fun AnnotatedString.withScriptFonts(baseFamily: FontFamily): AnnotatedString {
     val source = this
     if (source.isEmpty()) return source
-    val cacheable = source.spanStyles.isEmpty() && source.getStringAnnotations(0, source.length).isEmpty()
+    val cacheable = baseFamily == body && source.spanStyles.isEmpty() && source.getStringAnnotations(0, source.length).isEmpty()
     if (cacheable) contentFontCache.get(source.text)?.let { return it }
     val ranges = persianFontRanges(source.text)
-    // Latin-only: TextStyle.forContent already sets the body font — no AnnotatedString rebuild.
+    // Latin-only: the base TextStyle already sets the Latin font — no AnnotatedString rebuild.
     if (ranges.isEmpty()) {
         if (cacheable) contentFontCache.put(source.text, source)
         return source
@@ -257,7 +259,7 @@ internal fun AnnotatedString.withContentFonts(): AnnotatedString {
         if (ranges.size == 1 && ranges[0].first == 0 && ranges[0].last == source.lastIndex) {
             addStyle(persianStyle, 0, length)
         } else {
-            addStyle(SpanStyle(fontFamily = body), 0, length)
+            addStyle(SpanStyle(fontFamily = baseFamily), 0, length)
             for (range in ranges) {
                 addStyle(persianStyle, range.first, range.last + 1)
             }
@@ -267,12 +269,81 @@ internal fun AnnotatedString.withContentFonts(): AnnotatedString {
     return styled
 }
 
+/** Content fonts follow script, independently of the language used by interface labels. */
+internal fun AnnotatedString.withContentFonts(): AnnotatedString = withScriptFonts(body)
+
+/**
+ * Returns the cached Persian-spanned [AnnotatedString] when [text] contains Arabic script, or null
+ * for Latin-only strings so callers can take Compose's fast `Text(String)` path.
+ */
+internal fun contentAnnotatedOrNull(text: String): AnnotatedString? {
+    if (text.isEmpty()) return null
+    val plain = AnnotatedString(text)
+    val styled = plain.withContentFonts()
+    return if (styled === plain) null else styled
+}
+
+/** Fixed-width LTR pattern spans: ASCII regex syntax stays monospace while Persian words use Vazirmatn. */
+internal fun AnnotatedString.withPatternFonts(): AnnotatedString = withScriptFonts(FontFamily.Monospace)
+
+/**
+ * Adds Vazirmatn spans to Arabic-script runs without changing the base [TextStyle]'s font family
+ * (keeps Funnel Sans on English dialog titles and UI typography on interpolated hints).
+ */
+internal fun persianSafeOrNull(text: String): AnnotatedString? {
+    if (text.isEmpty()) return null
+    val ranges = persianFontRanges(text)
+    if (ranges.isEmpty()) return null
+    return buildAnnotatedString {
+        append(text)
+        val persianStyle = SpanStyle(fontFamily = persian)
+        for (range in ranges) {
+            addStyle(persianStyle, range.first, range.last + 1)
+        }
+    }
+}
+
+/** Script-font visual transformation for any editable or selectable user-content field. */
+val ContentFontVisualTransformation: VisualTransformation = VisualTransformation {
+    TransformedText(it.withContentFonts(), OffsetMapping.Identity)
+}
+
+/** Script-font visual transformation for fixed-width regex pattern fields. */
+val PatternFontVisualTransformation: VisualTransformation = VisualTransformation {
+    TransformedText(it.withPatternFonts(), OffsetMapping.Identity)
+}
+
+/** Tabular (equal-width) figures in the active theme font — never system monospace. */
+fun TextStyle.tabular(): TextStyle = copy(fontFeatureSettings = "tnum")
+
+/** Fixed-width LTR style for regex patterns; pair with [PatternText] or [PatternFontVisualTransformation]. */
+fun TextStyle.forPattern(text: CharSequence = ""): TextStyle = copy(
+    fontFamily = FontFamily.Monospace,
+    textDirection = TextDirection.Ltr,
+    lineHeight = if (hasArabicLetter(text)) 1.7.em else lineHeight,
+)
+
 internal fun TextStyle.forContent(text: CharSequence): TextStyle =
-    forContentScript(hasArabicLetter(text))
+    if (text.isEmpty()) this else forContentScript(hasArabicLetter(text))
 
 /** Same as [forContent] when the caller already knows whether the text needs Persian leading. */
 internal fun TextStyle.forContentScript(persianLeading: Boolean): TextStyle =
     copy(fontFamily = body, lineHeight = if (persianLeading) 1.7.em else 1.45.em)
+
+/**
+ * Script-aware style for text fields: keeps the UI locale's style while empty (so cursor and
+ * placeholder share one line box), switches to content script fonts once typed, and never shrinks
+ * leading below the base style (English typed in a Persian UI keeps 1.7em so the field never jumps).
+ */
+internal fun TextStyle.forFieldContent(text: CharSequence): TextStyle {
+    if (text.isEmpty()) return this
+    val content = forContent(text)
+    return if (content.lineHeightSp().value < lineHeightSp().value) {
+        content.copy(lineHeight = lineHeight)
+    } else {
+        content
+    }
+}
 
 /**
  * Line height as an absolute sp value. The theme stores leading in em; never call [TextUnit.toDp]
@@ -314,11 +385,16 @@ private fun typography(rtl: Boolean): Typography {
     fun style(family: FontFamily, size: Int, weight: FontWeight) =
         TextStyle(fontFamily = family, fontSize = size.sp, fontWeight = weight, lineHeight = leading)
     return Typography(
+        displayLarge = style(displayFamily, 57, FontWeight.Normal).copy(lineHeight = 1.15.em),
+        displayMedium = style(displayFamily, 45, FontWeight.Normal).copy(lineHeight = 1.2.em),
+        displaySmall = style(displayFamily, 36, FontWeight.Normal).copy(lineHeight = 1.25.em),
+        headlineLarge = style(displayFamily, 32, FontWeight.Normal).copy(lineHeight = 1.25.em),
         headlineMedium = style(displayFamily, 31, FontWeight.ExtraBold).copy(lineHeight = 1.25.em),
         // Dialog titles (text-title-lg).
         headlineSmall = style(displayFamily, 25, FontWeight.Normal).copy(lineHeight = 1.3.em),
         titleLarge = style(bodyFamily, 20, FontWeight.Bold),
         titleMedium = style(bodyFamily, 18, FontWeight.Bold),
+        titleSmall = style(bodyFamily, 14, FontWeight.Bold),
         // Composer / fields read bodyLarge; keep the style focused here so other roles stay screenshot-stable.
         bodyLarge = style(bodyFamily, 18, FontWeight.Normal).copy(lineHeightStyle = centeredLeading),
         bodyMedium = style(bodyFamily, 16, FontWeight.Normal),

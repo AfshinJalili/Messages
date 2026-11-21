@@ -2,7 +2,9 @@ package com.afsh.messages.ui.schedule
 
 import com.afsh.messages.ui.Afsh
 import com.afsh.messages.ui.components.AfshIcon
-import com.afsh.messages.ui.forUserText
+import com.afsh.messages.ui.components.ContentDirection
+import com.afsh.messages.ui.components.ContentText
+import androidx.compose.ui.text.style.TextDirection
 import android.text.format.DateFormat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -145,8 +147,8 @@ private fun MessagePreview(target: ScheduleTarget) {
             Modifier.padding(Afsh.spacing.lg),
             verticalArrangement = Arrangement.spacedBy(Afsh.spacing.sm),
         ) {
-            Text(target.text, style = MaterialTheme.typography.bodyLarge.forUserText(target.text), color = colors.onSurface)
-            Text(target.recipient, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+            ContentText(target.text, style = MaterialTheme.typography.bodyLarge, color = colors.onSurface, direction = ContentDirection.Text)
+            ContentText(target.recipient, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
         }
     }
 }
@@ -369,7 +371,7 @@ fun ScheduledMessageScreen(
                         style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.ExtraBold),
                         color = colors.onSecondaryContainer,
                     )
-                    Text(target.recipient, style = MaterialTheme.typography.bodySmall, color = Afsh.colors.onSecondaryContainerVariant)
+                    ContentText(target.recipient, style = MaterialTheme.typography.bodySmall, color = Afsh.colors.onSecondaryContainerVariant)
                 }
             }
             TextFieldSlab(
@@ -377,7 +379,9 @@ fun ScheduledMessageScreen(
                 onValueChange = { text = it },
                 label = stringResource(R.string.message_label),
                 singleLine = false,
-                textStyle = MaterialTheme.typography.bodyLarge.forUserText(text),
+                textStyle = MaterialTheme.typography.bodyLarge.copy(
+                    textDirection = if (text.isEmpty()) TextDirection.Content else TextDirection.ContentOrLtr,
+                ),
             )
             AfshButton(
                 stringResource(R.string.save_changes),

@@ -33,6 +33,7 @@ import com.afsh.messages.ui.components.AfshButton
 import com.afsh.messages.ui.components.AfshIcon
 import com.afsh.messages.ui.components.ButtonKind
 import com.afsh.messages.ui.components.ConfirmationDialog
+import com.afsh.messages.ui.components.ContentText
 import com.afsh.messages.ui.components.EmptyState
 import com.afsh.messages.ui.components.PageContentPadding
 import com.afsh.messages.ui.components.PageNavigation
@@ -41,8 +42,6 @@ import com.afsh.messages.ui.components.TextAction
 import com.afsh.messages.ui.components.RelativeDay
 import com.afsh.messages.ui.components.relativeDay
 import com.afsh.messages.ui.components.shortDate
-import com.afsh.messages.ui.forLabel
-import com.afsh.messages.ui.withContentFonts
 
 /** Everything 22 · Recycle bin can ask its activity to do. */
 sealed interface RecycleBinEvent {
@@ -179,9 +178,9 @@ private fun RecycledCard(
             Modifier.padding(start = Afsh.spacing.lg, end = Afsh.spacing.lg, top = Afsh.spacing.lg, bottom = Afsh.spacing.sm),
             verticalArrangement = Arrangement.spacedBy(Afsh.spacing.sm),
         ) {
-            Text(
-                remember(title) { AnnotatedString(title).withContentFonts() },
-                style = MaterialTheme.typography.titleMedium.forLabel(title),
+            ContentText(
+                title,
+                style = MaterialTheme.typography.titleMedium,
                 color = colors.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,

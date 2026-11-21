@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.afsh.messages.ui.components.AfshIcon
+import com.afsh.messages.ui.components.ContentText
 import com.bumptech.glide.Glide
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -64,7 +65,7 @@ fun Avatar(title: String, photoUri: String, isGroup: Boolean, size: Dp = 50.dp) 
     ) {
         Box(contentAlignment = Alignment.Center) {
             if (initials != null && !isGroup) {
-                Text(initials, style = MaterialTheme.typography.labelLarge.copy(fontSize = (size.value * 0.34f).sp))
+                ContentText(initials, style = MaterialTheme.typography.labelLarge.copy(fontSize = (size.value * 0.34f).sp))
             } else {
                 val icon = if (isGroup) AfshIcon.People else AfshIcon.Person
                 Icon(icon.painter(), contentDescription = null)

@@ -33,12 +33,10 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.LayoutDirection
@@ -46,9 +44,7 @@ import androidx.compose.ui.unit.dp
 import com.afsh.messages.R
 import com.afsh.messages.ui.Afsh
 import com.afsh.messages.ui.Avatar
-import com.afsh.messages.ui.forContent
 import com.afsh.messages.ui.inbox.InboxRow
-import com.afsh.messages.ui.withContentFonts
 import com.afsh.messages.ui.withNumberOrder
 
 private const val TWO_LINE_TITLE_SCALE = 1.3f
@@ -88,15 +84,6 @@ fun ConversationRow(
             mutedLabel, pinnedLabel,
         ).joinToString(", ")
     }
-    val titleMedium = MaterialTheme.typography.titleMedium
-    val titleTextStyle = remember(conversation.title, titleMedium) {
-        titleMedium.forContent(conversation.title)
-    }
-    val titleAnnotated = remember(conversation.title) {
-        val plain = AnnotatedString(conversation.title)
-        val styled = plain.withContentFonts()
-        if (styled === plain) null else styled
-    }
     val selectLabel = stringResource(R.string.inbox_select)
     val inlineMetadata = fontScale >= INLINE_METADATA_SCALE
     val titleMaxLines = if (fontScale >= TWO_LINE_TITLE_SCALE) 2 else 1
@@ -109,25 +96,15 @@ fun ConversationRow(
         // unmerged tree (StateNoticeChecks / TalkBack parts).
         headlineContent = {
             Box(Modifier.clearAndSetSemantics { }) {
-                if (titleAnnotated != null) {
-                    Text(
-                        titleAnnotated,
-                        style = titleTextStyle,
-                        color = colors.onSurface,
-                        maxLines = titleMaxLines,
-                        softWrap = titleMaxLines > 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                } else {
-                    Text(
-                        conversation.title,
-                        style = titleTextStyle,
-                        color = colors.onSurface,
-                        maxLines = titleMaxLines,
-                        softWrap = titleMaxLines > 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
+                ContentText(
+                    conversation.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = colors.onSurface,
+                    maxLines = titleMaxLines,
+                    softWrap = titleMaxLines > 1,
+                    overflow = TextOverflow.Ellipsis,
+                    direction = ContentDirection.Inherit,
+                )
             }
         },
         supportingContent = {
@@ -196,20 +173,18 @@ internal fun SnippetText(row: InboxRow, unread: Boolean) {
                     withStyle(SpanStyle(color = colors.error, fontWeight = FontWeight.Bold)) { append(label) }
                     append(' ')
                     append(draft)
-                }.withContentFonts()
+                }
             }
-            val bodyMedium = MaterialTheme.typography.bodyMedium
-            val draftStyle = remember(draft, bodyMedium) {
-                bodyMedium.forContent(draft).copy(textDirection = TextDirection.ContentOrLtr)
-            }
-            Text(
+            ContentText(
                 draftText,
-                style = draftStyle,
+                style = MaterialTheme.typography.bodyMedium,
                 color = colors.onSurfaceVariant,
                 textAlign = rowStart,
                 maxLines = 1,
                 softWrap = false,
                 overflow = TextOverflow.Ellipsis,
+                direction = ContentDirection.Text,
+                leadingSource = draft,
             )
         }
 
@@ -237,37 +212,16 @@ internal fun SnippetText(row: InboxRow, unread: Boolean) {
         }
 
         else -> {
-            val bodyMedium = MaterialTheme.typography.bodyMedium
-            val snippetStyle = remember(conversation.snippet, bodyMedium) {
-                bodyMedium.forContent(conversation.snippet).copy(textDirection = TextDirection.ContentOrLtr)
-            }
-            val snippetAnnotated = remember(conversation.snippet) {
-                val plain = AnnotatedString(conversation.snippet)
-                val styled = plain.withContentFonts()
-                if (styled === plain) null else styled
-            }
-            val snippetColor = if (unread) colors.onSurface else colors.onSurfaceVariant
-            if (snippetAnnotated != null) {
-                Text(
-                    snippetAnnotated,
-                    style = snippetStyle,
-                    color = snippetColor,
-                    textAlign = rowStart,
-                    maxLines = 1,
-                    softWrap = false,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            } else {
-                Text(
-                    conversation.snippet,
-                    style = snippetStyle,
-                    color = snippetColor,
-                    textAlign = rowStart,
-                    maxLines = 1,
-                    softWrap = false,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
+            ContentText(
+                conversation.snippet,
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (unread) colors.onSurface else colors.onSurfaceVariant,
+                textAlign = rowStart,
+                maxLines = 1,
+                softWrap = false,
+                overflow = TextOverflow.Ellipsis,
+                direction = ContentDirection.Text,
+            )
         }
     }
 }

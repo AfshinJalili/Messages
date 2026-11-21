@@ -32,13 +32,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.dp
 import com.afsh.messages.R
 import com.afsh.messages.helpers.FilterResult
@@ -53,14 +50,15 @@ import com.afsh.messages.ui.components.AfshIcon
 import com.afsh.messages.ui.components.AttentionNotice
 import com.afsh.messages.ui.components.ButtonKind
 import com.afsh.messages.ui.components.ConfirmationDialog
+import com.afsh.messages.ui.components.ContentDirection
+import com.afsh.messages.ui.components.ContentText
 import com.afsh.messages.ui.components.PageContentPadding
 import com.afsh.messages.ui.components.PageNavigation
 import com.afsh.messages.ui.components.PageScaffold
+import com.afsh.messages.ui.components.PatternText
 import com.afsh.messages.ui.components.SectionHeading
 import com.afsh.messages.ui.components.TextFieldSlab
 import com.afsh.messages.ui.components.TextInputDialog
-import com.afsh.messages.ui.forContent
-import com.afsh.messages.ui.withContentFonts
 
 private val PatternRowHeight = 50.dp
 
@@ -238,14 +236,14 @@ private fun TryMessage(patterns: SpamPatterns) {
             onValueChange = { body = it },
             placeholder = stringResource(R.string.spam_patterns_try_message),
             singleLine = false,
-            textStyle = MaterialTheme.typography.bodyLarge.forContent(body),
+            textStyle = MaterialTheme.typography.bodyLarge,
         )
         TextFieldSlab(
             value = sender,
             onValueChange = { sender = it },
             placeholder = stringResource(R.string.spam_patterns_try_sender),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-            textStyle = MaterialTheme.typography.bodyLarge.forContent(sender),
+            textStyle = MaterialTheme.typography.bodyLarge,
         )
         if (body.isNotBlank()) {
             val result = remember(patterns, sender, body) { RuleBasedFilter.explain(patterns, sender, body) }
@@ -270,15 +268,16 @@ private fun TryMessage(patterns: SpamPatterns) {
                         style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
                         color = if (result.verdict == FilterVerdict.BLOCK) colors.error else colors.onSurface,
                     )
-                    Text(
+                    ContentText(
                         remember(body, result, highlight) {
                             buildAnnotatedString {
                                 append(body)
                                 result.matches.forEach { addStyle(highlight, it.range.first, it.range.last + 1) }
-                            }.withContentFonts()
+                            }
                         },
-                        style = MaterialTheme.typography.bodyLarge.forContent(body),
+                        style = MaterialTheme.typography.bodyLarge,
                         color = colors.onSurface,
+                        direction = ContentDirection.Inherit,
                     )
                 }
             }
@@ -305,9 +304,9 @@ private fun PatternRow(pattern: String, onEdit: () -> Unit, onRemove: () -> Unit
             .clickable(role = Role.Button, onClickLabel = stringResource(R.string.spam_patterns_edit), onClick = onEdit),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            remember(pattern) { AnnotatedString(pattern) },
-            style = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace, textDirection = TextDirection.Ltr),
+        PatternText(
+            pattern,
+            style = MaterialTheme.typography.bodyMedium,
             color = colors.onSurface,
             modifier = Modifier.weight(1f),
         )
