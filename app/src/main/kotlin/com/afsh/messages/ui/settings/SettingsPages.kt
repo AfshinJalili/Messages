@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -257,29 +259,24 @@ private fun ThemeSwatch(theme: ThemeChoice) {
 @Composable
 internal fun WritingPage(state: SettingsUiState, onEvent: (SettingsEvent) -> Unit) {
     var picker by rememberSaveable { mutableStateOf<Picker?>(null) }
-    @Composable
-    fun onOff(enabled: Boolean) = stringResource(if (enabled) R.string.setting_on else R.string.setting_off)
     SectionHeading(stringResource(R.string.settings_composer))
     SwitchSetting(
         stringResource(R.string.send_on_enter),
         state.sendOnEnter,
         { onEvent(SettingsEvent.SetSendOnEnter(it)) },
         icon = AfshIcon.Return,
-        value = onOff(state.sendOnEnter),
     )
     SwitchSetting(
         stringResource(R.string.show_character_counter),
         state.characterCounter,
         { onEvent(SettingsEvent.SetCharacterCounter(it)) },
         icon = AfshIcon.Number,
-        value = onOff(state.characterCounter),
     )
     SwitchSetting(
         stringResource(R.string.use_simple_characters),
         state.simpleCharacters,
         { onEvent(SettingsEvent.SetSimpleCharacters(it)) },
         icon = AfshIcon.TextSize,
-        value = onOff(state.simpleCharacters),
     )
     SectionHeading(stringResource(R.string.settings_delivery))
     SwitchSetting(
@@ -287,21 +284,18 @@ internal fun WritingPage(state: SettingsUiState, onEvent: (SettingsEvent) -> Uni
         state.deliveryReports,
         { onEvent(SettingsEvent.SetDeliveryReports(it)) },
         icon = AfshIcon.CheckAll,
-        value = onOff(state.deliveryReports),
     )
     SwitchSetting(
         stringResource(R.string.send_long_message_mms),
         state.longAsMms,
         { onEvent(SettingsEvent.SetLongAsMms(it)) },
         icon = AfshIcon.Message,
-        value = onOff(state.longAsMms),
     )
     SwitchSetting(
         stringResource(R.string.group_message_mms),
         state.groupAsMms,
         { onEvent(SettingsEvent.SetGroupAsMms(it)) },
         icon = AfshIcon.People,
-        value = onOff(state.groupAsMms),
     )
     val limits = listOf(
         FILE_SIZE_NONE to R.string.mms_file_size_limit_none,
@@ -391,25 +385,28 @@ private fun LockScreenPreview(visibility: Int) {
     val body = stringResource(
         if (visibility == LOCK_SCREEN_SENDER_MESSAGE) R.string.lock_preview_message else R.string.lock_preview_hidden,
     )
-    Row(
+    Card(
         Modifier
             .fillMaxWidth()
-            .padding(vertical = Afsh.spacing.xs)
-            .clip(MaterialTheme.shapes.medium)
-            .background(colors.surfaceContainer)
-            .padding(Afsh.spacing.lg),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.md),
+            .padding(vertical = Afsh.spacing.xs),
+        shape = MaterialTheme.shapes.medium,
+        colors = CardDefaults.cardColors(containerColor = colors.surfaceContainer, contentColor = colors.onSurface),
     ) {
-        Icon(
-            AfshIcon.Chat.painter(),
-            contentDescription = null,
-            tint = colors.primary,
-            modifier = Modifier.size(LockPreviewIconSize),
-        )
-        Column(verticalArrangement = Arrangement.spacedBy(Afsh.spacing.xs)) {
-            Text(sender, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold), color = colors.onSurface)
-            Text(body, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+        Row(
+            Modifier.padding(Afsh.spacing.lg),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.md),
+        ) {
+            Icon(
+                AfshIcon.Chat.painter(),
+                contentDescription = null,
+                tint = colors.primary,
+                modifier = Modifier.size(LockPreviewIconSize),
+            )
+            Column(verticalArrangement = Arrangement.spacedBy(Afsh.spacing.xs)) {
+                Text(sender, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold), color = colors.onSurface)
+                Text(body, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+            }
         }
     }
 }
@@ -442,6 +439,7 @@ internal fun PrivacyPage(state: SettingsUiState, onEvent: (SettingsEvent) -> Uni
             value = pluralStringResource(R.plurals.delete_messages, state.recycleBinMessages, state.recycleBinMessages),
             disclosure = false,
             destructive = state.recycleBinMessages > 0,
+            enabled = state.recycleBinMessages > 0,
         )
     }
     NavigationSetting(
@@ -450,6 +448,7 @@ internal fun PrivacyPage(state: SettingsUiState, onEvent: (SettingsEvent) -> Uni
         icon = AfshIcon.Search,
         value = pluralStringResource(R.plurals.recent_search_count, state.recentSearches, state.recentSearches),
         disclosure = false,
+        enabled = state.recentSearches > 0,
     )
     InfoPanel(
         title = stringResource(R.string.no_account_required),

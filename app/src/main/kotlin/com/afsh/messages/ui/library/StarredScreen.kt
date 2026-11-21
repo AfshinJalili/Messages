@@ -1,8 +1,6 @@
 package com.afsh.messages.ui.library
 
 import com.afsh.messages.ui.Afsh
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,6 +9,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -19,9 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
@@ -38,6 +36,7 @@ import com.afsh.messages.ui.components.PageNavigation
 import com.afsh.messages.ui.components.PageScaffold
 import com.afsh.messages.ui.components.rememberDayAndTime
 import com.afsh.messages.ui.forContent
+import com.afsh.messages.ui.forLabel
 import com.afsh.messages.ui.withContentFonts
 
 private const val PREVIEW_LINES = 3
@@ -84,43 +83,46 @@ private fun StarredCard(message: StarredMessage, onClick: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     val stamp = rememberDayAndTime(message.millis)
     val starred = stringResource(R.string.starred_messages)
-    Column(
-        Modifier
+    Card(
+        onClick = onClick,
+        modifier = Modifier
             .fillMaxWidth()
-            .clip(MaterialTheme.shapes.medium)
-            .background(colors.surfaceContainer)
-            .clickable(role = Role.Button, onClick = onClick)
             .semantics(mergeDescendants = true) {
                 contentDescription = listOf(message.sender, message.body, stamp, starred).joinToString(", ")
-            }
-            .padding(horizontal = Afsh.spacing.lg, vertical = Afsh.spacing.md),
-        verticalArrangement = Arrangement.spacedBy(Afsh.spacing.xs),
+            },
+        shape = MaterialTheme.shapes.medium,
+        colors = CardDefaults.cardColors(containerColor = colors.surfaceContainer, contentColor = colors.onSurface),
     ) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Column(
+            Modifier.padding(horizontal = Afsh.spacing.lg, vertical = Afsh.spacing.md),
+            verticalArrangement = Arrangement.spacedBy(Afsh.spacing.xs),
+        ) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    remember(message.sender) { AnnotatedString(message.sender).withContentFonts() },
+                    style = MaterialTheme.typography.bodyMedium.forLabel(message.sender)
+                        .copy(fontWeight = FontWeight.Bold),
+                    color = colors.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+                Icon(
+                    AfshIcon.Star.painter(filled = true),
+                    contentDescription = null,
+                    tint = colors.primary,
+                    modifier = Modifier.size(17.dp),
+                )
+            }
             Text(
-                remember(message.sender) { AnnotatedString(message.sender).withContentFonts() },
-                style = MaterialTheme.typography.bodyMedium.forContent(message.sender)
-                    .copy(fontWeight = FontWeight.Bold),
+                remember(message.body) { AnnotatedString(message.body).withContentFonts() },
+                style = MaterialTheme.typography.bodyMedium.forContent(message.body),
                 color = colors.onSurface,
-                maxLines = 1,
+                maxLines = PREVIEW_LINES,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f),
             )
-            Icon(
-                AfshIcon.Star.painter(),
-                contentDescription = null,
-                tint = colors.primary,
-                modifier = Modifier.size(17.dp),
-            )
+            Text(stamp, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
         }
-        Text(
-            remember(message.body) { AnnotatedString(message.body).withContentFonts() },
-            style = MaterialTheme.typography.bodyMedium.forContent(message.body),
-            color = colors.onSurface,
-            maxLines = PREVIEW_LINES,
-            overflow = TextOverflow.Ellipsis,
-        )
-        Text(stamp, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
     }
 }
 
