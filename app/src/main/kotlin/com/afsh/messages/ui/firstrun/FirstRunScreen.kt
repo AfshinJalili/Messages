@@ -1,7 +1,6 @@
 package com.afsh.messages.ui.firstrun
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -9,13 +8,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -23,8 +22,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.afsh.messages.R
 import com.afsh.messages.ui.Afsh
+import com.afsh.messages.ui.components.AfshIcon
 import com.afsh.messages.ui.components.AfshButton
+import com.afsh.messages.ui.components.PageContentPadding
 import com.afsh.messages.ui.components.PageScaffold
+import com.afsh.messages.ui.components.ScreenStack
 
 private val MotifIconSize = 46.dp
 private val PermissionIconSize = 25.dp
@@ -41,10 +43,27 @@ sealed interface FirstRunEvent {
 /** 32 · First run / default SMS and 33 · First run / permissions. Both lead into Android's own prompts. */
 @Composable
 fun FirstRunScreen(step: FirstRunStep, onEvent: (FirstRunEvent) -> Unit, modifier: Modifier = Modifier) {
-    BackHandler { onEvent(FirstRunEvent.Back) }
-    when (step) {
-        FirstRunStep.DEFAULT_APP -> DefaultAppPage(onEvent, modifier)
-        FirstRunStep.PERMISSIONS -> PermissionsPage(onEvent, modifier)
+    BackHandler(enabled = step == FirstRunStep.DEFAULT_APP) { onEvent(FirstRunEvent.Back) }
+    ScreenStack(
+        screen = step,
+        depth = when (step) {
+            FirstRunStep.DEFAULT_APP -> 1
+            FirstRunStep.PERMISSIONS -> 2
+        },
+        previous = when (step) {
+            FirstRunStep.DEFAULT_APP -> null
+            FirstRunStep.PERMISSIONS -> FirstRunStep.DEFAULT_APP
+        },
+        onPop = when (step) {
+            FirstRunStep.DEFAULT_APP -> null
+            FirstRunStep.PERMISSIONS -> ({ onEvent(FirstRunEvent.Back) })
+        },
+        modifier = modifier,
+    ) { current ->
+        when (current) {
+            FirstRunStep.DEFAULT_APP -> DefaultAppPage(onEvent, Modifier)
+            FirstRunStep.PERMISSIONS -> PermissionsPage(onEvent, Modifier)
+        }
     }
 }
 
@@ -53,29 +72,33 @@ private fun DefaultAppPage(onEvent: (FirstRunEvent) -> Unit, modifier: Modifier)
     val colors = MaterialTheme.colorScheme
     PageScaffold(
         title = stringResource(R.string.welcome_title),
-        subtitle = stringResource(R.string.welcome_subtitle),
         modifier = modifier,
     ) {
         PageColumn {
-            Column(
-                Modifier
-                    .fillMaxWidth()
-                    .clip(MaterialTheme.shapes.medium)
-                    .background(colors.secondaryContainer)
-                    .padding(horizontal = 20.dp, vertical = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+            Card(
+                Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.medium,
+                colors = CardDefaults.cardColors(
+                    containerColor = colors.secondaryContainer,
+                    contentColor = colors.onSecondaryContainer,
+                ),
             ) {
-                Icon(painterResource(R.drawable.ic_lucide_messages_square), contentDescription = null, tint = colors.primary, modifier = Modifier.size(MotifIconSize))
-                Text(
-                    stringResource(R.string.welcome_statement),
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontSize = MaterialTheme.typography.headlineSmall.fontSize,
-                        fontWeight = FontWeight.ExtraBold,
-                    ),
-                    color = colors.onSecondaryContainer,
-                    modifier = Modifier.semantics { heading() },
-                )
-                Text(stringResource(R.string.welcome_text), style = MaterialTheme.typography.bodyMedium, color = Afsh.colors.onSecondaryContainerVariant)
+                Column(
+                    Modifier.padding(horizontal = Afsh.spacing.xl, vertical = Afsh.spacing.xxl),
+                    verticalArrangement = Arrangement.spacedBy(Afsh.spacing.lg),
+                ) {
+                    Icon(AfshIcon.Conversations.painter(), contentDescription = null, tint = colors.primary, modifier = Modifier.size(MotifIconSize))
+                    Text(
+                        stringResource(R.string.welcome_statement),
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontSize = MaterialTheme.typography.headlineSmall.fontSize,
+                            fontWeight = FontWeight.ExtraBold,
+                        ),
+                        color = colors.onSecondaryContainer,
+                        modifier = Modifier.semantics { heading() },
+                    )
+                    Text(stringResource(R.string.welcome_text), style = MaterialTheme.typography.bodyMedium, color = Afsh.colors.onSecondaryContainerVariant)
+                }
             }
             AfshButton(
                 stringResource(R.string.set_as_default_sms_app),
@@ -97,10 +120,10 @@ private fun PermissionsPage(onEvent: (FirstRunEvent) -> Unit, modifier: Modifier
         modifier = modifier,
     ) {
         PageColumn {
-            PermissionCard(R.drawable.ic_lucide_contact, stringResource(R.string.contacts), stringResource(R.string.contacts_permission_text))
+            PermissionCard(AfshIcon.Contact, stringResource(R.string.contacts), stringResource(R.string.contacts_permission_text))
             PermissionCard(
-                R.drawable.ic_lucide_bell,
-                stringResource(org.fossify.commons.R.string.notifications),
+                AfshIcon.Notifications,
+                stringResource(com.afsh.commons.R.string.notifications),
                 stringResource(R.string.notifications_permission_text),
             )
             AfshButton(
@@ -114,20 +137,23 @@ private fun PermissionsPage(onEvent: (FirstRunEvent) -> Unit, modifier: Modifier
 }
 
 @Composable
-private fun PermissionCard(icon: Int, title: String, detail: String) {
+private fun PermissionCard(icon: AfshIcon, title: String, detail: String) {
     val colors = MaterialTheme.colorScheme
-    Column(
+    Card(
         Modifier
             .fillMaxWidth()
-            .clip(MaterialTheme.shapes.medium)
-            .background(colors.surfaceContainer)
-            .semantics(mergeDescendants = true) {}
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+            .semantics(mergeDescendants = true) {},
+        shape = MaterialTheme.shapes.medium,
+        colors = CardDefaults.cardColors(containerColor = colors.surfaceContainer, contentColor = colors.onSurface),
     ) {
-        Icon(painterResource(icon), contentDescription = null, tint = colors.primary, modifier = Modifier.size(PermissionIconSize))
-        Text(title, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold), color = colors.onSurface)
-        Text(detail, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+        Column(
+            Modifier.padding(Afsh.spacing.lg),
+            verticalArrangement = Arrangement.spacedBy(Afsh.spacing.sm),
+        ) {
+            Icon(icon.painter(), contentDescription = null, tint = colors.primary, modifier = Modifier.size(PermissionIconSize))
+            Text(title, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold), color = colors.onSurface)
+            Text(detail, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+        }
     }
 }
 
@@ -136,7 +162,7 @@ private fun PageColumn(content: @Composable () -> Unit) {
     Column(
         Modifier
             .verticalScroll(rememberScrollState())
-            .padding(start = 20.dp, top = 20.dp, end = 20.dp, bottom = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+            .padding(PageContentPadding),
+        verticalArrangement = Arrangement.spacedBy(Afsh.spacing.md),
     ) { content() }
 }

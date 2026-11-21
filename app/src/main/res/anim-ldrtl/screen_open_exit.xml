@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- RTL: underneath shifts toward the start (physical right). fillAfter: see LTR open_exit. -->
+<translate xmlns:android="http://schemas.android.com/apk/res/android"
+    android:duration="@integer/motion_open_ms"
+    android:fromXDelta="0"
+    android:interpolator="@interpolator/emphasized_decelerate"
+    android:toXDelta="25%p"
+    android:fillEnabled="true"
+    android:fillAfter="true"
+    android:zAdjustment="bottom" />

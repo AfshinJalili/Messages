@@ -9,11 +9,9 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -43,11 +41,13 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import org.fossify.commons.extensions.getTimeFormat
+import com.afsh.commons.extensions.getTimeFormat
 import com.afsh.messages.R
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.semantics.selected
+import com.afsh.messages.extensions.config
+import com.afsh.messages.helpers.containsNumber
 import com.afsh.messages.ui.components.BarAction
 import com.afsh.messages.ui.components.SelectableBubbleRow
 import com.afsh.messages.ui.components.PageSelection
@@ -55,16 +55,21 @@ import com.afsh.messages.ui.components.longPressToSelect
 import com.afsh.messages.models.SpamReviewMessage
 import com.afsh.messages.models.SpamWhy
 import com.afsh.messages.ui.Afsh
+import com.afsh.messages.ui.components.AfshSheet
+import com.afsh.messages.ui.components.AfshSheetItem
 import com.afsh.messages.ui.components.ConfirmationDialog
 import com.afsh.messages.ui.components.DatePill
 import com.afsh.messages.ui.components.EmptyState
+import com.afsh.messages.ui.components.AfshIcon
 import com.afsh.messages.ui.components.PageAppBarAction
 import com.afsh.messages.ui.components.PageNavigation
 import com.afsh.messages.ui.components.PageScaffold
 import com.afsh.messages.ui.components.dayLabel
 import com.afsh.messages.ui.components.messageBubbleShape
-import com.afsh.messages.ui.forContent
-import com.afsh.messages.ui.withContentFonts
+import com.afsh.messages.ui.components.BubbleTone
+import com.afsh.messages.ui.components.ContentDirection
+import com.afsh.messages.ui.components.ContentText
+import com.afsh.messages.ui.components.MessageBubble
 import java.util.Calendar
 
 /** Everything 20 · Spam can ask its activity to do. */
@@ -72,7 +77,7 @@ sealed interface SpamEvent {
     data object Back : SpamEvent
     data object OpenRules : SpamEvent
     data class Open(val message: SpamReviewMessage) : SpamEvent
-    data class NotSpam(val messages: List<SpamReviewMessage>) : SpamEvent
+    data class NotSpam(val messages: List<SpamReviewMessage>, val neverSpamSender: Boolean) : SpamEvent
     data class BlockSender(val messages: List<SpamReviewMessage>) : SpamEvent
     data class Delete(val messages: List<SpamReviewMessage>) : SpamEvent
     data object DeleteAll : SpamEvent
@@ -164,12 +169,14 @@ fun SpamScreen(
     val selecting = chosen.isNotEmpty()
     val clear = { selected = emptySet() }
     var confirmBlock by remember { mutableStateOf<List<SpamReviewMessage>?>(null) }
+    var notSpamSheet by remember { mutableStateOf<List<SpamReviewMessage>?>(null) }
     var confirmDelete by remember { mutableStateOf<List<SpamReviewMessage>?>(null) }
     var confirmDeleteAll by remember { mutableStateOf(false) }
+    val spamNumbers = context.config.spamNumbers
+    val canAlwaysSpam = chosen.any { it.address.isNotEmpty() && !spamNumbers.containsNumber(it.address) }
     PageScaffold(
         title = stringResource(R.string.inbox_spam),
         modifier = modifier,
-        subtitle = stringResource(R.string.spam_subtitle),
         onBack = { onEvent(SpamEvent.Back) },
         navigation = navigation,
         snackbarHostState = snackbarHostState,
@@ -178,24 +185,39 @@ fun SpamScreen(
                 count = chosen.size,
                 onClear = clear,
                 onSelectAll = { selected = state.messages.mapTo(HashSet()) { it.id } },
-                actions = listOf(
-                    BarAction(stringResource(R.string.not_spam_short), R.drawable.ic_lucide_inbox) {
-                        clear()
-                        onEvent(SpamEvent.NotSpam(chosen))
-                    },
-                    BarAction(stringResource(R.string.block_sender), R.drawable.ic_lucide_ban, destructive = true) { confirmBlock = chosen },
-                    BarAction(stringResource(org.fossify.commons.R.string.delete), R.drawable.ic_lucide_trash_2, destructive = true) { confirmDelete = chosen },
-                ),
+                actions = buildList {
+                    add(
+                        BarAction(stringResource(R.string.not_spam_short), AfshIcon.Inbox) {
+                            notSpamSheet = chosen
+                        },
+                    )
+                    if (canAlwaysSpam) {
+                        add(
+                            BarAction(
+                                pluralStringResource(
+                                    R.plurals.always_spam,
+                                    chosen.map { it.address }.filter { it.isNotEmpty() }.distinct().size.coerceAtLeast(1),
+                                ),
+                                AfshIcon.SpamShield,
+                            ) { confirmBlock = chosen },
+                        )
+                    }
+                    add(
+                        BarAction(stringResource(com.afsh.commons.R.string.delete), AfshIcon.Delete, destructive = true) {
+                            confirmDelete = chosen
+                        },
+                    )
+                },
             )
         } else {
             null
         },
         actions = {
-            PageAppBarAction(R.drawable.ic_lucide_shield_ban, stringResource(R.string.block_rules), onClick = {
+            PageAppBarAction(AfshIcon.SpamShield, stringResource(R.string.filter_rules), onClick = {
                 onEvent(SpamEvent.OpenRules)
             })
             if (state.messages.isNotEmpty()) {
-                PageAppBarAction(R.drawable.ic_lucide_trash_2, stringResource(R.string.clear_spam), onClick = {
+                PageAppBarAction(AfshIcon.Delete, stringResource(R.string.clear_spam), onClick = {
                     confirmDeleteAll = true
                 })
             }
@@ -205,14 +227,14 @@ fun SpamScreen(
             // The whole page scrolls; sized to its content, a drag beside the bubbles missed it.
             modifier = Modifier.fillMaxSize(),
             state = listState,
-            contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(start = Afsh.spacing.lg, top = Afsh.spacing.lg, end = Afsh.spacing.lg, bottom = Afsh.spacing.xl),
+            verticalArrangement = Arrangement.spacedBy(Afsh.spacing.md),
         ) {
             when {
                 state.loading -> item(key = "loading") { LinearProgressIndicator(Modifier.fillMaxWidth()) }
                 state.messages.isEmpty() -> item(key = "empty") {
                     EmptyState(
-                        icon = R.drawable.ic_lucide_shield_ban,
+                        icon = AfshIcon.SpamShield,
                         title = stringResource(R.string.no_blocked_messages),
                         text = stringResource(R.string.spam_empty_text),
                     )
@@ -241,20 +263,52 @@ fun SpamScreen(
             }
         }
     }
+    notSpamSheet?.let { messages ->
+        AfshSheet(title = stringResource(R.string.not_spam_sheet_title), onDismiss = { notSpamSheet = null }) {
+            AfshSheetItem(
+                label = stringResource(R.string.not_spam_only),
+                icon = AfshIcon.Inbox,
+                supporting = stringResource(R.string.not_spam_only_text),
+                onClick = {
+                    dismissThen {
+                        notSpamSheet = null
+                        clear()
+                        onEvent(SpamEvent.NotSpam(messages, neverSpamSender = false))
+                    }
+                },
+            )
+            AfshSheetItem(
+                label = pluralStringResource(R.plurals.never_spam, 1),
+                icon = AfshIcon.Verified,
+                supporting = pluralStringResource(R.plurals.never_spam_text, 1),
+                onClick = {
+                    dismissThen {
+                        notSpamSheet = null
+                        clear()
+                        onEvent(SpamEvent.NotSpam(messages, neverSpamSender = true))
+                    }
+                },
+            )
+        }
+    }
     confirmBlock?.let { messages ->
+        val senderCount = remember(messages) { messages.map { it.sender }.distinct().size.coerceAtLeast(1) }
         val senders = remember(messages) { messages.map { it.sender }.distinct().joinToString(", ") }
         ConfirmationDialog(
-            title = stringResource(R.string.block_sender_title, senders),
-            explanation = stringResource(R.string.block_sender_text),
-            confirmLabel = stringResource(R.string.block_sender),
-            dismissLabel = stringResource(org.fossify.commons.R.string.cancel),
+            title = if (senderCount == 1) {
+                pluralStringResource(R.plurals.always_spam_title, 1, senders)
+            } else {
+                pluralStringResource(R.plurals.always_spam_title, senderCount, senderCount)
+            },
+            explanation = pluralStringResource(R.plurals.always_spam_text, senderCount),
+            confirmLabel = pluralStringResource(R.plurals.always_spam, senderCount),
+            dismissLabel = stringResource(com.afsh.commons.R.string.cancel),
             onConfirm = {
                 confirmBlock = null
                 clear()
                 onEvent(SpamEvent.BlockSender(messages))
             },
             onDismiss = { confirmBlock = null },
-            destructive = true,
         )
     }
     confirmDelete?.let { messages ->
@@ -262,7 +316,7 @@ fun SpamScreen(
             title = pluralStringResource(R.plurals.delete_messages_title, messages.size, messages.size),
             explanation = pluralStringResource(R.plurals.delete_messages_forever_text, messages.size),
             confirmLabel = stringResource(R.string.delete_forever),
-            dismissLabel = stringResource(org.fossify.commons.R.string.cancel),
+            dismissLabel = stringResource(com.afsh.commons.R.string.cancel),
             onConfirm = {
                 confirmDelete = null
                 clear()
@@ -277,7 +331,7 @@ fun SpamScreen(
             title = stringResource(R.string.clear_spam_title),
             explanation = stringResource(R.string.clear_spam_confirmation),
             confirmLabel = stringResource(R.string.delete_forever),
-            dismissLabel = stringResource(org.fossify.commons.R.string.cancel),
+            dismissLabel = stringResource(com.afsh.commons.R.string.cancel),
             onConfirm = {
                 confirmDeleteAll = false
                 onEvent(SpamEvent.DeleteAll)
@@ -343,7 +397,7 @@ private fun SpamMessage(line: SpamLine.Item, selecting: Boolean, checked: Boolea
         incoming = true,
         onToggle = onToggle,
         above = if (line.showSender) {
-            { shift -> SenderLabel(line.message.sender, MaterialTheme.colorScheme.primary, shift.padding(bottom = 12.dp)) }
+            { shift -> SenderLabel(line.message.sender, MaterialTheme.colorScheme.primary, shift.padding(bottom = Afsh.spacing.md)) }
         } else {
             null
         },
@@ -362,15 +416,13 @@ private fun SpamMessage(line: SpamLine.Item, selecting: Boolean, checked: Boolea
 
 @Composable
 private fun SenderLabel(sender: String, color: Color, modifier: Modifier = Modifier) {
-    Text(senderText(sender), style = senderStyle(sender), color = color, modifier = modifier)
+    ContentText(
+        sender,
+        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.ExtraBold),
+        color = color,
+        modifier = modifier,
+    )
 }
-
-@Composable
-private fun senderText(sender: String) = remember(sender) { AnnotatedString(sender).withContentFonts() }
-
-@Composable
-private fun senderStyle(sender: String) =
-    MaterialTheme.typography.bodySmall.forContent(sender).copy(fontWeight = FontWeight.ExtraBold)
 
 @Composable
 private fun Bubble(message: SpamReviewMessage, selected: Boolean, modifier: Modifier = Modifier) {
@@ -379,19 +431,13 @@ private fun Bubble(message: SpamReviewMessage, selected: Boolean, modifier: Modi
     val time = remember(message.date) {
         android.text.format.DateFormat.format(context.getTimeFormat(), message.date).toString()
     }
-    val shape = messageBubbleShape(incoming = true)
-    Column(
-        modifier
-            .background(if (selected) colors.secondaryContainer else colors.surfaceContainer, shape)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
+    MessageBubble(BubbleTone.of(incoming = true, selected = selected), messageBubbleShape(incoming = true), modifier) {
         val ranges = message.why?.ranges.orEmpty()
         val highlight = SpanStyle(background = colors.errorContainer, color = colors.onErrorContainer)
-        Text(
-            remember(message.body, ranges, highlight) { highlighted(message.body, ranges, highlight).withContentFonts() },
-            style = MaterialTheme.typography.bodyLarge.forContent(message.body),
-            color = if (selected) colors.onSecondaryContainer else colors.onSurface,
+        ContentText(
+            remember(message.body, ranges, highlight) { highlighted(message.body, ranges, highlight) },
+            style = MaterialTheme.typography.bodyLarge,
+            direction = ContentDirection.Inherit,
         )
         val meta = if (selected) Afsh.colors.onSecondaryContainerVariant else colors.onSurfaceVariant
         message.why?.let { WhyLine(message.body, it, meta) }
@@ -415,9 +461,10 @@ private fun WhyLine(body: String, why: SpamWhy, color: Color) {
         words.isEmpty() -> stringResource(R.string.spam_why, rule)
         else -> stringResource(R.string.spam_why_words, rule, words.joinToString(stringResource(R.string.spam_why_separator)) { "«$it»" })
     }
-    Text(
-        remember(text) { AnnotatedString(text).withContentFonts() },
-        style = MaterialTheme.typography.bodySmall.forContent(text).copy(fontWeight = FontWeight.Bold),
+    ContentText(
+        text,
+        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
         color = color,
+        direction = ContentDirection.Inherit,
     )
 }

@@ -84,9 +84,23 @@
     <string name="clear_spam">پاک کردن همه</string>
     <string name="clear_spam_confirmation">همه‌ی پیام‌های مسدودشده برای همیشه حذف شوند؟</string>
     <string name="not_spam">هرزنامه نیست (بازگشت به صندوق)</string>
-    <string name="allow_sender">همیشه این فرستنده را مجاز کن</string>
+    <plurals name="never_spam">
+        <item quantity="one">هرگز این فرستنده را هرزنامه نکن</item>
+        <item quantity="other">هرگز این فرستنده‌ها را هرزنامه نکن</item>
+    </plurals>
+    <plurals name="never_spam_title">
+        <item quantity="one">هرگز %s را هرزنامه نکنیم؟</item>
+        <item quantity="other">هرگز این %d فرستنده را هرزنامه نکنیم؟</item>
+    </plurals>
+    <plurals name="never_spam_text">
+        <item quantity="one">پیام‌هایشان در صندوق می‌مانند، حتی اگر با یک عبارت یا فیلتر تبلیغاتی جور درآیند. در قوانین فیلتر می‌توانید تغییرش دهید.</item>
+        <item quantity="other">پیام‌هایشان در صندوق می‌مانند، حتی اگر با یک عبارت یا فیلتر تبلیغاتی جور درآیند. در قوانین فیلتر می‌توانید تغییرش دهید.</item>
+    </plurals>
     <string name="sender_allowed">فرستنده مجاز شد و پیام بازگردانده شد</string>
-    <string name="message_restored">پیام به صندوق بازگردانده شد</string>
+    <plurals name="message_restored">
+        <item quantity="one">پیام به صندوق بازگردانده شد</item>
+        <item quantity="other">پیام‌ها به صندوق بازگردانده شدند</item>
+    </plurals>
     <string name="block_reason_ai">فیلتر قدیمی</string>
     <string name="block_reason_keyword">کلیدواژه</string>
     <string name="block_reason_number">شماره‌ی مسدودشده</string>
@@ -110,8 +124,14 @@
     <string name="recent_searches">جست‌وجوهای اخیر</string>
     <string name="mute_conversation">بی‌صدا</string>
     <string name="unmute_conversation">لغو بی‌صدا</string>
-    <string name="conversation_muted">گفت‌وگو بی‌صدا شد</string>
-    <string name="conversation_unmuted">صدای گفت‌وگو برگشت</string>
+    <plurals name="conversation_muted">
+        <item quantity="one">گفت‌وگو بی‌صدا شد</item>
+        <item quantity="other">%d گفت‌وگو بی‌صدا شد</item>
+    </plurals>
+    <plurals name="conversation_unmuted">
+        <item quantity="one">صدای گفت‌وگو برگشت</item>
+        <item quantity="other">صدای %d گفت‌وگو برگشت</item>
+    </plurals>
     <string name="muted">بی‌صدا</string>
     <string name="star_message">ستاره‌دار کردن</string>
     <string name="unstar_message">برداشتن ستاره</string>
@@ -147,12 +167,6 @@
         <item quantity="one">%d انتخاب‌شده</item>
         <item quantity="other">%d انتخاب‌شده</item>
     </plurals>
-    <!-- Commons ships these untranslated for Persian. -->
-    <string name="more_options">گزینه‌های بیشتر</string>
-    <string name="block_confirmation">مطمئنید که می‌خواهید «%s» را مسدود کنید؟</string>
-    <string name="deletion_confirmation">مطمئنید که می‌خواهید %s را حذف کنید؟</string>
-    <!-- Commons has no Persian for this one; the app string overrides it. -->
-    <string name="take_photo">گرفتن عکس</string>
     <string name="thread_retry">تلاش دوباره</string>
     <string name="thread_search_next">مورد بعدی</string>
     <plurals name="thread_new_count">
@@ -172,13 +186,10 @@
         <item quantity="one">%d پیام به صندوق منتقل شد</item>
         <item quantity="other">%d پیام به صندوق منتقل شد</item>
     </plurals>
-    <string name="library_subtitle">چیزهایی که می‌خواهید نگه دارید، بی‌صدا کنید یا بازگردانید</string>
     <string name="library_starred_description">پیام‌هایی که برای بازگشت علامت زده‌اید</string>
     <string name="library_archive_description">گفت‌وگوهای خارج از صندوق اصلی</string>
     <string name="library_spam_description">پیام‌های فیلترشده و قوانین</string>
     <string name="library_recycle_description">پیام‌های تازه حذف‌شده، با امکان بازگشت</string>
-    <string name="library_principle_title">صندوق شما شخصی می‌ماند.</string>
-    <string name="library_principle_body">هیچ‌چیز بدون اقدام یا قانون مشخص به اینجا نمی‌آید.</string>
     <string name="composer_hint">پیام</string>
     <string name="composer_hint_name">پیام به %s</string>
     <string name="composer_cant_reply">این فرستنده نمی‌تواند پاسخ دریافت کند</string>
@@ -226,13 +237,12 @@
 
     <!-- Library pages (design 18, 19, 22) -->
     <string name="day_and_time">%1$s · %2$s</string>
-    <string name="starred_subtitle">چیزهای کوچکی که ارزش دوباره پیدا کردن دارند</string>
     <string name="starred_empty_text">به پیامی ستاره بدهید تا اینجا بماند.</string>
-    <string name="archive_subtitle">بی‌صدا، اما هرگز گم نمی‌شود</string>
     <string name="archive_hint">گفت‌وگوهای بایگانی‌شده از صندوق بیرون می‌روند و همچنان در جست‌وجو پیدا می‌شوند.</string>
     <string name="archive_action_title">لازمش دارید در صندوق؟</string>
     <string name="archive_action_text">گفت‌وگو را بکشید، یا بازش کنید و «درآوردن از بایگانی» را بزنید.</string>
     <plurals name="conversations_unarchived">
+        <item quantity="one">گفت‌وگو از بایگانی درآمد</item>
         <item quantity="other">%d گفت‌وگو از بایگانی درآمد</item>
     </plurals>
     <string name="recycle_bin_subtitle">گفت‌وگوهای تازه حذف‌شده را بازگردانید یا پاک کنید</string>
@@ -251,16 +261,39 @@
     <string name="delete_forever_title">برای همیشه حذف شود؟</string>
     <string name="delete_forever_conversation_text">این گفت‌وگو پس از حذف همیشگی قابل بازگرداندن نیست.</string>
 
-    <!-- Spam and block rules (design 20, 21, 38, 50, 51) -->
-    <string name="spam_subtitle">جدا از کسانی که به آن‌ها اعتماد دارید</string>
+    <!-- Spam and filter rules (design 20, 21, 38, 50, 51) -->
     <string name="spam_empty_text">پیام‌های مسدود و مشکوک بدون اعلان در صندوق، اینجا می‌مانند.</string>
     <string name="not_spam_short">هرزنامه نیست</string>
-    <string name="block_sender">مسدود کردن فرستنده</string>
-    <string name="block_sender_title">%s مسدود شود؟</string>
-    <string name="block_sender_text">پیام‌های تازه‌اش بی‌اعلان مستقیم به هرزنامه می‌روند. در قوانین مسدودسازی می‌توانید رفع مسدودی کنید.</string>
+    <string name="not_spam_sheet_title">این پیام‌ها از هرزنامه بیرون بیایند؟</string>
+    <string name="not_spam_only">فقط همین پیام‌ها</string>
+    <string name="not_spam_only_text">به گفت‌وگو برمی‌گردند. پیام‌های بعدی ممکن است دوباره فیلتر شوند.</string>
+    <plurals name="always_spam">
+        <item quantity="one">همیشه این فرستنده را هرزنامه کن</item>
+        <item quantity="other">همیشه این فرستنده‌ها را هرزنامه کن</item>
+    </plurals>
+    <plurals name="always_spam_title">
+        <item quantity="one">همیشه %s هرزنامه باشد؟</item>
+        <item quantity="other">همیشه این %d فرستنده هرزنامه باشند؟</item>
+    </plurals>
+    <plurals name="always_spam_text">
+        <item quantity="one">از حالا پیام‌های تازه‌اش بی‌اعلان به هرزنامه می‌روند. پیامک‌های فعلی‌اش سر جایشان می‌مانند. پیام‌های بعدی را در کتابخانه ← هرزنامه ببینید.</item>
+        <item quantity="other">از حالا پیام‌های تازه‌شان بی‌اعلان به هرزنامه می‌روند. پیامک‌های فعلی‌شان سر جایشان می‌مانند. پیام‌های بعدی را در کتابخانه ← هرزنامه ببینید.</item>
+    </plurals>
+    <plurals name="block_on_phone">
+        <item quantity="one">مسدود کردن روی این گوشی</item>
+        <item quantity="other">مسدود کردن این فرستنده‌ها روی این گوشی</item>
+    </plurals>
+    <plurals name="block_on_phone_title">
+        <item quantity="one">%s روی این گوشی مسدود شود؟</item>
+        <item quantity="other">این %d فرستنده روی این گوشی مسدود شوند؟</item>
+    </plurals>
+    <plurals name="block_on_phone_text">
+        <item quantity="one">هرزنامه پیام‌ها را در پوشهٔ هرزنامه نگه می‌دارد. مسدود کردن روی این گوشی یعنی گوشی آن‌ها را دور می‌اندازد و هرگز نمی‌رسند.</item>
+        <item quantity="other">هرزنامه پیام‌ها را در پوشهٔ هرزنامه نگه می‌دارد. مسدود کردن روی این گوشی یعنی گوشی آن‌ها را دور می‌اندازد و هرگز نمی‌رسند.</item>
+    </plurals>
+    <string name="block_on_phone_unavailable">این گوشی نمی‌تواند شماره مسدود کند.</string>
     <string name="clear_spam_title">همهٔ هرزنامه‌ها حذف شوند؟</string>
-    <string name="block_rules">قوانین مسدودسازی</string>
-    <string name="block_rules_subtitle">فهرستی کوتاه و روشن از آنچه فیلتر می‌شود</string>
+    <string name="filter_rules">هرزنامه و مسدودسازی</string>
     <plurals name="blocked_senders">
         <item quantity="one">%d فرستنده</item>
         <item quantity="other">%d فرستنده</item>
@@ -275,18 +308,33 @@
         <item quantity="other">%d شماره</item>
     </plurals>
     <string name="filter_obvious_spam">فیلتر هرزنامه‌های آشکار</string>
-    <string name="filter_obvious_spam_on">روشن · با قوانین روی گوشی</string>
+    <string name="spam_feature_summary">پیام‌های تبلیغاتی، فرستنده‌های مسدود و عبارت‌هایی که انتخاب می‌کنید در هرزنامه می‌مانند، نه در صندوق.</string>
     <string name="filter_obvious_spam_off">خاموش</string>
+    <string name="filter_on_text">به واژه‌های تبلیغاتی و رویداد فارسی و اموجی‌های قوی تبلیغاتی (از جمله ✅ و 📍) نگاه می‌کند. دو نشانه، یا یک نشانه به‌علاوهٔ پیوند یا فرستندهٔ نام‌دار، به هرزنامه می‌رود. رمز یک‌بارمصرف، پیام بانک و رسید، و افراد دفترچه مخاطبان فیلتر نمی‌شوند. خط‌هایی مثل «لغو11» یا unsubscribe نادیده گرفته می‌شوند.</string>
+    <string name="unknown_numbers">شماره‌های ناشناس</string>
+    <string name="unknown_numbers_summary">پیام شماره‌هایی که در مخاطبان نیستند به هرزنامه می‌رود.</string>
+    <string name="always_spam_list">فرستنده‌های همیشه‌هرزنامه</string>
+    <string name="never_spam_list">فرستنده‌هایی که هرگز هرزنامه نیستند</string>
+    <string name="android_blocked">مسدود در اندروید</string>
+    <string name="android_blocked_text">پیام‌های این فرستنده‌ها ممکن است اصلاً به گوشی نرسند.</string>
+    <string name="spam_why_sender">این فرستنده را همیشه هرزنامه کرده‌اید</string>
+    <string name="spam_why_android">مسدود در اندروید</string>
+    <string name="spam_why_unknown">شمارهٔ ناشناس</string>
+    <string name="no_always_spam_senders">فرستندهٔ همیشه‌هرزنامه نیست</string>
+    <string name="no_never_spam_senders">فرستندهٔ هرگز-هرزنامه نیست</string>
+    <string name="no_android_blocked">شماره‌ای در اندروید مسدود نیست</string>
+    <string name="remove_never_spam">حذف %s</string>
+    <string name="filter_senders">فرستنده‌ها</string>
     <string name="edit_phrase">ویرایش عبارت</string>
     <string name="remove_phrase">حذف %s</string>
-    <string name="add_phrase_or_number">افزودن عبارت یا شماره</string>
     <string name="block_a_phrase">مسدود کردن عبارت</string>
     <string name="block_a_phrase_subtitle">پیام‌هایی که این عبارت را دارند به هرزنامه می‌روند</string>
     <string name="block_a_number">مسدود کردن شماره</string>
     <string name="block_a_number_subtitle">پیام‌های این فرستنده به هرزنامه می‌روند</string>
-    <string name="blocked_numbers_subtitle">این فرستنده‌ها به صندوق شما نمی‌رسند</string>
     <string name="no_blocked_numbers">شماره‌ی مسدودی نیست</string>
-    <string name="no_blocked_numbers_text">فرستنده را از هرزنامه یا گفت‌وگو مسدود کنید، یا شماره‌ای اینجا اضافه کنید.</string>
+    <string name="no_blocked_numbers_text">فرستنده را از گفت‌وگو همیشه یا هرگز هرزنامه کنید، روی این گوشی مسدود کنید، یا شماره‌ای اینجا اضافه کنید.</string>
+    <string name="no_blocked_phrases">عبارت مسدودی نیست</string>
+    <string name="no_blocked_phrases_text">عبارتی اضافه کنید تا پیام‌های مطابق به هرزنامه بروند.</string>
     <string name="phrase">عبارت</string>
     <string name="phone_number_label">شماره یا نام فرستنده</string>
     <string name="phrase_guidance">بزرگی و کوچکی حروف مهم نیست. پیام‌های فیلترشده را در هرزنامه ببینید.</string>
@@ -300,43 +348,37 @@
     <string name="phrase_error_detail">همان عبارت را ویرایش کنید، یا واژه‌های دیگری امتحان کنید.</string>
     <string name="number_invalid">شماره یا نام فرستنده را وارد کنید</string>
     <string name="number_error_detail">رقم‌ها یا نامی را بنویسید که پیام‌ها با آن می‌رسند.</string>
-    <string name="move_block_rules">انتقال قوانین مسدودسازی</string>
-    <string name="move_block_rules_subtitle">انتخاب‌های فیلترتان را روی گوشی دیگر نگه دارید</string>
+    <string name="move_filter_rules">انتقال قوانین فیلتر</string>
     <string name="what_will_be_exported">چه چیزی برون‌بری می‌شود</string>
-    <string name="rules_summary">%1$s · %2$s</string>
+    <string name="rules_summary">%1$s · %2$s · %3$s</string>
+    <plurals name="never_spam_sender_count">
+        <item quantity="one">%d فرستندهٔ هرگز-هرزنامه</item>
+        <item quantity="other">%d فرستندهٔ هرگز-هرزنامه</item>
+    </plurals>
     <string name="rules_export_privacy">این فایل شماره‌ها و عبارت‌های مسدود را فهرست می‌کند. آن را خصوصی نگه دارید.</string>
-    <string name="export_block_list">برون‌بری فهرست مسدودها</string>
-    <string name="have_a_block_list">فهرست مسدودها دارید؟</string>
-    <string name="have_a_block_list_text">فایلی انتخاب کنید تا قوانینش با این گوشی ادغام شود.</string>
-    <string name="block_rules_exported">فهرست مسدودها برون‌بری شد</string>
-    <string name="block_rules_imported">%s اضافه شد</string>
+    <string name="export_filter_rules">برون‌بری قوانین فیلتر</string>
+    <string name="have_filter_rules">قوانین فیلتر دارید؟</string>
+    <string name="have_filter_rules_text">فایلی انتخاب کنید تا قوانینش با این گوشی ادغام شود.</string>
+    <string name="filter_rules_exported">قوانین فیلتر برون‌بری شد</string>
+    <string name="filter_rules_imported">%s اضافه شد</string>
 
     <!-- Settings (design 24–31, 48, 49) -->
-    <string name="settings_subtitle">پیام‌ها را برای خودتان تنظیم کنید</string>
     <string name="settings_your_experience">تجربهٔ شما</string>
     <string name="settings_control">کنترل</string>
     <string name="settings_appearance">نمایش و زبان</string>
-    <string name="settings_appearance_subtitle">خواندن راحت در روشنایی و تاریکی</string>
     <string name="settings_appearance_summary">نمای برنامه، اندازهٔ نوشته، زبان، تاریخ</string>
-    <string name="settings_notifications_subtitle">توجه وقتی مهم است، حریم خصوصی وقتی لازم است</string>
     <string name="settings_notifications_summary">اعلان‌ها و صفحهٔ قفل</string>
     <string name="settings_writing">نوشتن و ارسال</string>
-    <string name="settings_writing_subtitle">نوار نوشتن را قابل‌پیش‌بینی نگه دارید</string>
     <string name="settings_writing_summary">نوار نوشتن، MMS و تحویل</string>
     <string name="settings_interactions">تعامل‌ها</string>
-    <string name="settings_interactions_subtitle">میان‌برهایی را انتخاب کنید که به دستتان می‌آید</string>
     <string name="settings_interactions_summary">کشیدن و بایگانی</string>
-    <string name="settings_block_rules_summary">شماره‌ها، عبارت‌ها، فیلتر روی گوشی</string>
+    <string name="settings_filter_rules_summary">فیلتر، فرستنده، عبارت</string>
     <string name="settings_privacy">حریم خصوصی و قفل</string>
-    <string name="settings_privacy_subtitle">کنترل کنید دیگران چه می‌بینند</string>
     <string name="settings_privacy_summary">قفل برنامه و داده‌های ذخیره‌شده</string>
     <string name="settings_backup">پشتیبان‌گیری و بازیابی</string>
-    <string name="settings_backup_subtitle">تاریخچهٔ پیام‌هایتان، در اختیار خودتان</string>
     <string name="settings_backup_summary">پیام‌هایتان را امن جابه‌جا کنید</string>
     <string name="about_app">درباره</string>
-    <string name="about_subtitle">جایی خصوصی برای پیامک‌ها و MMSهای شما</string>
     <string name="about_summary">اطلاعات برنامه و راهنما</string>
-    <string name="about_description">ساخته‌شده برای گفت‌وگوهای خوانا و قابل‌اعتماد.</string>
     <string name="help_and_support">راهنما و پشتیبانی</string>
     <string name="about_updates">به‌روزرسانی</string>
     <string name="check_for_updates">بررسی به‌روزرسانی</string>
@@ -344,7 +386,7 @@
     <string name="privacy_information">اطلاعات حریم خصوصی</string>
     <string name="privacy_information_text">پیام‌ها روی همین گوشی می‌مانند. برنامه به حساب کاربری نیاز ندارد و جز به اپراتور شما چیزی نمی‌فرستد. پشتیبان‌ها فایل‌هایی هستند که خودتان می‌سازید و نگه می‌دارید.</string>
     <string name="open_source_licenses">مجوزهای متن‌باز</string>
-    <string name="open_source_licenses_text">پیام‌های AFSH نسخهٔ تغییریافتهٔ Fossify Messages است (GPL-3.0). از Fossify Commons ‏(GPL-3.0)، آیکون‌های Lucide ‏(ISC) و قلم‌های Funnel Sans، Atkinson Hyperlegible و وزیرمتن (SIL Open Font License 1.1) استفاده می‌کند.</string>
+    <string name="open_source_licenses_text">پیام‌های AFSH نرم‌افزار آزاد تحت GPL-3.0 است. کتابخانهٔ Commons در همین برنامه کد تغییریافتهٔ GPL-3.0 است. پیام‌های تصویری و گروهی از mmslib ‏(Apache 2.0) استفاده می‌کنند. آیکون‌ها Material Symbols ‏(Apache 2.0) هستند. قلم‌های Funnel Sans، Atkinson Hyperlegible و وزیرمتن تحت SIL Open Font License 1.1 هستند.</string>
     <string name="swipe_in_the_inbox">کشیدن در صندوق</string>
     <string name="swipe_right">کشیدن به راست</string>
     <string name="swipe_left">کشیدن به چپ</string>
@@ -360,7 +402,7 @@
     <string name="text_size_value">%s · همراه با اندازهٔ نوشتهٔ گوشی</string>
     <string name="date_and_time">تاریخ و ساعت</string>
     <string name="use_24_hour_time">ساعت ۲۴ ساعته</string>
-    <string name="show_inbox_unread_count">شمار پیام‌های خوانده‌نشده روی صندوق</string>
+    <string name="show_inbox_unread_count">شمار خوانده‌نشده روی صندوق</string>
     <string name="settings_composer">نوار نوشتن</string>
     <string name="setting_on">روشن</string>
     <string name="setting_off">خاموش</string>
@@ -428,8 +470,8 @@
     <string name="sim">سیم</string>
     <string name="sim_default">پیش‌فرض گوشی</string>
     <string name="custom_notifications">اعلان سفارشی</string>
-    <string name="custom_notifications_on">روشن · این گفت‌وگو صدای خودش را دارد</string>
-    <string name="custom_notifications_off">خاموش · از اعلان‌های برنامه پیروی می‌کند</string>
+    <string name="custom_notifications_on">روشن · صدای مخصوص این گفت‌وگو</string>
+    <string name="custom_notifications_off">خاموش · اعلان برنامه</string>
     <string name="rename_explanation">این نام را فقط شما می‌بینید. به دیگران خبر داده نمی‌شود.</string>
     <string name="save_name">ذخیرهٔ نام</string>
     <string name="contact_card">کارت مخاطب</string>
@@ -477,9 +519,11 @@
         <item quantity="other">%d گفت‌وگو حذف شوند؟</item>
     </plurals>
     <plurals name="delete_conversations_to_bin_text">
+        <item quantity="one">به سطل بازیافت می‌رود و تا ۳۰ روز قابل بازگردانی است.</item>
         <item quantity="other">به سطل بازیافت می‌روند و تا ۳۰ روز قابل بازگردانی هستند.</item>
     </plurals>
     <plurals name="delete_conversations_forever_text">
+        <item quantity="one">دیگر قابل بازگردانی نیست.</item>
         <item quantity="other">دیگر قابل بازگردانی نیستند.</item>
     </plurals>
     <plurals name="delete_messages_title">
@@ -487,9 +531,11 @@
         <item quantity="other">%d پیام حذف شوند؟</item>
     </plurals>
     <plurals name="delete_messages_to_bin_text">
+        <item quantity="one">به سطل بازیافت می‌رود و تا ۳۰ روز قابل بازگردانی است.</item>
         <item quantity="other">به سطل بازیافت می‌روند و تا ۳۰ روز قابل بازگردانی هستند.</item>
     </plurals>
     <plurals name="delete_messages_forever_text">
+        <item quantity="one">دیگر قابل بازگردانی نیست.</item>
         <item quantity="other">دیگر قابل بازگردانی نیستند.</item>
     </plurals>
     <plurals name="restore_messages_title">
@@ -497,6 +543,7 @@
         <item quantity="other">%d پیام بازگردانده شوند؟</item>
     </plurals>
     <plurals name="restore_messages_text">
+        <item quantity="one">به گفت‌وگوی خودش برمی‌گردد.</item>
         <item quantity="other">به گفت‌وگوی خودشان برمی‌گردند.</item>
     </plurals>
     <string name="restore_conversation_title">این گفت‌وگو بازیابی شود؟</string>
@@ -523,7 +570,7 @@
     <string name="enter_a_valid_number">یک شمارهٔ معتبر وارد کنید</string>
     <string name="enter_a_valid_number_text">کد کشور و رقم‌ها را بررسی کنید و دوباره امتحان کنید.</string>
     <string name="edit_number">ویرایش شماره</string>
-    <string name="choose_recipient_first">برای نوشتن پیام، گیرنده را انتخاب کنید</string>
+    <string name="choose_recipient_first">گیرنده را انتخاب کنید</string>
     <string name="cannot_reply_title">پاسخ ممکن نیست</string>
     <plurals name="continue_with_people">
         <item quantity="one">ادامه با %d نفر</item>
@@ -536,7 +583,6 @@
 
     <!-- First run (32, 33; Persian 55, 56) -->
     <string name="welcome_title">به پیام‌ها خوش آمدید</string>
-    <string name="welcome_subtitle">پیام‌هایتان را راحت‌تر بخوانید</string>
     <string name="welcome_statement">ارتباط با کسانی که برایتان مهم‌اند</string>
     <string name="welcome_text">پیام بخوانید، پاسخ دهید و پیام‌های ناخواسته را مدیریت کنید.</string>
     <string name="set_as_default_sms_app">انتخاب به‌عنوان برنامهٔ پیامک</string>
@@ -555,8 +601,7 @@
     <string name="refresh_failed_title">به‌روزرسانی نشد</string>
     <string name="refresh_failed_text">پیام‌های ذخیره‌شده روی این گوشی نمایش داده می‌شوند</string>
     <string name="import_progress_title">در حال وارد کردن پیام‌ها</string>
-    <string name="import_progress_conversations">خواندن گفتگوها: %1$d از %2$d</string>
-    <string name="import_progress_messages">آماده‌سازی جستجو: %1$d از %2$d گفتگو</string>
+    <string name="import_progress_percent">%d٪</string>
     <string name="retry">تلاش دوباره</string>
 
     <!-- Conversation blocked (67) -->
@@ -574,10 +619,8 @@
     <string name="spam_why_words">چرا: %1$s · %2$s</string>
     <string name="spam_why_stale">چرا: %s · قوانین فعلی دیگر آن را نمی‌گیرند</string>
     <string name="spam_why_phrase">عبارت مسدود</string>
-    <string name="spam_why_unsubscribe">خط لغو</string>
-    <string name="spam_why_marketing">واژه‌های تبلیغاتی</string>
+    <string name="spam_why_marketing">واژه‌ها و اموجی‌های تبلیغاتی</string>
     <string name="spam_patterns">الگوهای هرزنامه</string>
-    <string name="spam_patterns_subtitle">آنچه قوانین روی گوشی دنبالش می‌گردند</string>
     <string name="spam_patterns_card">دیدن، آزمودن و ویرایش الگوهای قوانین</string>
     <string name="spam_patterns_filter_off">فیلتر هرزنامه‌های آشکار خاموش است</string>
     <string name="spam_patterns_filter_off_text">تا روشن نشود، قوانین چیزی را مسدود نمی‌کنند. رمزهای یک‌بار مصرف همچنان از عبارت‌های مسدود رد می‌شوند.</string>
@@ -585,19 +628,23 @@
     <string name="spam_patterns_try_message">پیامی را جای‌گذاری کنید</string>
     <string name="spam_patterns_try_sender">فرستنده (اختیاری)</string>
     <string name="spam_patterns_result_code">مجاز · رمز یک‌بار مصرف</string>
-    <string name="spam_patterns_result_unsubscribe">هرزنامه · خط لغو</string>
-    <string name="spam_patterns_result_marketing">هرزنامه · واژه‌ی تبلیغاتی با پیوند یا فرستنده‌ی نام‌دار</string>
+    <string name="spam_patterns_result_transactional">مجاز · بانک یا رسید</string>
+    <string name="spam_patterns_result_marketing">هرزنامه · واژه‌ها یا اموجی‌های تبلیغاتی</string>
     <string name="spam_patterns_result_none">هیچ قانونی نمی‌گیرد · در صندوق می‌ماند</string>
     <string name="spam_patterns_code_words">واژه‌های رمز یک‌بار مصرف</string>
-    <string name="spam_patterns_code_words_text">اگر کد هم داشته باشد، پیام همیشه مجاز است، حتی با پیوند یا خط لغو.</string>
+    <string name="spam_patterns_code_words_text">اگر کد هم داشته باشد، پیام همیشه مجاز است، حتی با پیوند.</string>
     <string name="spam_patterns_code">کد</string>
     <string name="spam_patterns_code_text">خود کد. هم واژه‌ی رمز و هم کد باید پیدا شوند.</string>
-    <string name="spam_patterns_unsubscribe">خط لغو</string>
-    <string name="spam_patterns_unsubscribe_text">هر تطبیقی پیام را به هرزنامه می‌برد.</string>
+    <string name="spam_patterns_transactional">بانک و رسید</string>
+    <string name="spam_patterns_transactional_text">هر تطبیقی پیام را در صندوق نگه می‌دارد. قوانین تبلیغاتی و اموجی اعمال نمی‌شوند.</string>
     <string name="spam_patterns_links">پیوندها</string>
-    <string name="spam_patterns_links_text">واژه‌ی تبلیغاتی همراه پیوند، پیام را به هرزنامه می‌برد.</string>
+    <string name="spam_patterns_links_text">همراه: با یک واژهٔ تبلیغاتی، پیوند کامل یا کوتاه بدون طرح (مثل Iu4.ir/e) پیام را به هرزنامه می‌برد.</string>
     <string name="spam_patterns_marketing">واژه‌های تبلیغاتی</string>
-    <string name="spam_patterns_marketing_text">وقتی پیوند دارد یا فرستنده نام است، هرزنامه است.</string>
+    <string name="spam_patterns_marketing_text">هر تطبیق متمایز وزن ۲ دارد. یک واژه به‌علاوهٔ پیوند یا فرستندهٔ نام‌دار به هرزنامه می‌رود؛ واژه به‌علاوهٔ اموجی تبلیغاتی هم همین‌طور.</string>
+    <string name="spam_patterns_promo_emoji">اموجی‌های تبلیغاتی</string>
+    <string name="spam_patterns_promo_emoji_text">اموجی‌های قوی و چیدمان تبلیغاتی (🎉، ✅، 📍، …). هر کدام وزن ۲ دارد، مثل واژه‌ی تبلیغاتی. یکی به‌علاوهٔ پیوند یا فرستندهٔ نام‌دار به هرزنامه می‌رود.</string>
+    <string name="spam_patterns_promo_emoji_weak">شکلک‌های ضعیف</string>
+    <string name="spam_patterns_promo_emoji_weak_text">شکلک و قلب. به‌تنهایی هرگز مسدود نمی‌کنند.</string>
     <string name="spam_patterns_add">افزودن الگو</string>
     <string name="spam_patterns_edit">ویرایش الگو</string>
     <string name="spam_patterns_save">ذخیره‌ی الگو</string>

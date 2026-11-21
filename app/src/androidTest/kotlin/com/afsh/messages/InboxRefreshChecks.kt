@@ -7,7 +7,6 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.afsh.messages.extensions.conversationsDB
 import com.afsh.messages.extensions.getMessagesDB
 import com.afsh.messages.helpers.InboxRepository
-import com.afsh.messages.models.Conversation
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.util.concurrent.atomic.AtomicInteger
@@ -24,7 +23,7 @@ class InboxRefreshChecks {
     fun unreadRefreshWritesOnlyWhatChanged() {
         val room = RoomOnlyThread(
             context,
-            Conversation(Long.MAX_VALUE - 7, "Refresh fixture", 1, true, "Refresh fixture", "", false, "5550100777", isScheduled = true),
+            fixtureConversation(Long.MAX_VALUE - 7, "Refresh fixture", snippet = "Refresh fixture", phone = "5550100777", scheduled = true),
         )
         val invalidations = AtomicInteger()
         val observer = object : InvalidationTracker.Observer("conversations") {

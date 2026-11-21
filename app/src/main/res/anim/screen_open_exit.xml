@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Opening: the old screen grows slightly behind the new one. Values in values/motion.xml. -->
-<scale xmlns:android="http://schemas.android.com/apk/res/android"
+<!-- Opening: screen underneath shifts slightly toward the start (parallax). fillAfter keeps the final offset until the window is removed — without it the exit snaps back to x=0 for a frame and flashes under the new screen. -->
+<translate xmlns:android="http://schemas.android.com/apk/res/android"
     android:duration="@integer/motion_open_ms"
-    android:fromXScale="1"
-    android:fromYScale="1"
-    android:interpolator="@android:interpolator/fast_out_slow_in"
-    android:pivotX="50%"
-    android:pivotY="50%"
-    android:toXScale="@dimen/motion_zoom_large"
-    android:toYScale="@dimen/motion_zoom_large"
+    android:fromXDelta="0"
+    android:interpolator="@interpolator/emphasized_decelerate"
+    android:toXDelta="-25%p"
+    android:fillEnabled="true"
+    android:fillAfter="true"
     android:zAdjustment="bottom" />

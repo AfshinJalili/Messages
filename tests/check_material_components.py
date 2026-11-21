@@ -1,0 +1,59 @@
+#!/usr/bin/env python3
+"""Message bubbles and the composer are built from stock Material 3 components, not hand-drawn boxes.
+
+- The composer files draw no surface of their own: no `BasicTextField`, `.background(` or `.border(`;
+  they use `TextField`, `Surface`, `IconButton` and `FilledIconButton` instead.
+- Every bubble is a `MessageBubble` (a Material 3 `Surface`), and only `MessageBubble.kt` reads the
+  sent-bubble color role, so a screen cannot paint a bubble by hand.
+- No shared component in `ui/components/` draws its own surface or field: no `BasicTextField`,
+  `.background(` or `.border(`. They sit on `Card`, `Surface`, `ListItem`, `TextField`, `Badge`,
+  `HorizontalDivider` and the like. The one exception is the round selection check, which Material 3
+  has no stock part for (see Components in DESIGN.md).
+- The selection bar is Material 3's `BottomAppBar`, with no hand-built `Surface` frame or inset padding.
+"""
+from pathlib import Path
+import re
+
+root = Path(__file__).resolve().parents[1] / 'app/src/main/kotlin/com/afsh/messages'
+composer_files = [
+    root / 'ui/thread/ThreadComposer.kt',
+    root / 'ui/components/DisabledComposer.kt',
+    root / 'ui/components/MessageBubble.kt',
+]
+bubble_screens = [
+    root / 'ui/thread/ThreadScreen.kt',
+    root / 'ui/spam/SpamScreen.kt',
+    root / 'ui/message/MessagePages.kt',
+]
+hand_built = re.compile(r'\bBasicTextField\b|\.background\(|\.border\(')
+violations = []
+for path in composer_files:
+    for number, line in enumerate(path.read_text().splitlines(), 1):
+        if hand_built.search(line):
+            violations.append(f'{path.relative_to(root)}:{number}: hand-built surface; use a Material 3 component')
+for path in bubble_screens:
+    text = path.read_text()
+    if 'MessageBubble(' not in text:
+        violations.append(f'{path.relative_to(root)}: draws a bubble without MessageBubble')
+for path in root.rglob('*.kt'):
+    if path.name in ('MessageBubble.kt', 'AfshTheme.kt'):
+        continue
+    for number, line in enumerate(path.read_text().splitlines(), 1):
+        if 'sentBubble' in line:
+            violations.append(f'{path.relative_to(root)}:{number}: sent-bubble role outside MessageBubble')
+custom_surfaces = {'SelectionBar.kt'}
+for path in sorted((root / 'ui/components').glob('*.kt')):
+    if path.name in custom_surfaces:
+        continue
+    for number, line in enumerate(path.read_text().splitlines(), 1):
+        if hand_built.search(line):
+            violations.append(f'{path.relative_to(root)}:{number}: hand-built surface in a shared component; use a Material 3 component')
+selection_bar = root / 'ui/components/SelectionBar.kt'
+selection_text = selection_bar.read_text()
+if 'BottomAppBar(' not in selection_text:
+    violations.append(f'{selection_bar.relative_to(root)}: the selection bar is not a Material 3 BottomAppBar')
+for number, line in enumerate(selection_text.splitlines(), 1):
+    if re.search(r'\bSurface\(|\.windowInsetsPadding\(', line):
+        violations.append(f'{selection_bar.relative_to(root)}:{number}: hand-built bar frame; let BottomAppBar draw it')
+assert not violations, '\n'.join(violations)
+print('Material component checks passed')

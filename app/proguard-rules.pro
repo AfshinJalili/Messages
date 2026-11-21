@@ -30,7 +30,7 @@
 }
 
 # Gson
--keep class org.fossify.commons.models.SimpleContact { *; }
+-keep class com.afsh.commons.models.SimpleContact { *; }
 -keep class com.afsh.messages.models.Attachment { *; }
 -keep class com.afsh.messages.models.MessageAttachment { *; }
 

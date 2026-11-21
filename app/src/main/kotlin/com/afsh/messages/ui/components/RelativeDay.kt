@@ -6,9 +6,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
-import org.fossify.commons.extensions.getTimeFormat
+import com.afsh.commons.extensions.getTimeFormat
 import com.afsh.messages.R
+import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.GregorianCalendar
+import java.util.Locale
 
 enum class RelativeDay { TODAY, YESTERDAY, EARLIER }
 
@@ -31,6 +34,60 @@ fun relativeDay(millis: Long, now: Calendar = Calendar.getInstance()): RelativeD
 fun shortDate(millis: Long, now: Calendar = Calendar.getInstance()): String {
     val year = Calendar.getInstance().apply { timeInMillis = millis }.get(Calendar.YEAR)
     return DateFormat.format(if (year == now.get(Calendar.YEAR)) "d MMM" else "d MMM yyyy", millis).toString()
+}
+
+/**
+ * Compact Gregorian date for conversation and search rows: short month+day this year (skeleton
+ * MMMd), numeric yyMd for older years. Patterns come from [DateFormat.getBestDateTimePattern] on
+ * Android; unit tests pass the same skeletons' resolved forms.
+ */
+fun compactListDate(
+    millis: Long,
+    now: Calendar = Calendar.getInstance(),
+    locale: Locale = Locale.getDefault(),
+    sameYearPattern: String,
+    priorYearPattern: String,
+): String {
+    val dayYear = GregorianCalendar().apply { timeInMillis = millis }.get(Calendar.YEAR)
+    val nowYear = GregorianCalendar().apply { timeInMillis = now.timeInMillis }.get(Calendar.YEAR)
+    val pattern = if (dayYear == nowYear) sameYearPattern else priorYearPattern
+    return SimpleDateFormat(pattern, locale).apply { calendar = GregorianCalendar() }.format(millis)
+}
+
+/**
+ * Inbox, Archive and Search row timestamps: clock time today, Yesterday, then [compactListDate].
+ * Pure entry for JVM tests; [timeText] is only used for [RelativeDay.TODAY].
+ */
+fun conversationListTimestamp(
+    millis: Long,
+    now: Calendar,
+    timeText: String,
+    yesterdayLabel: String,
+    locale: Locale,
+    sameYearPattern: String,
+    priorYearPattern: String,
+): String = when (relativeDay(millis, now)) {
+    RelativeDay.TODAY -> timeText
+    RelativeDay.YESTERDAY -> yesterdayLabel
+    RelativeDay.EARLIER -> compactListDate(millis, now, locale, sameYearPattern, priorYearPattern)
+}
+
+/** Conversation and search list timestamps. Keeps the app's 12/24-hour time setting for today. */
+fun conversationListTimestamp(
+    context: Context,
+    millis: Long,
+    now: Calendar = Calendar.getInstance(),
+): String {
+    val locale = context.resources.configuration.locales[0]
+    return conversationListTimestamp(
+        millis = millis,
+        now = now,
+        timeText = DateFormat.format(context.getTimeFormat(), millis).toString(),
+        yesterdayLabel = context.getString(R.string.inbox_section_yesterday),
+        locale = locale,
+        sameYearPattern = DateFormat.getBestDateTimePattern(locale, "MMMd"),
+        priorYearPattern = DateFormat.getBestDateTimePattern(locale, "yyMd"),
+    )
 }
 
 /** Today, Yesterday, or [shortDate]. */

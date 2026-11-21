@@ -1,9 +1,6 @@
 package com.afsh.messages
 
-import android.content.Context
-import android.content.ContextWrapper
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.platform.app.InstrumentationRegistry
 import com.afsh.messages.extensions.config
 import com.afsh.messages.helpers.BLOCK_REASON_KEYWORD
 import com.afsh.messages.helpers.BLOCK_REASON_NUMBER
@@ -23,19 +20,11 @@ import org.junit.runner.RunWith
 /** Runs against throwaway preferences; the app's real allowlist and keywords are untouched. */
 @RunWith(AndroidJUnit4::class)
 class SpamClassifierChecks {
-    private val targetContext: Context = InstrumentationRegistry.getInstrumentation().targetContext
-    private val prefsName = "spam-classifier-checks"
-    private val context = object : ContextWrapper(targetContext) {
-        override fun getApplicationContext(): Context = this
-        override fun getSharedPreferences(name: String?, mode: Int) = targetContext.getSharedPreferences(prefsName, mode)
-    }
+    private val prefs = IsolatedPreferences("spam-classifier-checks")
+    private val context = prefs.context
 
     @After
-    fun clear() {
-        // Config writes with apply(); commit first so a pending write cannot recreate the file.
-        targetContext.getSharedPreferences(prefsName, Context.MODE_PRIVATE).edit().clear().commit()
-        targetContext.deleteSharedPreferences(prefsName)
-    }
+    fun clear() = prefs.clear()
 
     private fun reason(address: String, body: String = "hello") = IncomingSpamClassifier.silenceReason(context, address, body)
 
@@ -100,19 +89,20 @@ class SpamClassifierChecks {
         val body = "جشنواره تخفیف 1403 لغو11"
         check(reason("SHOP", body) == BLOCK_REASON_RULE)
         val why: SpamWhy = context.spamWhy(BLOCK_REASON_RULE, "SHOP", body)
-        check(why.label == R.string.spam_why_unsubscribe) { "$why" }
-        check(why.matchedWords(body) == listOf("لغو")) { "${why.matchedWords(body)}" }
+        check(why.label == R.string.spam_why_marketing) { "$why" }
+        check(why.matchedWords(body).containsAll(listOf("جشنواره", "تخفیف"))) { "${why.matchedWords(body)}" }
+        check(!why.matchedWords(body).any { it.contains("لغو") }) { "لغو must not be a Why match: ${why.matchedWords(body)}" }
         check(!why.stale)
     }
 
     @Test
     fun editedPatternsPersistAndDriveTheVerdict() {
         context.config.ruleFilterEnabled = true
-        val body = "Special offer, reply STOP"
+        val body = "پیشنهاد ویژه امروز"
         check(RuleBasedFilter.explain(context, "SHOP", body).verdict == FilterVerdict.NO_VERDICT)
-        context.config.spamPatterns = context.config.spamPatterns.with(SpamPatternGroup.UNSUBSCRIBE, listOf("reply stop"))
-        check(context.config.spamPatterns[SpamPatternGroup.UNSUBSCRIBE] == listOf("reply stop"))
-        check(context.config.spamPatterns[SpamPatternGroup.MARKETING] == SpamPatterns.DEFAULT[SpamPatternGroup.MARKETING])
+        context.config.spamPatterns = context.config.spamPatterns.with(SpamPatternGroup.MARKETING, listOf("پیشنهاد ویژه"))
+        check(context.config.spamPatterns[SpamPatternGroup.MARKETING] == listOf("پیشنهاد ویژه"))
+        check(context.config.spamPatterns[SpamPatternGroup.LINKS] == SpamPatterns.DEFAULT[SpamPatternGroup.LINKS])
         check(RuleBasedFilter.explain(context, "SHOP", body).verdict == FilterVerdict.BLOCK)
         check(context.spamWhy(BLOCK_REASON_RULE, "SHOP", "hello").stale) { "No match now must read as stale" }
         context.config.spamPatterns = SpamPatterns.DEFAULT

@@ -5,7 +5,6 @@ import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
-import org.fossify.commons.extensions.formatDateOrTime
 import com.afsh.messages.extensions.conversationsDB
 import com.afsh.messages.extensions.messageSearchResult
 import com.afsh.messages.extensions.messagesDB
@@ -16,6 +15,7 @@ import com.afsh.messages.models.Conversation
 import com.afsh.messages.models.Message
 import com.afsh.messages.models.SearchMatch
 import com.afsh.messages.models.SearchResult
+import com.afsh.messages.ui.components.conversationListTimestamp
 
 /** Local cache search. Recycled and spam messages are excluded before results reach the UI. */
 class SearchRepository(
@@ -36,9 +36,9 @@ class SearchRepository(
         val people = if (browsePhotos) {
             emptyList()
         } else {
-            conversations.searchPeople(pattern).map { conversation ->
+            conversations.searchPeople(pattern).map { row ->
                 ensureActive()
-                conversationMatch(conversation)
+                conversationMatch(row.toConversation())
             }
         }
         if (!includeMessageResults) return@withContext people
@@ -58,11 +58,7 @@ class SearchRepository(
             messageId = CONVERSATION_SEARCH_RESULT_ID,
             title = conversation.title,
             snippet = conversation.phoneNumber,
-            date = (conversation.date * 1000L).formatDateOrTime(
-                context,
-                hideTimeOnOtherDays = true,
-                showCurrentYear = true,
-            ),
+            date = conversationListTimestamp(context, conversation.date * 1000L),
             threadId = conversation.threadId,
             photoUri = conversation.photoUri,
         )

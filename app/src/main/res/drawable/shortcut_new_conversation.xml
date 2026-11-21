@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Shortcut icon for "new conversation": brand circle plus Material Symbol Add. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/shortcut_new_conversation_background">
+        <shape android:shape="oval">
+            <solid android:color="@color/m3_primary" />
+        </shape>
+    </item>
+    <item
+        android:bottom="8dp"
+        android:drawable="@drawable/ic_msym_add"
+        android:left="8dp"
+        android:right="8dp"
+        android:top="8dp" />
+</layer-list>

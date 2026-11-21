@@ -1,5 +1,6 @@
 package com.afsh.messages.ui.library
 
+import com.afsh.messages.ui.Afsh
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -7,21 +8,23 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Surface
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import com.afsh.messages.R
 import com.afsh.messages.ui.AfshTheme
 import com.afsh.messages.ui.components.DestinationCard
-import com.afsh.messages.ui.components.InfoPanel
 import com.afsh.messages.ui.components.PageAppBar
 import com.afsh.messages.ui.components.PageContentPadding
 import com.afsh.messages.ui.inbox.LibraryDestination
 
 /** 17 · Library / destinations. [destinations] are the ones the current settings make available. */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LibraryScreen(
     destinations: List<LibraryDestination>,
@@ -29,14 +32,18 @@ fun LibraryScreen(
     onOpen: (LibraryDestination) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier.fillMaxSize()) {
-        PageAppBar(stringResource(R.string.inbox_nav_library), subtitle = stringResource(R.string.library_subtitle))
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+    Column(modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection)) {
+        PageAppBar(
+            stringResource(R.string.inbox_nav_library),
+            scrollBehavior = scrollBehavior,
+        )
         Column(
             Modifier
                 .weight(1f)
                 .verticalScroll(rememberScrollState())
                 .padding(PageContentPadding),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(Afsh.spacing.md),
         ) {
             destinations.forEach { destination ->
                 DestinationCard(
@@ -47,10 +54,6 @@ fun LibraryScreen(
                     badge = if (destination == LibraryDestination.SPAM) unreadSpam else 0,
                 )
             }
-            InfoPanel(
-                title = stringResource(R.string.library_principle_title),
-                body = stringResource(R.string.library_principle_body),
-            )
         }
     }
 }

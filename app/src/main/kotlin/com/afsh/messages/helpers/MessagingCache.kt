@@ -1,7 +1,7 @@
 package com.afsh.messages.helpers
 
 import android.util.LruCache
-import org.fossify.commons.models.SimpleContact
+import com.afsh.commons.models.SimpleContact
 import com.afsh.messages.models.NamePhoto
 
 private const val CACHE_SIZE = 512

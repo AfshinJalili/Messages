@@ -38,16 +38,9 @@ class FirstRunChecks {
 
     @Test
     fun firstRunIsCapturedInEveryVariant() {
-        var variant by mutableStateOf(DesignVariant.LIGHT)
-        var step by mutableStateOf(FirstRunStep.DEFAULT_APP)
-        compose.setContent { DesignVariantContent(variant) { FirstRunScreen(step, {}) } }
-        listOf(FirstRunStep.DEFAULT_APP to "32-default-sms", FirstRunStep.PERMISSIONS to "33-permissions").forEach { (shown, name) ->
-            step = shown
-            DesignVariant.entries.forEach {
-                variant = it
-                compose.waitForIdle()
-                Screenshots.capture(name + it.suffix)
-            }
-        }
+        val steps = listOf(FirstRunStep.DEFAULT_APP, FirstRunStep.PERMISSIONS)
+        val capture = VariantCapture(compose)
+        capture.show { page -> FirstRunScreen(steps[page], {}) }
+        capture.captureEach(listOf("32-default-sms", "33-permissions"))
     }
 }

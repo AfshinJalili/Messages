@@ -6,11 +6,14 @@ import androidx.compose.runtime.Immutable
 import com.afsh.messages.R
 import com.afsh.messages.extensions.config
 import com.afsh.messages.helpers.BLOCK_REASON_KEYWORD
+import com.afsh.messages.helpers.BLOCK_REASON_NUMBER
 import com.afsh.messages.helpers.BLOCK_REASON_RULE
 import com.afsh.messages.helpers.FilterRule
 import com.afsh.messages.helpers.FilterVerdict
 import com.afsh.messages.helpers.RuleBasedFilter
+import com.afsh.messages.helpers.containsNumber
 import com.afsh.messages.helpers.keywordMatches
+import com.afsh.commons.extensions.isNumberBlocked
 
 /**
  * Why a message is in Spam: the rule as words, and where in the body it matched. [ranges] are
@@ -35,12 +38,17 @@ fun Context.spamWhy(reason: Int, address: String, body: String): SpamWhy = when 
     BLOCK_REASON_RULE -> {
         val result = RuleBasedFilter.explain(config.spamPatterns, address, body)
         val label = when (result.rule) {
-            FilterRule.UNSUBSCRIBE -> R.string.spam_why_unsubscribe
             FilterRule.MARKETING -> R.string.spam_why_marketing
             else -> R.string.block_reason_rule
         }
         val blocked = result.verdict == FilterVerdict.BLOCK
         SpamWhy(label, if (blocked) merge(result.matches.map { it.range }) else emptyList(), stale = !blocked)
+    }
+
+    BLOCK_REASON_NUMBER -> when {
+        config.spamNumbers.containsNumber(address) -> SpamWhy(R.string.spam_why_sender)
+        isNumberBlocked(address) -> SpamWhy(R.string.spam_why_android)
+        else -> SpamWhy(R.string.spam_why_unknown)
     }
 
     else -> SpamWhy(spamReasonLabel(reason))

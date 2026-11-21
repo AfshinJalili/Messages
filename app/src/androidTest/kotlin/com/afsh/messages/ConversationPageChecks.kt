@@ -1,18 +1,20 @@
 package com.afsh.messages
 
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasText
 import android.provider.Telephony
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
@@ -21,7 +23,6 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.afsh.messages.models.Message
 import com.afsh.messages.ui.components.ConfirmationDialog
 import com.afsh.messages.ui.components.RenameDialog
 import com.afsh.messages.ui.details.ConversationDetailsScreen
@@ -96,16 +97,16 @@ class ConversationPageChecks {
         source = "Shared by Mina · Today",
     )
 
-    private fun scheduled() = Message(
-        7, "Happy birthday Mina! Dinner is on me tonight.", Telephony.Sms.MESSAGE_TYPE_QUEUED, 0, arrayListOf(),
-        (tomorrowNine / 1000).toInt(), true, 987654321, false, null, "", "", "", -1, isScheduled = true,
+    private fun scheduled() = fixtureMessage(
+        7, "Happy birthday Mina! Dinner is on me tonight.", threadId = 987654321, date = (tomorrowNine / 1000).toInt(),
+        type = Telephony.Sms.MESSAGE_TYPE_QUEUED, status = 0, address = "", scheduled = true,
     )
 
     @Test
     fun detailsActionsAndSimChoice() {
         val events = mutableListOf<DetailsEvent>()
         compose.setContent { DesignVariantContent(DesignVariant.LIGHT) { ConversationDetailsScreen(details, { events += it }) } }
-        compose.onAllNodesWithText(text(org.fossify.commons.R.string.call)).let { it[it.fetchSemanticsNodes().size - 1].performClick() }
+        compose.onAllNodesWithText(text(com.afsh.commons.R.string.call)).let { it[it.fetchSemanticsNodes().size - 1].performClick() }
         compose.onNodeWithText(text(R.string.mute)).performClick()
         compose.onNodeWithText(text(R.string.conversation_name)).performScrollTo().performClick()
         compose.onNodeWithText(text(R.string.sim)).performScrollTo().performClick()
@@ -126,7 +127,7 @@ class ConversationPageChecks {
                     placeholder = "Book club",
                     explanation = text(R.string.rename_explanation),
                     confirmLabel = text(R.string.save_name),
-                    dismissLabel = text(org.fossify.commons.R.string.cancel),
+                    dismissLabel = text(com.afsh.commons.R.string.cancel),
                     onRename = { renamed = it },
                     onDismiss = {},
                 )
@@ -134,7 +135,7 @@ class ConversationPageChecks {
         }
         val save = compose.onNodeWithText(text(R.string.save_name))
         save.assertIsNotEnabled()
-        compose.onNodeWithText("Book club").performTextInput("  Readers  ")
+        compose.onNode(hasSetTextAction()).performTextInput("  Readers  ")
         save.assertIsEnabled().performClick()
         check(renamed == "Readers") { "Renamed $renamed" }
     }
@@ -194,62 +195,53 @@ class ConversationPageChecks {
             }
         }
         compose.onNodeWithText("Happy birthday", substring = true).performClick()
-        compose.onNodeWithText(text(R.string.edit_message_and_time)).assertExists()
-        compose.onNodeWithText(text(R.string.send_now)).assertExists()
-        compose.onNodeWithText(text(R.string.scheduled_for, ""), substring = true).assertExists()
+        compose.onNode(sheetAction(text(R.string.edit_message_and_time))).assertExists()
+        compose.onNode(sheetAction(text(R.string.send_now))).assertExists()
+        compose.onNode(hasText(text(R.string.scheduled_for, ""), substring = true) and hasAnyAncestor(isAnySheet())).assertExists()
     }
 
     @Test
     fun conversationPagesAreCapturedInEveryVariant() {
-        var variant by mutableStateOf(DesignVariant.LIGHT)
-        var page by mutableIntStateOf(0)
-        compose.setContent {
-            DesignVariantContent(variant) {
-                when (page) {
-                    0 -> ConversationDetailsScreen(details, {})
-                    1 -> SendLaterScreen(target, tomorrowNine, onBack = {}, onSchedule = {})
-                    2 -> MessageDetailsScreen(facts, onBack = {})
-                    3 -> ContactCardScreen(card, onBack = {}, onField = {}, onSave = {})
-                    4 -> SelectTextScreen("Mina Farahani · 12:41", "The address is 24 Willow Street. See you there.", {}, {})
-                    5 -> ScheduledMessageScreen(target, tomorrowNine, timeChanged = false, onEvent = {})
-                    6 -> RenameDialog(
-                        title = text(R.string.rename_conversation),
-                        current = "Book club",
-                        placeholder = "Book club",
-                        explanation = text(R.string.rename_explanation),
-                        confirmLabel = text(R.string.save_name),
-                        dismissLabel = text(org.fossify.commons.R.string.cancel),
-                        onRename = {},
-                        onDismiss = {},
-                    )
-                    7 -> ConfirmationDialog(
-                        title = compose.activity.resources.getQuantityString(R.plurals.delete_conversations_title, 3, 3),
-                        explanation = compose.activity.resources.getQuantityString(R.plurals.delete_conversations_to_bin_text, 3),
-                        confirmLabel = text(org.fossify.commons.R.string.delete),
-                        dismissLabel = text(org.fossify.commons.R.string.cancel),
-                        onConfirm = {},
-                        onDismiss = {},
-                    )
-                    else -> Box(Modifier.fillMaxSize()) {
-                        ThreadTimeline(ThreadUiState(items = listOf(scheduled())), remember { SnackbarHostState() }, {})
-                    }
+        val capture = VariantCapture(compose)
+        capture.show { page ->
+            when (page) {
+                0 -> ConversationDetailsScreen(details, {})
+                1 -> SendLaterScreen(target, tomorrowNine, onBack = {}, onSchedule = {})
+                2 -> MessageDetailsScreen(facts, onBack = {})
+                3 -> ContactCardScreen(card, onBack = {}, onField = {}, onSave = {})
+                4 -> SelectTextScreen("Mina Farahani · 12:41", "The address is 24 Willow Street. See you there.", {}, {})
+                5 -> ScheduledMessageScreen(target, tomorrowNine, timeChanged = false, onEvent = {})
+                6 -> RenameDialog(
+                    title = text(R.string.rename_conversation),
+                    current = "Book club",
+                    placeholder = "Book club",
+                    explanation = text(R.string.rename_explanation),
+                    confirmLabel = text(R.string.save_name),
+                    dismissLabel = text(com.afsh.commons.R.string.cancel),
+                    onRename = {},
+                    onDismiss = {},
+                )
+                7 -> ConfirmationDialog(
+                    title = compose.activity.quantity(R.plurals.delete_conversations_title, 3),
+                    explanation = compose.activity.resources.getQuantityString(R.plurals.delete_conversations_to_bin_text, 3),
+                    confirmLabel = text(com.afsh.commons.R.string.delete),
+                    dismissLabel = text(com.afsh.commons.R.string.cancel),
+                    onConfirm = {},
+                    onDismiss = {},
+                )
+                else -> Box(Modifier.fillMaxSize()) {
+                    ThreadTimeline(ThreadUiState(items = listOf(scheduled())), remember { SnackbarHostState() }, {})
                 }
             }
         }
-        listOf(
-            "09-details", "12-send-later", "13-message-details", "14-contact-card",
-            "44-select-text", "47-scheduled-edit", "39-rename", "82-delete-confirmation",
-        ).forEachIndexed { index, name ->
-            page = index
-            DesignVariant.entries.forEach {
-                variant = it
-                compose.waitForIdle()
-                Screenshots.capture(name + it.suffix)
-            }
-        }
+        capture.captureEach(
+            listOf(
+                "09-details", "12-send-later", "13-message-details", "14-contact-card",
+                "44-select-text", "47-scheduled-edit", "39-rename", "82-delete-confirmation",
+            ),
+        )
         // 84: the scheduled message's sheet.
-        page = 8
-        variant = DesignVariant.LIGHT
+        capture.page = 8
         compose.onNodeWithText("Happy birthday", substring = true).performClick()
         compose.waitForIdle()
         Screenshots.capture("84-scheduled-sheet")

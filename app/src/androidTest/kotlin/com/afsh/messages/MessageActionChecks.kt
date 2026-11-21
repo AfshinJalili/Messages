@@ -25,7 +25,6 @@ import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import com.afsh.messages.models.Message
 import com.afsh.messages.ui.AfshTheme
 import com.afsh.messages.ui.thread.MessageAction
 import com.afsh.messages.ui.thread.ThreadEvent
@@ -52,8 +51,10 @@ class MessageActionChecks {
     val compose = createComposeRule()
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
 
-    private fun message(id: Long, body: String, scheduled: Boolean = false) =
-        Message(id, body, Telephony.Sms.MESSAGE_TYPE_SENT, 0, arrayListOf(), 1700000000, true, 987654321, false, null, "", "Fixture", "", -1, isScheduled = scheduled)
+    private fun message(id: Long, body: String, scheduled: Boolean = false) = fixtureMessage(
+        id, body, threadId = 987654321, date = 1_700_000_000, type = Telephony.Sms.MESSAGE_TYPE_SENT, status = 0,
+        address = "", senderName = "Fixture", scheduled = scheduled,
+    )
 
     private fun show(state: ThreadUiState, textScale: Float = 1f, onEvent: (ThreadEvent) -> Unit) = compose.setContent {
         AfshTheme(dark = false, textScale = textScale) {
@@ -83,11 +84,11 @@ class MessageActionChecks {
         val events = mutableListOf<ThreadEvent>()
         show(ThreadUiState(items = listOf(fixture))) { events += it }
         compose.onNode(hasContentDescription(context.getString(R.string.message_delivered), substring = true)).performClick()
-        compose.onNodeWithText(context.getString(org.fossify.commons.R.string.copy)).assertIsDisplayed()
-        compose.onNodeWithText(context.getString(org.fossify.commons.R.string.delete)).assertIsDisplayed()
-        compose.onNodeWithText(context.getString(R.string.star_message)).assertIsDisplayed()
-        compose.onNodeWithText(context.getString(org.fossify.commons.R.string.share)).assertExists()
-        compose.onNodeWithText(context.getString(R.string.forward_message)).performClick()
+        compose.onNode(sheetAction(context.getString(com.afsh.commons.R.string.copy))).assertIsDisplayed()
+        compose.onNode(sheetAction(context.getString(com.afsh.commons.R.string.delete))).assertIsDisplayed()
+        compose.onNode(sheetAction(context.getString(R.string.star_message))).assertIsDisplayed()
+        compose.onNode(sheetAction(context.getString(com.afsh.commons.R.string.share))).assertExists()
+        compose.onNode(sheetAction(context.getString(R.string.forward_message))).performClick()
         // The sheet acts only once it has slid away.
         compose.waitUntil(5_000) { events.any { it is ThreadEvent.Act } }
         assertEquals(ThreadEvent.Act(MessageAction.FORWARD, listOf(fixture)), events.filterIsInstance<ThreadEvent.Act>().single())
@@ -141,7 +142,7 @@ class MessageActionChecks {
     @Test fun largeTextMenuKeepsLastActionReachable() {
         show(ThreadUiState(items = listOf(message(987654322, "Bottom message"))), textScale = 2.5f) {}
         compose.onNode(hasContentDescription(context.getString(R.string.message_delivered), substring = true)).performClick()
-        compose.onNodeWithText(context.getString(org.fossify.commons.R.string.share)).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText(context.getString(com.afsh.commons.R.string.share)).performScrollTo().assertIsDisplayed()
     }
 
     @Test fun selectionBarAndActionRules() {
@@ -185,6 +186,6 @@ class MessageActionChecks {
             compose.onNodeWithContentDescription(context.getString(it.label)).assertIsDisplayed()
             compose.onAllNodesWithText(context.getString(it.label)).assertCountEquals(0)
         }
-        compose.onNodeWithContentDescription(context.getString(org.fossify.commons.R.string.more_options)).assertIsDisplayed()
+        compose.onNodeWithContentDescription(context.getString(com.afsh.commons.R.string.more_options)).assertIsDisplayed()
     }
 }

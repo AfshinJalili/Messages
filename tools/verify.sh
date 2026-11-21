@@ -18,12 +18,23 @@ rm -rf "$out" && mkdir -p "$out/screenshots"
 
 failed=()
 echo "== host checks"
-python3 tests/check_design_tokens.py > "$out/design-tokens.txt" 2>&1 || { failed+=(design-tokens); tail -1 "$out/design-tokens.txt"; }
-python3 tests/check_inbox_database.py > "$out/inbox-database.txt" 2>&1 || { failed+=(inbox-database); tail -1 "$out/inbox-database.txt"; }
-python3 tests/check_dialogs.py > "$out/dialogs.txt" 2>&1 || { failed+=(dialogs); tail -1 "$out/dialogs.txt"; }
+for check in tests/check_*.py; do
+  name=$(basename "$check" .py); name=${name#check_}; name=${name//_/-}
+  python3 "$check" > "$out/$name.txt" 2>&1 || { failed+=("$name"); tail -1 "$out/$name.txt"; }
+done
 
-echo "== build"
-./gradlew -q :app:assembleDebug :app:assembleDebugAndroidTest
+# CI builds assembleDebug, assembleDebugAndroidTest and testDebugUnitTest before this
+# script so the emulator step does not pay for Gradle twice. Local runs still build here.
+if [ "${VERIFY_SKIP_BUILD:-}" = 1 ]; then
+  echo "== build (skipped; VERIFY_SKIP_BUILD=1)"
+  echo "== unit tests (skipped; VERIFY_SKIP_BUILD=1)"
+else
+  echo "== build"
+  ./gradlew -q :app:assembleDebug :app:assembleDebugAndroidTest
+
+  echo "== unit tests"
+  ./gradlew -q :app:testDebugUnitTest || failed+=(unit-tests)
+fi
 
 emulators() { adb devices | awk '/^emulator-[0-9]+\tdevice/{print $1}'; }
 matching() { for e in $(emulators); do [ "$(adb -s "$e" emu avd name 2>/dev/null | head -n1 | tr -d '\r')" = "$AVD" ] && echo "$e"; done; true; }
@@ -66,6 +77,12 @@ adb shell settings put global hide_error_dialogs 1
 adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS >/dev/null 2>&1 || true
 adb shell input keyevent KEYCODE_WAKEUP
 adb shell wm dismiss-keyguard >/dev/null 2>&1 || true
+# Cached AVD snapshots may retain an older APK signed with a different debug key.
+adb shell cmd role remove-role-holder --user 0 android.app.role.SMS "$APP" 2>/dev/null || true
+adb shell pm uninstall --user 0 "$APP" >/dev/null 2>&1 || true
+adb shell pm uninstall --user 0 "$APP.test" >/dev/null 2>&1 || true
+adb uninstall "$APP" >/dev/null 2>&1 || true
+adb uninstall "$APP.test" >/dev/null 2>&1 || true
 adb install -r -g app/build/outputs/apk/debug/*.apk >/dev/null
 adb install -r -g app/build/outputs/apk/androidTest/debug/*.apk >/dev/null
 if [ "$sdk" -ge 29 ]; then adb shell cmd role add-role-holder android.app.role.SMS $APP 0

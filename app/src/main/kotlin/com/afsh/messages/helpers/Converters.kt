@@ -3,7 +3,7 @@ package com.afsh.messages.helpers
 import androidx.room.TypeConverter
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import org.fossify.commons.models.SimpleContact
+import com.afsh.commons.models.SimpleContact
 import com.afsh.messages.models.Attachment
 import com.afsh.messages.models.MessageAttachment
 

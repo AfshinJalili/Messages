@@ -5,24 +5,11 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.union
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
@@ -33,27 +20,26 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.afsh.messages.R
 import com.afsh.messages.ui.Avatar
 import com.afsh.messages.ui.Afsh
 import com.afsh.messages.ui.components.ActionTile
+import com.afsh.messages.ui.components.AfshIcon
 import com.afsh.messages.ui.components.Choice
 import com.afsh.messages.ui.components.ChoiceDialog
+import com.afsh.messages.ui.components.ContentText
 import com.afsh.messages.ui.components.IdentityCard
 import com.afsh.messages.ui.components.NavigationSetting
+import com.afsh.messages.ui.components.PageAppBarAction
+import com.afsh.messages.ui.components.PageContentPadding
+import com.afsh.messages.ui.components.PageScaffold
 import com.afsh.messages.ui.components.SectionHeading
 import com.afsh.messages.ui.components.SwitchSetting
 
-private val HeaderMinHeight = 72.dp
 private val MemberAvatarSize = 40.dp
 
 /** One person in the conversation. */
@@ -91,26 +77,33 @@ sealed interface DetailsEvent {
 }
 
 /**
- * 09 · Conversation / details. The header is the conversation's own (09 keeps the thread header),
- * then who it is, quick actions, and the settings that belong to this conversation.
+ * 09 · Conversation / details. The header is [PageScaffold]'s stock Material 3 top app bar
+ * (pinned scroll), then who it is, quick actions, and the settings that belong to this conversation.
  */
 @Composable
 fun ConversationDetailsScreen(state: ConversationDetailsUiState, onEvent: (DetailsEvent) -> Unit, modifier: Modifier = Modifier) {
     var choosingSim by rememberSaveable { mutableStateOf(false) }
-    Scaffold(
+    PageScaffold(
+        title = state.title,
+        subtitle = stringResource(R.string.conversation_details),
+        onBack = { onEvent(DetailsEvent.Back) },
+        actions = {
+            if (state.canDial) {
+                PageAppBarAction(
+                    AfshIcon.Call,
+                    stringResource(com.afsh.commons.R.string.call),
+                    onClick = { onEvent(DetailsEvent.Call) },
+                )
+            }
+        },
         modifier = modifier,
-        containerColor = MaterialTheme.colorScheme.surface,
-        contentWindowInsets = WindowInsets(0),
-        topBar = { DetailsHeader(state, onEvent) },
-    ) { padding ->
-        if (state.loading) return@Scaffold
+    ) {
+        if (state.loading) return@PageScaffold
         Column(
             Modifier
-                .padding(padding)
                 .verticalScroll(rememberScrollState())
-                .windowInsetsPadding(WindowInsets.navigationBars.union(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)))
-                .padding(start = 20.dp, top = 20.dp, end = 20.dp, bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+                .padding(PageContentPadding),
+            verticalArrangement = Arrangement.spacedBy(Afsh.spacing.lg),
         ) {
             val single = state.members.singleOrNull()
             IdentityCard(
@@ -132,14 +125,14 @@ fun ConversationDetailsScreen(state: ConversationDetailsUiState, onEvent: (Detai
                     Modifier
                 },
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.md)) {
                 val tile = Modifier.weight(1f)
                 if (state.canDial) {
-                    ActionTile(R.drawable.ic_lucide_phone, stringResource(org.fossify.commons.R.string.call), { onEvent(DetailsEvent.Call) }, tile)
+                    ActionTile(AfshIcon.Call, stringResource(com.afsh.commons.R.string.call), { onEvent(DetailsEvent.Call) }, tile)
                 }
-                ActionTile(R.drawable.ic_lucide_search, stringResource(org.fossify.commons.R.string.search), { onEvent(DetailsEvent.Search) }, tile)
+                ActionTile(AfshIcon.Search, stringResource(com.afsh.commons.R.string.search), { onEvent(DetailsEvent.Search) }, tile)
                 ActionTile(
-                    if (state.muted) R.drawable.ic_lucide_bell else R.drawable.ic_lucide_bell_off,
+                    if (state.muted) AfshIcon.Notifications else AfshIcon.NotificationsOff,
                     stringResource(if (state.muted) R.string.unmute else R.string.mute),
                     { onEvent(DetailsEvent.ToggleMute) },
                     tile,
@@ -150,13 +143,13 @@ fun ConversationDetailsScreen(state: ConversationDetailsUiState, onEvent: (Detai
                     stringResource(R.string.conversation_name),
                     onClick = { onEvent(DetailsEvent.Rename) },
                     value = state.title,
-                    icon = R.drawable.ic_lucide_pencil,
+                    icon = AfshIcon.Edit,
                 )
                 SwitchSetting(
                     stringResource(R.string.custom_notifications),
                     checked = state.customNotifications,
                     onCheckedChange = { onEvent(DetailsEvent.SetCustomNotifications(it)) },
-                    icon = R.drawable.ic_lucide_bell,
+                    icon = AfshIcon.Notifications,
                     value = stringResource(if (state.customNotifications) R.string.custom_notifications_on else R.string.custom_notifications_off),
                 )
                 if (state.customNotifications) {
@@ -164,7 +157,7 @@ fun ConversationDetailsScreen(state: ConversationDetailsUiState, onEvent: (Detai
                         stringResource(R.string.sound_and_vibration),
                         onClick = { onEvent(DetailsEvent.OpenNotificationSettings) },
                         value = stringResource(R.string.sound_and_vibration_value),
-                        icon = R.drawable.ic_lucide_volume_2,
+                        icon = AfshIcon.Volume,
                     )
                 }
                 if (state.sims.size > 1) {
@@ -173,7 +166,7 @@ fun ConversationDetailsScreen(state: ConversationDetailsUiState, onEvent: (Detai
                         onClick = { choosingSim = true },
                         value = state.sims.firstOrNull { it.subscriptionId == state.sim }?.label
                             ?: stringResource(R.string.sim_default),
-                        icon = R.drawable.ic_lucide_card_sim,
+                        icon = AfshIcon.SimCard,
                     )
                 }
             }
@@ -190,55 +183,13 @@ fun ConversationDetailsScreen(state: ConversationDetailsUiState, onEvent: (Detai
             title = stringResource(R.string.sim),
             choices = listOf(Choice(0, stringResource(R.string.sim_default))) + state.sims.map { Choice(it.subscriptionId, it.label) },
             selected = state.sim,
-            dismissLabel = stringResource(org.fossify.commons.R.string.cancel),
+            dismissLabel = stringResource(com.afsh.commons.R.string.cancel),
             onChoose = {
                 choosingSim = false
                 onEvent(DetailsEvent.SetSim(it))
             },
             onDismiss = { choosingSim = false },
         )
-    }
-}
-
-/** The conversation header of 09: back, the name over "Conversation details", and Call. */
-@Composable
-private fun DetailsHeader(state: ConversationDetailsUiState, onEvent: (DetailsEvent) -> Unit) {
-    val colors = MaterialTheme.colorScheme
-    Surface(color = colors.primaryContainer, contentColor = colors.onPrimaryContainer) {
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .windowInsetsPadding(WindowInsets.statusBars.union(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)))
-                .heightIn(min = HeaderMinHeight)
-                .padding(horizontal = 8.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            val back = stringResource(org.fossify.commons.R.string.back)
-            IconButton(onClick = { onEvent(DetailsEvent.Back) }, modifier = Modifier.semantics { contentDescription = back }) {
-                Icon(painterResource(R.drawable.ic_lucide_arrow_left), contentDescription = null)
-            }
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(
-                    state.title,
-                    style = MaterialTheme.typography.titleLarge,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.semantics { heading() },
-                )
-                Text(
-                    stringResource(R.string.conversation_details),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Afsh.colors.onBandVariant,
-                )
-            }
-            if (state.canDial) {
-                val call = stringResource(org.fossify.commons.R.string.call)
-                IconButton(onClick = { onEvent(DetailsEvent.Call) }, modifier = Modifier.semantics { contentDescription = call }) {
-                    Icon(painterResource(R.drawable.ic_lucide_phone), contentDescription = null)
-                }
-            }
-        }
     }
 }
 
@@ -250,13 +201,13 @@ private fun MemberRow(member: Member, onClick: () -> Unit) {
             .fillMaxWidth()
             .clip(MaterialTheme.shapes.small)
             .clickable(role = Role.Button, onClick = onClick)
-            .padding(horizontal = 4.dp, vertical = 8.dp),
+            .padding(horizontal = Afsh.spacing.xs, vertical = Afsh.spacing.sm),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.md),
     ) {
         Avatar(member.name, member.photoUri, isGroup = false, size = MemberAvatarSize)
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(member.name, style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Afsh.spacing.xxs)) {
+            ContentText(member.name, style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
             if (member.number != member.name) {
                 Text(ltr(member.number), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
             }

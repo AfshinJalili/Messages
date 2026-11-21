@@ -8,12 +8,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import org.fossify.commons.helpers.ensureBackgroundThread
+import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.messages.R
 import com.afsh.messages.extensions.config
 import com.afsh.messages.extensions.conversationsDB
 import com.afsh.messages.extensions.deleteConversation
-import org.fossify.commons.extensions.notificationManager
+import com.afsh.commons.extensions.notificationManager
 import com.afsh.messages.extensions.updateConversationArchivedStatus
 import com.afsh.messages.helpers.THREAD_ID
 import com.afsh.messages.helpers.THREAD_TITLE
@@ -58,8 +58,8 @@ class ArchivedConversationsActivity : ComposePageActivity() {
                 explanation = stringResource(
                     if (request.all) R.string.empty_archive_confirmation else R.string.delete_forever_conversation_text,
                 ),
-                confirmLabel = stringResource(org.fossify.commons.R.string.delete),
-                dismissLabel = stringResource(org.fossify.commons.R.string.cancel),
+                confirmLabel = stringResource(com.afsh.commons.R.string.delete),
+                dismissLabel = stringResource(com.afsh.commons.R.string.cancel),
                 onConfirm = {
                     confirm = null
                     delete(request.conversations)

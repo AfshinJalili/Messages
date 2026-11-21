@@ -23,10 +23,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import com.afsh.messages.R
+import com.afsh.messages.ui.Afsh
+import com.afsh.messages.ui.components.AfshIcon
 import com.afsh.messages.ui.components.Choice
 import com.afsh.messages.ui.components.ChoiceDialog
 import com.afsh.messages.ui.newmessage.NewMessageUiState
@@ -84,15 +84,15 @@ fun ManagePeoplePanel(
             Row(
                 Modifier
                     .fillMaxWidth()
-                    .padding(start = 20.dp, end = 8.dp, top = 8.dp),
+                    .padding(start = Afsh.spacing.xl, end = Afsh.spacing.sm, top = Afsh.spacing.sm),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Text(stringResource(R.string.people), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
                 IconButton(onClick = onDone) {
                     Icon(
-                        painterResource(R.drawable.ic_lucide_check),
-                        contentDescription = stringResource(org.fossify.commons.R.string.confirm_selection),
+                        AfshIcon.Check.painter(),
+                        contentDescription = stringResource(com.afsh.commons.R.string.confirm_selection),
                         tint = MaterialTheme.colorScheme.primary,
                     )
                 }
@@ -108,7 +108,7 @@ fun ManagePeoplePanel(
                 canRemove = { it != fixed },
                 onAllowContacts = onAllowContacts,
                 fieldModifier = Modifier.focusRequester(focus),
-                contentPadding = PaddingValues(start = 20.dp, top = 8.dp, end = 20.dp, bottom = 24.dp),
+                contentPadding = PaddingValues(start = Afsh.spacing.xl, top = Afsh.spacing.sm, end = Afsh.spacing.xl, bottom = Afsh.spacing.xxl),
             )
         }
     }
@@ -117,7 +117,7 @@ fun ManagePeoplePanel(
             title = person.name,
             choices = person.phones.map { Choice(it.number, it.number, it.label) },
             selected = null,
-            dismissLabel = stringResource(org.fossify.commons.R.string.cancel),
+            dismissLabel = stringResource(com.afsh.commons.R.string.cancel),
             onChoose = { number ->
                 choosingNumber = null
                 add(Recipient(number, person.name))

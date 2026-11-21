@@ -73,6 +73,20 @@ android {
                 signingConfig = signingConfigs.getByName("debug")
             }
         }
+        // Release-like, debug-signed, profileable — target for :macrobenchmark only.
+        create("benchmark") {
+            initWith(getByName("release"))
+            matchingFallbacks += listOf("release")
+            signingConfig = signingConfigs.getByName("debug")
+            isDebuggable = false
+            isProfileable = true
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
     }
 
     sourceSets {
@@ -84,6 +98,11 @@ android {
         val currentJavaVersionFromLibs = JavaVersion.valueOf(libs.versions.app.build.javaVersion.get())
         sourceCompatibility = currentJavaVersionFromLibs
         targetCompatibility = currentJavaVersionFromLibs
+    }
+
+    testOptions {
+        // State holders are tested on the JVM; android.* calls they reach return defaults there.
+        unitTests.isReturnDefaultValues = true
     }
 
     dependenciesInfo {
@@ -128,19 +147,21 @@ detekt {
 dependencies {
     implementation(project(":commons"))
     implementation(libs.eventbus)
-    implementation(libs.indicator.fast.scroll)
     implementation(libs.mmslib)
+    implementation(libs.androidx.biometric.ktx)
     implementation(libs.androidx.swiperefreshlayout)
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.documentfile)
     implementation(libs.androidx.lifecycle.process)
     implementation(libs.androidx.profileinstaller)
+    implementation(libs.androidx.core.splashscreen)
     implementation(libs.ez.vcard)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.bundles.room)
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.material3)
     implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.lifecycle.compose)
     implementation(libs.androidx.window)
     implementation(libs.compose.ui.tooling.preview)
     debugImplementation(libs.compose.ui.tooling)
@@ -148,7 +169,10 @@ dependencies {
     androidTestImplementation(platform(libs.compose.bom))
     androidTestImplementation(libs.compose.ui.test.junit4)
     ksp(libs.androidx.room.compiler)
+    testImplementation(libs.junit)
+    testImplementation(libs.sqlite.jdbc)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation("androidx.test.uiautomator:uiautomator:2.3.0")
     detektPlugins(libs.compose.detekt)
 }

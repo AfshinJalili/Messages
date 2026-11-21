@@ -14,10 +14,9 @@ import android.media.RingtoneManager
 import androidx.core.app.NotificationCompat
 import androidx.core.app.RemoteInput
 import androidx.core.app.Person
-import org.fossify.commons.extensions.getProperPrimaryColor
-import org.fossify.commons.extensions.notificationManager
-import org.fossify.commons.helpers.SimpleContactsHelper
-import org.fossify.commons.helpers.ensureBackgroundThread
+import com.afsh.commons.extensions.notificationManager
+import com.afsh.commons.helpers.SimpleContactsHelper
+import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.messages.R
 import com.afsh.messages.activities.ThreadActivity
 import com.afsh.messages.extensions.config
@@ -28,6 +27,7 @@ import com.afsh.messages.receivers.CopyOtpReceiver
 import com.afsh.messages.receivers.DirectReplyReceiver
 import com.afsh.messages.receivers.DeleteSmsReceiver
 import com.afsh.messages.receivers.MarkAsReadReceiver
+import com.afsh.messages.ui.components.AfshIcon
 
 class NotificationHelper(private val context: Context) {
 
@@ -116,7 +116,7 @@ class NotificationHelper(private val context: Context) {
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
                 )
             replyAction = NotificationCompat.Action.Builder(
-                R.drawable.ic_send_vector,
+                AfshIcon.Send.resource,
                 replyLabel,
                 replyPendingIntent
             )
@@ -146,7 +146,7 @@ class NotificationHelper(private val context: Context) {
                 }
             }
 
-            color = context.getProperPrimaryColor()
+            color = context.primaryRoleColor()
             setSmallIcon(R.drawable.ic_message_bubble)
             setContentIntent(contentPendingIntent)
             priority = NotificationCompat.PRIORITY_MAX
@@ -167,7 +167,7 @@ class NotificationHelper(private val context: Context) {
                 putExtra(THREAD_ID, threadId)
             }
             builder.addAction(
-                org.fossify.commons.R.drawable.ic_copy_vector,
+                AfshIcon.Copy.resource,
                 context.getString(R.string.copy_otp_code, code),
                 PendingIntent.getBroadcast(
                     context,
@@ -179,15 +179,15 @@ class NotificationHelper(private val context: Context) {
         }
 
         builder.addAction(
-            org.fossify.commons.R.drawable.ic_check_vector,
+            AfshIcon.Check.resource,
             context.getString(R.string.mark_as_read),
             markAsReadPendingIntent
         )
             .setChannelId(notificationChannelId)
         if (isNoReplySms) {
             builder.addAction(
-                org.fossify.commons.R.drawable.ic_delete_vector,
-                context.getString(org.fossify.commons.R.string.delete),
+                AfshIcon.Delete.resource,
+                context.getString(com.afsh.commons.R.string.delete),
                 deleteSmsPendingIntent
             ).setChannelId(notificationChannelId)
         }
@@ -236,7 +236,7 @@ class NotificationHelper(private val context: Context) {
         val builder = NotificationCompat.Builder(context, notificationChannelId)
             .setContentTitle(context.getString(R.string.message_not_sent_short))
             .setContentText(summaryText)
-            .setColor(context.getProperPrimaryColor())
+            .setColor(context.primaryRoleColor())
             .setSmallIcon(R.drawable.ic_message_bubble)
             .setLargeIcon(largeIcon)
             .setStyle(NotificationCompat.BigTextStyle().bigText(summaryText))

@@ -8,9 +8,9 @@ import android.provider.Telephony.Sms
 import android.util.Base64
 import com.google.android.mms.pdu_alt.PduHeaders
 import com.klinker.android.send_message.Utils
-import org.fossify.commons.extensions.getLongValue
-import org.fossify.commons.extensions.queryCursor
-import org.fossify.commons.helpers.isRPlus
+import com.afsh.commons.extensions.getLongValue
+import com.afsh.commons.extensions.queryCursor
+import com.afsh.commons.helpers.isRPlus
 import com.afsh.messages.extensions.updateLastConversationMessage
 import com.afsh.messages.models.MmsAddress
 import com.afsh.messages.models.MmsBackup

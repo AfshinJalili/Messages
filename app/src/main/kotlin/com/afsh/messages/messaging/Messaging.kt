@@ -5,9 +5,9 @@ import android.telephony.SmsMessage
 import android.util.Patterns
 import android.widget.Toast.LENGTH_LONG
 import com.klinker.android.send_message.Settings
-import org.fossify.commons.extensions.showErrorToast
-import org.fossify.commons.extensions.toast
-import org.fossify.commons.helpers.ensureBackgroundThread
+import com.afsh.commons.extensions.showErrorToast
+import com.afsh.commons.extensions.toast
+import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.messages.R
 import com.afsh.messages.extensions.config
 import com.afsh.messages.extensions.getThreadId
@@ -116,7 +116,7 @@ fun Context.sendMessageCompat(
  */
 fun isShortCodeWithLetters(address: String): Boolean {
     if (Patterns.EMAIL_ADDRESS.matcher(address).matches()) {
-        // emails are not short codes: https://github.com/FossifyOrg/Messages/issues/115
+        // An email address is not a short code.
         return false
     }
 

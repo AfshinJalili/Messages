@@ -4,13 +4,13 @@ import android.content.Context
 import android.net.Uri
 import com.bumptech.glide.Glide
 import com.klinker.android.send_message.MmsReceivedReceiver
-import org.fossify.commons.extensions.baseConfig
-import org.fossify.commons.extensions.getMyContactsCursor
-import org.fossify.commons.extensions.isNumberBlocked
-import org.fossify.commons.extensions.showErrorToast
-import org.fossify.commons.helpers.ContactLookupResult
-import org.fossify.commons.helpers.SimpleContactsHelper
-import org.fossify.commons.helpers.ensureBackgroundThread
+import com.afsh.commons.extensions.baseConfig
+import com.afsh.commons.extensions.getMyContactsCursor
+import com.afsh.commons.extensions.isNumberBlocked
+import com.afsh.commons.extensions.showErrorToast
+import com.afsh.commons.helpers.ContactLookupResult
+import com.afsh.commons.helpers.SimpleContactsHelper
+import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.messages.R
 import com.afsh.messages.extensions.getConversations
 import com.afsh.messages.extensions.getLatestMMS
@@ -97,6 +97,7 @@ class MmsReceiver : MmsReceivedReceiver() {
         }
         InboxRepository.refreshUnreadCounts(context, listOf(mms.threadId))
         refreshMessages()
-        refreshConversations()
+        // Room already has this thread; a full provider reconcile on every MMS drains battery.
+        refreshConversations(reconcile = false)
     }
 }

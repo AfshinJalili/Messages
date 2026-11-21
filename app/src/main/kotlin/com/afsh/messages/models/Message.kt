@@ -5,7 +5,7 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import org.fossify.commons.models.SimpleContact
+import com.afsh.commons.models.SimpleContact
 import com.afsh.messages.helpers.THREAD_RECEIVED_MESSAGE
 import com.afsh.messages.helpers.THREAD_SENT_MESSAGE
 import com.afsh.messages.helpers.generateStableId

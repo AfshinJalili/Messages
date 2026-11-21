@@ -1,5 +1,5 @@
 name: Design gap
-description: A screen, component or state the design file does not decide yet
+description: A screen, component or state DESIGN.md does not decide yet
 labels: [design-gap]
 body:
   - type: input
@@ -31,13 +31,13 @@ body:
     id: screens
     attributes:
       label: Screens and components
-      description: Frames in design/afsh.pen to read or change. The design agent fills in what it changed.
+      description: Screens and components in DESIGN.md to read or change. The design agent fills in what it changed.
   - type: textarea
     id: acceptance
     attributes:
       label: Acceptance
       value: |
-        - [ ] Designed in design/afsh.pen from existing components
+        - [ ] Decided in DESIGN.md from existing components
         - [ ] Persian RTL variant
         - [ ] App matches the design
         - [ ] Owner reviewed the design before the app change

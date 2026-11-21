@@ -6,7 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.provider.Telephony.Sms
-import org.fossify.commons.helpers.ensureBackgroundThread
+import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.messages.extensions.messagesDB
 import com.afsh.messages.extensions.messagingUtils
 import com.afsh.messages.helpers.refreshMessages
@@ -37,7 +37,7 @@ class SmsStatusDeliveredReceiver : SendStatusReceiver() {
                     }
 
                     2 -> {
-                        // TODO: Need to check whether SC still trying to deliver the SMS to destination and will send the report again?
+                        // Status 2 is STATUS_PENDING per GSM 03.40 specification
                         Sms.STATUS_PENDING
                     }
 

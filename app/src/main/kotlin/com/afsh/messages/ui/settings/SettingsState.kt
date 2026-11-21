@@ -6,17 +6,17 @@ import com.afsh.messages.R
 import com.afsh.messages.helpers.SwipeAction
 
 /** The Settings pages, each reached from the overview (24) by a row of the same name (R5-35). */
-enum class SettingsPage(@StringRes val title: Int, @StringRes val subtitle: Int) {
-    OVERVIEW(org.fossify.commons.R.string.settings, R.string.settings_subtitle),
-    APPEARANCE(R.string.settings_appearance, R.string.settings_appearance_subtitle),
-    WRITING(R.string.settings_writing, R.string.settings_writing_subtitle),
-    NOTIFICATIONS(org.fossify.commons.R.string.notifications, R.string.settings_notifications_subtitle),
-    INTERACTIONS(R.string.settings_interactions, R.string.settings_interactions_subtitle),
-    PRIVACY(R.string.settings_privacy, R.string.settings_privacy_subtitle),
-    BACKUP(R.string.settings_backup, R.string.settings_backup_subtitle),
+enum class SettingsPage(@StringRes val title: Int, @StringRes val subtitle: Int?) {
+    OVERVIEW(com.afsh.commons.R.string.settings, null),
+    APPEARANCE(R.string.settings_appearance, null),
+    WRITING(R.string.settings_writing, null),
+    NOTIFICATIONS(com.afsh.commons.R.string.notifications, null),
+    INTERACTIONS(R.string.settings_interactions, null),
+    PRIVACY(R.string.settings_privacy, null),
+    BACKUP(R.string.settings_backup, null),
     EXPORT(R.string.export_messages, R.string.export_subtitle),
     IMPORT_REVIEW(R.string.restore_backup, R.string.restore_backup_subtitle),
-    ABOUT(R.string.about_app, R.string.about_subtitle),
+    ABOUT(R.string.about_app, null),
 }
 
 /** 25's theme cards. */

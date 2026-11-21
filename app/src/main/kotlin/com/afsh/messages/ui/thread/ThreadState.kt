@@ -1,6 +1,6 @@
 package com.afsh.messages.ui.thread
 
-import androidx.annotation.DrawableRes
+import androidx.annotation.AnyRes
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Immutable
 import com.afsh.messages.R
@@ -8,6 +8,7 @@ import com.afsh.messages.models.Attachment
 import com.afsh.messages.models.AttachmentSelection
 import com.afsh.messages.models.Message
 import com.afsh.messages.models.ThreadItem
+import com.afsh.messages.ui.components.AfshIcon
 
 @Immutable
 data class ThreadHeaderState(
@@ -96,15 +97,15 @@ sealed interface ComposerEvent {
  * Declaration order is the attach sheet's order (design 11). Contact and Send later lead: they are
  * plain SMS, and where MMS is unavailable they are the only options that work.
  */
-enum class AttachOption(@StringRes val title: Int, @StringRes val subtitle: Int, @DrawableRes val icon: Int) {
-    CONTACT(R.string.attach_contact, R.string.attach_contact_text, org.fossify.commons.R.drawable.ic_person_vector),
-    SEND_LATER(R.string.composer_send_later, R.string.attach_send_later_text, org.fossify.commons.R.drawable.ic_clock_vector),
-    PHOTO(R.string.attach_photos, R.string.attach_photos_text, R.drawable.ic_image_vector),
-    CAMERA(R.string.attach_camera, R.string.attach_camera_text, org.fossify.commons.R.drawable.ic_camera_vector),
-    VIDEO(R.string.attach_video, R.string.attach_video_text, R.drawable.ic_videocam_vector),
-    RECORD_VIDEO(R.string.attach_record_video, R.string.attach_record_video_text, R.drawable.ic_video_camera_vector),
-    AUDIO(R.string.attach_audio, R.string.attach_audio_text, org.fossify.commons.R.drawable.ic_microphone_vector),
-    FILE(R.string.attach_file, R.string.attach_file_text, R.drawable.ic_document_vector),
+enum class AttachOption(@StringRes val title: Int, @StringRes val subtitle: Int, val icon: AfshIcon) {
+    CONTACT(R.string.attach_contact, R.string.attach_contact_text, AfshIcon.Person),
+    SEND_LATER(R.string.composer_send_later, R.string.attach_send_later_text, AfshIcon.Schedule),
+    PHOTO(R.string.attach_photos, R.string.attach_photos_text, AfshIcon.Image),
+    CAMERA(R.string.attach_camera, R.string.attach_camera_text, AfshIcon.Camera),
+    VIDEO(R.string.attach_video, R.string.attach_video_text, AfshIcon.Video),
+    RECORD_VIDEO(R.string.attach_record_video, R.string.attach_record_video_text, AfshIcon.RecordVideo),
+    AUDIO(R.string.attach_audio, R.string.attach_audio_text, AfshIcon.Microphone),
+    FILE(R.string.attach_file, R.string.attach_file_text, AfshIcon.Document),
 }
 
 /** Matches [com.afsh.messages.helpers.Config.isMessageStarred]'s key space: MMS and SMS ids can collide. */
@@ -155,42 +156,48 @@ sealed interface ThreadEvent {
 }
 
 /** Declaration order is the overflow menu order (design view 40). */
-enum class ThreadMenuAction(@StringRes val label: Int, @DrawableRes val icon: Int) {
-    SEARCH(R.string.search_in_conversation, org.fossify.commons.R.drawable.ic_search_vector),
-    DETAILS(R.string.conversation_details, org.fossify.commons.R.drawable.ic_info_vector),
-    MUTE(R.string.mute_conversation, R.drawable.ic_bell_off_vector),
-    UNMUTE(R.string.unmute_conversation, org.fossify.commons.R.drawable.ic_bell_vector),
-    MARK_UNREAD(R.string.mark_as_unread, org.fossify.commons.R.drawable.ic_mail_vector),
-    RENAME(R.string.rename_conversation, org.fossify.commons.R.drawable.ic_edit_vector),
-    ADD_PERSON(R.string.add_person, org.fossify.commons.R.drawable.ic_add_person_vector),
-    ADD_TO_CONTACT(org.fossify.commons.R.string.add_number_to_contact, org.fossify.commons.R.drawable.ic_add_person_vector),
-    COPY_NUMBER(org.fossify.commons.R.string.copy_number_to_clipboard, org.fossify.commons.R.drawable.ic_copy_vector),
-    ARCHIVE(R.string.archive, R.drawable.ic_archive_vector),
-    UNARCHIVE(R.string.unarchive, R.drawable.ic_unarchive_vector),
-    ALLOW_SENDER(R.string.allow_sender, org.fossify.commons.R.drawable.ic_check_circle_vector),
-    BLOCK(org.fossify.commons.R.string.block_number, org.fossify.commons.R.drawable.ic_block_vector),
-    RESTORE(R.string.restore_all_messages, org.fossify.commons.R.drawable.ic_restart_alt_vector),
-    DELETE(org.fossify.commons.R.string.delete, org.fossify.commons.R.drawable.ic_delete_vector),
+enum class ThreadMenuAction(@AnyRes val label: Int, val icon: AfshIcon, val labelIsQuantity: Boolean = false) {
+    SEARCH(R.string.search_in_conversation, AfshIcon.Search),
+    DETAILS(R.string.conversation_details, AfshIcon.Info),
+    MUTE(R.string.mute_conversation, AfshIcon.NotificationsOff),
+    UNMUTE(R.string.unmute_conversation, AfshIcon.Notifications),
+    MARK_UNREAD(R.string.mark_as_unread, AfshIcon.Mail),
+    RENAME(R.string.rename_conversation, AfshIcon.Edit),
+    ADD_PERSON(R.string.add_person, AfshIcon.PersonAdd),
+    ADD_TO_CONTACT(com.afsh.commons.R.string.add_number_to_contact, AfshIcon.PersonAdd),
+    COPY_NUMBER(com.afsh.commons.R.string.copy_number_to_clipboard, AfshIcon.Copy),
+    ARCHIVE(R.string.archive, AfshIcon.Archive),
+    UNARCHIVE(R.string.unarchive, AfshIcon.Inbox),
+    NEVER_SPAM(R.plurals.never_spam, AfshIcon.Verified, labelIsQuantity = true),
+    ALWAYS_SPAM(R.plurals.always_spam, AfshIcon.SpamShield, labelIsQuantity = true),
+    BLOCK_ON_PHONE(R.plurals.block_on_phone, AfshIcon.Block, labelIsQuantity = true),
+    RESTORE(R.string.restore_all_messages, AfshIcon.Restore),
+    DELETE(com.afsh.commons.R.string.delete, AfshIcon.Delete),
+
+    ;
+
+    /** Shown in the error color: these remove or shut out the conversation. */
+    val destructive: Boolean get() = this == DELETE || this == BLOCK_ON_PHONE
 }
 
 /** Declaration order is the display order; the bar takes the first few (design view 10), the rest overflow. */
-enum class MessageAction(@StringRes val label: Int, @DrawableRes val icon: Int) {
-    COPY(org.fossify.commons.R.string.copy, R.drawable.ic_lucide_copy),
-    FORWARD(R.string.forward_message, R.drawable.ic_lucide_forward),
-    STAR(R.string.star_message, R.drawable.ic_lucide_star),
-    UNSTAR(R.string.unstar_message, R.drawable.ic_lucide_star_filled),
-    DELETE(org.fossify.commons.R.string.delete, R.drawable.ic_lucide_trash),
-    SHARE(org.fossify.commons.R.string.share, R.drawable.ic_lucide_share),
-    SELECT_TEXT(org.fossify.commons.R.string.select_text, R.drawable.ic_lucide_text_cursor),
-    DETAILS(R.string.message_details, R.drawable.ic_lucide_info),
-    SAVE_AS(org.fossify.commons.R.string.save_as, R.drawable.ic_lucide_download),
-    NOT_SPAM(R.string.not_spam, R.drawable.ic_lucide_circle_check),
-    RESTORE(R.string.restore, R.drawable.ic_lucide_rotate_ccw),
-    SELECT_ALL(org.fossify.commons.R.string.select_all, R.drawable.ic_lucide_list_checks),
+enum class MessageAction(@StringRes val label: Int, val icon: AfshIcon) {
+    COPY(com.afsh.commons.R.string.copy, AfshIcon.Copy),
+    FORWARD(R.string.forward_message, AfshIcon.Forward),
+    STAR(R.string.star_message, AfshIcon.Star),
+    UNSTAR(R.string.unstar_message, AfshIcon.StarFilled),
+    DELETE(com.afsh.commons.R.string.delete, AfshIcon.Delete),
+    SHARE(com.afsh.commons.R.string.share, AfshIcon.Share),
+    SELECT_TEXT(com.afsh.commons.R.string.select_text, AfshIcon.TextCursor),
+    DETAILS(R.string.message_details, AfshIcon.Info),
+    SAVE_AS(com.afsh.commons.R.string.save_as, AfshIcon.Download),
+    NOT_SPAM(R.string.not_spam, AfshIcon.Verified),
+    RESTORE(R.string.restore, AfshIcon.Restore),
+    SELECT_ALL(com.afsh.commons.R.string.select_all, AfshIcon.Checklist),
 
     // Only in a scheduled message's sheet (84).
-    EDIT_SCHEDULED(R.string.edit_message_and_time, R.drawable.ic_lucide_pencil),
-    SEND_NOW(R.string.send_now, R.drawable.ic_lucide_send),
+    EDIT_SCHEDULED(R.string.edit_message_and_time, AfshIcon.Edit),
+    SEND_NOW(R.string.send_now, AfshIcon.Send),
 }
 
 /** Same rules as the old contextual action bar. */

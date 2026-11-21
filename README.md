@@ -1,29 +1,17 @@
-# AFSH Messages
+# Messages
 
-<img alt="Logo" src="graphics/icon.webp" width="120" />
+<img alt="Messages" src="graphics/icon.svg" width="96" />
 
-A private, lightweight SMS/MMS client for Android.
+Private SMS and MMS for Android. The launcher name is Messages. English and Persian.
 
-**Stay connected:** Send SMS and MMS, use group messaging, and share photos and attachments.
-
-**Block unwanted messages:** Block numbers and keywords, export/import block lists, and filter obvious spam into a separate folder.
-
-**Backup and restore:** Export and import messages as JSON for device migration.
-
-**Privacy-first:** No ads, no unnecessary permissions, and no required network access for core messaging. Lock-screen notification content is configurable.
-
-**Search and organization:** Archive conversations, star messages, use a recycle bin, and search across threads.
-
-**Modern UI:** The AFSH design: pine, lime and lilac on mineral paper, light and dark themes, Persian/RTL first-class, swipe actions. See [DESIGN.md](DESIGN.md).
-
-## Build
+Send and receive messages, including pictures and groups. Block numbers and phrases. Archive, star and search. Back up to a file on the device. No account.
 
 ```bash
 ./gradlew :app:assembleDebug
 ```
 
-How the project is run (workflow, roles, tests, the real-phone rules) is in [AGENTS.md](AGENTS.md).
+The debug application id is `com.afsh.messages.debug`.
 
-## License
+How the code is written and verified is in [AGENTS.md](AGENTS.md). The visual system is in [DESIGN.md](DESIGN.md).
 
-See [LICENSE](LICENSE).
+GPL-3.0. See [LICENSE](LICENSE).

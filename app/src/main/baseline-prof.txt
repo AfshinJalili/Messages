@@ -1,2 +1,38 @@
+# Cold start: process, launcher activity, Room inbox path, Compose inbox scroll.
+Lcom/afsh/messages/App;
+Lcom/afsh/messages/activities/MainActivity;
+Lcom/afsh/messages/activities/SimpleActivity;
+Lcom/afsh/messages/helpers/InboxRepository;
+Lcom/afsh/messages/helpers/InboxReconciler;
+Lcom/afsh/messages/helpers/InboxImport;
+Lcom/afsh/messages/helpers/ConversationPreview;
+Lcom/afsh/messages/helpers/DesignKt;
+Lcom/afsh/messages/databases/MessagesDatabase;
+Lcom/afsh/messages/databases/MessagesDatabase_Impl;
+Lcom/afsh/messages/interfaces/ConversationsDao;
+Lcom/afsh/messages/interfaces/ConversationsDao_Impl;
+Lcom/afsh/messages/models/Conversation;
+Lcom/afsh/messages/models/ConversationWithSnippetOverride;
+Lcom/afsh/messages/extensions/ContextKt;
+Lcom/afsh/messages/ui/AfshThemeKt;
+Lcom/afsh/messages/ui/AvatarKt;
+Lcom/afsh/messages/ui/inbox/InboxScreenKt;
+Lcom/afsh/messages/ui/inbox/InboxStateKt;
+Lcom/afsh/messages/ui/components/SwipeableRowKt;
+HSPLcom/afsh/messages/App;->onCreate()V
+HSPLcom/afsh/messages/activities/MainActivity;->onCreate(Landroid/os/Bundle;)V
+HSPLcom/afsh/messages/activities/MainActivity;->initMessenger()V
+HSPLcom/afsh/messages/activities/MainActivity;->publish()V
+HSPLcom/afsh/messages/helpers/InboxRepository;->scheduleLaunchReconcile(Landroid/content/Context;)V
+HSPLcom/afsh/messages/helpers/InboxRepository;->needsFullReconcile(Landroid/content/Context;)Z
+HSPLcom/afsh/messages/ui/AvatarKt;->rememberBitmap(Ljava/lang/String;IIZLandroidx/compose/runtime/Composer;I)Landroidx/compose/ui/graphics/ImageBitmap;
+HSPLcom/afsh/messages/ui/inbox/InboxScreenKt;->InboxList*(**)**
+Lcom/afsh/messages/ui/components/ConversationRowKt;
+HSPLcom/afsh/messages/ui/components/ConversationRowKt;->ConversationRow*(**)**
+HSPLcom/afsh/messages/interfaces/ConversationsDao_Impl;->observeNonArchivedWithLatestSnippet()Landroidx/lifecycle/LiveData;
+# Commons splash / background helper used on every launch.
+Lcom/afsh/commons/helpers/ConstantsKt;
+HSPLcom/afsh/commons/helpers/ConstantsKt;->ensureBackgroundThread(Lkotlin/jvm/functions/Function0;)V
+# Keep broad coverage for the rest of the app package (startup + first scroll still hit many types).
 Lcom/afsh/messages/**;
-HSPLcom/afsh/messages/**->**(**)**
+HSPLcom/afsh/messages/**;->**(**)**

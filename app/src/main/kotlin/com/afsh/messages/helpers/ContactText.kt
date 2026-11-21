@@ -1,6 +1,6 @@
 package com.afsh.messages.helpers
 
-import org.fossify.commons.models.PhoneNumber
+import com.afsh.commons.models.PhoneNumber
 
 /**
  * A shared contact as plain SMS text: the name, then each phone number on its own line. Numbers that

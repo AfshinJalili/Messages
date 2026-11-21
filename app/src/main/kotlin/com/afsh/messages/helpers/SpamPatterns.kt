@@ -14,9 +14,18 @@ enum class SpamPatternGroup(val key: String) {
 
     /** The code itself. A message is a one-time code only with both a code word and a code. */
     CODE("code"),
-    UNSUBSCRIBE("unsubscribe"),
+
+    /** Bank, receipt and payment language that must stay in the inbox. */
+    TRANSACTIONAL("transactional"),
+
     LINKS("links"),
     MARKETING("marketing"),
+
+    /** Strong promo emojis: each distinct match is one marketing signal. */
+    PROMO_EMOJI("promo_emoji"),
+
+    /** Weak smileys and hearts: never a signal on their own. */
+    PROMO_EMOJI_WEAK("promo_emoji_weak"),
 }
 
 data class SpamPatterns(val groups: Map<SpamPatternGroup, List<String>>) {
@@ -35,6 +44,9 @@ data class SpamPatterns(val groups: Map<SpamPatternGroup, List<String>>) {
     companion object {
         private const val DIGIT = "[0-9۰-۹٠-٩]"
         private const val ZWNJ = "[\\u200c ]?"
+        private const val VS16 = "\\uFE0F?"
+        /** Common short-link and web TLDs; bare host with optional path, no scheme required. */
+        private const val TLD = "ir|io|com|net|me|ly|app|org|co|info|xyz|link|click|site|online|tv|cc|to"
 
         val DEFAULT = SpamPatterns(
             mapOf(
@@ -57,29 +69,76 @@ data class SpamPatterns(val groups: Map<SpamPatternGroup, List<String>>) {
                 SpamPatternGroup.CODE to listOf(
                     "(?<!$DIGIT)$DIGIT{4,8}(?!$DIGIT)",
                 ),
-                SpamPatternGroup.UNSUBSCRIBE to listOf(
-                    "لغو",
-                    "unsubscribe",
-                    "opt[- ]?out",
+                SpamPatternGroup.TRANSACTIONAL to listOf(
+                    "برداشت",
+                    "واریز",
+                    "موجودی",
+                    "تراکنش",
+                    "رسید\\s*پرداخت",
+                    "پرداخت\\s*موفق",
                 ),
                 SpamPatternGroup.LINKS to listOf(
                     "https?://",
                     "www\\.",
-                    "[\\w-]+\\.(ir|io|com|net|me|ly|app)/",
+                    "(?<![\\w.@])[\\w-]+\\.(?:$TLD)(?:/[\\w./-]*)?(?![\\w.])",
                 ),
                 SpamPatternGroup.MARKETING to listOf(
-                    "تخفیف",
-                    "هدیه",
-                    "جشنواره",
-                    "جایزه",
-                    "قرعه",
-                    "کلیک",
+                    "مجانی",
                     "رایگان",
-                    "بسته",
-                    "فروش",
+                    "جوایز",
+                    "جایزه\\s*ویژه",
+                    "جایزه",
+                    "قرعه(?:$ZWNJ\\s*کشی)?",
+                    "هدیه\\s*رایگان",
+                    "هدیه\\s*ویژه",
+                    "هدیه",
+                    "کد\\s*تخفیف",
+                    "درصد\\s*تخفیف",
+                    "تخفیف\\s*ویژه",
+                    "تخفیف",
+                    "جشنواره",
+                    "کنسرت",
+                    "اجرا",
+                    "تئاتر",
+                    "همایش",
+                    "بلیط",
+                    "بلیت",
+                    "خرید\\s*بلیط",
+                    "خرید\\s*بلیت",
+                    "خرید\\s*👇",
                     "کمپین",
-                    "ثبت ?نام",
-                    "عضویت",
+                    "حراجی?",
+                    "فروش\\s*ویژه",
+                    "فرصت\\s*محدود",
+                    "فرصت\\s*طلایی",
+                    "فقط\\s*امروز",
+                    "آخرین\\s*مهلت",
+                    "برنده\\s*شو",
+                    "برنده\\s*شد",
+                    "شما\\s*برنده",
+                    "شانس\\s*برنده",
+                    "بسته\\s*ویژه",
+                    "بسته\\s*رایگان",
+                    "بسته\\s*پیشنهادی",
+                    "خرید\\s*بسته",
+                    "کلیک\\s*کنید",
+                    "ثبت$ZWNJ\\s*نام\\s*کنید",
+                    "همین\\s*حالا\\s*بخر",
+                    "پیش$ZWNJ\\s*فروش",
+                    "پیشنهاد\\s*شگفت",
+                ),
+                SpamPatternGroup.PROMO_EMOJI to listOf(
+                    // Celebrate / gift
+                    "🎉", "🎊", "🎁", "🏆", "🥇", "🎂",
+                    // Urgency / money / shop
+                    "🔥", "💥", "💰", "💸", "💵", "🛒", "📣", "📢", "⏰$VS16", "⏱$VS16",
+                    // Food promo
+                    "🍕", "🍔", "🍟", "🥤", "🍝", "🍰",
+                    // Bulk-layout marks normal people rarely use in texts
+                    "✅", "✔$VS16", "☑$VS16", "📍",
+                ),
+                SpamPatternGroup.PROMO_EMOJI_WEAK to listOf(
+                    "😊", "😃", "😁", "😍", "😌", "☺$VS16", "❤$VS16", "💕", "🌸", "🌹",
                 ),
             ),
         )
@@ -109,3 +168,37 @@ data class SpamPatterns(val groups: Map<SpamPatternGroup, List<String>>) {
         }
     }
 }
+
+/**
+ * Length-preserving fold so pattern ranges still index the original body: Arabic/Persian digits
+ * to ASCII, Yeh/Kaf variants to Persian, ZWNJ to a space.
+ */
+fun normalizeSpamText(body: String): String = buildString(body.length) {
+    for (c in body) {
+        when (c) {
+            '\u064A', '\u0649' -> append('\u06CC') // Arabic Yeh / Alef Maqsura → Persian Yeh
+            '\u0643' -> append('\u06A9') // Arabic Kaf → Persian Kaf
+            in '\u06F0'..'\u06F9' -> append('0' + (c - '\u06F0')) // Persian digits
+            in '\u0660'..'\u0669' -> append('0' + (c - '\u0660')) // Arabic-Indic digits
+            '\u200c' -> append(' ') // ZWNJ → space
+            else -> append(c)
+        }
+    }
+}
+
+/**
+ * Turns a stored pattern into ordinary text for the "What the filter looks for" page: no regex
+ * syntax, just the Persian word or emoji people would recognize in a message.
+ */
+fun plainFilterLabels(patterns: List<String>): List<String> = patterns.map { pattern ->
+    pattern
+        .replace("\\uFE0F?", "")
+        .replace("[\\u200c ]?", "\u200c")
+        .replace("(?:", "")
+        .replace(")?", "")
+        .replace("\\s*", "")
+        .replace("\\s+", " ")
+        .replace("\\\\", "")
+        .replace("\\", "")
+        .trim()
+}.filter { it.isNotEmpty() }.distinct()
