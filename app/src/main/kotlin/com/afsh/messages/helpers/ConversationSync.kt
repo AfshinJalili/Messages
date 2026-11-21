@@ -5,7 +5,7 @@ import android.net.Uri
 import android.provider.Telephony
 import com.afsh.messages.extensions.getConversations
 import com.afsh.messages.extensions.insertOrUpdateConversation
-import org.fossify.commons.extensions.getLongValue
+import com.afsh.commons.extensions.getLongValue
 
 /**
  * Targeted Room updates used by message receivers when [refreshConversations] runs with

@@ -36,9 +36,9 @@ def is_allowed_vector(stem: str) -> bool:
 
 def parse_entries(source: str):
     body = source.split('enum class AfshIcon', 1)[1]
-    # AfshIcon references commons drawables: org.fossify.commons.R.drawable… or R.drawable… after importing commons R.
+    # AfshIcon references commons drawables: com.afsh.commons.R.drawable… or R.drawable… after importing commons R.
     return re.findall(
-        r'^\s+(\w+)\((?:org\.fossify\.commons\.)?R\.drawable\.(\w+)(?:,\s*(?:org\.fossify\.commons\.)?R\.drawable\.(\w+))?\)[,;]',
+        r'^\s+(\w+)\((?:com\.afsh\.commons\.)?R\.drawable\.(\w+)(?:,\s*(?:com\.afsh\.commons\.)?R\.drawable\.(\w+))?\)[,;]',
         body,
         re.M,
     )
@@ -68,7 +68,7 @@ def self_test():
     sample = (
         'enum class AfshIcon(x: Int) {\n'
         '    Star(R.drawable.ic_msym_star, R.drawable.ic_msym_star_fill),\n'
-        '    Unpin(org.fossify.commons.R.drawable.ic_msym_keep_off),\n'
+        '    Unpin(com.afsh.commons.R.drawable.ic_msym_keep_off),\n'
         '    Add(R.drawable.ic_msym_add);\n}'
     )
     parsed = parse_entries(sample)
@@ -81,10 +81,10 @@ self_test()
 
 problems = []
 source = entry.read_text()
-if 'org.fossify.commons.R' not in source and 'import org.fossify.commons.R' not in source:
+if 'com.afsh.commons.R' not in source and 'import com.afsh.commons.R' not in source:
     # After the commons-only move, AfshIcon must resolve drawables from commons.
     if 'com.afsh.messages.R' in source:
-        problems.append('AfshIcon.kt must reference commons drawables (org.fossify.commons.R), not app R')
+        problems.append('AfshIcon.kt must reference commons drawables (com.afsh.commons.R), not app R')
 
 entries = parse_entries(source)
 assert entries, 'no AfshIcon entries found'

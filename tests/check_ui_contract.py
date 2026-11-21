@@ -10,7 +10,7 @@ Fails on, anywhere in the app's Kotlin outside ui/AfshTheme.kt:
 - Icons.* from material-icons, ImageVector.Builder / inline path icons, and painterResource(R.drawable…) for icons
   outside AfshIcon.kt (request AfshIcon instead);
 and any Lucide drawable, reference or tool in the app, its resources, Gradle files or tools/.
-Also scans commons Kotlin for Icons.* and ImageVector.Builder so Fossify leftovers cannot return.
+Also scans commons Kotlin for Icons.* and ImageVector.Builder.
 
 Sizes (icons, touch targets, avatars) are not spacing and may stay literal. Before checking the app, the script checks
 itself against tests/fixtures/ui_contract: every rule must fire on Violations.kt and none on Clean.kt.
@@ -35,7 +35,7 @@ PRIMARY_CONTAINER = re.compile(r'\b(?:on)?[pP]rimaryContainer\b')
 LUCIDE = re.compile(r'lucide', re.IGNORECASE)
 MATERIAL_ICONS = re.compile(r'\bIcons\.(Default|Filled|Outlined|Rounded|Sharp|TwoTone|AutoMirrored)\b')
 IMAGE_VECTOR_BUILDER = re.compile(r'\bImageVector\.Builder\b|\bPathBuilder\s*\(')
-PAINTER_DRAWABLE = re.compile(r'\bpainterResource\s*\(\s*(?:R|org\.fossify\.commons\.R)\.drawable\.')
+PAINTER_DRAWABLE = re.compile(r'\bpainterResource\s*\(\s*(?:R|com\.afsh\.commons\.R)\.drawable\.')
 
 RULES = {
     'lucide': 'references Lucide; request an AfshIcon (Material Symbols) instead',

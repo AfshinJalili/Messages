@@ -150,7 +150,7 @@ class NavigationChecks {
         }
         compose.onNodeWithContentDescription("Pin").performClick()
         check(clicked == "Pin") { "Pin did not act" }
-        compose.onNodeWithContentDescription(compose.activity.getString(org.fossify.commons.R.string.more_options)).performClick()
+        compose.onNodeWithContentDescription(compose.activity.getString(com.afsh.commons.R.string.more_options)).performClick()
         compose.onNodeWithText("Block").assertIsDisplayed().performClick()
         check(clicked == "Block") { "Block did not act" }
     }

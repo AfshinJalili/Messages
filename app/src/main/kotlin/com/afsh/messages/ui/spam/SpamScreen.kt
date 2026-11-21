@@ -41,7 +41,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import org.fossify.commons.extensions.getTimeFormat
+import com.afsh.commons.extensions.getTimeFormat
 import com.afsh.messages.R
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.ui.res.pluralStringResource
@@ -69,6 +69,7 @@ import com.afsh.messages.ui.components.messageBubbleShape
 import com.afsh.messages.ui.components.BubbleTone
 import com.afsh.messages.ui.components.MessageBubble
 import com.afsh.messages.ui.forContent
+import com.afsh.messages.ui.forLabel
 import com.afsh.messages.ui.withContentFonts
 import java.util.Calendar
 
@@ -203,7 +204,7 @@ fun SpamScreen(
                         )
                     }
                     add(
-                        BarAction(stringResource(org.fossify.commons.R.string.delete), AfshIcon.Delete, destructive = true) {
+                        BarAction(stringResource(com.afsh.commons.R.string.delete), AfshIcon.Delete, destructive = true) {
                             confirmDelete = chosen
                         },
                     )
@@ -302,7 +303,7 @@ fun SpamScreen(
             },
             explanation = pluralStringResource(R.plurals.always_spam_text, senderCount),
             confirmLabel = pluralStringResource(R.plurals.always_spam, senderCount),
-            dismissLabel = stringResource(org.fossify.commons.R.string.cancel),
+            dismissLabel = stringResource(com.afsh.commons.R.string.cancel),
             onConfirm = {
                 confirmBlock = null
                 clear()
@@ -316,7 +317,7 @@ fun SpamScreen(
             title = pluralStringResource(R.plurals.delete_messages_title, messages.size, messages.size),
             explanation = pluralStringResource(R.plurals.delete_messages_forever_text, messages.size),
             confirmLabel = stringResource(R.string.delete_forever),
-            dismissLabel = stringResource(org.fossify.commons.R.string.cancel),
+            dismissLabel = stringResource(com.afsh.commons.R.string.cancel),
             onConfirm = {
                 confirmDelete = null
                 clear()
@@ -331,7 +332,7 @@ fun SpamScreen(
             title = stringResource(R.string.clear_spam_title),
             explanation = stringResource(R.string.clear_spam_confirmation),
             confirmLabel = stringResource(R.string.delete_forever),
-            dismissLabel = stringResource(org.fossify.commons.R.string.cancel),
+            dismissLabel = stringResource(com.afsh.commons.R.string.cancel),
             onConfirm = {
                 confirmDeleteAll = false
                 onEvent(SpamEvent.DeleteAll)
@@ -424,7 +425,7 @@ private fun senderText(sender: String) = remember(sender) { AnnotatedString(send
 
 @Composable
 private fun senderStyle(sender: String) =
-    MaterialTheme.typography.bodySmall.forContent(sender).copy(fontWeight = FontWeight.ExtraBold)
+    MaterialTheme.typography.bodySmall.forLabel(sender).copy(fontWeight = FontWeight.ExtraBold)
 
 @Composable
 private fun Bubble(message: SpamReviewMessage, selected: Boolean, modifier: Modifier = Modifier) {

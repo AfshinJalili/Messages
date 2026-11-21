@@ -28,6 +28,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.afsh.messages.ui.Afsh
 
 /**
  * The navigation bar's height without insets: Material 3's navigation bar container height. This is the
@@ -157,8 +158,7 @@ fun CountBadge(count: Int, modifier: Modifier = Modifier) {
     val fontScale = LocalDensity.current.fontScale
     val shrink = minOf(fontScale, BADGE_MAX_FONT_SCALE) / fontScale
     val label = String.format(locale, "%d", count.coerceAtMost(MAX_BADGE)) + if (count > MAX_BADGE) "+" else ""
-    val colors = MaterialTheme.colorScheme
-    Badge(modifier, containerColor = colors.error, contentColor = colors.onError) {
+    Badge(modifier, containerColor = Afsh.colors.badge.container, contentColor = Afsh.colors.badge.content) {
         Text(label, style = MaterialTheme.typography.labelSmall.copy(fontSize = BadgeTextSize * shrink, lineHeight = BadgeLineHeight * shrink))
     }
 }

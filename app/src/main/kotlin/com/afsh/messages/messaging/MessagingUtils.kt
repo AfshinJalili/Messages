@@ -13,8 +13,8 @@ import android.widget.Toast
 import com.klinker.android.send_message.Message
 import com.klinker.android.send_message.Settings
 import com.klinker.android.send_message.Transaction
-import org.fossify.commons.extensions.showErrorToast
-import org.fossify.commons.extensions.toast
+import com.afsh.commons.extensions.showErrorToast
+import com.afsh.commons.extensions.toast
 import com.afsh.messages.R
 import com.afsh.messages.extensions.getThreadId
 import com.afsh.messages.extensions.isPlainTextMimeType
@@ -186,7 +186,7 @@ class MessagingUtils(val context: Context) {
             } catch (e: Exception) {
                 context.showErrorToast(e)
             } catch (e: Error) {
-                context.showErrorToast(e.localizedMessage ?: context.getString(org.fossify.commons.R.string.unknown_error_occurred))
+                context.showErrorToast(e.localizedMessage ?: context.getString(com.afsh.commons.R.string.unknown_error_occurred))
             }
         }
 

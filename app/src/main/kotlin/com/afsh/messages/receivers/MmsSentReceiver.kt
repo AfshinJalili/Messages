@@ -13,9 +13,9 @@ import com.afsh.messages.extensions.deleteMessage
 import com.afsh.messages.helpers.ConversationSync
 import com.afsh.messages.helpers.refreshConversations
 import com.afsh.messages.helpers.refreshMessages
-import org.fossify.commons.extensions.showErrorToast
-import org.fossify.commons.extensions.toast
-import org.fossify.commons.helpers.ensureBackgroundThread
+import com.afsh.commons.extensions.showErrorToast
+import com.afsh.commons.extensions.toast
+import com.afsh.commons.helpers.ensureBackgroundThread
 import java.io.File
 
 /** Handles updating databases and states when a MMS message is sent. */

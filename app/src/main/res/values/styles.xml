@@ -67,11 +67,11 @@
         <item name="android:windowAnimationStyle">@null</item>
     </style>
 
-    <!-- Launcher theme: system splash until the first Room snapshot, then AppTheme.Afsh.Root_*. -->
+    <!-- Launcher theme: system splash until the first Room snapshot, then AppTheme.Afsh.Root_*. Light default; values-night overrides for dark. -->
     <style name="Theme.Afsh.Splash" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">@color/m3_surface_dark</item>
+        <item name="windowSplashScreenBackground">@color/m3_surface</item>
         <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
-        <item name="postSplashScreenTheme">@style/AppTheme.Afsh.Root.Dark</item>
+        <item name="postSplashScreenTheme">@style/AppTheme.Afsh.Root.Light</item>
     </style>
 
 </resources>

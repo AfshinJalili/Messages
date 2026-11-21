@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -36,18 +38,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.afsh.messages.ui.Afsh
 import com.afsh.messages.ui.components.AfshIcon
-import org.fossify.commons.helpers.DATE_FORMAT_EIGHT
-import org.fossify.commons.helpers.DATE_FORMAT_FIVE
-import org.fossify.commons.helpers.DATE_FORMAT_FOUR
-import org.fossify.commons.helpers.DATE_FORMAT_ONE
-import org.fossify.commons.helpers.DATE_FORMAT_SEVEN
-import org.fossify.commons.helpers.DATE_FORMAT_SIX
-import org.fossify.commons.helpers.DATE_FORMAT_THREE
-import org.fossify.commons.helpers.DATE_FORMAT_TWO
-import org.fossify.commons.helpers.FONT_SIZE_EXTRA_LARGE
-import org.fossify.commons.helpers.FONT_SIZE_LARGE
-import org.fossify.commons.helpers.FONT_SIZE_MEDIUM
-import org.fossify.commons.helpers.FONT_SIZE_SMALL
+import com.afsh.commons.helpers.DATE_FORMAT_EIGHT
+import com.afsh.commons.helpers.DATE_FORMAT_FIVE
+import com.afsh.commons.helpers.DATE_FORMAT_FOUR
+import com.afsh.commons.helpers.DATE_FORMAT_ONE
+import com.afsh.commons.helpers.DATE_FORMAT_SEVEN
+import com.afsh.commons.helpers.DATE_FORMAT_SIX
+import com.afsh.commons.helpers.DATE_FORMAT_THREE
+import com.afsh.commons.helpers.DATE_FORMAT_TWO
+import com.afsh.commons.helpers.FONT_SIZE_EXTRA_LARGE
+import com.afsh.commons.helpers.FONT_SIZE_LARGE
+import com.afsh.commons.helpers.FONT_SIZE_MEDIUM
+import com.afsh.commons.helpers.FONT_SIZE_SMALL
 import com.afsh.messages.R
 import com.afsh.messages.helpers.FILE_SIZE_100_KB
 import com.afsh.messages.helpers.FILE_SIZE_1_MB
@@ -86,7 +88,7 @@ private val dateFormats = listOf(
 private enum class Picker { FONT_SIZE, DATE_FORMAT, MMS_LIMIT, LOCK_SCREEN, EMPTY_BIN, CLEAR_SEARCHES }
 
 @Composable
-private fun cancel() = stringResource(org.fossify.commons.R.string.cancel)
+private fun cancel() = stringResource(com.afsh.commons.R.string.cancel)
 
 /** 25 · Settings / appearance. */
 @Composable
@@ -113,7 +115,7 @@ internal fun AppearancePage(state: SettingsUiState, onEvent: (SettingsEvent) -> 
     )
     if (state.languagePicker) {
         NavigationSetting(
-            stringResource(org.fossify.commons.R.string.language),
+            stringResource(com.afsh.commons.R.string.language),
             onClick = { onEvent(SettingsEvent.ChangeLanguage) },
             icon = AfshIcon.Language,
             value = state.language,
@@ -121,7 +123,7 @@ internal fun AppearancePage(state: SettingsUiState, onEvent: (SettingsEvent) -> 
     }
     state.useEnglish?.let { useEnglish ->
         SwitchSetting(
-            stringResource(org.fossify.commons.R.string.use_english_language),
+            stringResource(com.afsh.commons.R.string.use_english_language),
             checked = useEnglish,
             onCheckedChange = { onEvent(SettingsEvent.SetUseEnglish(it)) },
             icon = AfshIcon.Language,
@@ -179,10 +181,10 @@ internal fun AppearancePage(state: SettingsUiState, onEvent: (SettingsEvent) -> 
 private fun formatSample(pattern: String, millis: Long) = DateFormat.format(pattern, millis).toString()
 
 private fun fontSizeLabel(size: Int) = when (size) {
-    FONT_SIZE_SMALL -> org.fossify.commons.R.string.small
-    FONT_SIZE_LARGE -> org.fossify.commons.R.string.large
-    FONT_SIZE_EXTRA_LARGE -> org.fossify.commons.R.string.extra_large
-    else -> org.fossify.commons.R.string.medium
+    FONT_SIZE_SMALL -> com.afsh.commons.R.string.small
+    FONT_SIZE_LARGE -> com.afsh.commons.R.string.large
+    FONT_SIZE_EXTRA_LARGE -> com.afsh.commons.R.string.extra_large
+    else -> com.afsh.commons.R.string.medium
 }
 
 /** A theme card: its name over a line in the colour it leads with; the chosen one uses secondaryContainer. */
@@ -257,29 +259,24 @@ private fun ThemeSwatch(theme: ThemeChoice) {
 @Composable
 internal fun WritingPage(state: SettingsUiState, onEvent: (SettingsEvent) -> Unit) {
     var picker by rememberSaveable { mutableStateOf<Picker?>(null) }
-    @Composable
-    fun onOff(enabled: Boolean) = stringResource(if (enabled) R.string.setting_on else R.string.setting_off)
     SectionHeading(stringResource(R.string.settings_composer))
     SwitchSetting(
         stringResource(R.string.send_on_enter),
         state.sendOnEnter,
         { onEvent(SettingsEvent.SetSendOnEnter(it)) },
         icon = AfshIcon.Return,
-        value = onOff(state.sendOnEnter),
     )
     SwitchSetting(
         stringResource(R.string.show_character_counter),
         state.characterCounter,
         { onEvent(SettingsEvent.SetCharacterCounter(it)) },
         icon = AfshIcon.Number,
-        value = onOff(state.characterCounter),
     )
     SwitchSetting(
         stringResource(R.string.use_simple_characters),
         state.simpleCharacters,
         { onEvent(SettingsEvent.SetSimpleCharacters(it)) },
         icon = AfshIcon.TextSize,
-        value = onOff(state.simpleCharacters),
     )
     SectionHeading(stringResource(R.string.settings_delivery))
     SwitchSetting(
@@ -287,21 +284,18 @@ internal fun WritingPage(state: SettingsUiState, onEvent: (SettingsEvent) -> Uni
         state.deliveryReports,
         { onEvent(SettingsEvent.SetDeliveryReports(it)) },
         icon = AfshIcon.CheckAll,
-        value = onOff(state.deliveryReports),
     )
     SwitchSetting(
         stringResource(R.string.send_long_message_mms),
         state.longAsMms,
         { onEvent(SettingsEvent.SetLongAsMms(it)) },
         icon = AfshIcon.Message,
-        value = onOff(state.longAsMms),
     )
     SwitchSetting(
         stringResource(R.string.group_message_mms),
         state.groupAsMms,
         { onEvent(SettingsEvent.SetGroupAsMms(it)) },
         icon = AfshIcon.People,
-        value = onOff(state.groupAsMms),
     )
     val limits = listOf(
         FILE_SIZE_NONE to R.string.mms_file_size_limit_none,
@@ -340,7 +334,7 @@ internal fun NotificationsPage(state: SettingsUiState, onEvent: (SettingsEvent) 
     val lockLabels = mapOf(
         LOCK_SCREEN_SENDER_MESSAGE to R.string.sender_and_message,
         LOCK_SCREEN_SENDER to R.string.sender_only,
-        LOCK_SCREEN_NOTHING to org.fossify.commons.R.string.nothing,
+        LOCK_SCREEN_NOTHING to com.afsh.commons.R.string.nothing,
     )
     SectionHeading(stringResource(R.string.settings_alerts))
     NavigationSetting(
@@ -361,7 +355,7 @@ internal fun NotificationsPage(state: SettingsUiState, onEvent: (SettingsEvent) 
         stringResource(R.string.lock_screen_visibility),
         onClick = { picker = Picker.LOCK_SCREEN },
         icon = AfshIcon.Visible,
-        value = stringResource(lockLabels[state.lockScreen] ?: org.fossify.commons.R.string.nothing),
+        value = stringResource(lockLabels[state.lockScreen] ?: com.afsh.commons.R.string.nothing),
     )
     SettingItem(
         stringResource(R.string.per_conversation_alerts),
@@ -391,25 +385,28 @@ private fun LockScreenPreview(visibility: Int) {
     val body = stringResource(
         if (visibility == LOCK_SCREEN_SENDER_MESSAGE) R.string.lock_preview_message else R.string.lock_preview_hidden,
     )
-    Row(
+    Card(
         Modifier
             .fillMaxWidth()
-            .padding(vertical = Afsh.spacing.xs)
-            .clip(MaterialTheme.shapes.medium)
-            .background(colors.surfaceContainer)
-            .padding(Afsh.spacing.lg),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.md),
+            .padding(vertical = Afsh.spacing.xs),
+        shape = MaterialTheme.shapes.medium,
+        colors = CardDefaults.cardColors(containerColor = colors.surfaceContainer, contentColor = colors.onSurface),
     ) {
-        Icon(
-            AfshIcon.Chat.painter(),
-            contentDescription = null,
-            tint = colors.primary,
-            modifier = Modifier.size(LockPreviewIconSize),
-        )
-        Column(verticalArrangement = Arrangement.spacedBy(Afsh.spacing.xs)) {
-            Text(sender, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold), color = colors.onSurface)
-            Text(body, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+        Row(
+            Modifier.padding(Afsh.spacing.lg),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.md),
+        ) {
+            Icon(
+                AfshIcon.Chat.painter(),
+                contentDescription = null,
+                tint = colors.primary,
+                modifier = Modifier.size(LockPreviewIconSize),
+            )
+            Column(verticalArrangement = Arrangement.spacedBy(Afsh.spacing.xs)) {
+                Text(sender, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold), color = colors.onSurface)
+                Text(body, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+            }
         }
     }
 }
@@ -428,7 +425,7 @@ internal fun PrivacyPage(state: SettingsUiState, onEvent: (SettingsEvent) -> Uni
     )
     SectionHeading(stringResource(R.string.settings_data))
     SwitchSetting(
-        stringResource(org.fossify.commons.R.string.move_items_into_recycle_bin),
+        stringResource(com.afsh.commons.R.string.move_items_into_recycle_bin),
         checked = state.useRecycleBin,
         onCheckedChange = { onEvent(SettingsEvent.SetUseRecycleBin(it)) },
         icon = AfshIcon.Delete,
@@ -436,12 +433,13 @@ internal fun PrivacyPage(state: SettingsUiState, onEvent: (SettingsEvent) -> Uni
     )
     if (state.useRecycleBin) {
         NavigationSetting(
-            stringResource(org.fossify.commons.R.string.empty_recycle_bin),
+            stringResource(com.afsh.commons.R.string.empty_recycle_bin),
             onClick = { if (state.recycleBinMessages > 0) picker = Picker.EMPTY_BIN },
             icon = AfshIcon.Delete,
             value = pluralStringResource(R.plurals.delete_messages, state.recycleBinMessages, state.recycleBinMessages),
             disclosure = false,
             destructive = state.recycleBinMessages > 0,
+            enabled = state.recycleBinMessages > 0,
         )
     }
     NavigationSetting(
@@ -450,6 +448,7 @@ internal fun PrivacyPage(state: SettingsUiState, onEvent: (SettingsEvent) -> Uni
         icon = AfshIcon.Search,
         value = pluralStringResource(R.plurals.recent_search_count, state.recentSearches, state.recentSearches),
         disclosure = false,
+        enabled = state.recentSearches > 0,
     )
     InfoPanel(
         title = stringResource(R.string.no_account_required),

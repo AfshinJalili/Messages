@@ -27,8 +27,8 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import org.fossify.commons.helpers.DATE_FORMAT_ONE
-import org.fossify.commons.helpers.FONT_SIZE_LARGE
+import com.afsh.commons.helpers.DATE_FORMAT_ONE
+import com.afsh.commons.helpers.FONT_SIZE_LARGE
 import com.afsh.messages.helpers.SwipeAction
 import com.afsh.messages.ui.AfshTheme
 import com.afsh.messages.helpers.NavBadges

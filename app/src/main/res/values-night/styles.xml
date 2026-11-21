@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Dark splash: matches AppTheme.Afsh.Root.Dark so the first frame never flashes light. -->
+    <style name="Theme.Afsh.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/m3_surface_dark</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <item name="postSplashScreenTheme">@style/AppTheme.Afsh.Root.Dark</item>
+    </style>
+</resources>

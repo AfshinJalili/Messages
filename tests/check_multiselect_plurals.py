@@ -26,7 +26,7 @@ ENUMS = {
 
 ENTRY = re.compile(
     r'(?P<name>[A-Z_]+)\(\s*'
-    r'(?:(?:org\.fossify\.commons\.)?R\.(?P<kind>string|plurals)\.(?P<res>\w+))'
+    r'(?:(?:com\.afsh\.commons\.)?R\.(?P<kind>string|plurals)\.(?P<res>\w+))'
     r'(?P<rest>[^)]*)\)',
 )
 

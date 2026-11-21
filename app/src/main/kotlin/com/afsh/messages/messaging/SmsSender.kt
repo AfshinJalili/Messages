@@ -5,7 +5,7 @@ import android.app.PendingIntent
 import android.content.Intent
 import android.net.Uri
 import android.telephony.PhoneNumberUtils
-import org.fossify.commons.helpers.isSPlus
+import com.afsh.commons.helpers.isSPlus
 import com.afsh.messages.messaging.SmsException.Companion.EMPTY_DESTINATION_ADDRESS
 import com.afsh.messages.messaging.SmsException.Companion.ERROR_SENDING_MESSAGE
 import com.afsh.messages.receivers.SendStatusReceiver

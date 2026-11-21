@@ -13,7 +13,7 @@ body:
     id: design
     attributes:
       label: Design
-      description: Frames in design/afsh.pen, or "needs design" (then add the needs-design label)
+      description: Screens in DESIGN.md, or "needs design" (then add the needs-design label)
   - type: textarea
     id: acceptance
     attributes:

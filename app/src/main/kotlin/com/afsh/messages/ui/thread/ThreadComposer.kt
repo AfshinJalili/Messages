@@ -3,15 +3,14 @@ package com.afsh.messages.ui.thread
 import com.afsh.messages.ui.Afsh
 import com.afsh.messages.ui.AfshCorners
 import com.afsh.messages.ui.components.AfshIcon
+import com.afsh.messages.ui.components.afshFieldColors
+import com.afsh.messages.ui.components.fieldMinHeight
 import com.afsh.messages.ui.components.AfshSheet
 import com.afsh.messages.ui.components.AfshSheetItem
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Surface
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandHorizontally
@@ -100,14 +99,13 @@ import com.afsh.messages.helpers.attachmentIcon
 import com.afsh.messages.models.AttachmentSelection
 import com.afsh.messages.ui.components.SendButton
 import com.afsh.messages.ui.forContent
+import com.afsh.messages.ui.lineHeightSp
 import com.afsh.messages.ui.rememberBitmap
 import com.afsh.messages.ui.withContentFonts
 import java.util.Locale
 
 private val TargetSize = 48.dp
 private val SendWidth = 64.dp
-// R6-41: every control in the composer row.
-private val RowHeight = 56.dp
 private val TileSize = 72.dp
 // The tray and the schedule chip line up with the field, past the 48 dp attach button and its gap.
 private val FieldInset = 56.dp
@@ -166,7 +164,7 @@ fun ThreadComposer(
             // No spacedBy: the collapsed switcher would still leave its gap.
             Row(verticalAlignment = Alignment.Bottom) {
                 val attachLabel = stringResource(R.string.attachment)
-                IconButton(onClick = { attaching = true }, modifier = Modifier.size(TargetSize, RowHeight)) {
+                IconButton(onClick = { attaching = true }, modifier = Modifier.size(TargetSize, fieldMinHeight())) {
                     Icon(AfshIcon.Add.painter(), contentDescription = attachLabel, tint = colors.primary)
                 }
                 Spacer(Modifier.width(Afsh.spacing.sm))
@@ -178,7 +176,7 @@ fun ThreadComposer(
                 ) {
                     val sim = composer.sims.getOrNull(composer.simIndex)
                     if (sim != null) {
-                        SimSwitcher(sim.slot, sim.label, expanded = false, onClick = { onEvent(ComposerEvent.NextSim) }, modifier = Modifier.padding(end = Afsh.spacing.sm))
+                        SimSwitcher(sim.slot, sim.label, onClick = { onEvent(ComposerEvent.NextSim) }, modifier = Modifier.padding(end = Afsh.spacing.sm))
                     }
                 }
                 EntryField(composer, firstName, text, sendOnEnter, onTextChange, onEvent, Modifier.weight(1f))
@@ -229,11 +227,25 @@ private fun EntryField(
     }
     val hint = if (firstName.isNotEmpty()) stringResource(R.string.composer_hint_name, firstName) else stringResource(R.string.composer_hint)
     val send = { if (composer.hasContent(text.text)) onEvent(ComposerEvent.Send) }
-    TextField(
+    val bodyLarge = MaterialTheme.typography.bodyLarge
+    // Empty: keep the UI locale's bodyLarge so the cursor and placeholder share one line box.
+    // Typed: script fonts via forContent, but never shrink leading below bodyLarge (English in a Persian UI
+    // would otherwise drop 1.7.em → 1.45.em and reopen bottom slack against fieldMinHeight).
+    val fieldStyle = if (text.text.isEmpty()) {
+        bodyLarge
+    } else {
+        val content = bodyLarge.forContent(text.text)
+        if (content.lineHeightSp().value < bodyLarge.lineHeightSp().value) {
+            content.copy(lineHeight = bodyLarge.lineHeight)
+        } else {
+            content
+        }
+    }
+    OutlinedTextField(
         value = text,
         onValueChange = onTextChange,
         modifier = modifier
-            .heightIn(min = RowHeight)
+            .heightIn(min = fieldMinHeight())
             .focusRequester(focus)
             .onPreviewKeyEvent {
                 // Hardware keyboards send Enter rather than the IME's send action; Shift+Enter still breaks the line.
@@ -244,11 +256,11 @@ private fun EntryField(
             .testTag(COMPOSER_FIELD_TAG),
         // Empty, the cursor starts on the app language's side; with text, each paragraph follows its first letter and
         // digits alone read left to right, as the sent bubble will.
-        textStyle = MaterialTheme.typography.bodyLarge.forContent(text.text).copy(
+        textStyle = fieldStyle.copy(
             textDirection = if (text.text.isEmpty()) TextDirection.Content else TextDirection.ContentOrLtr,
         ),
         // The placeholder belongs to the edit box's own node, and TalkBack reads it only while empty.
-        placeholder = { Text(hint, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+        placeholder = { Text(hint, style = bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis) },
         visualTransformation = remember {
             VisualTransformation { TransformedText(it.withContentFonts(), OffsetMapping.Identity) }
         },
@@ -259,18 +271,7 @@ private fun EntryField(
         keyboardActions = KeyboardActions(onSend = { send() }),
         maxLines = MAX_FIELD_LINES,
         shape = MaterialTheme.shapes.medium,
-        // A filled field without the underline: the field is told apart by its surface against the composer band.
-        colors = TextFieldDefaults.colors(
-            focusedTextColor = colors.onSurface,
-            unfocusedTextColor = colors.onSurface,
-            focusedContainerColor = colors.surface,
-            unfocusedContainerColor = colors.surface,
-            cursorColor = colors.primary,
-            focusedIndicatorColor = Afsh.colors.transparent,
-            unfocusedIndicatorColor = Afsh.colors.transparent,
-            focusedPlaceholderColor = colors.onSurfaceVariant,
-            unfocusedPlaceholderColor = colors.onSurfaceVariant,
-        ),
+        colors = afshFieldColors(colors.surface),
     )
 }
 
@@ -279,10 +280,10 @@ private fun ReplyDisabledField(onEvent: (ComposerEvent) -> Unit, modifier: Modif
     val shape = MaterialTheme.shapes.medium
     Surface(
         modifier
-            .heightIn(min = RowHeight)
+            .heightIn(min = fieldMinHeight())
             .clip(shape)
             // Explains why, as the old notice's info button did.
-            .clickable(onClickLabel = stringResource(org.fossify.commons.R.string.more_info)) { onEvent(ComposerEvent.ReplyInfo) },
+            .clickable(onClickLabel = stringResource(com.afsh.commons.R.string.more_info)) { onEvent(ComposerEvent.ReplyInfo) },
         shape = shape,
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
     ) {
@@ -315,7 +316,7 @@ private fun ComposerSendButton(composer: ComposerState, text: String, onEvent: (
         onClick = { onEvent(if (dictate) ComposerEvent.Dictate else ComposerEvent.Send) },
         enabled = dictate || canSend,
         modifier = Modifier
-            .size(SendWidth, RowHeight)
+            .size(SendWidth, fieldMinHeight())
             .testTag(COMPOSER_SEND_TAG),
     )
 }
@@ -375,10 +376,9 @@ internal fun SimGlyph(slot: Int, modifier: Modifier = Modifier) {
     }
 }
 
-/** R6-42 compact (48×56, glyph only) and R6-46 expanded (glyph and "SIM n"). A tap moves to the next SIM; it never sends. */
+/** R6-42 and R6-46: the same 48×56 glyph as the composer. A labelled "SIM n" wraps once Persian is large. A tap moves to the next SIM; it never sends. */
 @Composable
-internal fun SimSwitcher(slot: Int, carrier: String, expanded: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    val colors = MaterialTheme.colorScheme
+internal fun SimSwitcher(slot: Int, carrier: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val simName = stringResource(R.string.sim_chip, slot)
     val description = listOf(stringResource(R.string.composer_change_sim), simName, carrier).filter { it.isNotEmpty() }.joinToString(", ")
     // One node for TalkBack: what it does, which SIM, and the carrier, read as a button that cycles SIMs.
@@ -391,23 +391,9 @@ internal fun SimSwitcher(slot: Int, carrier: String, expanded: Boolean, onClick:
             true
         }
     }
-    if (expanded) {
-        FilledTonalButton(
-            onClick = onClick,
-            modifier = modifier.heightIn(min = TargetSize).then(semantics),
-            shape = MaterialTheme.shapes.medium,
-            colors = ButtonDefaults.filledTonalButtonColors(containerColor = colors.surfaceContainer, contentColor = colors.primary),
-            contentPadding = PaddingValues(horizontal = Afsh.spacing.lg),
-        ) {
-            SimGlyph(slot)
-            Spacer(Modifier.width(Afsh.spacing.sm))
-            Text(simName, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.ExtraBold, maxLines = 1)
-        }
-    } else {
-        // Same pill ripple as the attach button beside it.
-        IconButton(onClick = onClick, modifier = modifier.size(TargetSize, RowHeight).then(semantics)) {
-            SimGlyph(slot)
-        }
+    // Same pill ripple as the attach button beside it.
+    IconButton(onClick = onClick, modifier = modifier.size(TargetSize, fieldMinHeight()).then(semantics)) {
+        SimGlyph(slot)
     }
 }
 

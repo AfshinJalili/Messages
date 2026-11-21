@@ -7,13 +7,13 @@ import re
 root = Path(__file__).resolve().parents[1] / 'app/src/main/kotlin'
 frame = root / 'com/afsh/messages/ui/components/AfshDialog.kt'
 # Commons' SecurityDialog (app lock PIN, pattern and fingerprint) has no AFSH replacement yet.
-allowed = {'org.fossify.commons.dialogs.SecurityDialog'}
+allowed = {'com.afsh.commons.dialogs.SecurityDialog'}
 pattern = re.compile(
     r'import androidx\.compose\.ui\.window\.Dialog\b'
     r'|import androidx\.compose\.material3\.(?:AlertDialog|BasicAlertDialog|DatePickerDialog|TimePickerDialog)\b'
     r'|import (?:androidx\.appcompat\.app|android\.app)\.(?:AlertDialog|DatePickerDialog|TimePickerDialog)\b'
     r'|import com\.google\.android\.material\.dialog\.'
-    r'|import org\.fossify\.commons\.dialogs\.(\w+)'
+    r'|import com\.afsh\.commons\.dialogs\.(\w+)'
     r'|\bgetAlertDialogBuilder\(|\bmaybeShowNumberPickerDialog\('
 )
 violations = []

@@ -152,7 +152,7 @@ fun PageScaffold(
                         scrollBehavior = scrollBehavior,
                     ) {
                         selection.onSelectAll?.let { selectAll ->
-                            PageAppBarAction(AfshIcon.CheckAll, stringResource(org.fossify.commons.R.string.select_all), onClick = selectAll)
+                            PageAppBarAction(AfshIcon.CheckAll, stringResource(com.afsh.commons.R.string.select_all), onClick = selectAll)
                         }
                     }
                 } else {
@@ -187,7 +187,7 @@ private fun PrimaryNavigation(navigation: PageNavigation, vertical: Boolean = fa
     PrimaryNavigation(navigation.selected, navigation.onSelect, counts = navigation.counts ?: shared, vertical = vertical)
 }
 
-/** Component / undo snackbar: ink slab, bold message, lime action. */
+/** Component / undo snackbar: inverseSurface slab, bold message, inverseAccent action. */
 @Composable
 fun AfshSnackbarHost(state: SnackbarHostState, modifier: Modifier = Modifier) {
     SnackbarHost(state, modifier) { data ->

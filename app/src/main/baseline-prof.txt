@@ -31,8 +31,8 @@ Lcom/afsh/messages/ui/components/ConversationRowKt;
 HSPLcom/afsh/messages/ui/components/ConversationRowKt;->ConversationRow*(**)**
 HSPLcom/afsh/messages/interfaces/ConversationsDao_Impl;->observeNonArchivedWithLatestSnippet()Landroidx/lifecycle/LiveData;
 # Commons splash / background helper used on every launch.
-Lorg/fossify/commons/helpers/ConstantsKt;
-HSPLorg/fossify/commons/helpers/ConstantsKt;->ensureBackgroundThread(Lkotlin/jvm/functions/Function0;)V
+Lcom/afsh/commons/helpers/ConstantsKt;
+HSPLcom/afsh/commons/helpers/ConstantsKt;->ensureBackgroundThread(Lkotlin/jvm/functions/Function0;)V
 # Keep broad coverage for the rest of the app package (startup + first scroll still hit many types).
 Lcom/afsh/messages/**;
 HSPLcom/afsh/messages/**;->**(**)**

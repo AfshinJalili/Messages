@@ -147,7 +147,6 @@ detekt {
 dependencies {
     implementation(project(":commons"))
     implementation(libs.eventbus)
-    implementation(libs.indicator.fast.scroll)
     implementation(libs.mmslib)
     implementation(libs.androidx.biometric.ktx)
     implementation(libs.androidx.swiperefreshlayout)

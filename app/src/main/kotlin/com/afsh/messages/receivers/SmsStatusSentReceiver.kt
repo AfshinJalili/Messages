@@ -9,8 +9,8 @@ import android.os.Looper
 import android.provider.Telephony.Sms
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ProcessLifecycleOwner
-import org.fossify.commons.extensions.getMyContactsCursor
-import org.fossify.commons.helpers.ensureBackgroundThread
+import com.afsh.commons.extensions.getMyContactsCursor
+import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.messages.extensions.getMessageRecipientAddress
 import com.afsh.messages.extensions.getNameFromAddress
 import com.afsh.messages.extensions.getThreadId

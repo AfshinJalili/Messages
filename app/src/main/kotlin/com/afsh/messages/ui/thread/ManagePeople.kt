@@ -92,7 +92,7 @@ fun ManagePeoplePanel(
                 IconButton(onClick = onDone) {
                     Icon(
                         AfshIcon.Check.painter(),
-                        contentDescription = stringResource(org.fossify.commons.R.string.confirm_selection),
+                        contentDescription = stringResource(com.afsh.commons.R.string.confirm_selection),
                         tint = MaterialTheme.colorScheme.primary,
                     )
                 }
@@ -117,7 +117,7 @@ fun ManagePeoplePanel(
             title = person.name,
             choices = person.phones.map { Choice(it.number, it.number, it.label) },
             selected = null,
-            dismissLabel = stringResource(org.fossify.commons.R.string.cancel),
+            dismissLabel = stringResource(com.afsh.commons.R.string.cancel),
             onChoose = { number ->
                 choosingNumber = null
                 add(Recipient(number, person.name))

@@ -27,11 +27,11 @@ import com.afsh.messages.R as AppR
 import com.afsh.messages.ui.Afsh
 import com.afsh.messages.ui.components.AfshDialog
 import kotlinx.coroutines.delay
-import org.fossify.commons.R as CommonsR
-import org.fossify.commons.helpers.MINIMUM_PIN_LENGTH
-import org.fossify.commons.helpers.PROTECTION_FINGERPRINT
-import org.fossify.commons.helpers.PROTECTION_PATTERN
-import org.fossify.commons.helpers.PROTECTION_PIN
+import com.afsh.commons.R as CommonsR
+import com.afsh.commons.helpers.MINIMUM_PIN_LENGTH
+import com.afsh.commons.helpers.PROTECTION_FINGERPRINT
+import com.afsh.commons.helpers.PROTECTION_PATTERN
+import com.afsh.commons.helpers.PROTECTION_PIN
 import java.math.BigInteger
 import java.security.MessageDigest
 

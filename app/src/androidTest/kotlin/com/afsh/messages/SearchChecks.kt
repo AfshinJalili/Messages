@@ -258,7 +258,7 @@ class SearchChecks {
             }
         }
 
-        compose.onNodeWithText(text(R.string.recent_searches)).assertExists()
+        compose.onNodeWithText(text(R.string.recent_searches).uppercase()).assertExists()
         compose.onNodeWithText("synthetic recent query").performClick()
         check(selectedQuery == "synthetic recent query")
     }
@@ -277,7 +277,7 @@ class SearchChecks {
             }
         }
 
-        compose.onNodeWithText(text(R.string.search_no_matches)).assertExists()
+        compose.onNodeWithText(text(R.string.search_no_matches).uppercase()).assertExists()
         compose.onNodeWithText("synthetic absent term", substring = true).assertExists()
     }
 

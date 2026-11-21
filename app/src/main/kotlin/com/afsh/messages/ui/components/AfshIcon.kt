@@ -4,7 +4,7 @@ import androidx.annotation.DrawableRes
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
-import org.fossify.commons.R
+import com.afsh.commons.R
 
 /**
  * Every interface icon by meaning, drawn from Material Symbols (Rounded, weight 400, grade 0, optical size 24). Call

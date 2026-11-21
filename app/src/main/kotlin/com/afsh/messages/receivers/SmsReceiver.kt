@@ -4,11 +4,11 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.provider.Telephony
-import org.fossify.commons.extensions.getMyContactsCursor
-import org.fossify.commons.helpers.SimpleContactsHelper
-import org.fossify.commons.helpers.ensureBackgroundThread
-import org.fossify.commons.models.PhoneNumber
-import org.fossify.commons.models.SimpleContact
+import com.afsh.commons.extensions.getMyContactsCursor
+import com.afsh.commons.helpers.SimpleContactsHelper
+import com.afsh.commons.helpers.ensureBackgroundThread
+import com.afsh.commons.models.PhoneNumber
+import com.afsh.commons.models.SimpleContact
 import com.afsh.messages.extensions.getConversations
 import com.afsh.messages.extensions.getNameFromAddress
 import com.afsh.messages.extensions.getNotificationBitmap

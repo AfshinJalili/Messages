@@ -23,8 +23,8 @@ import androidx.compose.ui.test.swipeDown
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import org.fossify.commons.models.SimpleContact
-import org.fossify.commons.extensions.formatTime
+import com.afsh.commons.models.SimpleContact
+import com.afsh.commons.extensions.formatTime
 import com.afsh.messages.helpers.ThreadDates
 import com.afsh.messages.models.Attachment
 import com.afsh.messages.models.MessageAttachment

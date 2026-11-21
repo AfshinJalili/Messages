@@ -8,9 +8,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.delay
-import org.fossify.commons.extensions.baseConfig
-import org.fossify.commons.helpers.DEFAULT_PASSWORD_COUNTDOWN
-import org.fossify.commons.helpers.MAX_PASSWORD_RETRY_COUNT
+import com.afsh.commons.extensions.baseConfig
+import com.afsh.commons.helpers.DEFAULT_PASSWORD_COUNTDOWN
+import com.afsh.commons.helpers.MAX_PASSWORD_RETRY_COUNT
 
 /**
  * Lockout state for password attempts. Tracks retry count and countdown. Use [onCorrect] to reset,

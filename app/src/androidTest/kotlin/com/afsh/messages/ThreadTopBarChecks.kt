@@ -71,20 +71,20 @@ class ThreadTopBarChecks {
         compose.onNode(hasText(header.title) and heading and inBar).assertIsDisplayed()
         compose.onNode(hasText(header.subtitle) and inBar).assertIsDisplayed()
 
-        button(org.fossify.commons.R.string.back).performClick()
-        button(org.fossify.commons.R.string.dial_number).performClick()
+        button(com.afsh.commons.R.string.back).performClick()
+        button(com.afsh.commons.R.string.dial_number).performClick()
         compose.onNode(hasText(header.title) and heading).performClick()
         assertEquals(listOf(ThreadEvent.Back, ThreadEvent.Dial, ThreadEvent.OpenDetails), events)
 
-        button(org.fossify.commons.R.string.more_options).performClick()
+        button(com.afsh.commons.R.string.more_options).performClick()
         compose.onNodeWithText(text(R.string.search_in_conversation)).performClick()
         assertEquals(ThreadEvent.Menu(ThreadMenuAction.SEARCH), events.last())
     }
 
     @Test fun noCallOrMenuWhenTheConversationHasNone() {
         show(ThreadUiState(header = header.copy(canDial = false, actions = emptyList())))
-        button(org.fossify.commons.R.string.dial_number).assertDoesNotExist()
-        button(org.fossify.commons.R.string.more_options).assertDoesNotExist()
+        button(com.afsh.commons.R.string.dial_number).assertDoesNotExist()
+        button(com.afsh.commons.R.string.more_options).assertDoesNotExist()
     }
 
     @Test fun selectionShowsCloseAndCount() {
@@ -93,9 +93,9 @@ class ThreadTopBarChecks {
         show(state) { events += it }
 
         compose.onNode(hasText(context.quantity(R.plurals.inbox_selected, 1)) and inBar).assertIsDisplayed()
-        button(org.fossify.commons.R.string.dial_number).assertDoesNotExist()
-        button(org.fossify.commons.R.string.more_options).assertDoesNotExist()
-        button(org.fossify.commons.R.string.close).performClick()
+        button(com.afsh.commons.R.string.dial_number).assertDoesNotExist()
+        button(com.afsh.commons.R.string.more_options).assertDoesNotExist()
+        button(com.afsh.commons.R.string.close).performClick()
         assertEquals(listOf(ThreadEvent.ClearSelection), events)
     }
 
@@ -107,7 +107,7 @@ class ThreadTopBarChecks {
         button(R.string.thread_search_next).assertDoesNotExist()
         compose.onNode(hasSetTextAction() and inBar).performTextInput("park")
         button(R.string.thread_search_next).performClick()
-        button(org.fossify.commons.R.string.close).performClick()
+        button(com.afsh.commons.R.string.close).performClick()
         assertEquals(listOf(ThreadEvent.SearchChanged, ThreadEvent.SearchSubmit("park"), ThreadEvent.SearchClose), events)
     }
 
@@ -118,13 +118,13 @@ class ThreadTopBarChecks {
         val bar = compose.onNodeWithTag(THREAD_TOP_BAR_TAG).getBoundsInRoot()
         val title = compose.onNode(heading and inBar).getBoundsInRoot()
         assertTrue("The bar grows to hold the name", title.top >= bar.top && title.bottom <= bar.bottom)
-        listOf(org.fossify.commons.R.string.back, org.fossify.commons.R.string.dial_number, org.fossify.commons.R.string.more_options).forEach {
+        listOf(com.afsh.commons.R.string.back, com.afsh.commons.R.string.dial_number, com.afsh.commons.R.string.more_options).forEach {
             val action = button(it).assertIsDisplayed().getBoundsInRoot()
             assertTrue("${text(it)} stays inside the bar", action.left >= bar.left && action.right <= bar.right)
         }
         // RTL puts back at the start, which is the right edge.
-        val back = button(org.fossify.commons.R.string.back).getBoundsInRoot()
-        val more = button(org.fossify.commons.R.string.more_options).getBoundsInRoot()
+        val back = button(com.afsh.commons.R.string.back).getBoundsInRoot()
+        val more = button(com.afsh.commons.R.string.more_options).getBoundsInRoot()
         assertTrue("Back leads in RTL", back.left > more.left)
     }
 }

@@ -8,11 +8,11 @@ import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.graphics.drawable.IconCompat
 import androidx.core.graphics.drawable.toBitmap
 import androidx.core.text.isDigitsOnly
-import org.fossify.commons.extensions.getMyContactsCursor
-import org.fossify.commons.helpers.MyContactsContentProvider
-import org.fossify.commons.helpers.SimpleContactsHelper
-import org.fossify.commons.helpers.isOnMainThread
-import org.fossify.commons.models.SimpleContact
+import com.afsh.commons.extensions.getMyContactsCursor
+import com.afsh.commons.helpers.MyContactsContentProvider
+import com.afsh.commons.helpers.SimpleContactsHelper
+import com.afsh.commons.helpers.isOnMainThread
+import com.afsh.commons.models.SimpleContact
 import com.afsh.messages.activities.ThreadActivity
 import com.afsh.messages.extensions.conversationsDB
 import com.afsh.messages.extensions.getThreadParticipants

@@ -2,7 +2,6 @@ package com.afsh.messages.ui.newmessage
 
 import android.telephony.PhoneNumberUtils
 import android.util.Patterns
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -59,11 +58,12 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.dp
-import org.fossify.commons.extensions.normalizeString
+import com.afsh.commons.extensions.normalizeString
 import com.afsh.messages.R
 import com.afsh.messages.ui.Afsh
 import com.afsh.messages.ui.Avatar
 import com.afsh.messages.ui.ltr
+import com.afsh.messages.ui.withNumberOrder
 import com.afsh.messages.ui.components.AfshIcon
 import com.afsh.messages.ui.components.AttentionNotice
 import com.afsh.messages.ui.components.Choice
@@ -71,7 +71,9 @@ import com.afsh.messages.ui.components.DisabledComposer
 import com.afsh.messages.ui.components.ChoiceDialog
 import com.afsh.messages.ui.components.InfoPanel
 import com.afsh.messages.ui.components.AfshButton
+import com.afsh.messages.ui.components.PageContentPadding
 import com.afsh.messages.ui.components.PageScaffold
+import com.afsh.messages.ui.components.ScreenStack
 import com.afsh.messages.ui.components.SearchField
 import com.afsh.messages.ui.components.SectionHeading
 import com.afsh.messages.ui.components.TextFieldSlab
@@ -149,11 +151,30 @@ fun NewMessageScreen(state: NewMessageUiState, onEvent: (NewMessageEvent) -> Uni
         }
     }
 
-    when (mode) {
-        Mode.PICK -> PickPage(state, query, { query = it }, ::pick, ::submitTyped, onStartGroup = { mode = Mode.GROUP }, onEvent, modifier)
-        Mode.GROUP -> {
-            BackHandler { mode = Mode.PICK }
-            GroupPage(
+    val depth = when (mode) {
+        Mode.PICK -> 1
+        Mode.GROUP -> 2
+        Mode.INVALID -> if (typedFrom == Mode.GROUP) 3 else 2
+    }
+    val previous = when (mode) {
+        Mode.PICK -> null
+        Mode.GROUP -> Mode.PICK
+        Mode.INVALID -> typedFrom
+    }
+    ScreenStack(
+        screen = mode,
+        depth = depth,
+        previous = previous,
+        onPop = when (mode) {
+            Mode.PICK -> null
+            Mode.GROUP -> ({ mode = Mode.PICK })
+            Mode.INVALID -> ({ mode = typedFrom })
+        },
+        modifier = modifier,
+    ) { current ->
+        when (current) {
+            Mode.PICK -> PickPage(state, query, { query = it }, ::pick, ::submitTyped, onStartGroup = { mode = Mode.GROUP }, onEvent, Modifier)
+            Mode.GROUP -> GroupPage(
                 state = state,
                 query = query,
                 onQuery = { query = it },
@@ -162,12 +183,9 @@ fun NewMessageScreen(state: NewMessageUiState, onEvent: (NewMessageEvent) -> Uni
                 onSubmitTyped = ::submitTyped,
                 onBack = { mode = Mode.PICK },
                 onContinue = { onEvent(NewMessageEvent.Write(chosen.toList())) },
-                modifier = modifier,
+                modifier = Modifier,
             )
-        }
-        Mode.INVALID -> {
-            BackHandler { mode = typedFrom }
-            InvalidNumberPage(query, { query = it }, onEdit = { mode = typedFrom }, modifier = modifier)
+            Mode.INVALID -> InvalidNumberPage(query, { query = it }, onEdit = { mode = typedFrom }, Modifier)
         }
     }
     choosingNumber?.let { person ->
@@ -175,7 +193,7 @@ fun NewMessageScreen(state: NewMessageUiState, onEvent: (NewMessageEvent) -> Uni
             title = person.name,
             choices = person.phones.map { Choice(it.number, it.number, it.label) },
             selected = null,
-            dismissLabel = stringResource(org.fossify.commons.R.string.cancel),
+            dismissLabel = stringResource(com.afsh.commons.R.string.cancel),
             onChoose = { number ->
                 choosingNumber = null
                 pick(Recipient(number, person.name))
@@ -206,7 +224,7 @@ private fun PickPage(
         bottomBar = { WaitingComposer() },
         modifier = modifier,
     ) {
-        LazyColumn(contentPadding = PaddingValues(start = Afsh.spacing.xl, top = Afsh.spacing.xl, end = Afsh.spacing.xl, bottom = Afsh.spacing.xxl)) {
+        LazyColumn(contentPadding = PageContentPadding) {
             item(key = "search") {
                 SearchField(
                     query = query,
@@ -298,7 +316,7 @@ fun PeoplePicker(
     canRemove: (Recipient) -> Boolean = { true },
     onAllowContacts: () -> Unit = {},
     fieldModifier: Modifier = Modifier,
-    contentPadding: PaddingValues = PaddingValues(start = Afsh.spacing.xl, top = Afsh.spacing.xl, end = Afsh.spacing.xl, bottom = Afsh.spacing.xxl),
+    contentPadding: PaddingValues = PageContentPadding,
 ) {
     LazyColumn(modifier, contentPadding = contentPadding) {
         if (chosen.isNotEmpty()) {
@@ -344,7 +362,7 @@ private fun InvalidNumberPage(number: String, onNumber: (String) -> Unit, onEdit
         Column(
             Modifier
                 .verticalScroll(rememberScrollState())
-                .padding(start = Afsh.spacing.xl, top = Afsh.spacing.xl, end = Afsh.spacing.xl, bottom = Afsh.spacing.xxl),
+                .padding(PageContentPadding),
             verticalArrangement = Arrangement.spacedBy(Afsh.spacing.md),
         ) {
             AttentionNotice(
@@ -452,7 +470,7 @@ private fun PersonRow(person: Person, onClick: () -> Unit) {
     ) {
         Avatar(person.name, person.photoUri, isGroup = false, size = RowAvatarSize)
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Afsh.spacing.xs)) {
-            Text(person.name, style = MaterialTheme.typography.titleMedium.copy(textDirection = TextDirection.Content), color = colors.onSurface)
+            Text(person.name, style = MaterialTheme.typography.titleMedium.copy(textDirection = TextDirection.Content).withNumberOrder(person.name), color = colors.onSurface)
             if (detail.isNotEmpty()) Text(detail, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
         }
     }
@@ -487,7 +505,7 @@ private fun ChosenChip(recipient: Recipient, onRemove: (() -> Unit)?) {
             .padding(start = Afsh.spacing.md, end = if (onRemove == null) Afsh.spacing.md else 0.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(recipient.name, style = MaterialTheme.typography.labelMedium, color = colors.onSecondaryContainer)
+        Text(recipient.name, style = MaterialTheme.typography.labelMedium.withNumberOrder(recipient.name), color = colors.onSecondaryContainer)
         if (onRemove != null) {
             IconButton(onClick = onRemove, modifier = Modifier.semantics { contentDescription = remove }) {
                 Icon(AfshIcon.Close.painter(), contentDescription = null, tint = colors.primary, modifier = Modifier.size(ChipRemoveSize))

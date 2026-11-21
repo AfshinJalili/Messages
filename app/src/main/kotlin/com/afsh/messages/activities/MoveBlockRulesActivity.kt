@@ -65,7 +65,7 @@ class MoveBlockRulesActivity : ComposePageActivity() {
                 contentResolver.openOutputStream(uri)?.use { BlockRulesFile.write(rules, it) } != null
             }.getOrDefault(false)
         }
-        report(getString(if (written) R.string.filter_rules_exported else org.fossify.commons.R.string.exporting_failed))
+        report(getString(if (written) R.string.filter_rules_exported else com.afsh.commons.R.string.exporting_failed))
     }
 
     private fun import(uri: Uri) = lifecycleScope.launch {
@@ -73,7 +73,7 @@ class MoveBlockRulesActivity : ComposePageActivity() {
             runCatching { contentResolver.openInputStream(uri)?.use(BlockRulesFile::read) }.getOrNull()
         }
         if (rules == null || rules.numbers.isEmpty() && rules.phrases.isEmpty() && rules.allowed.isEmpty()) {
-            report(getString(org.fossify.commons.R.string.importing_failed))
+            report(getString(com.afsh.commons.R.string.importing_failed))
             return@launch
         }
         rules.numbers.forEach(config::addSpamNumber)

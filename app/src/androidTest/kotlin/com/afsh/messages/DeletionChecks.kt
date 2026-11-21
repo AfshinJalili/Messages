@@ -75,7 +75,7 @@ class DeletionChecks {
                 scenario.onActivity { activity ->
                     val undo = activity.snackbarHost.currentSnackbarData
                     check(undo != null) { "Snackbar must still be showing" }
-                    check(undo.visuals.actionLabel == activity.getString(org.fossify.commons.R.string.undo)) {
+                    check(undo.visuals.actionLabel == activity.getString(com.afsh.commons.R.string.undo)) {
                         "Expected Undo label, got: ${undo.visuals.actionLabel}"
                     }
                     undo.performAction()

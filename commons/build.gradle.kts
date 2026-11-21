@@ -1,8 +1,8 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-// Shared UI and helpers, vendored from org.fossify:commons 6.1.6 (GPL-3.0) with the
-// upstream package-name, signature, sideload and donation checks removed.
+// Vendored shared UI and helpers (GPL-3.0). The package-name, signature,
+// sideload and donation checks stay removed.
 plugins {
     alias(libs.plugins.library)
     alias(libs.plugins.ksp)
@@ -11,7 +11,7 @@ plugins {
 }
 
 android {
-    namespace = "org.fossify.commons"
+    namespace = "com.afsh.commons"
 
     compileSdk = libs.versions.app.build.compileSDKVersion.get().toInt()
 
@@ -22,10 +22,6 @@ android {
         ksp {
             arg("room.schemaLocation", "$projectDir/schemas")
         }
-    }
-
-    buildFeatures {
-        viewBinding = true
     }
 
     compileOptions {
@@ -67,9 +63,7 @@ dependencies {
     implementation(libs.bundles.lifecycle)
 
     api(libs.joda.time)
-    api(libs.recyclerView.fastScroller)
     api(libs.reprint)
-    api(libs.rtl.viewpager)
     api(libs.androidx.core.ktx)
     api(libs.androidx.appcompat)
     api(libs.material)

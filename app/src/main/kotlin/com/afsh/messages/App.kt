@@ -9,12 +9,12 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.provider.ContactsContract
-import org.fossify.commons.FossifyApp
-import org.fossify.commons.extensions.appLockManager
-import org.fossify.commons.extensions.hasPermission
-import org.fossify.commons.helpers.PERMISSION_READ_CONTACTS
-import org.fossify.commons.helpers.REQUEST_APP_UNLOCK
-import org.fossify.commons.helpers.ensureBackgroundThread
+import com.afsh.commons.AfshApp
+import com.afsh.commons.extensions.appLockManager
+import com.afsh.commons.extensions.hasPermission
+import com.afsh.commons.helpers.PERMISSION_READ_CONTACTS
+import com.afsh.commons.helpers.REQUEST_APP_UNLOCK
+import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.messages.activities.AppLockActivity
 import com.afsh.messages.extensions.rescheduleAllScheduledMessages
 import com.afsh.messages.extensions.config
@@ -24,7 +24,7 @@ import com.afsh.messages.helpers.afshXmlTheme
 import com.afsh.messages.helpers.ListDetail
 import com.afsh.messages.helpers.MessagingCache
 
-class App : FossifyApp() {
+class App : AfshApp() {
     override val isAppLockFeatureAvailable = true
 
     override fun themeId(activity: Activity) = activity.afshXmlTheme()

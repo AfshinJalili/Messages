@@ -5,24 +5,11 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.union
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
@@ -36,10 +23,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.afsh.messages.R
 import com.afsh.messages.ui.Avatar
@@ -50,10 +33,13 @@ import com.afsh.messages.ui.components.Choice
 import com.afsh.messages.ui.components.ChoiceDialog
 import com.afsh.messages.ui.components.IdentityCard
 import com.afsh.messages.ui.components.NavigationSetting
+import com.afsh.messages.ui.components.PageAppBarAction
+import com.afsh.messages.ui.components.PageContentPadding
+import com.afsh.messages.ui.components.PageScaffold
 import com.afsh.messages.ui.components.SectionHeading
 import com.afsh.messages.ui.components.SwitchSetting
+import com.afsh.messages.ui.forLabel
 
-private val HeaderMinHeight = 72.dp
 private val MemberAvatarSize = 40.dp
 
 /** One person in the conversation. */
@@ -91,25 +77,32 @@ sealed interface DetailsEvent {
 }
 
 /**
- * 09 · Conversation / details. The header is the conversation's own (09 keeps the thread header),
- * then who it is, quick actions, and the settings that belong to this conversation.
+ * 09 · Conversation / details. The header is [PageScaffold]'s stock Material 3 top app bar
+ * (pinned scroll), then who it is, quick actions, and the settings that belong to this conversation.
  */
 @Composable
 fun ConversationDetailsScreen(state: ConversationDetailsUiState, onEvent: (DetailsEvent) -> Unit, modifier: Modifier = Modifier) {
     var choosingSim by rememberSaveable { mutableStateOf(false) }
-    Scaffold(
+    PageScaffold(
+        title = state.title,
+        subtitle = stringResource(R.string.conversation_details),
+        onBack = { onEvent(DetailsEvent.Back) },
+        actions = {
+            if (state.canDial) {
+                PageAppBarAction(
+                    AfshIcon.Call,
+                    stringResource(com.afsh.commons.R.string.call),
+                    onClick = { onEvent(DetailsEvent.Call) },
+                )
+            }
+        },
         modifier = modifier,
-        containerColor = MaterialTheme.colorScheme.surface,
-        contentWindowInsets = WindowInsets(0),
-        topBar = { DetailsHeader(state, onEvent) },
-    ) { padding ->
-        if (state.loading) return@Scaffold
+    ) {
+        if (state.loading) return@PageScaffold
         Column(
             Modifier
-                .padding(padding)
                 .verticalScroll(rememberScrollState())
-                .windowInsetsPadding(WindowInsets.navigationBars.union(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)))
-                .padding(start = Afsh.spacing.xl, top = Afsh.spacing.xl, end = Afsh.spacing.xl, bottom = Afsh.spacing.xxl),
+                .padding(PageContentPadding),
             verticalArrangement = Arrangement.spacedBy(Afsh.spacing.lg),
         ) {
             val single = state.members.singleOrNull()
@@ -135,9 +128,9 @@ fun ConversationDetailsScreen(state: ConversationDetailsUiState, onEvent: (Detai
             Row(horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.md)) {
                 val tile = Modifier.weight(1f)
                 if (state.canDial) {
-                    ActionTile(AfshIcon.Call, stringResource(org.fossify.commons.R.string.call), { onEvent(DetailsEvent.Call) }, tile)
+                    ActionTile(AfshIcon.Call, stringResource(com.afsh.commons.R.string.call), { onEvent(DetailsEvent.Call) }, tile)
                 }
-                ActionTile(AfshIcon.Search, stringResource(org.fossify.commons.R.string.search), { onEvent(DetailsEvent.Search) }, tile)
+                ActionTile(AfshIcon.Search, stringResource(com.afsh.commons.R.string.search), { onEvent(DetailsEvent.Search) }, tile)
                 ActionTile(
                     if (state.muted) AfshIcon.Notifications else AfshIcon.NotificationsOff,
                     stringResource(if (state.muted) R.string.unmute else R.string.mute),
@@ -190,54 +183,13 @@ fun ConversationDetailsScreen(state: ConversationDetailsUiState, onEvent: (Detai
             title = stringResource(R.string.sim),
             choices = listOf(Choice(0, stringResource(R.string.sim_default))) + state.sims.map { Choice(it.subscriptionId, it.label) },
             selected = state.sim,
-            dismissLabel = stringResource(org.fossify.commons.R.string.cancel),
+            dismissLabel = stringResource(com.afsh.commons.R.string.cancel),
             onChoose = {
                 choosingSim = false
                 onEvent(DetailsEvent.SetSim(it))
             },
             onDismiss = { choosingSim = false },
         )
-    }
-}
-
-/** The conversation header of 09: back, the name over "Conversation details", and Call. */
-@Composable
-private fun DetailsHeader(state: ConversationDetailsUiState, onEvent: (DetailsEvent) -> Unit) {
-    Surface(color = Afsh.colors.header.container, contentColor = Afsh.colors.header.content) {
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .windowInsetsPadding(WindowInsets.statusBars.union(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)))
-                .heightIn(min = HeaderMinHeight)
-                .padding(horizontal = Afsh.spacing.sm, vertical = Afsh.spacing.sm),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.sm),
-        ) {
-            val back = stringResource(org.fossify.commons.R.string.back)
-            IconButton(onClick = { onEvent(DetailsEvent.Back) }, modifier = Modifier.semantics { contentDescription = back }) {
-                Icon(AfshIcon.ArrowBack.painter(), contentDescription = null)
-            }
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Afsh.spacing.xs)) {
-                Text(
-                    state.title,
-                    style = MaterialTheme.typography.titleLarge,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.semantics { heading() },
-                )
-                Text(
-                    stringResource(R.string.conversation_details),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Afsh.colors.onBandVariant,
-                )
-            }
-            if (state.canDial) {
-                val call = stringResource(org.fossify.commons.R.string.call)
-                IconButton(onClick = { onEvent(DetailsEvent.Call) }, modifier = Modifier.semantics { contentDescription = call }) {
-                    Icon(AfshIcon.Call.painter(), contentDescription = null)
-                }
-            }
-        }
     }
 }
 
@@ -255,7 +207,7 @@ private fun MemberRow(member: Member, onClick: () -> Unit) {
     ) {
         Avatar(member.name, member.photoUri, isGroup = false, size = MemberAvatarSize)
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Afsh.spacing.xxs)) {
-            Text(member.name, style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+            Text(member.name, style = MaterialTheme.typography.titleMedium.forLabel(member.name), color = colors.onSurface)
             if (member.number != member.name) {
                 Text(ltr(member.number), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
             }

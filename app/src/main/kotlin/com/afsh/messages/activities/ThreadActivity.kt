@@ -168,31 +168,31 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
-import org.fossify.commons.extensions.copyToClipboard
-import org.fossify.commons.extensions.formatDate
-import org.fossify.commons.extensions.getFilenameFromPath
-import org.fossify.commons.extensions.getFilenameFromUri
-import org.fossify.commons.extensions.getMyContactsCursor
-import org.fossify.commons.extensions.getMyFileUri
-import org.fossify.commons.extensions.hasPermission
-import org.fossify.commons.extensions.hideKeyboard
-import org.fossify.commons.extensions.launchActivityIntent
-import org.fossify.commons.extensions.normalizeString
-import org.fossify.commons.extensions.notificationManager
-import org.fossify.commons.extensions.openRequestExactAlarmSettings
-import org.fossify.commons.extensions.shareTextIntent
-import org.fossify.commons.extensions.showErrorToast
-import org.fossify.commons.extensions.toast
-import org.fossify.commons.helpers.ContactsHelper
-import org.fossify.commons.helpers.KEY_PHONE
-import org.fossify.commons.helpers.MyContactsContentProvider
-import org.fossify.commons.helpers.PERMISSION_READ_CONTACTS
-import org.fossify.commons.helpers.PERMISSION_READ_PHONE_STATE
-import org.fossify.commons.helpers.SimpleContactsHelper
-import org.fossify.commons.helpers.ensureBackgroundThread
-import org.fossify.commons.helpers.isSPlus
-import org.fossify.commons.models.PhoneNumber
-import org.fossify.commons.models.SimpleContact
+import com.afsh.commons.extensions.copyToClipboard
+import com.afsh.commons.extensions.formatDate
+import com.afsh.commons.extensions.getFilenameFromPath
+import com.afsh.commons.extensions.getFilenameFromUri
+import com.afsh.commons.extensions.getMyContactsCursor
+import com.afsh.commons.extensions.getMyFileUri
+import com.afsh.commons.extensions.hasPermission
+import com.afsh.commons.extensions.hideKeyboard
+import com.afsh.commons.extensions.launchActivityIntent
+import com.afsh.commons.extensions.normalizeString
+import com.afsh.commons.extensions.notificationManager
+import com.afsh.commons.extensions.openRequestExactAlarmSettings
+import com.afsh.commons.extensions.shareTextIntent
+import com.afsh.commons.extensions.showErrorToast
+import com.afsh.commons.extensions.toast
+import com.afsh.commons.helpers.ContactsHelper
+import com.afsh.commons.helpers.KEY_PHONE
+import com.afsh.commons.helpers.MyContactsContentProvider
+import com.afsh.commons.helpers.PERMISSION_READ_CONTACTS
+import com.afsh.commons.helpers.PERMISSION_READ_PHONE_STATE
+import com.afsh.commons.helpers.SimpleContactsHelper
+import com.afsh.commons.helpers.ensureBackgroundThread
+import com.afsh.commons.helpers.isSPlus
+import com.afsh.commons.models.PhoneNumber
+import com.afsh.commons.models.SimpleContact
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
@@ -328,7 +328,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
 
         val extras = intent.extras
         if (extras == null) {
-            toast(org.fossify.commons.R.string.unknown_error_occurred)
+            toast(com.afsh.commons.R.string.unknown_error_occurred)
             finish()
             return
         }
@@ -629,7 +629,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
             val result = withTimeoutOrNull(durationMs.toLong()) {
                 snackbarHost.showSnackbar(
                     message = getString(message),
-                    actionLabel = getString(org.fossify.commons.R.string.undo),
+                    actionLabel = getString(com.afsh.commons.R.string.undo),
                     duration = SnackbarDuration.Indefinite,
                 )
             }
@@ -845,7 +845,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
                 val name = intent.getStringExtra(THREAD_TITLE) ?: ""
                 val number = intent.getStringExtra(THREAD_NUMBER)
                 if (number == null) {
-                    toast(org.fossify.commons.R.string.unknown_error_occurred)
+                    toast(com.afsh.commons.R.string.unknown_error_occurred)
                     finish()
                     return@ensureBackgroundThread
                 }
@@ -1526,7 +1526,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         try {
             dictateMessage.launch(intent)
         } catch (_: ActivityNotFoundException) {
-            toast(org.fossify.commons.R.string.no_app_found)
+            toast(com.afsh.commons.R.string.no_app_found)
         }
     }
 
@@ -1544,7 +1544,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
     private fun launchActivityForResult(
         intent: Intent,
         requestCode: Int,
-        @StringRes error: Int = org.fossify.commons.R.string.no_app_found,
+        @StringRes error: Int = com.afsh.commons.R.string.no_app_found,
     ) {
         hideKeyboard()
         try {
@@ -1582,8 +1582,8 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
             val text = contact?.let { contactAsText(it.getNameToDisplay(), it.phoneNumbers) }
             runOnUiThread {
                 when {
-                    contact == null -> toast(org.fossify.commons.R.string.unknown_error_occurred)
-                    text == null -> toast(org.fossify.commons.R.string.no_phone_number_found)
+                    contact == null -> toast(com.afsh.commons.R.string.unknown_error_occurred)
+                    text == null -> toast(com.afsh.commons.R.string.no_phone_number_found)
                     else -> {
                         val at = holder.composerText.selection.min.coerceIn(0, holder.text.length)
                         val (value, cursor) = insertBlock(holder.text, at, text)
@@ -1603,7 +1603,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
 
         val mimeType = contentResolver.getType(uri)
         if (mimeType == null) {
-            toast(org.fossify.commons.R.string.unknown_error_occurred)
+            toast(com.afsh.commons.R.string.unknown_error_occurred)
             return
         }
         val isImage = mimeType.isImageMimeType()
@@ -1641,7 +1641,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
                 launchActivityForResult(
                     intent = this,
                     requestCode = PICK_SAVE_FILE_INTENT,
-                    error = org.fossify.commons.R.string.system_service_disabled
+                    error = com.afsh.commons.R.string.system_service_disabled
                 )
             }
         } else {
@@ -1650,7 +1650,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
                 launchActivityForResult(
                     intent = this,
                     requestCode = PICK_SAVE_DIR_INTENT,
-                    error = org.fossify.commons.R.string.system_service_disabled
+                    error = com.afsh.commons.R.string.system_service_disabled
                 )
             }
         }
@@ -1678,7 +1678,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
                     copyToUri(pendingAttachmentsToSave!!.first().getUri(), resultData.data!!)
                 }
 
-                toast(org.fossify.commons.R.string.file_saved)
+                toast(com.afsh.commons.R.string.file_saved)
             } catch (e: Exception) {
                 showErrorToast(e)
             } finally {
@@ -1694,8 +1694,8 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
                 callback()
             } else {
                 confirm(
-                    title = getString(org.fossify.commons.R.string.permission_required),
-                    explanation = getString(org.fossify.commons.R.string.allow_alarm_scheduled_messages),
+                    title = getString(com.afsh.commons.R.string.permission_required),
+                    explanation = getString(com.afsh.commons.R.string.allow_alarm_scheduled_messages),
                     confirmLabel = getString(R.string.open_settings),
                 ) {
                     openRequestExactAlarmSettings(BuildConfig.APPLICATION_ID)
@@ -1830,7 +1830,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
             }
         } catch (e: Exception) {
             showErrorToast(
-                e.localizedMessage ?: getString(org.fossify.commons.R.string.unknown_error_occurred)
+                e.localizedMessage ?: getString(com.afsh.commons.R.string.unknown_error_occurred)
             )
         }
     }
@@ -1854,7 +1854,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
             showErrorToast(e)
         } catch (e: Error) {
             showErrorToast(
-                e.localizedMessage ?: getString(org.fossify.commons.R.string.unknown_error_occurred)
+                e.localizedMessage ?: getString(com.afsh.commons.R.string.unknown_error_occurred)
             )
         }
     }
@@ -1877,7 +1877,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
             showErrorToast(e)
         } catch (e: Error) {
             holder.retryFailed(message)
-            showErrorToast(e.localizedMessage ?: getString(org.fossify.commons.R.string.unknown_error_occurred))
+            showErrorToast(e.localizedMessage ?: getString(com.afsh.commons.R.string.unknown_error_occurred))
         }
     }
 

@@ -9,10 +9,10 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.core.content.IntentCompat
 import androidx.core.net.toUri
-import org.fossify.commons.extensions.getMyFileUri
-import org.fossify.commons.extensions.showErrorToast
-import org.fossify.commons.extensions.toast
-import org.fossify.commons.helpers.ensureBackgroundThread
+import com.afsh.commons.extensions.getMyFileUri
+import com.afsh.commons.extensions.showErrorToast
+import com.afsh.commons.extensions.toast
+import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.messages.R
 import com.afsh.messages.extensions.launchViewIntent
 import com.afsh.messages.ui.AfshTheme

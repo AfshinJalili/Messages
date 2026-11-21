@@ -21,8 +21,8 @@ import com.afsh.messages.activities.ThreadActivity
  * to host the other. Below 840 dp nothing changes.
  */
 object ListDetail {
-    private const val MIN_WIDTH_DP = 840
-    private const val LIST_PANE_DP = 96 + 360
+    internal const val MIN_WIDTH_DP = 840
+    internal const val LIST_PANE_DP = 96 + 360
     // Only for windows the calculator cannot size; 456 of 1280 dp.
     private const val FALLBACK_RATIO = 0.36f
 
@@ -42,22 +42,45 @@ object ListDetail {
             .setDefaultSplitAttributes(SplitAttributes.Builder().setSplitType(SplitAttributes.SplitType.ratio(FALLBACK_RATIO)).build())
             .build()
         RuleController.getInstance(context).addRule(rule)
-        val density = context.resources.displayMetrics.density
         // A fixed-width list pane: the ratio follows the window. Older window extensions keep the
-        // fallback ratio.
+        // fallback ratio, and their minimum width still refuses the split on a phone.
         if (WindowSdkExtensions.getInstance().extensionVersion >= 2) {
             // Lint does not see the version check above.
             @SuppressLint("RequiresWindowSdk")
             SplitController.getInstance(context).setSplitAttributesCalculator { params ->
-                if (!params.areDefaultConstraintsSatisfied) return@setSplitAttributesCalculator params.defaultSplitAttributes
-                val widthDp = params.parentWindowMetrics.bounds.width() / density
-                SplitAttributes.Builder()
-                    .setSplitType(SplitAttributes.SplitType.ratio((LIST_PANE_DP / widthDp).coerceIn(0.1f, 0.9f)))
-                    .build()
+                // defaultSplitAttributes stays the 0.36 fallback even when the 840 dp
+                // minimum failed, and the calculator result replaces that minimum.
+                // Returning it put a phone-width window into a crushed split.
+                val widthDp = params.parentConfiguration.screenWidthDp
+                val mode = listDetailMode(widthDp, params.areDefaultConstraintsSatisfied)
+                val type = if (mode == ListDetailMode.Expand) {
+                    SplitAttributes.SplitType.SPLIT_TYPE_EXPAND
+                } else {
+                    SplitAttributes.SplitType.ratio(listPaneRatio(widthDp))
+                }
+                SplitAttributes.Builder().setSplitType(type).build()
             }
         }
     }
 
     /** Whether [activity] is one pane of the split, so the inbox shows its rail even at 456 dp. */
     fun isPane(activity: Activity): Boolean = ActivityEmbeddingController.getInstance(activity).isActivityEmbedded(activity)
+}
+
+internal enum class ListDetailMode { Expand, Split }
+
+/**
+ * A window under [ListDetail.MIN_WIDTH_DP], or one the embedding rule already rejected,
+ * stays a single full-screen activity. The calculator must say so itself: its result
+ * replaces the rule's minimum width.
+ */
+internal fun listDetailMode(widthDp: Int, constraintsSatisfied: Boolean): ListDetailMode {
+    if (!constraintsSatisfied || widthDp < ListDetail.MIN_WIDTH_DP) return ListDetailMode.Expand
+    return ListDetailMode.Split
+}
+
+/** List pane of 96 dp rail + 360 dp list, as a fraction of [widthDp], clamped to a legal split. */
+internal fun listPaneRatio(widthDp: Int): Float {
+    if (widthDp <= 0) return 0.9f
+    return (ListDetail.LIST_PANE_DP.toFloat() / widthDp).coerceIn(0.1f, 0.9f)
 }

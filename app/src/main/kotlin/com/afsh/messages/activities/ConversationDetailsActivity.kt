@@ -13,11 +13,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import org.fossify.commons.extensions.launchActivityIntent
-import org.fossify.commons.extensions.notificationManager
+import com.afsh.commons.extensions.launchActivityIntent
+import com.afsh.commons.extensions.notificationManager
 import com.afsh.messages.extensions.subscriptionManagerCompat
-import org.fossify.commons.helpers.KEY_PHONE
-import org.fossify.commons.helpers.ensureBackgroundThread
+import com.afsh.commons.helpers.KEY_PHONE
+import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.messages.R
 import com.afsh.messages.extensions.config
 import com.afsh.messages.extensions.conversationsDB

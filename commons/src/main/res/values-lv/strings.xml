@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="updating">Atjaunina…</string>
-    <string name="phone_storage">Tālruņa krātuve</string>
-    <string name="phone_storage_hidden">Tālruņa krātuve (nav redzama citām lietotnēm)</string>
-    <string name="invalid_file_format">Nederīgs datnes veidols</string>
-    <string name="label_with_badge">%1$s %2$s</string>
-    <string name="recycle_bin">Atkritne</string>
-</resources>

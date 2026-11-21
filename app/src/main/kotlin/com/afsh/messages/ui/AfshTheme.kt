@@ -31,14 +31,16 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
-import org.fossify.commons.extensions.baseConfig
-import org.fossify.commons.extensions.getTextSize
+import com.afsh.commons.extensions.baseConfig
+import com.afsh.commons.extensions.getTextSize
 import com.afsh.messages.R
 
 private const val DARK_LUMINANCE = 0.5
@@ -54,7 +56,7 @@ fun Context.afshDark(): Boolean = if (baseConfig.isSystemThemeEnabled) {
 }
 
 /** The app's own font-size setting, relative to its default. */
-fun Context.afshTextScale() = getTextSize() / resources.getDimension(org.fossify.commons.R.dimen.normal_text_size)
+fun Context.afshTextScale() = getTextSize() / resources.getDimension(com.afsh.commons.R.dimen.normal_text_size)
 
 /** A surface color and the color of what sits on it. */
 @Immutable
@@ -273,6 +275,16 @@ internal fun TextStyle.forContentScript(persianLeading: Boolean): TextStyle =
     copy(fontFamily = body, lineHeight = if (persianLeading) 1.7.em else 1.45.em)
 
 /**
+ * Line height as an absolute sp value. The theme stores leading in em; never call [TextUnit.toDp]
+ * on an em [lineHeight] — multiply by [fontSize] first.
+ */
+internal fun TextStyle.lineHeightSp(): TextUnit = when {
+    lineHeight.isEm -> fontSize * lineHeight.value
+    lineHeight.isSp -> lineHeight
+    else -> fontSize
+}
+
+/**
  * What people wrote (a message, a name) reads in its own direction, not the interface's: English
  * text in the Persian interface keeps its full stop at the end.
  */
@@ -281,10 +293,24 @@ internal fun TextStyle.forUserText(text: CharSequence): TextStyle = forContent(t
 /** A phone number or address isolated left to right, so "555 0142" never reads "0142 555" in Persian. */
 fun ltr(text: String): String = if (text.isEmpty()) text else "\u2066$text\u2069"
 
+/** A label with no letters is a number, so "+1555…" must not put the + at the other end in Persian. */
+fun CharSequence.isNumberLabel(): Boolean = none { it.isLetter() } && any { it.isDigit() }
+
+fun TextStyle.forLabel(text: CharSequence): TextStyle = forContent(text).withNumberOrder(text)
+
+/** A letter-free label such as "+1555…" stays left to right, so the + does not jump to the end in Persian. */
+fun TextStyle.withNumberOrder(text: CharSequence): TextStyle =
+    if (text.isNumberLabel()) copy(textDirection = TextDirection.Ltr) else this
+
 private fun typography(rtl: Boolean): Typography {
     val displayFamily = if (rtl) persian else display
     val bodyFamily = if (rtl) persian else body
     val leading = if (rtl) 1.7.em else 1.45.em
+    // Center extra leading so Vazirmatn's descent (and Atkinson's) does not sit entirely below the glyph.
+    val centeredLeading = LineHeightStyle(
+        alignment = LineHeightStyle.Alignment.Center,
+        trim = LineHeightStyle.Trim.None,
+    )
     fun style(family: FontFamily, size: Int, weight: FontWeight) =
         TextStyle(fontFamily = family, fontSize = size.sp, fontWeight = weight, lineHeight = leading)
     return Typography(
@@ -293,7 +319,8 @@ private fun typography(rtl: Boolean): Typography {
         headlineSmall = style(displayFamily, 25, FontWeight.Normal).copy(lineHeight = 1.3.em),
         titleLarge = style(bodyFamily, 20, FontWeight.Bold),
         titleMedium = style(bodyFamily, 18, FontWeight.Bold),
-        bodyLarge = style(bodyFamily, 18, FontWeight.Normal),
+        // Composer / fields read bodyLarge; keep the style focused here so other roles stay screenshot-stable.
+        bodyLarge = style(bodyFamily, 18, FontWeight.Normal).copy(lineHeightStyle = centeredLeading),
         bodyMedium = style(bodyFamily, 16, FontWeight.Normal),
         bodySmall = style(bodyFamily, 14, FontWeight.Normal),
         labelLarge = style(bodyFamily, 16, FontWeight.ExtraBold),
@@ -311,81 +338,81 @@ fun Context.afshColorScheme(dark: Boolean): ColorScheme {
     fun color(id: Int) = Color(getColor(id))
     return if (dark) {
         darkColorScheme(
-            primary = color(org.fossify.commons.R.color.m3_primary_dark),
-            onPrimary = color(org.fossify.commons.R.color.m3_on_primary_dark),
-            primaryContainer = color(org.fossify.commons.R.color.m3_primary_container_dark),
-            onPrimaryContainer = color(org.fossify.commons.R.color.m3_on_primary_container_dark),
-            secondary = color(org.fossify.commons.R.color.m3_secondary_dark),
-            onSecondary = color(org.fossify.commons.R.color.m3_on_secondary_dark),
-            secondaryContainer = color(org.fossify.commons.R.color.m3_secondary_container_dark),
-            onSecondaryContainer = color(org.fossify.commons.R.color.m3_on_secondary_container_dark),
-            tertiary = color(org.fossify.commons.R.color.m3_tertiary_dark),
-            onTertiary = color(org.fossify.commons.R.color.m3_on_tertiary_dark),
-            tertiaryContainer = color(org.fossify.commons.R.color.m3_tertiary_container_dark),
-            onTertiaryContainer = color(org.fossify.commons.R.color.m3_on_tertiary_container_dark),
-            background = color(org.fossify.commons.R.color.m3_background_dark),
-            onBackground = color(org.fossify.commons.R.color.m3_on_background_dark),
-            surface = color(org.fossify.commons.R.color.m3_surface_dark),
-            onSurface = color(org.fossify.commons.R.color.m3_on_surface_dark),
-            surfaceVariant = color(org.fossify.commons.R.color.m3_surface_variant_dark),
-            onSurfaceVariant = color(org.fossify.commons.R.color.m3_on_surface_variant_dark),
-            surfaceTint = color(org.fossify.commons.R.color.m3_surface_tint_dark),
-            inverseSurface = color(org.fossify.commons.R.color.m3_inverse_surface_dark),
-            inverseOnSurface = color(org.fossify.commons.R.color.m3_inverse_on_surface_dark),
-            inversePrimary = color(org.fossify.commons.R.color.m3_inverse_primary_dark),
-            error = color(org.fossify.commons.R.color.m3_error_dark),
-            onError = color(org.fossify.commons.R.color.m3_on_error_dark),
-            errorContainer = color(org.fossify.commons.R.color.m3_error_container_dark),
-            onErrorContainer = color(org.fossify.commons.R.color.m3_on_error_container_dark),
-            outline = color(org.fossify.commons.R.color.m3_outline_dark),
-            outlineVariant = color(org.fossify.commons.R.color.m3_outline_variant_dark),
-            scrim = color(org.fossify.commons.R.color.m3_scrim),
-            surfaceBright = color(org.fossify.commons.R.color.m3_surface_bright_dark),
-            surfaceDim = color(org.fossify.commons.R.color.m3_surface_dim_dark),
-            surfaceContainer = color(org.fossify.commons.R.color.m3_surface_container_dark),
-            surfaceContainerHigh = color(org.fossify.commons.R.color.m3_surface_container_high_dark),
-            surfaceContainerHighest = color(org.fossify.commons.R.color.m3_surface_container_highest_dark),
-            surfaceContainerLow = color(org.fossify.commons.R.color.m3_surface_container_low_dark),
-            surfaceContainerLowest = color(org.fossify.commons.R.color.m3_surface_container_lowest_dark),
+            primary = color(com.afsh.commons.R.color.m3_primary_dark),
+            onPrimary = color(com.afsh.commons.R.color.m3_on_primary_dark),
+            primaryContainer = color(com.afsh.commons.R.color.m3_primary_container_dark),
+            onPrimaryContainer = color(com.afsh.commons.R.color.m3_on_primary_container_dark),
+            secondary = color(com.afsh.commons.R.color.m3_secondary_dark),
+            onSecondary = color(com.afsh.commons.R.color.m3_on_secondary_dark),
+            secondaryContainer = color(com.afsh.commons.R.color.m3_secondary_container_dark),
+            onSecondaryContainer = color(com.afsh.commons.R.color.m3_on_secondary_container_dark),
+            tertiary = color(com.afsh.commons.R.color.m3_tertiary_dark),
+            onTertiary = color(com.afsh.commons.R.color.m3_on_tertiary_dark),
+            tertiaryContainer = color(com.afsh.commons.R.color.m3_tertiary_container_dark),
+            onTertiaryContainer = color(com.afsh.commons.R.color.m3_on_tertiary_container_dark),
+            background = color(com.afsh.commons.R.color.m3_background_dark),
+            onBackground = color(com.afsh.commons.R.color.m3_on_background_dark),
+            surface = color(com.afsh.commons.R.color.m3_surface_dark),
+            onSurface = color(com.afsh.commons.R.color.m3_on_surface_dark),
+            surfaceVariant = color(com.afsh.commons.R.color.m3_surface_variant_dark),
+            onSurfaceVariant = color(com.afsh.commons.R.color.m3_on_surface_variant_dark),
+            surfaceTint = color(com.afsh.commons.R.color.m3_surface_tint_dark),
+            inverseSurface = color(com.afsh.commons.R.color.m3_inverse_surface_dark),
+            inverseOnSurface = color(com.afsh.commons.R.color.m3_inverse_on_surface_dark),
+            inversePrimary = color(com.afsh.commons.R.color.m3_inverse_primary_dark),
+            error = color(com.afsh.commons.R.color.m3_error_dark),
+            onError = color(com.afsh.commons.R.color.m3_on_error_dark),
+            errorContainer = color(com.afsh.commons.R.color.m3_error_container_dark),
+            onErrorContainer = color(com.afsh.commons.R.color.m3_on_error_container_dark),
+            outline = color(com.afsh.commons.R.color.m3_outline_dark),
+            outlineVariant = color(com.afsh.commons.R.color.m3_outline_variant_dark),
+            scrim = color(com.afsh.commons.R.color.m3_scrim),
+            surfaceBright = color(com.afsh.commons.R.color.m3_surface_bright_dark),
+            surfaceDim = color(com.afsh.commons.R.color.m3_surface_dim_dark),
+            surfaceContainer = color(com.afsh.commons.R.color.m3_surface_container_dark),
+            surfaceContainerHigh = color(com.afsh.commons.R.color.m3_surface_container_high_dark),
+            surfaceContainerHighest = color(com.afsh.commons.R.color.m3_surface_container_highest_dark),
+            surfaceContainerLow = color(com.afsh.commons.R.color.m3_surface_container_low_dark),
+            surfaceContainerLowest = color(com.afsh.commons.R.color.m3_surface_container_lowest_dark),
         )
     } else {
         lightColorScheme(
-            primary = color(org.fossify.commons.R.color.m3_primary),
-            onPrimary = color(org.fossify.commons.R.color.m3_on_primary),
-            primaryContainer = color(org.fossify.commons.R.color.m3_primary_container),
-            onPrimaryContainer = color(org.fossify.commons.R.color.m3_on_primary_container),
-            secondary = color(org.fossify.commons.R.color.m3_secondary),
-            onSecondary = color(org.fossify.commons.R.color.m3_on_secondary),
-            secondaryContainer = color(org.fossify.commons.R.color.m3_secondary_container),
-            onSecondaryContainer = color(org.fossify.commons.R.color.m3_on_secondary_container),
-            tertiary = color(org.fossify.commons.R.color.m3_tertiary),
-            onTertiary = color(org.fossify.commons.R.color.m3_on_tertiary),
-            tertiaryContainer = color(org.fossify.commons.R.color.m3_tertiary_container),
-            onTertiaryContainer = color(org.fossify.commons.R.color.m3_on_tertiary_container),
-            background = color(org.fossify.commons.R.color.m3_background),
-            onBackground = color(org.fossify.commons.R.color.m3_on_background),
-            surface = color(org.fossify.commons.R.color.m3_surface),
-            onSurface = color(org.fossify.commons.R.color.m3_on_surface),
-            surfaceVariant = color(org.fossify.commons.R.color.m3_surface_variant),
-            onSurfaceVariant = color(org.fossify.commons.R.color.m3_on_surface_variant),
-            surfaceTint = color(org.fossify.commons.R.color.m3_surface_tint),
-            inverseSurface = color(org.fossify.commons.R.color.m3_inverse_surface),
-            inverseOnSurface = color(org.fossify.commons.R.color.m3_inverse_on_surface),
-            inversePrimary = color(org.fossify.commons.R.color.m3_inverse_primary),
-            error = color(org.fossify.commons.R.color.m3_error),
-            onError = color(org.fossify.commons.R.color.m3_on_error),
-            errorContainer = color(org.fossify.commons.R.color.m3_error_container),
-            onErrorContainer = color(org.fossify.commons.R.color.m3_on_error_container),
-            outline = color(org.fossify.commons.R.color.m3_outline),
-            outlineVariant = color(org.fossify.commons.R.color.m3_outline_variant),
-            scrim = color(org.fossify.commons.R.color.m3_scrim),
-            surfaceBright = color(org.fossify.commons.R.color.m3_surface_bright),
-            surfaceDim = color(org.fossify.commons.R.color.m3_surface_dim),
-            surfaceContainer = color(org.fossify.commons.R.color.m3_surface_container),
-            surfaceContainerHigh = color(org.fossify.commons.R.color.m3_surface_container_high),
-            surfaceContainerHighest = color(org.fossify.commons.R.color.m3_surface_container_highest),
-            surfaceContainerLow = color(org.fossify.commons.R.color.m3_surface_container_low),
-            surfaceContainerLowest = color(org.fossify.commons.R.color.m3_surface_container_lowest),
+            primary = color(com.afsh.commons.R.color.m3_primary),
+            onPrimary = color(com.afsh.commons.R.color.m3_on_primary),
+            primaryContainer = color(com.afsh.commons.R.color.m3_primary_container),
+            onPrimaryContainer = color(com.afsh.commons.R.color.m3_on_primary_container),
+            secondary = color(com.afsh.commons.R.color.m3_secondary),
+            onSecondary = color(com.afsh.commons.R.color.m3_on_secondary),
+            secondaryContainer = color(com.afsh.commons.R.color.m3_secondary_container),
+            onSecondaryContainer = color(com.afsh.commons.R.color.m3_on_secondary_container),
+            tertiary = color(com.afsh.commons.R.color.m3_tertiary),
+            onTertiary = color(com.afsh.commons.R.color.m3_on_tertiary),
+            tertiaryContainer = color(com.afsh.commons.R.color.m3_tertiary_container),
+            onTertiaryContainer = color(com.afsh.commons.R.color.m3_on_tertiary_container),
+            background = color(com.afsh.commons.R.color.m3_background),
+            onBackground = color(com.afsh.commons.R.color.m3_on_background),
+            surface = color(com.afsh.commons.R.color.m3_surface),
+            onSurface = color(com.afsh.commons.R.color.m3_on_surface),
+            surfaceVariant = color(com.afsh.commons.R.color.m3_surface_variant),
+            onSurfaceVariant = color(com.afsh.commons.R.color.m3_on_surface_variant),
+            surfaceTint = color(com.afsh.commons.R.color.m3_surface_tint),
+            inverseSurface = color(com.afsh.commons.R.color.m3_inverse_surface),
+            inverseOnSurface = color(com.afsh.commons.R.color.m3_inverse_on_surface),
+            inversePrimary = color(com.afsh.commons.R.color.m3_inverse_primary),
+            error = color(com.afsh.commons.R.color.m3_error),
+            onError = color(com.afsh.commons.R.color.m3_on_error),
+            errorContainer = color(com.afsh.commons.R.color.m3_error_container),
+            onErrorContainer = color(com.afsh.commons.R.color.m3_on_error_container),
+            outline = color(com.afsh.commons.R.color.m3_outline),
+            outlineVariant = color(com.afsh.commons.R.color.m3_outline_variant),
+            scrim = color(com.afsh.commons.R.color.m3_scrim),
+            surfaceBright = color(com.afsh.commons.R.color.m3_surface_bright),
+            surfaceDim = color(com.afsh.commons.R.color.m3_surface_dim),
+            surfaceContainer = color(com.afsh.commons.R.color.m3_surface_container),
+            surfaceContainerHigh = color(com.afsh.commons.R.color.m3_surface_container_high),
+            surfaceContainerHighest = color(com.afsh.commons.R.color.m3_surface_container_highest),
+            surfaceContainerLow = color(com.afsh.commons.R.color.m3_surface_container_low),
+            surfaceContainerLowest = color(com.afsh.commons.R.color.m3_surface_container_lowest),
         )
     }
 }
@@ -448,10 +475,10 @@ fun AfshTheme(dark: Boolean, textScale: Float = 1f, content: @Composable () -> U
         onAvatar = scheme.onSurface,
         onSecondaryContainerVariant = scheme.onSecondaryContainer,
         inverseAccent = scheme.inversePrimary,
-        scrim = colorResource(if (dark) org.fossify.commons.R.color.m3_scrim_dim_dark else org.fossify.commons.R.color.m3_scrim_dim),
-        liftScrim = colorResource(org.fossify.commons.R.color.m3_lift_scrim),
+        scrim = colorResource(if (dark) com.afsh.commons.R.color.m3_scrim_dim_dark else com.afsh.commons.R.color.m3_scrim_dim),
+        liftScrim = colorResource(com.afsh.commons.R.color.m3_lift_scrim),
         focusRing = scheme.primary,
-        transparent = colorResource(org.fossify.commons.R.color.m3_transparent),
+        transparent = colorResource(com.afsh.commons.R.color.m3_transparent),
         mask = scheme.scrim,
         header = ColorRole(scheme.surface, scheme.onSurface),
         sentBubble = primaryContainer,
@@ -461,8 +488,8 @@ fun AfshTheme(dark: Boolean, textScale: Float = 1f, content: @Composable () -> U
         selected = ColorRole(scheme.secondaryContainer, scheme.onSecondaryContainer),
         badge = ColorRole(scheme.primary, scheme.onPrimary),
         themePreview = ThemePreview(
-            light = ColorRole(colorResource(org.fossify.commons.R.color.m3_surface), colorResource(org.fossify.commons.R.color.m3_primary)),
-            dark = ColorRole(colorResource(org.fossify.commons.R.color.m3_surface_dark), colorResource(org.fossify.commons.R.color.m3_primary_dark)),
+            light = ColorRole(colorResource(com.afsh.commons.R.color.m3_surface), colorResource(com.afsh.commons.R.color.m3_primary)),
+            dark = ColorRole(colorResource(com.afsh.commons.R.color.m3_surface_dark), colorResource(com.afsh.commons.R.color.m3_primary_dark)),
         ),
     )
     MaterialTheme(

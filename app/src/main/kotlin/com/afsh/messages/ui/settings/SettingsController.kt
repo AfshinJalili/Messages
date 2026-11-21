@@ -38,13 +38,13 @@ import com.afsh.messages.ui.components.inform
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.fossify.commons.extensions.getCurrentFormattedDateTime
-import org.fossify.commons.extensions.isAValidFilename
-import org.fossify.commons.extensions.launchViewIntent
-import org.fossify.commons.helpers.PROTECTION_FINGERPRINT
-import org.fossify.commons.helpers.SHOW_ALL_TABS
-import org.fossify.commons.helpers.isQPlus
-import org.fossify.commons.helpers.isTiramisuPlus
+import com.afsh.commons.extensions.getCurrentFormattedDateTime
+import com.afsh.commons.extensions.isAValidFilename
+import com.afsh.commons.extensions.launchViewIntent
+import com.afsh.commons.helpers.PROTECTION_FINGERPRINT
+import com.afsh.commons.helpers.SHOW_ALL_TABS
+import com.afsh.commons.helpers.isQPlus
+import com.afsh.commons.helpers.isTiramisuPlus
 import java.util.Locale
 import kotlin.system.exitProcess
 
@@ -147,9 +147,9 @@ class SettingsController(
                     showSecurityDialog = false
                     if (!wasOn) {
                         val message = if (type == PROTECTION_FINGERPRINT) {
-                            org.fossify.commons.R.string.fingerprint_setup_successfully
+                            com.afsh.commons.R.string.fingerprint_setup_successfully
                         } else {
-                            org.fossify.commons.R.string.protection_setup_successfully
+                            com.afsh.commons.R.string.protection_setup_successfully
                         }
                         activity.inform(activity.getString(AppR.string.app_lock), activity.getString(message))
                     }
@@ -286,7 +286,7 @@ class SettingsController(
     private fun startExport() {
         val name = state.exportName.trim()
         if (!name.isAValidFilename()) {
-            report(activity.getString(org.fossify.commons.R.string.invalid_name))
+            report(activity.getString(com.afsh.commons.R.string.invalid_name))
             return
         }
         createBackup.launch("$name.json")
@@ -302,9 +302,9 @@ class SettingsController(
             report(
                 activity.getString(
                     when (outcome) {
-                        ExportOutcome.EXPORTED -> org.fossify.commons.R.string.exporting_successful
-                        ExportOutcome.NOTHING_TO_EXPORT -> org.fossify.commons.R.string.no_entries_for_exporting
-                        ExportOutcome.FAILED -> org.fossify.commons.R.string.exporting_failed
+                        ExportOutcome.EXPORTED -> com.afsh.commons.R.string.exporting_successful
+                        ExportOutcome.NOTHING_TO_EXPORT -> com.afsh.commons.R.string.no_entries_for_exporting
+                        ExportOutcome.FAILED -> com.afsh.commons.R.string.exporting_failed
                     },
                 ),
             )
@@ -328,9 +328,9 @@ class SettingsController(
                 report(
                     activity.getString(
                         if (error is InvalidBackupException) {
-                            org.fossify.commons.R.string.invalid_file_format
+                            com.afsh.commons.R.string.invalid_file_format
                         } else {
-                            org.fossify.commons.R.string.importing_failed
+                            com.afsh.commons.R.string.importing_failed
                         },
                     ),
                 )
@@ -384,10 +384,10 @@ class SettingsController(
     }
 
     private fun ImportResult.message() = when (this) {
-        ImportResult.IMPORT_OK -> org.fossify.commons.R.string.importing_successful
-        ImportResult.IMPORT_PARTIAL -> org.fossify.commons.R.string.importing_some_entries_failed
-        ImportResult.IMPORT_FAIL -> org.fossify.commons.R.string.importing_failed
-        ImportResult.IMPORT_NOTHING_NEW -> org.fossify.commons.R.string.no_items_found
+        ImportResult.IMPORT_OK -> com.afsh.commons.R.string.importing_successful
+        ImportResult.IMPORT_PARTIAL -> com.afsh.commons.R.string.importing_some_entries_failed
+        ImportResult.IMPORT_FAIL -> com.afsh.commons.R.string.importing_failed
+        ImportResult.IMPORT_NOTHING_NEW -> com.afsh.commons.R.string.no_items_found
     }
 
     private fun report(message: String) {

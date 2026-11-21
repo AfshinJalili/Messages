@@ -1,8 +1,10 @@
 package com.afsh.messages.ui.search
 
 import com.afsh.messages.ui.components.AfshIcon
+import com.afsh.messages.ui.components.EmptyState
+import com.afsh.messages.ui.components.fadingScrollEdges
 import com.afsh.messages.ui.Afsh
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -18,9 +20,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.HorizontalDivider
@@ -28,7 +30,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -36,16 +37,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -57,14 +55,15 @@ import androidx.compose.ui.unit.dp
 import com.afsh.messages.R
 import com.afsh.messages.models.SearchResult
 import com.afsh.messages.ui.components.ImportNotice
+import com.afsh.messages.ui.components.SearchField
 import com.afsh.messages.ui.AfshTheme
-import com.afsh.messages.ui.forContent
+import com.afsh.messages.ui.forLabel
 import com.afsh.messages.ui.withContentFonts
+import com.afsh.messages.ui.withNumberOrder
 
 private val ControlHeight = 56.dp
 private val TouchTarget = 48.dp
 private val ContentWidth = 640.dp
-private val FocusStroke = 2.dp
 private const val EXCERPT_LINES = 3
 
 @Composable
@@ -76,67 +75,32 @@ fun SearchInput(
 ) {
     val focus = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
-    val colors = MaterialTheme.colorScheme
-    val searchLabel = stringResource(R.string.inbox_search_hint)
     LaunchedEffect(Unit) {
         focus.requestFocus()
         keyboard?.show()
     }
-    Surface(
-        shape = MaterialTheme.shapes.medium,
-        color = colors.surfaceContainer,
-        border = BorderStroke(FocusStroke, colors.secondaryContainer),
-        modifier = modifier.fillMaxWidth()
-            .heightIn(min = ControlHeight * LocalDensity.current.fontScale.coerceAtLeast(1f)),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+    SearchField(
+        query = query,
+        onQuery = onQuery,
+        hint = stringResource(R.string.search_query_hint),
+        modifier = modifier.fillMaxWidth().focusRequester(focus),
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+        keyboardActions = KeyboardActions(onSearch = { keyboard?.hide() }),
+        leadingIcon = {
             IconButton(onClick = onBack) {
                 Icon(
                     AfshIcon.ArrowBack.painter(),
                     stringResource(R.string.search_back),
-                    tint = colors.onSurface,
+                    tint = MaterialTheme.colorScheme.onSurface,
                 )
             }
-            BasicTextField(
-                value = query,
-                onValueChange = onQuery,
-                textStyle = MaterialTheme.typography.bodyMedium.copy(color = colors.onSurface),
-                cursorBrush = SolidColor(colors.primary),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                keyboardActions = KeyboardActions(onSearch = { keyboard?.hide() }),
-                modifier = Modifier.weight(1f)
-                    .padding(vertical = Afsh.spacing.md)
-                    .focusRequester(focus)
-                    .semantics { contentDescription = searchLabel },
-                decorationBox = { input ->
-                    Box {
-                        if (query.isEmpty()) {
-                            Text(
-                                stringResource(R.string.search_query_hint),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = colors.onSurfaceVariant,
-                            )
-                        }
-                        input()
-                    }
-                },
-            )
-            if (query.isNotEmpty()) {
-                IconButton(onClick = {
-                    onQuery("")
-                    focus.requestFocus()
-                    keyboard?.show()
-                }) {
-                    Icon(
-                        AfshIcon.Close.painter(),
-                        stringResource(R.string.search_clear),
-                        tint = colors.onSurfaceVariant,
-                    )
-                }
-            }
-        }
-    }
+        },
+        onClear = {
+            onQuery("")
+            focus.requestFocus()
+            keyboard?.show()
+        },
+    )
 }
 
 @Composable
@@ -215,9 +179,10 @@ private fun SearchFilters(state: SearchUiState, onFilter: (SearchFilter) -> Unit
     } else {
         SearchFilter.entries
     }
+    val scroll = rememberScrollState()
     Row(
-        Modifier.widthIn(max = ContentWidth).fillMaxWidth().horizontalScroll(rememberScrollState()).selectableGroup(),
-        horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.md),
+        Modifier.widthIn(max = ContentWidth).fillMaxWidth().fadingScrollEdges(scroll).horizontalScroll(scroll).selectableGroup(),
+        horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.sm),
     ) {
         filters.forEach { filter ->
             val active = filter == state.filter
@@ -226,19 +191,20 @@ private fun SearchFilters(state: SearchUiState, onFilter: (SearchFilter) -> Unit
                 state.entry && filter == SearchFilter.MEDIA -> R.string.search_photos
                 else -> filter.label
             }
-            Surface(
-                onClick = { onFilter(filter) },
-                shape = CircleShape,
-                color = if (active) Afsh.colors.selected.container else colors.surfaceContainer,
-                contentColor = if (active) Afsh.colors.selected.content else colors.primary,
-                modifier = Modifier.heightIn(min = TouchTarget).semantics { selected = active },
+            Box(
+                Modifier
+                    .heightIn(min = TouchTarget)
+                    .clip(CircleShape)
+                    .background(if (active) Afsh.colors.selected.container else colors.surfaceContainer)
+                    .selectable(selected = active, role = Role.Tab, onClick = { onFilter(filter) })
+                    .padding(horizontal = Afsh.spacing.lg),
+                contentAlignment = Alignment.Center,
             ) {
-                Box(
-                    Modifier.padding(horizontal = Afsh.spacing.xl, vertical = Afsh.spacing.md),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(stringResource(label), style = MaterialTheme.typography.labelMedium)
-                }
+                Text(
+                    stringResource(label),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = if (active) Afsh.colors.selected.content else colors.primary,
+                )
             }
         }
     }
@@ -247,7 +213,7 @@ private fun SearchFilters(state: SearchUiState, onFilter: (SearchFilter) -> Unit
 @Composable
 private fun SearchHeading(text: String) {
     Text(
-        text,
+        text.uppercase(),
         Modifier.widthIn(max = ContentWidth).fillMaxWidth().semantics { heading() },
         style = MaterialTheme.typography.labelMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -261,24 +227,16 @@ private fun SearchEmpty(query: String) {
         verticalArrangement = Arrangement.spacedBy(Afsh.spacing.md),
     ) {
         SearchHeading(stringResource(R.string.search_no_matches))
-        Surface(
-            shape = MaterialTheme.shapes.medium,
-            color = MaterialTheme.colorScheme.secondaryContainer,
-            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-        ) {
-            Column(
-                Modifier.fillMaxWidth().padding(Afsh.spacing.xl),
-                verticalArrangement = Arrangement.spacedBy(Afsh.spacing.md),
-            ) {
-                val title = if (query.isBlank()) {
-                    stringResource(R.string.search_nothing_yet)
-                } else {
-                    stringResource(R.string.search_nothing_for, query)
-                }
-                Text(title, style = MaterialTheme.typography.titleLarge)
-                Text(stringResource(R.string.search_empty_hint), style = MaterialTheme.typography.bodyMedium)
-            }
+        val title = if (query.isBlank()) {
+            stringResource(R.string.search_nothing_yet)
+        } else {
+            stringResource(R.string.search_nothing_for, query)
         }
+        EmptyState(
+            title = title,
+            text = stringResource(R.string.search_empty_hint),
+            modifier = Modifier.fillMaxWidth(),
+        )
     }
 }
 
@@ -294,17 +252,17 @@ private fun SearchResultRow(result: SearchResult, query: String, onOpen: (Search
             HighlightedText(result.title, query, Modifier.weight(1f), title = true)
             Text(
                 result.date,
-                Modifier.widthIn(max = DateWidth),
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodySmall.withNumberOrder(result.date),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                softWrap = false,
+                overflow = TextOverflow.Ellipsis,
             )
         }
         HighlightedText(searchExcerpt(result.snippet, query), query, Modifier.fillMaxWidth())
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
     }
 }
-
-private val DateWidth = 120.dp
 
 @Composable
 private fun HighlightedText(
@@ -338,7 +296,7 @@ private fun HighlightedText(
     Text(
         remember(highlighted) { highlighted.withContentFonts() },
         modifier,
-        style = (if (title) MaterialTheme.typography.titleMedium else MaterialTheme.typography.bodyMedium).forContent(text),
+        style = (if (title) MaterialTheme.typography.titleMedium else MaterialTheme.typography.bodyMedium).forLabel(text),
         color = colors.onSurface,
         maxLines = if (title) 1 else EXCERPT_LINES,
         overflow = TextOverflow.Ellipsis,

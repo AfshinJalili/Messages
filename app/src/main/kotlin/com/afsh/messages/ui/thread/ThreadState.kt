@@ -164,15 +164,15 @@ enum class ThreadMenuAction(@AnyRes val label: Int, val icon: AfshIcon, val labe
     MARK_UNREAD(R.string.mark_as_unread, AfshIcon.Mail),
     RENAME(R.string.rename_conversation, AfshIcon.Edit),
     ADD_PERSON(R.string.add_person, AfshIcon.PersonAdd),
-    ADD_TO_CONTACT(org.fossify.commons.R.string.add_number_to_contact, AfshIcon.PersonAdd),
-    COPY_NUMBER(org.fossify.commons.R.string.copy_number_to_clipboard, AfshIcon.Copy),
+    ADD_TO_CONTACT(com.afsh.commons.R.string.add_number_to_contact, AfshIcon.PersonAdd),
+    COPY_NUMBER(com.afsh.commons.R.string.copy_number_to_clipboard, AfshIcon.Copy),
     ARCHIVE(R.string.archive, AfshIcon.Archive),
     UNARCHIVE(R.string.unarchive, AfshIcon.Inbox),
     NEVER_SPAM(R.plurals.never_spam, AfshIcon.Verified, labelIsQuantity = true),
     ALWAYS_SPAM(R.plurals.always_spam, AfshIcon.SpamShield, labelIsQuantity = true),
     BLOCK_ON_PHONE(R.plurals.block_on_phone, AfshIcon.Block, labelIsQuantity = true),
     RESTORE(R.string.restore_all_messages, AfshIcon.Restore),
-    DELETE(org.fossify.commons.R.string.delete, AfshIcon.Delete),
+    DELETE(com.afsh.commons.R.string.delete, AfshIcon.Delete),
 
     ;
 
@@ -182,18 +182,18 @@ enum class ThreadMenuAction(@AnyRes val label: Int, val icon: AfshIcon, val labe
 
 /** Declaration order is the display order; the bar takes the first few (design view 10), the rest overflow. */
 enum class MessageAction(@StringRes val label: Int, val icon: AfshIcon) {
-    COPY(org.fossify.commons.R.string.copy, AfshIcon.Copy),
+    COPY(com.afsh.commons.R.string.copy, AfshIcon.Copy),
     FORWARD(R.string.forward_message, AfshIcon.Forward),
     STAR(R.string.star_message, AfshIcon.Star),
     UNSTAR(R.string.unstar_message, AfshIcon.StarFilled),
-    DELETE(org.fossify.commons.R.string.delete, AfshIcon.Delete),
-    SHARE(org.fossify.commons.R.string.share, AfshIcon.Share),
-    SELECT_TEXT(org.fossify.commons.R.string.select_text, AfshIcon.TextCursor),
+    DELETE(com.afsh.commons.R.string.delete, AfshIcon.Delete),
+    SHARE(com.afsh.commons.R.string.share, AfshIcon.Share),
+    SELECT_TEXT(com.afsh.commons.R.string.select_text, AfshIcon.TextCursor),
     DETAILS(R.string.message_details, AfshIcon.Info),
-    SAVE_AS(org.fossify.commons.R.string.save_as, AfshIcon.Download),
+    SAVE_AS(com.afsh.commons.R.string.save_as, AfshIcon.Download),
     NOT_SPAM(R.string.not_spam, AfshIcon.Verified),
     RESTORE(R.string.restore, AfshIcon.Restore),
-    SELECT_ALL(org.fossify.commons.R.string.select_all, AfshIcon.Checklist),
+    SELECT_ALL(com.afsh.commons.R.string.select_all, AfshIcon.Checklist),
 
     // Only in a scheduled message's sheet (84).
     EDIT_SCHEDULED(R.string.edit_message_and_time, AfshIcon.Edit),

@@ -15,7 +15,7 @@ import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
-import org.fossify.commons.helpers.isQPlus
+import com.afsh.commons.helpers.isQPlus
 import com.afsh.messages.helpers.NavBadges
 import com.afsh.messages.helpers.UndoDeletion
 import com.afsh.messages.helpers.refreshConversations
@@ -166,7 +166,7 @@ abstract class ComposePageActivity : SimpleActivity(), UndoDeletion.UndoHost {
             val result = withTimeoutOrNull(durationMs) {
                 snackbarHost.showSnackbar(
                     message = message,
-                    actionLabel = getString(org.fossify.commons.R.string.undo),
+                    actionLabel = getString(com.afsh.commons.R.string.undo),
                     duration = SnackbarDuration.Indefinite,
                 )
             }

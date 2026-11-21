@@ -49,7 +49,7 @@ import com.afsh.messages.ui.Avatar
 import com.afsh.messages.ui.forContent
 import com.afsh.messages.ui.inbox.InboxRow
 import com.afsh.messages.ui.withContentFonts
-import org.fossify.commons.extensions.getTimeFormat
+import com.afsh.messages.ui.withNumberOrder
 
 private const val TWO_LINE_TITLE_SCALE = 1.3f
 private const val INLINE_METADATA_SCALE = 1.5f
@@ -170,18 +170,13 @@ private fun RowAvatar(row: InboxRow, selected: Boolean) {
     }
 }
 
-/** The time today, Yesterday, then a short date ("21 Sep"): decision R9. */
+/** The time today, Yesterday, then a compact list date: decision R9. */
 @Composable
 private fun rememberRowTime(seconds: Int): String {
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
     return remember(seconds, configuration) {
-        val millis = seconds * 1000L
-        when (relativeDay(millis)) {
-            RelativeDay.TODAY -> android.text.format.DateFormat.format(context.getTimeFormat(), millis).toString()
-            RelativeDay.YESTERDAY -> context.getString(R.string.inbox_section_yesterday)
-            RelativeDay.EARLIER -> shortDate(millis)
-        }
+        conversationListTimestamp(context, seconds * 1000L)
     }
 }
 
@@ -289,7 +284,8 @@ private fun RowMetadata(row: InboxRow, time: String, inline: Boolean = false) {
         }
     }
     val timeText: @Composable () -> Unit = {
-        Text(time, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant, maxLines = 1)
+        // Numeric prior-year dates stay LTR so slashes do not scramble in Persian.
+        Text(time, style = MaterialTheme.typography.bodySmall.withNumberOrder(time), color = colors.onSurfaceVariant, maxLines = 1)
     }
     if (inline) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.sm)) {

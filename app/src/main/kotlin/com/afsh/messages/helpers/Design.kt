@@ -6,9 +6,9 @@ import android.util.TypedValue
 import androidx.annotation.DimenRes
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.graphics.ColorUtils
-import org.fossify.commons.extensions.getProperBackgroundColor
-import org.fossify.commons.extensions.getProperTextColor
-import org.fossify.commons.extensions.adjustAlpha
+import com.afsh.commons.extensions.getProperBackgroundColor
+import com.afsh.commons.extensions.getProperTextColor
+import com.afsh.commons.extensions.adjustAlpha
 import com.afsh.messages.R
 import com.afsh.messages.ui.afshColorScheme
 import com.afsh.messages.ui.afshDark

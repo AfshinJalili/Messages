@@ -73,7 +73,7 @@ fun ContactCardScreen(
             ) {
                 cards.forEach { card ->
                     IdentityCard(
-                        name = card.name.ifEmpty { stringResource(org.fossify.commons.R.string.unknown) },
+                        name = card.name.ifEmpty { stringResource(com.afsh.commons.R.string.unknown) },
                         detail = state.source,
                         avatarSize = ContactAvatarSize,
                     )

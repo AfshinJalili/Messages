@@ -21,6 +21,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -43,15 +45,17 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import org.fossify.commons.extensions.getTimeFormat
+import com.afsh.commons.extensions.getTimeFormat
 import com.afsh.messages.R
 import com.afsh.messages.ui.components.AfshButton
 import com.afsh.messages.ui.components.AfshDatePickerDialog
 import com.afsh.messages.ui.components.AfshDialog
 import com.afsh.messages.ui.components.DialogConfirm
+import com.afsh.messages.ui.components.PageContentPadding
 import com.afsh.messages.ui.components.PageScaffold
 import com.afsh.messages.ui.components.SectionHeading
 import com.afsh.messages.ui.components.TextFieldSlab
@@ -101,7 +105,7 @@ fun SendLaterScreen(
         Column(
             Modifier
                 .verticalScroll(rememberScrollState())
-                .padding(start = Afsh.spacing.xl, top = Afsh.spacing.xl, end = Afsh.spacing.xl, bottom = Afsh.spacing.xxl),
+                .padding(PageContentPadding),
             verticalArrangement = Arrangement.spacedBy(Afsh.spacing.md),
         ) {
             if (target.text.isNotEmpty()) {
@@ -132,16 +136,18 @@ fun SendLaterScreen(
 @Composable
 private fun MessagePreview(target: ScheduleTarget) {
     val colors = MaterialTheme.colorScheme
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .clip(MaterialTheme.shapes.medium)
-            .background(colors.surfaceContainer)
-            .padding(Afsh.spacing.lg),
-        verticalArrangement = Arrangement.spacedBy(Afsh.spacing.sm),
+    Card(
+        Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.medium,
+        colors = CardDefaults.cardColors(containerColor = colors.surfaceContainer, contentColor = colors.onSurface),
     ) {
-        Text(target.text, style = MaterialTheme.typography.bodyLarge.forUserText(target.text), color = colors.onSurface)
-        Text(target.recipient, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+        Column(
+            Modifier.padding(Afsh.spacing.lg),
+            verticalArrangement = Arrangement.spacedBy(Afsh.spacing.sm),
+        ) {
+            Text(target.text, style = MaterialTheme.typography.bodyLarge.forUserText(target.text), color = colors.onSurface)
+            Text(target.recipient, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+        }
     }
 }
 
@@ -160,33 +166,35 @@ private fun DateChoice(millis: Long, now: Long, onChange: (Long) -> Unit) {
         }
     }
     val selectedIndex = days.indexOfFirst { it.sameDay(millis) }
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .clip(MaterialTheme.shapes.medium)
-            .background(colors.surfaceContainer)
-            .padding(Afsh.spacing.lg),
-        verticalArrangement = Arrangement.spacedBy(Afsh.spacing.md),
+    Card(
+        Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.medium,
+        colors = CardDefaults.cardColors(containerColor = colors.surfaceContainer, contentColor = colors.onSurface),
     ) {
-        Text(
-            DateFormat.format("LLLL yyyy", millis).toString(),
-            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
-            color = colors.onSurface,
-            modifier = Modifier.semantics { heading() },
-        )
-        val listState = rememberLazyListState(initialFirstVisibleItemIndex = selectedIndex.coerceAtLeast(0))
-        LazyRow(Modifier.selectableGroup(), state = listState, horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.sm)) {
-            items(days, key = { it.timeInMillis / MILLIS_PER_MINUTE }) { day ->
-                DateChip(DateFormat.format("EEE d", day).toString(), selected = day.sameDay(millis)) {
-                    onChange(withDate(millis, day))
+        Column(
+            Modifier.padding(Afsh.spacing.lg),
+            verticalArrangement = Arrangement.spacedBy(Afsh.spacing.md),
+        ) {
+            Text(
+                DateFormat.format("LLLL yyyy", millis).toString(),
+                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                color = colors.onSurface,
+                modifier = Modifier.semantics { heading() },
+            )
+            val listState = rememberLazyListState(initialFirstVisibleItemIndex = selectedIndex.coerceAtLeast(0))
+            LazyRow(Modifier.selectableGroup(), state = listState, horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.sm)) {
+                items(days, key = { it.timeInMillis / MILLIS_PER_MINUTE }) { day ->
+                    DateChip(DateFormat.format("EEE d", day).toString(), selected = day.sameDay(millis)) {
+                        onChange(withDate(millis, day))
+                    }
                 }
-            }
-            item(key = "other") {
-                val other = selectedIndex < 0
-                DateChip(
-                    if (other) DateFormat.format("d MMM", millis).toString() else stringResource(R.string.other_date),
-                    selected = other,
-                ) { calendarOpen = true }
+                item(key = "other") {
+                    val other = selectedIndex < 0
+                    DateChip(
+                        if (other) DateFormat.format("d MMM", millis).toString() else stringResource(R.string.other_date),
+                        selected = other,
+                    ) { calendarOpen = true }
+                }
             }
         }
     }
@@ -214,9 +222,9 @@ private fun DateChoice(millis: Long, now: Long, onChange: (Long) -> Unit) {
         AfshDatePickerDialog(
             otherDate,
             onDismiss = { calendarOpen = false },
-            dismissLabel = stringResource(org.fossify.commons.R.string.cancel),
+            dismissLabel = stringResource(com.afsh.commons.R.string.cancel),
             confirm = DialogConfirm(
-                stringResource(org.fossify.commons.R.string.ok),
+                stringResource(com.afsh.commons.R.string.ok),
                 pick,
                 enabled = pickerState.selectedDateMillis != null,
             ),
@@ -261,18 +269,19 @@ private fun TimeChoice(millis: Long, onChange: (Long) -> Unit) {
     var clockOpen by rememberSaveable { mutableStateOf(false) }
     val is24Hour = remember(context) { context.getTimeFormat().contains('H') }
     val changeTime = stringResource(R.string.change_time)
-    Column(
-        Modifier
+    Card(
+        onClick = { clockOpen = true },
+        modifier = Modifier
             .fillMaxWidth()
-            .clip(MaterialTheme.shapes.medium)
-            .background(colors.surfaceContainer)
-            .clickable(role = Role.Button, onClickLabel = changeTime) { clockOpen = true }
-            .padding(Afsh.spacing.lg),
+            .semantics { onClick(label = changeTime, action = null) },
+        shape = MaterialTheme.shapes.medium,
+        colors = CardDefaults.cardColors(containerColor = colors.surfaceContainer, contentColor = colors.onSurface),
     ) {
         Text(
             DateFormat.format(context.getTimeFormat(), millis).toString(),
             style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.ExtraBold),
             color = colors.onSurface,
+            modifier = Modifier.padding(Afsh.spacing.lg),
         )
     }
     if (clockOpen) {
@@ -285,8 +294,8 @@ private fun TimeChoice(millis: Long, onChange: (Long) -> Unit) {
         AfshDialog(
             changeTime,
             onDismiss = { clockOpen = false },
-            dismissLabel = stringResource(org.fossify.commons.R.string.cancel),
-            confirm = DialogConfirm(stringResource(org.fossify.commons.R.string.ok), {
+            dismissLabel = stringResource(com.afsh.commons.R.string.cancel),
+            confirm = DialogConfirm(stringResource(com.afsh.commons.R.string.ok), {
                 clockOpen = false
                 onChange(
                     calendar.apply {
@@ -336,25 +345,32 @@ fun ScheduledMessageScreen(
         Column(
             Modifier
                 .verticalScroll(rememberScrollState())
-                .padding(start = Afsh.spacing.xl, top = Afsh.spacing.xl, end = Afsh.spacing.xl, bottom = Afsh.spacing.xxl),
+                .padding(PageContentPadding),
             verticalArrangement = Arrangement.spacedBy(Afsh.spacing.md),
         ) {
             val changeTime = stringResource(R.string.change_time)
-            Column(
-                Modifier
+            Card(
+                onClick = { onEvent(ScheduledEvent.ChangeTime) },
+                modifier = Modifier
                     .fillMaxWidth()
-                    .clip(MaterialTheme.shapes.medium)
-                    .background(colors.secondaryContainer)
-                    .clickable(role = Role.Button, onClickLabel = changeTime) { onEvent(ScheduledEvent.ChangeTime) }
-                    .padding(horizontal = Afsh.spacing.lg, vertical = Afsh.spacing.md),
-                verticalArrangement = Arrangement.spacedBy(Afsh.spacing.xs),
+                    .semantics { onClick(label = changeTime, action = null) },
+                shape = MaterialTheme.shapes.medium,
+                colors = CardDefaults.cardColors(
+                    containerColor = colors.secondaryContainer,
+                    contentColor = colors.onSecondaryContainer,
+                ),
             ) {
-                Text(
-                    remember(millis) { upcomingDayAndTime(context, millis) },
-                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.ExtraBold),
-                    color = colors.onSecondaryContainer,
-                )
-                Text(target.recipient, style = MaterialTheme.typography.bodySmall, color = Afsh.colors.onSecondaryContainerVariant)
+                Column(
+                    Modifier.padding(horizontal = Afsh.spacing.lg, vertical = Afsh.spacing.md),
+                    verticalArrangement = Arrangement.spacedBy(Afsh.spacing.xs),
+                ) {
+                    Text(
+                        remember(millis) { upcomingDayAndTime(context, millis) },
+                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.ExtraBold),
+                        color = colors.onSecondaryContainer,
+                    )
+                    Text(target.recipient, style = MaterialTheme.typography.bodySmall, color = Afsh.colors.onSecondaryContainerVariant)
+                }
             }
             TextFieldSlab(
                 value = text,

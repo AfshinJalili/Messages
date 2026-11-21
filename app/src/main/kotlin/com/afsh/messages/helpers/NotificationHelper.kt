@@ -14,9 +14,9 @@ import android.media.RingtoneManager
 import androidx.core.app.NotificationCompat
 import androidx.core.app.RemoteInput
 import androidx.core.app.Person
-import org.fossify.commons.extensions.notificationManager
-import org.fossify.commons.helpers.SimpleContactsHelper
-import org.fossify.commons.helpers.ensureBackgroundThread
+import com.afsh.commons.extensions.notificationManager
+import com.afsh.commons.helpers.SimpleContactsHelper
+import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.messages.R
 import com.afsh.messages.activities.ThreadActivity
 import com.afsh.messages.extensions.config
@@ -187,7 +187,7 @@ class NotificationHelper(private val context: Context) {
         if (isNoReplySms) {
             builder.addAction(
                 AfshIcon.Delete.resource,
-                context.getString(org.fossify.commons.R.string.delete),
+                context.getString(com.afsh.commons.R.string.delete),
                 deleteSmsPendingIntent
             ).setChannelId(notificationChannelId)
         }

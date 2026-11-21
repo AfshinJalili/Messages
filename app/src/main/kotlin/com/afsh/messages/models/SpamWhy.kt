@@ -13,7 +13,7 @@ import com.afsh.messages.helpers.FilterVerdict
 import com.afsh.messages.helpers.RuleBasedFilter
 import com.afsh.messages.helpers.containsNumber
 import com.afsh.messages.helpers.keywordMatches
-import org.fossify.commons.extensions.isNumberBlocked
+import com.afsh.commons.extensions.isNumberBlocked
 
 /**
  * Why a message is in Spam: the rule as words, and where in the body it matched. [ranges] are

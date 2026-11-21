@@ -3,8 +3,8 @@ package com.afsh.messages.helpers
 import android.content.Context
 import android.provider.BlockedNumberContract
 import com.afsh.messages.R
-import org.fossify.commons.extensions.addBlockedNumber
-import org.fossify.commons.extensions.toast
+import com.afsh.commons.extensions.addBlockedNumber
+import com.afsh.commons.extensions.toast
 
 /**
  * Writes numbers to Android's [BlockedNumberContract] block list ("Block on this phone").

@@ -2,6 +2,7 @@ package com.afsh.messages.ui.message
 
 import androidx.compose.ui.text.style.TextDirection
 import com.afsh.messages.ui.forUserText
+import com.afsh.messages.ui.withNumberOrder
 import android.os.Bundle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -139,7 +140,7 @@ fun SelectTextScreen(sender: String, body: String, onBack: () -> Unit, onCopy: (
     val selection = value.selection
     val selected = if (selection.collapsed) "" else body.substring(selection.min, selection.max)
     PageScaffold(
-        title = stringResource(org.fossify.commons.R.string.select_text),
+        title = stringResource(com.afsh.commons.R.string.select_text),
         subtitle = stringResource(R.string.select_text_subtitle),
         onBack = onBack,
         modifier = modifier,
@@ -158,7 +159,7 @@ fun SelectTextScreen(sender: String, body: String, onBack: () -> Unit, onCopy: (
                     .padding(horizontal = Afsh.spacing.lg, vertical = Afsh.spacing.xl),
                 verticalArrangement = Arrangement.spacedBy(Afsh.spacing.sm),
             ) {
-                Text(sender, style = MaterialTheme.typography.labelMedium.copy(textDirection = TextDirection.Content), color = colors.onSurfaceVariant)
+                Text(sender, style = MaterialTheme.typography.labelMedium.copy(textDirection = TextDirection.Content).withNumberOrder(sender), color = colors.onSurfaceVariant)
                 CompositionLocalProvider(
                     LocalTextSelectionColors provides TextSelectionColors(colors.primary, colors.secondaryContainer),
                 ) {

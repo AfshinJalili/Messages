@@ -3,8 +3,8 @@ package com.afsh.messages.receivers
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import org.fossify.commons.extensions.notificationManager
-import org.fossify.commons.helpers.ensureBackgroundThread
+import com.afsh.commons.extensions.notificationManager
+import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.messages.extensions.deleteMessage
 import com.afsh.messages.extensions.updateLastConversationMessage
 import com.afsh.messages.helpers.IS_MMS

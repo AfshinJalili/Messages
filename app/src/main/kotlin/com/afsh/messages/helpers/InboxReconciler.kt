@@ -2,10 +2,10 @@ package com.afsh.messages.helpers
 
 import com.afsh.messages.extensions.getMessagesDB
 import android.content.Context
-import org.fossify.commons.extensions.getMyContactsCursor
-import org.fossify.commons.extensions.showErrorToast
-import org.fossify.commons.helpers.MyContactsContentProvider
-import org.fossify.commons.helpers.ensureBackgroundThread
+import com.afsh.commons.extensions.getMyContactsCursor
+import com.afsh.commons.extensions.showErrorToast
+import com.afsh.commons.helpers.MyContactsContentProvider
+import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.messages.extensions.clearExpiredScheduledMessages
 import com.afsh.messages.extensions.config
 import com.afsh.messages.extensions.conversationsDB

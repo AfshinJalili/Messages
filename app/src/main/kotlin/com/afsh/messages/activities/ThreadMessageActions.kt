@@ -1,9 +1,9 @@
 package com.afsh.messages.activities
 
 import android.content.Intent
-import org.fossify.commons.extensions.copyToClipboard
-import org.fossify.commons.extensions.getTimeFormat
-import org.fossify.commons.helpers.ensureBackgroundThread
+import com.afsh.commons.extensions.copyToClipboard
+import com.afsh.commons.extensions.getTimeFormat
+import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.messages.R
 import com.afsh.messages.extensions.config
 import com.afsh.messages.models.Message
@@ -41,7 +41,7 @@ internal fun SimpleActivity.confirmDeleteMessages(
             if (toRecycleBin) R.plurals.delete_messages_to_bin_text else R.plurals.delete_messages_forever_text,
             count,
         ),
-        confirmLabel = getString(if (toRecycleBin) org.fossify.commons.R.string.delete else R.string.delete_forever),
+        confirmLabel = getString(if (toRecycleBin) com.afsh.commons.R.string.delete else R.string.delete_forever),
         destructive = !toRecycleBin,
     ) {
         ensureBackgroundThread { delete(messages, toRecycleBin) }

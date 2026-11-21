@@ -4,6 +4,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.imePadding
 import com.afsh.messages.ui.search.SearchContent
 import com.afsh.messages.ui.search.SearchInput
@@ -52,7 +53,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -85,7 +85,6 @@ import com.afsh.messages.R
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.runtime.derivedStateOf
 import kotlin.math.roundToInt
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.graphics.TransformOrigin
@@ -93,6 +92,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.layout.Layout
+import com.afsh.messages.ui.components.fadingScrollEdges
 import com.afsh.messages.ui.components.FloatingButton
 import com.afsh.messages.ui.components.ImportNotice
 import com.afsh.messages.ui.components.TabSwitch
@@ -106,6 +106,9 @@ import com.afsh.messages.ui.components.SwipeableRow
 import com.afsh.messages.ui.components.TopDestination
 import com.afsh.messages.ui.components.BottomBarSwitch
 import com.afsh.messages.ui.components.AfshIcon
+import com.afsh.messages.ui.components.AfshSnackbarHost
+import com.afsh.messages.ui.components.EmptyState
+import com.afsh.messages.ui.components.fieldMinHeight
 import com.afsh.messages.ui.components.BarAction
 import com.afsh.messages.ui.components.SelectionBar
 import com.afsh.messages.ui.components.actionLabel
@@ -126,8 +129,6 @@ private val FabClearance = 88.dp
 private const val COMPACT_HEIGHT_DP = 480
 private const val EXPANDED_WIDTH_DP = 600
 
-// Both controls share a minimum that grows with the text scale.
-private val BandControlHeight = 56.dp
 private const val BandTitle = "band-title"
 private const val BandBody = "band-body"
 private const val BandTitleCollapsedScale = 25f / 31f
@@ -176,7 +177,7 @@ fun InboxScreen(
         containerColor = MaterialTheme.colorScheme.surface,
         // With no bottom bar, the FAB, snackbar and list tail must clear the navigation bar themselves.
         contentWindowInsets = if (showRail) WindowInsets.navigationBars else WindowInsets(0),
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { AfshSnackbarHost(snackbarHostState) },
         floatingActionButton = {
             if (!state.selecting && selectedTab == TopDestination.INBOX && !search.open) {
                 NewMessageButton(expanded = !collapsed, onClick = onNewMessage)
@@ -292,7 +293,14 @@ private fun InboxList(
         when {
             // The import notice already shows progress, so a second bar would only repeat it.
             state.loading -> if (state.importProgress == null) item(key = "loading") { LoadingState() }
-            state.rows.isEmpty() -> item(key = "empty") { EmptyState(state.filter) }
+            state.rows.isEmpty() -> item(key = "empty") {
+                EmptyState(
+                    icon = if (state.filter == InboxFilter.UNREAD) AfshIcon.CheckAll else AfshIcon.Chat,
+                    title = stringResource(state.filter.emptyTitle()),
+                    text = stringResource(R.string.inbox_empty_text).takeIf { state.filter == InboxFilter.ALL },
+                    modifier = Modifier.padding(Afsh.spacing.xl),
+                )
+            }
             else -> sections.forEach { (section, rows) ->
                 item(key = "section-${section.name}", contentType = "section") {
                     SectionHeader(section, Modifier.widthIn(max = 640.dp).fillMaxWidth().then(listItem()))
@@ -467,7 +475,7 @@ private fun StaticBar(
     ) {
         if (state.selecting) {
             IconButton(onClick = onClearSelection) {
-                Icon(AfshIcon.Close.painter(), stringResource(org.fossify.commons.R.string.close), tint = Afsh.colors.header.content)
+                Icon(AfshIcon.Close.painter(), stringResource(com.afsh.commons.R.string.close), tint = Afsh.colors.header.content)
             }
         }
         Text(
@@ -482,7 +490,7 @@ private fun StaticBar(
         )
         if (state.selecting) {
             TextButton(onClick = onSelectAll) {
-                Text(stringResource(org.fossify.commons.R.string.select_all), style = MaterialTheme.typography.labelMedium, color = Afsh.colors.header.content)
+                Text(stringResource(com.afsh.commons.R.string.select_all), style = MaterialTheme.typography.labelMedium, color = Afsh.colors.header.content)
             }
         } else {
             IconButton(onClick = onSearch) {
@@ -499,9 +507,10 @@ private fun SearchField(onClick: () -> Unit) {
         onClick = onClick,
         shape = MaterialTheme.shapes.medium,
         color = colors.surfaceContainer,
+        border = BorderStroke(1.dp, colors.secondaryContainer),
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = BandControlHeight * LocalDensity.current.fontScale.coerceAtLeast(1f)),
+            .heightIn(min = fieldMinHeight()),
     ) {
         Row(
             Modifier.padding(horizontal = Afsh.spacing.lg),
@@ -525,19 +534,19 @@ private fun SelectionControls(onSelectAll: () -> Unit, onClearSelection: () -> U
     Row(
         Modifier
             .fillMaxWidth()
-            .heightIn(min = BandControlHeight * LocalDensity.current.fontScale.coerceAtLeast(1f)),
+            .heightIn(min = fieldMinHeight()),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         IconButton(onClick = onClearSelection) {
             Icon(
                 AfshIcon.Close.painter(),
-                contentDescription = stringResource(org.fossify.commons.R.string.close),
+                contentDescription = stringResource(com.afsh.commons.R.string.close),
                 tint = onBand,
             )
         }
         Box(Modifier.weight(1f))
         TextButton(onClick = onSelectAll) {
-            Text(stringResource(org.fossify.commons.R.string.select_all), style = MaterialTheme.typography.labelMedium, color = onBand)
+            Text(stringResource(com.afsh.commons.R.string.select_all), style = MaterialTheme.typography.labelMedium, color = onBand)
         }
     }
 }
@@ -545,10 +554,12 @@ private fun SelectionControls(onSelectAll: () -> Unit, onClearSelection: () -> U
 @Composable
 private fun FilterRow(current: InboxFilter, onFilter: (InboxFilter) -> Unit) {
     val colors = MaterialTheme.colorScheme
+    val scroll = rememberScrollState()
     Row(
         Modifier
             .fillMaxWidth()
-            .horizontalScroll(rememberScrollState())
+            .fadingScrollEdges(scroll)
+            .horizontalScroll(scroll)
             .padding(start = Afsh.spacing.xl, end = Afsh.spacing.xl, top = Afsh.spacing.xl, bottom = Afsh.spacing.xs)
             .selectableGroup(),
         horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.sm),
@@ -598,7 +609,7 @@ private fun SwipeAction.gesture(): SwipeGesture? = when (this) {
 @Composable
 private fun rowActions(row: InboxRow, archiveAvailable: Boolean, onAction: (SwipeAction) -> Unit): List<CustomAccessibilityAction> {
     val archive = stringResource(R.string.archive)
-    val delete = stringResource(org.fossify.commons.R.string.delete)
+    val delete = stringResource(com.afsh.commons.R.string.delete)
     val mute = stringResource(if (row.muted) R.string.unmute_conversation else R.string.mute_conversation)
     return listOfNotNull(
         CustomAccessibilityAction(archive) { onAction(SwipeAction.ARCHIVE); true }.takeIf { archiveAvailable },
@@ -650,35 +661,6 @@ private fun LoadingState() {
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-    }
-}
-
-@Composable
-private fun EmptyState(filter: InboxFilter) {
-    val colors = MaterialTheme.colorScheme
-    Column(
-        Modifier
-            .padding(Afsh.spacing.xl)
-            .fillMaxWidth()
-            .clip(MaterialTheme.shapes.medium)
-            .background(colors.secondaryContainer)
-            .padding(Afsh.spacing.lg),
-        verticalArrangement = Arrangement.spacedBy(Afsh.spacing.sm),
-    ) {
-        Icon(
-            (if (filter == InboxFilter.UNREAD) AfshIcon.CheckAll else AfshIcon.Chat).painter(),
-            contentDescription = null,
-            tint = colors.primary,
-            modifier = Modifier.size(34.dp),
-        )
-        Text(
-            stringResource(filter.emptyTitle()),
-            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
-            color = colors.onSecondaryContainer,
-        )
-        if (filter == InboxFilter.ALL) {
-            Text(stringResource(R.string.inbox_empty_text), style = MaterialTheme.typography.bodyMedium, color = colors.onSecondaryContainer)
-        }
     }
 }
 

@@ -2,11 +2,11 @@ package com.afsh.messages.helpers
 
 import android.content.Context
 import androidx.core.content.ContextCompat
-import org.fossify.commons.extensions.trimToComparableNumber
-import org.fossify.commons.helpers.BACKGROUND_COLOR
-import org.fossify.commons.helpers.BaseConfig
-import org.fossify.commons.helpers.IS_SYSTEM_THEME_ENABLED
-import org.fossify.commons.helpers.TEXT_COLOR
+import com.afsh.commons.extensions.trimToComparableNumber
+import com.afsh.commons.helpers.BACKGROUND_COLOR
+import com.afsh.commons.helpers.BaseConfig
+import com.afsh.commons.helpers.IS_SYSTEM_THEME_ENABLED
+import com.afsh.commons.helpers.TEXT_COLOR
 import com.afsh.messages.R
 import com.afsh.messages.extensions.getDefaultKeyboardHeight
 import com.afsh.messages.models.Conversation
@@ -25,10 +25,10 @@ class Config(context: Context) : BaseConfig(context) {
             if (!prefs.contains(IS_SYSTEM_THEME_ENABLED)) {
                 isSystemThemeEnabled = true
                 if (!prefs.contains(BACKGROUND_COLOR)) {
-                    backgroundColor = ContextCompat.getColor(context, org.fossify.commons.R.color.m3_surface)
+                    backgroundColor = ContextCompat.getColor(context, com.afsh.commons.R.color.m3_surface)
                 }
                 if (!prefs.contains(TEXT_COLOR)) {
-                    textColor = ContextCompat.getColor(context, org.fossify.commons.R.color.m3_on_surface)
+                    textColor = ContextCompat.getColor(context, com.afsh.commons.R.color.m3_on_surface)
                 }
             }
             prefs.edit().putBoolean(THEME_DEFAULTS_APPLIED, true).apply()
