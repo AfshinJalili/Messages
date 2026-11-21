@@ -6,6 +6,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldColors
 import androidx.compose.material3.TextFieldDefaults
@@ -20,12 +21,34 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.afsh.messages.ui.Afsh
+import com.afsh.messages.ui.lineHeightSp
 
 private val FieldMin = 56.dp
 
+/**
+ * Natural one-line [OutlinedTextField] height: the [bodyLarge][MaterialTheme.typography] line box
+ * plus Material's unlabeled vertical content padding, never below the 56 dp touch floor.
+ *
+ * Pure so JVM tests can pin the math without Compose. Do not scale [verticalPadding] by font scale —
+ * only the line box grows with text size; multiplying the whole former 56.dp floor left multi-line
+ * fields with dead space under a top-aligned cursor.
+ */
+fun fieldMinHeightFor(lineHeight: Dp, verticalPadding: Dp, floor: Dp = FieldMin): Dp =
+    maxOf(floor, lineHeight + verticalPadding)
+
 /** One line of a field at the current text size. A button beside a field uses this for its height. */
 @Composable
-fun fieldMinHeight(): Dp = FieldMin * LocalDensity.current.fontScale.coerceAtLeast(1f)
+fun fieldMinHeight(): Dp {
+    val lineHeight = with(LocalDensity.current) {
+        MaterialTheme.typography.bodyLarge.lineHeightSp().toDp()
+    }
+    // Unlabeled Material default: 16.dp top + 16.dp bottom. Prefer the API over a 32.dp literal.
+    val padding = OutlinedTextFieldDefaults.contentPadding()
+    return fieldMinHeightFor(
+        lineHeight = lineHeight,
+        verticalPadding = padding.calculateTopPadding() + padding.calculateBottomPadding(),
+    )
+}
 
 /**
  * Component / text field, on the stock Material 3 [OutlinedTextField]: a filled slab in the medium shape.

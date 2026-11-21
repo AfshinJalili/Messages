@@ -99,6 +99,7 @@ import com.afsh.messages.helpers.attachmentIcon
 import com.afsh.messages.models.AttachmentSelection
 import com.afsh.messages.ui.components.SendButton
 import com.afsh.messages.ui.forContent
+import com.afsh.messages.ui.lineHeightSp
 import com.afsh.messages.ui.rememberBitmap
 import com.afsh.messages.ui.withContentFonts
 import java.util.Locale
@@ -226,6 +227,20 @@ private fun EntryField(
     }
     val hint = if (firstName.isNotEmpty()) stringResource(R.string.composer_hint_name, firstName) else stringResource(R.string.composer_hint)
     val send = { if (composer.hasContent(text.text)) onEvent(ComposerEvent.Send) }
+    val bodyLarge = MaterialTheme.typography.bodyLarge
+    // Empty: keep the UI locale's bodyLarge so the cursor and placeholder share one line box.
+    // Typed: script fonts via forContent, but never shrink leading below bodyLarge (English in a Persian UI
+    // would otherwise drop 1.7.em → 1.45.em and reopen bottom slack against fieldMinHeight).
+    val fieldStyle = if (text.text.isEmpty()) {
+        bodyLarge
+    } else {
+        val content = bodyLarge.forContent(text.text)
+        if (content.lineHeightSp().value < bodyLarge.lineHeightSp().value) {
+            content.copy(lineHeight = bodyLarge.lineHeight)
+        } else {
+            content
+        }
+    }
     OutlinedTextField(
         value = text,
         onValueChange = onTextChange,
@@ -241,11 +256,11 @@ private fun EntryField(
             .testTag(COMPOSER_FIELD_TAG),
         // Empty, the cursor starts on the app language's side; with text, each paragraph follows its first letter and
         // digits alone read left to right, as the sent bubble will.
-        textStyle = MaterialTheme.typography.bodyLarge.forContent(text.text).copy(
+        textStyle = fieldStyle.copy(
             textDirection = if (text.text.isEmpty()) TextDirection.Content else TextDirection.ContentOrLtr,
         ),
         // The placeholder belongs to the edit box's own node, and TalkBack reads it only while empty.
-        placeholder = { Text(hint, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+        placeholder = { Text(hint, style = bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis) },
         visualTransformation = remember {
             VisualTransformation { TransformedText(it.withContentFonts(), OffsetMapping.Identity) }
         },

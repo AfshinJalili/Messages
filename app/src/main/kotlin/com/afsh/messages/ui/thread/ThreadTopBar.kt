@@ -53,7 +53,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -67,6 +66,7 @@ import com.afsh.messages.ui.components.actionLabel
 import com.afsh.messages.ui.components.afshFieldColors
 import com.afsh.messages.ui.components.fieldMinHeight
 import com.afsh.messages.ui.components.selectionTitle
+import com.afsh.messages.ui.lineHeightSp
 
 const val THREAD_TOP_BAR_TAG = "thread_top_bar"
 
@@ -178,13 +178,6 @@ fun ThreadTopBar(state: ThreadUiState, onEvent: (ThreadEvent) -> Unit, modifier:
         ),
         modifier = modifier.testTag(THREAD_TOP_BAR_TAG),
     )
-}
-
-/** Line height in sp: the theme sets it in em, relative to the font size. */
-private fun TextStyle.lineHeightSp() = when {
-    lineHeight.isEm -> fontSize * lineHeight.value
-    lineHeight.isSp -> lineHeight
-    else -> fontSize
 }
 
 /** The label sits on the 48 dp button, not the 24 dp icon, so accessibility tools see one labelled target. */

@@ -31,9 +31,11 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
@@ -178,6 +180,16 @@ internal fun TextStyle.forContent(text: CharSequence): TextStyle =
     copy(fontFamily = body, lineHeight = if (persianRun.containsMatchIn(text)) 1.7.em else 1.45.em)
 
 /**
+ * Line height as an absolute sp value. The theme stores leading in em; never call [TextUnit.toDp]
+ * on an em [lineHeight] — multiply by [fontSize] first.
+ */
+internal fun TextStyle.lineHeightSp(): TextUnit = when {
+    lineHeight.isEm -> fontSize * lineHeight.value
+    lineHeight.isSp -> lineHeight
+    else -> fontSize
+}
+
+/**
  * What people wrote (a message, a name) reads in its own direction, not the interface's: English
  * text in the Persian interface keeps its full stop at the end.
  */
@@ -199,6 +211,11 @@ private fun typography(rtl: Boolean): Typography {
     val displayFamily = if (rtl) persian else display
     val bodyFamily = if (rtl) persian else body
     val leading = if (rtl) 1.7.em else 1.45.em
+    // Center extra leading so Vazirmatn's descent (and Atkinson's) does not sit entirely below the glyph.
+    val centeredLeading = LineHeightStyle(
+        alignment = LineHeightStyle.Alignment.Center,
+        trim = LineHeightStyle.Trim.None,
+    )
     fun style(family: FontFamily, size: Int, weight: FontWeight) =
         TextStyle(fontFamily = family, fontSize = size.sp, fontWeight = weight, lineHeight = leading)
     return Typography(
@@ -207,7 +224,8 @@ private fun typography(rtl: Boolean): Typography {
         headlineSmall = style(displayFamily, 25, FontWeight.Normal).copy(lineHeight = 1.3.em),
         titleLarge = style(bodyFamily, 20, FontWeight.Bold),
         titleMedium = style(bodyFamily, 18, FontWeight.Bold),
-        bodyLarge = style(bodyFamily, 18, FontWeight.Normal),
+        // Composer / fields read bodyLarge; keep the style focused here so other roles stay screenshot-stable.
+        bodyLarge = style(bodyFamily, 18, FontWeight.Normal).copy(lineHeightStyle = centeredLeading),
         bodyMedium = style(bodyFamily, 16, FontWeight.Normal),
         bodySmall = style(bodyFamily, 14, FontWeight.Normal),
         labelLarge = style(bodyFamily, 16, FontWeight.ExtraBold),
