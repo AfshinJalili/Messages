@@ -45,6 +45,8 @@ data class SpamPatterns(val groups: Map<SpamPatternGroup, List<String>>) {
         private const val DIGIT = "[0-9۰-۹٠-٩]"
         private const val ZWNJ = "[\\u200c ]?"
         private const val VS16 = "\\uFE0F?"
+        /** Common short-link and web TLDs; bare host with optional path, no scheme required. */
+        private const val TLD = "ir|io|com|net|me|ly|app|org|co|info|xyz|link|click|site|online|tv|cc|to"
 
         val DEFAULT = SpamPatterns(
             mapOf(
@@ -78,7 +80,7 @@ data class SpamPatterns(val groups: Map<SpamPatternGroup, List<String>>) {
                 SpamPatternGroup.LINKS to listOf(
                     "https?://",
                     "www\\.",
-                    "[\\w-]+\\.(ir|io|com|net|me|ly|app)/",
+                    "(?<![\\w.@])[\\w-]+\\.(?:$TLD)(?:/[\\w./-]*)?(?![\\w.])",
                 ),
                 SpamPatternGroup.MARKETING to listOf(
                     "مجانی",
@@ -95,6 +97,15 @@ data class SpamPatterns(val groups: Map<SpamPatternGroup, List<String>>) {
                     "تخفیف\\s*ویژه",
                     "تخفیف",
                     "جشنواره",
+                    "کنسرت",
+                    "اجرا",
+                    "تئاتر",
+                    "همایش",
+                    "بلیط",
+                    "بلیت",
+                    "خرید\\s*بلیط",
+                    "خرید\\s*بلیت",
+                    "خرید\\s*👇",
                     "کمپین",
                     "حراجی?",
                     "فروش\\s*ویژه",
@@ -123,6 +134,8 @@ data class SpamPatterns(val groups: Map<SpamPatternGroup, List<String>>) {
                     "🔥", "💥", "💰", "💸", "💵", "🛒", "📣", "📢", "⏰$VS16", "⏱$VS16",
                     // Food promo
                     "🍕", "🍔", "🍟", "🥤", "🍝", "🍰",
+                    // Bulk-layout marks normal people rarely use in texts
+                    "✅", "✔$VS16", "☑$VS16", "📍",
                 ),
                 SpamPatternGroup.PROMO_EMOJI_WEAK to listOf(
                     "😊", "😃", "😁", "😍", "😌", "☺$VS16", "❤$VS16", "💕", "🌸", "🌹",
@@ -152,6 +165,23 @@ data class SpamPatterns(val groups: Map<SpamPatternGroup, List<String>>) {
             null
         } catch (e: IllegalArgumentException) {
             e.message?.lineSequence()?.firstOrNull() ?: "invalid"
+        }
+    }
+}
+
+/**
+ * Length-preserving fold so pattern ranges still index the original body: Arabic/Persian digits
+ * to ASCII, Yeh/Kaf variants to Persian, ZWNJ to a space.
+ */
+fun normalizeSpamText(body: String): String = buildString(body.length) {
+    for (c in body) {
+        when (c) {
+            '\u064A', '\u0649' -> append('\u06CC') // Arabic Yeh / Alef Maqsura → Persian Yeh
+            '\u0643' -> append('\u06A9') // Arabic Kaf → Persian Kaf
+            in '\u06F0'..'\u06F9' -> append('0' + (c - '\u06F0')) // Persian digits
+            in '\u0660'..'\u0669' -> append('0' + (c - '\u0660')) // Arabic-Indic digits
+            '\u200c' -> append(' ') // ZWNJ → space
+            else -> append(c)
         }
     }
 }

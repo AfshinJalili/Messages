@@ -22,6 +22,19 @@ data class FilterResult(
 
 object RuleBasedFilter {
 
+    /**
+     * Signal weights used by [explain]: a marketing / event / CTA word is [WORD_WEIGHT], and a
+     * strong promo or layout emoji (🎉, ✅, 📍, …) is the same weight. Links and named senders are
+     * companions. One strong signal alone from a numeric sender stays in the inbox; one plus a
+     * companion, or two signals, goes to Spam. Opt-out lines such as «لغو11» are never a signal.
+     */
+    const val WORD_WEIGHT = 2
+    const val EMOJI_WEIGHT = 2
+    /** Block without a companion when total weight reaches this (e.g. one word + one emoji). */
+    const val BLOCK_WEIGHT = 3
+    /** With a link or named sender, this weight is enough (one marketing word or one strong emoji). */
+    const val BLOCK_WEIGHT_WITH_COMPANION = 2
+
     fun evaluate(context: Context, sender: String, body: String): FilterVerdict = explain(context, sender, body).verdict
 
     fun explain(context: Context, sender: String, body: String): FilterResult {
@@ -32,14 +45,15 @@ object RuleBasedFilter {
     /**
      * Ordered, high-precision first. A one-time code (a code word and a code) and transactional
      * bank/receipt language are always allowed: service SMS carry links and the mandatory "لغو11"
-     * line, which must not send them to Spam. Marketing is a score of distinct word and strong
-     * emoji signals, with a link or named sender as a companion — never an unsubscribe shortcut.
+     * line, which must not send them to Spam. Marketing scores word and strong-emoji weights
+     * equally, with a link or named sender as a companion — never an unsubscribe shortcut.
      */
     fun explain(patterns: SpamPatterns, sender: String, body: String): FilterResult {
         if (body.isBlank()) return FilterResult.NONE
+        val normalized = normalizeSpamText(body)
         val compiled = CompiledPatterns.of(patterns)
-        fun find(group: SpamPatternGroup) = compiled.find(group, body)
-        fun signals(group: SpamPatternGroup) = compiled.signalMatches(group, body)
+        fun find(group: SpamPatternGroup) = compiled.find(group, normalized)
+        fun signals(group: SpamPatternGroup) = compiled.signalMatches(group, normalized)
 
         val codeWords = find(SpamPatternGroup.CODE_WORDS)
         val codes = find(SpamPatternGroup.CODE)
@@ -54,13 +68,14 @@ object RuleBasedFilter {
 
         val marketing = signals(SpamPatternGroup.MARKETING)
         val strongEmoji = signals(SpamPatternGroup.PROMO_EMOJI)
-        val signalCount = marketing.size + strongEmoji.size
-        if (signalCount == 0) return FilterResult.NONE
+        if (marketing.isEmpty() && strongEmoji.isEmpty()) return FilterResult.NONE
 
+        val weight = marketing.size * WORD_WEIGHT + strongEmoji.size * EMOJI_WEIGHT
         val links = find(SpamPatternGroup.LINKS)
         val namedSender = isAlphaSender(sender)
         val companion = links.isNotEmpty() || namedSender
-        if (signalCount >= 2 || (signalCount >= 1 && companion)) {
+        val block = weight >= BLOCK_WEIGHT || (weight >= BLOCK_WEIGHT_WITH_COMPANION && companion)
+        if (block) {
             return FilterResult(
                 FilterVerdict.BLOCK,
                 FilterRule.MARKETING,

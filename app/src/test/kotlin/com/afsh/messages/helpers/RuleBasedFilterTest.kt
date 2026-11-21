@@ -106,6 +106,73 @@ class RuleBasedFilterTest {
     }
 
     @Test
+    fun `checkmark or pin with bare link is blocked`() {
+        val check = explain("09120000003", "✅8آذر\nIu4.ir/e")
+        assertEquals(FilterVerdict.BLOCK, check.verdict)
+        val pin = explain("09120000004", "📍اسپیناس\nIu4.ir/e")
+        assertEquals(FilterVerdict.BLOCK, pin.verdict)
+    }
+
+    @Test
+    fun `checkmark and pin together are blocked`() {
+        val result = explain("09120000005", "✅8آذر\n📍اسپیناس پالاس")
+        assertEquals(FilterVerdict.BLOCK, result.verdict)
+        assertEquals(FilterRule.MARKETING, result.rule)
+    }
+
+    @Test
+    fun `friend concert invite without link stays in inbox`() {
+        val result = explain("09121234567", "بریم کنسرت؟ ساعت ۸")
+        assertEquals(FilterVerdict.NO_VERDICT, result.verdict)
+    }
+
+    @Test
+    fun `Talischi concert promo blast is blocked`() {
+        val body = """
+            کنسرت علیرضا طلیسچی😍
+
+            ✅8آذر
+
+            📍اسپیناس پالاس
+
+            خرید👇
+            Iu4.ir/e
+
+            لغو 11
+        """.trimIndent()
+        val result = explain("30005", body)
+        assertEquals(FilterVerdict.BLOCK, result.verdict)
+        assertEquals(FilterRule.MARKETING, result.rule)
+        assertTrue(result.matches.any { it.group == SpamPatternGroup.MARKETING })
+        assertTrue(result.matches.any { it.group == SpamPatternGroup.LINKS })
+        assertTrue(result.matches.any { it.group == SpamPatternGroup.PROMO_EMOJI })
+    }
+
+    @Test
+    fun `event word plus bare short link is blocked`() {
+        val body = "کنسرت جدید\nIu4.ir/e"
+        val result = explain("09120000001", body)
+        assertEquals(FilterVerdict.BLOCK, result.verdict)
+        assertEquals(FilterRule.MARKETING, result.rule)
+    }
+
+    @Test
+    fun `خرید pointer with link is blocked`() {
+        val body = "بلیت موجود\nخرید👇\nbit.ly/x"
+        val result = explain("09120000002", body)
+        assertEquals(FilterVerdict.BLOCK, result.verdict)
+    }
+
+    @Test
+    fun `Arabic Yeh and Persian digits normalize before matching`() {
+        // ي = Arabic Yeh; ۴۵۶۷۸۹ Persian digits in an OTP that must still allow.
+        val body = "رمز يك‌بار مصرف: ۴۵۶۷۸۹\nلغو ۱۱"
+        val result = explain("BANK", body)
+        assertEquals(FilterVerdict.ALLOW, result.verdict)
+        assertEquals(FilterRule.ONE_TIME_CODE, result.rule)
+    }
+
+    @Test
     fun `weak smileys never block even with a marketing word from numeric sender`() {
         val body = "تخفیف 😊❤"
         val result = explain("09125556666", body)
@@ -152,9 +219,9 @@ class RuleBasedFilterTest {
     }
 
     @Test
-    fun `defaults have no unsubscribe group`() {
-        assertTrue(SpamPatternGroup.entries.none { it.key == "unsubscribe" })
-        assertTrue(SpamPatterns.DEFAULT.groups.keys.none { it.key == "unsubscribe" })
+    fun `defaults have no unsubscribe or opt-out group`() {
+        assertTrue(SpamPatternGroup.entries.none { it.key == "unsubscribe" || it.key == "opt_out" })
+        assertTrue(SpamPatterns.DEFAULT.groups.keys.none { it.key == "unsubscribe" || it.key == "opt_out" })
     }
 
     @Test
@@ -162,10 +229,13 @@ class RuleBasedFilterTest {
         val words = plainFilterLabels(SpamPatterns.DEFAULT[SpamPatternGroup.MARKETING])
         assertTrue(words.contains("تخفیف"))
         assertTrue(words.contains("جشنواره"))
+        assertTrue(words.contains("کنسرت"))
         assertTrue(words.none { it.contains("\\") || it.contains("(?:") })
         val emojis = plainFilterLabels(SpamPatterns.DEFAULT[SpamPatternGroup.PROMO_EMOJI])
         assertTrue(emojis.contains("🎉"))
         assertTrue(emojis.contains("🍕"))
         assertTrue(emojis.contains("🔥"))
+        assertTrue(emojis.contains("✅"))
+        assertTrue(emojis.contains("📍"))
     }
 }
