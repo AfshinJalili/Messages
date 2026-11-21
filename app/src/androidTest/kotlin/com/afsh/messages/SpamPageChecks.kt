@@ -15,14 +15,14 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
-import androidx.compose.ui.test.hasScrollToKeyAction
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollToKey
+import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.afsh.messages.models.SpamReviewMessage
@@ -34,6 +34,7 @@ import com.afsh.messages.ui.spam.AddRuleUiState
 import com.afsh.messages.ui.spam.BlockRulesEvent
 import com.afsh.messages.ui.spam.BlockRulesScreen
 import com.afsh.messages.ui.spam.BlockRulesUiState
+import com.afsh.messages.ui.spam.BlockedPhrasesScreen
 import com.afsh.messages.ui.spam.BlockedNumbersScreen
 import com.afsh.messages.ui.spam.BlockedNumbersUiState
 import com.afsh.messages.ui.spam.BlockedSender
@@ -120,7 +121,7 @@ class SpamPageChecks {
     }
 
     @Test
-    fun rulesToggleTheFilterAndRemoveAndAddPhrases() {
+    fun rulesToggleTheFilterAndOpenPhrases() {
         val events = mutableListOf<BlockRulesEvent>()
         var state by mutableStateOf(
             BlockRulesUiState(alwaysSpamCount = 3, phrases = listOf("Claim your reward", "Free prize")),
@@ -133,18 +134,54 @@ class SpamPageChecks {
         check(events.last() == BlockRulesEvent.SetFilter(false)) { "Events $events" }
         state = state.copy(filterEnabled = false)
         filter.assertIsOff()
+        compose.onNodeWithText(text(R.string.spam_feature_summary)).assertIsDisplayed()
+        compose.onNodeWithText(text(R.string.unknown_numbers_summary)).assertIsDisplayed()
 
+        compose.onNodeWithText(text(R.string.blocked_phrases)).performClick()
+        check(events.last() == BlockRulesEvent.OpenPhrases) { "Events $events" }
+    }
+
+    @Test
+    fun phrasesRemoveAndAdd() {
+        val events = mutableListOf<BlockRulesEvent>()
+        compose.setContent {
+            AfshTheme(dark = false) {
+                BlockedPhrasesScreen(
+                    listOf("Claim your reward", "Free prize"),
+                    settings,
+                    onBack = {},
+                    onAdd = { events += BlockRulesEvent.AddPhrase(it) },
+                    onEdit = { events += BlockRulesEvent.EditPhrase(it) },
+                    onRemove = { events += BlockRulesEvent.RemovePhrase(it) },
+                )
+            }
+        }
         compose.onNodeWithContentDescription(text(R.string.remove_phrase, "Free prize")).performClick()
         check(events.last() == BlockRulesEvent.RemovePhrase("Free prize")) { "Events $events" }
         compose.onNodeWithText("Claim your reward").performClick()
         check(events.last() == BlockRulesEvent.EditPhrase("Claim your reward")) { "Events $events" }
+        compose.onNode(hasSetTextAction()).performTextInput("limited offer")
+        compose.onNodeWithContentDescription(text(R.string.add_phrase)).performClick()
+        check(events.last() == BlockRulesEvent.AddPhrase("limited offer")) { "Events $events" }
+    }
 
-        // Filter rules grew (unknown-numbers, what-the-filter, patterns); the add row sits below
-        // the fold on a phone-height LazyColumn until scrolled into composition.
-        compose.onNode(hasScrollToKeyAction()).performScrollToKey("add")
-        compose.onNodeWithText(text(R.string.add_phrase_or_number)).performClick()
-        compose.onNodeWithText(text(R.string.block_a_number)).performClick()
-        check(events.last() == BlockRulesEvent.AddNumber) { "Events $events" }
+    @Test
+    fun phrasesEmptyStateShowsWhenNone() {
+        compose.setContent {
+            AfshTheme(dark = false) {
+                BlockedPhrasesScreen(
+                    emptyList(),
+                    settings,
+                    onBack = {},
+                    onAdd = {},
+                    onEdit = {},
+                    onRemove = {},
+                )
+            }
+        }
+        compose.onNodeWithText(text(R.string.no_blocked_phrases)).assertIsDisplayed()
+        compose.onNodeWithText(text(R.string.no_blocked_phrases_text)).assertIsDisplayed()
+        compose.onNodeWithContentDescription(text(R.string.add_phrase)).assertExists()
     }
 
     @Test

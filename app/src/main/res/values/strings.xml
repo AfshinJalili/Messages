@@ -74,7 +74,7 @@
     <string name="empty_archive">Delete all archived conversations</string>
     <string name="archived_conversations">Archive</string>
     <string name="archive">Archive</string>
-    <string name="no_archived_conversations">No archived conversations have been found</string>
+    <string name="no_archived_conversations">No archived conversations</string>
     <string name="empty_archive_confirmation">Are you sure you want to empty the archive? All archived conversations will be permanently lost.</string>
     <string name="keep_conversations_archived">Keep conversations archived</string>
     <!-- Recycle bin -->
@@ -320,7 +320,7 @@
     </plurals>
     <string name="block_on_phone_unavailable">This phone cannot block numbers.</string>
     <string name="clear_spam_title">Delete all spam?</string>
-    <string name="filter_rules">Filter rules</string>
+    <string name="filter_rules">Spam and blocking</string>
     <plurals name="blocked_senders">
         <item quantity="one">%d sender</item>
         <item quantity="other">%d senders</item>
@@ -335,18 +335,13 @@
         <item quantity="other">%d numbers</item>
     </plurals>
     <string name="filter_obvious_spam">Filter obvious spam</string>
-    <string name="filter_obvious_spam_off">Off</string>
-    <string name="filter_on_text">Looks for Persian marketing words and promo emojis. Two signals, or one signal plus a link or a named sender, send the message to Spam. One-time codes, bank and receipt texts, and people in your contacts are not filtered. Lines such as «لغو11» or unsubscribe are ignored.</string>
-    <string name="unknown_numbers">File messages from unknown numbers as spam</string>
-    <string name="unknown_numbers_text">Contacts are never filtered.</string>
+    <string name="spam_feature_summary">Marketing, blocked senders and phrases you choose stay in Spam, out of your inbox.</string>
+    <string name="unknown_numbers">Unknown numbers</string>
+    <string name="unknown_numbers_summary">Messages from numbers not in your contacts go to Spam.</string>
     <string name="always_spam_list">Always-spam senders</string>
     <string name="never_spam_list">Never-spam senders</string>
     <string name="android_blocked">Blocked on Android</string>
     <string name="android_blocked_text">Messages from these senders may never arrive on the phone.</string>
-    <string name="what_filter_looks_for">What the filter looks for</string>
-    <string name="what_filter_looks_for_card">Persian marketing words and promo emojis, as plain text</string>
-    <string name="what_filter_words">Marketing words</string>
-    <string name="what_filter_emojis">Promo emojis</string>
     <string name="spam_why_sender">you marked this sender as always spam</string>
     <string name="spam_why_android">blocked on Android</string>
     <string name="spam_why_unknown">unknown number</string>
@@ -357,13 +352,14 @@
     <string name="filter_senders">Senders</string>
     <string name="edit_phrase">Edit phrase</string>
     <string name="remove_phrase">Remove %s</string>
-    <string name="add_phrase_or_number">Add a phrase or number</string>
     <string name="block_a_phrase">Block a phrase</string>
     <string name="block_a_phrase_subtitle">Messages matching this phrase move to Spam</string>
     <string name="block_a_number">Block a number</string>
     <string name="block_a_number_subtitle">Messages from this sender move to Spam</string>
     <string name="no_blocked_numbers">No blocked numbers</string>
     <string name="no_blocked_numbers_text">Mark a sender as always spam or never spam from a conversation, block them on this phone, or add a number here.</string>
+    <string name="no_blocked_phrases">No blocked phrases</string>
+    <string name="no_blocked_phrases_text">Add a phrase so matching messages move to Spam.</string>
     <string name="phrase">Phrase</string>
     <string name="phone_number_label">Phone number or sender name</string>
     <string name="phrase_guidance">Matching is case-insensitive. Review filtered messages in Spam.</string>
@@ -402,7 +398,7 @@
     <string name="settings_writing_summary">Composer, MMS and delivery</string>
     <string name="settings_interactions">Interactions</string>
     <string name="settings_interactions_summary">Swipe actions and archive</string>
-    <string name="settings_filter_rules_summary">Numbers, phrases, local filter</string>
+    <string name="settings_filter_rules_summary">Filters, senders, phrases</string>
     <string name="settings_privacy">Privacy &amp; lock</string>
     <string name="settings_privacy_summary">App lock and stored data</string>
     <string name="settings_backup">Backup &amp; restore</string>
@@ -602,7 +598,7 @@
     <string name="enter_a_valid_number">Enter a valid phone number</string>
     <string name="enter_a_valid_number_text">Check the country code and digits, then try again.</string>
     <string name="edit_number">Edit number</string>
-    <string name="choose_recipient_first">Choose a recipient to write a message</string>
+    <string name="choose_recipient_first">Choose a recipient</string>
     <string name="cannot_reply_title">Replies aren’t possible</string>
     <plurals name="continue_with_people">
         <item quantity="one">Continue with %d person</item>

@@ -1,7 +1,6 @@
 package com.afsh.messages.ui.spam
 
 import androidx.annotation.StringRes
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -13,6 +12,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -37,18 +39,17 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextDirection
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import com.afsh.messages.R
 import com.afsh.messages.helpers.FilterResult
 import com.afsh.messages.helpers.FilterRule
 import com.afsh.messages.helpers.FilterVerdict
+import com.afsh.messages.helpers.RuleBasedFilter
 import com.afsh.messages.helpers.SpamPatternGroup
 import com.afsh.messages.helpers.SpamPatterns
-import com.afsh.messages.helpers.RuleBasedFilter
 import com.afsh.messages.ui.Afsh
-import com.afsh.messages.ui.components.AfshIcon
 import com.afsh.messages.ui.components.AfshButton
+import com.afsh.messages.ui.components.AfshIcon
 import com.afsh.messages.ui.components.AttentionNotice
 import com.afsh.messages.ui.components.ButtonKind
 import com.afsh.messages.ui.components.ConfirmationDialog
@@ -252,29 +253,34 @@ private fun TryMessage(patterns: SpamPatterns) {
                 background = if (result.verdict == FilterVerdict.ALLOW) colors.secondaryContainer else colors.errorContainer,
                 color = if (result.verdict == FilterVerdict.ALLOW) colors.onSecondaryContainer else colors.onErrorContainer,
             )
-            Column(
-                Modifier
-                    .fillMaxWidth()
-                    .clip(MaterialTheme.shapes.medium)
-                    .background(colors.surfaceContainer)
-                    .padding(Afsh.spacing.lg),
-                verticalArrangement = Arrangement.spacedBy(Afsh.spacing.sm),
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.medium,
+                colors = CardDefaults.cardColors(
+                    containerColor = colors.surfaceContainer,
+                    contentColor = colors.onSurface,
+                ),
             ) {
-                Text(
-                    stringResource(result.label()),
-                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                    color = if (result.verdict == FilterVerdict.BLOCK) colors.error else colors.onSurface,
-                )
-                Text(
-                    remember(body, result, highlight) {
-                        buildAnnotatedString {
-                            append(body)
-                            result.matches.forEach { addStyle(highlight, it.range.first, it.range.last + 1) }
-                        }.withContentFonts()
-                    },
-                    style = MaterialTheme.typography.bodyLarge.forContent(body),
-                    color = colors.onSurface,
-                )
+                Column(
+                    Modifier.padding(Afsh.spacing.lg),
+                    verticalArrangement = Arrangement.spacedBy(Afsh.spacing.sm),
+                ) {
+                    Text(
+                        stringResource(result.label()),
+                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                        color = if (result.verdict == FilterVerdict.BLOCK) colors.error else colors.onSurface,
+                    )
+                    Text(
+                        remember(body, result, highlight) {
+                            buildAnnotatedString {
+                                append(body)
+                                result.matches.forEach { addStyle(highlight, it.range.first, it.range.last + 1) }
+                            }.withContentFonts()
+                        },
+                        style = MaterialTheme.typography.bodyLarge.forContent(body),
+                        color = colors.onSurface,
+                    )
+                }
             }
         }
     }
@@ -309,8 +315,7 @@ private fun PatternRow(pattern: String, onEdit: () -> Unit, onRemove: () -> Unit
             Icon(
                 AfshIcon.Close.painter(),
                 contentDescription = stringResource(R.string.spam_patterns_remove, pattern),
-                tint = colors.error,
-                modifier = Modifier.size(17.dp),
+                tint = colors.onSurfaceVariant,
             )
         }
     }
@@ -319,18 +324,24 @@ private fun PatternRow(pattern: String, onEdit: () -> Unit, onRemove: () -> Unit
 @Composable
 private fun AddPattern(onClick: () -> Unit) {
     val colors = MaterialTheme.colorScheme
+    val label = stringResource(R.string.spam_patterns_add)
     Row(
         Modifier
-            .heightIn(min = PatternRowHeight)
+            .fillMaxWidth()
+            .heightIn(min = 48.dp)
             .clip(MaterialTheme.shapes.small)
-            .clickable(role = Role.Button, onClick = onClick)
-            .padding(end = Afsh.spacing.sm),
+            .clickable(role = Role.Button, onClickLabel = label, onClick = onClick),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.sm),
     ) {
-        Icon(AfshIcon.Add.painter(), contentDescription = null, tint = colors.primary, modifier = Modifier.size(20.dp))
+        Icon(
+            AfshIcon.Add.painter(),
+            contentDescription = null,
+            tint = colors.primary,
+            modifier = Modifier.size(24.dp),
+        )
         Text(
-            stringResource(R.string.spam_patterns_add),
+            label,
             style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
             color = colors.primary,
         )

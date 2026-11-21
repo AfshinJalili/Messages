@@ -133,13 +133,6 @@
             android:parentActivityName=".activities.BlockRulesActivity" />
 
         <activity
-            android:name=".activities.WhatFilterLooksForActivity"
-            android:configChanges="orientation"
-            android:exported="false"
-            android:label="@string/what_filter_looks_for"
-            android:parentActivityName=".activities.BlockRulesActivity" />
-
-        <activity
             android:name=".activities.AddBlockRuleActivity"
             android:configChanges="orientation"
             android:exported="false"

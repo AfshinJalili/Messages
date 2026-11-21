@@ -69,6 +69,7 @@ import com.afsh.messages.ui.components.messageBubbleShape
 import com.afsh.messages.ui.components.BubbleTone
 import com.afsh.messages.ui.components.MessageBubble
 import com.afsh.messages.ui.forContent
+import com.afsh.messages.ui.forLabel
 import com.afsh.messages.ui.withContentFonts
 import java.util.Calendar
 
@@ -424,7 +425,7 @@ private fun senderText(sender: String) = remember(sender) { AnnotatedString(send
 
 @Composable
 private fun senderStyle(sender: String) =
-    MaterialTheme.typography.bodySmall.forContent(sender).copy(fontWeight = FontWeight.ExtraBold)
+    MaterialTheme.typography.bodySmall.forLabel(sender).copy(fontWeight = FontWeight.ExtraBold)
 
 @Composable
 private fun Bubble(message: SpamReviewMessage, selected: Boolean, modifier: Modifier = Modifier) {

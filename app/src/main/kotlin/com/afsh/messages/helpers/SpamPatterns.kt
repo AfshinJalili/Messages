@@ -155,20 +155,3 @@ data class SpamPatterns(val groups: Map<SpamPatternGroup, List<String>>) {
         }
     }
 }
-
-/**
- * Turns a stored pattern into ordinary text for the "What the filter looks for" page: no regex
- * syntax, just the Persian word or emoji people would recognize in a message.
- */
-fun plainFilterLabels(patterns: List<String>): List<String> = patterns.map { pattern ->
-    pattern
-        .replace("\\uFE0F?", "")
-        .replace("[\\u200c ]?", "\u200c")
-        .replace("(?:", "")
-        .replace(")?", "")
-        .replace("\\s*", "")
-        .replace("\\s+", " ")
-        .replace("\\\\", "")
-        .replace("\\", "")
-        .trim()
-}.filter { it.isNotEmpty() }.distinct()

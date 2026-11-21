@@ -5,12 +5,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -28,14 +25,15 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.afsh.messages.R
 import com.afsh.messages.ui.Afsh
+import com.afsh.messages.ui.components.AfshButton
 import com.afsh.messages.ui.components.AfshIcon
 import com.afsh.messages.ui.components.EmptyState
-import com.afsh.messages.ui.components.AfshButton
 import com.afsh.messages.ui.components.PageContentPadding
 import com.afsh.messages.ui.components.PageNavigation
 import com.afsh.messages.ui.components.PageScaffold
 import com.afsh.messages.ui.components.SectionHeading
 import com.afsh.messages.ui.components.TextAction
+import com.afsh.messages.ui.forLabel
 import com.afsh.messages.ui.withContentFonts
 
 private val SenderRowHeight = 58.dp
@@ -177,21 +175,9 @@ private fun SenderSectionRow(sender: BlockedSender, onRemove: () -> Unit) {
                 .heightIn(min = SenderRowHeight),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(
-                when (sender.kind) {
-                    FilterSenderKind.AlwaysSpam -> AfshIcon.SpamShield.painter()
-                    FilterSenderKind.NeverSpam -> AfshIcon.Verified.painter()
-                    FilterSenderKind.AndroidBlocked -> AfshIcon.Block.painter()
-                },
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier
-                    .padding(end = Afsh.spacing.sm)
-                    .size(20.dp),
-            )
             Text(
                 remember(label) { AnnotatedString(label).withContentFonts() },
-                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                style = MaterialTheme.typography.bodyMedium.forLabel(label).copy(fontWeight = FontWeight.Bold),
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
