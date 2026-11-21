@@ -77,6 +77,9 @@ adb shell settings put global hide_error_dialogs 1
 adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS >/dev/null 2>&1 || true
 adb shell input keyevent KEYCODE_WAKEUP
 adb shell wm dismiss-keyguard >/dev/null 2>&1 || true
+# Cached AVD snapshots may retain an older APK signed with a different debug key.
+adb uninstall "$APP" >/dev/null 2>&1 || true
+adb uninstall "$APP.test" >/dev/null 2>&1 || true
 adb install -r -g app/build/outputs/apk/debug/*.apk >/dev/null
 adb install -r -g app/build/outputs/apk/androidTest/debug/*.apk >/dev/null
 if [ "$sdk" -ge 29 ]; then adb shell cmd role add-role-holder android.app.role.SMS $APP 0
