@@ -18,6 +18,13 @@ mkdir -p "$out"
   echo "refusing: not an emulator"; exit 1
 }
 
+# Cached AVD snapshots may retain older APKs signed with a different debug key.
+echo "== uninstall stale packages"
+adb uninstall "$DEBUG_APP" >/dev/null 2>&1 || true
+adb uninstall "$DEBUG_APP.test" >/dev/null 2>&1 || true
+adb uninstall "$BENCH_APP" >/dev/null 2>&1 || true
+adb uninstall com.afsh.messages.benchmark >/dev/null 2>&1 || true
+
 echo "== install debug (seeder) + benchmark app"
 adb install -r -g app/build/outputs/apk/debug/*.apk
 adb install -r -g app/build/outputs/apk/androidTest/debug/*.apk
