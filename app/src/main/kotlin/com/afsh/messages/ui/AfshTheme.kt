@@ -162,20 +162,115 @@ private val body = FontFamily(
 )
 private val persian = FontFamily((400..800 step 100).map { variableFont(R.font.vazirmatn, it) })
 
-// Include joining controls and inherited marks so a Persian word remains one shaping run.
-private val persianRun = Regex("[\\p{IsArabic}\\p{InArabic}][\\p{IsArabic}\\p{InArabic}\\p{M}\u200C\u200D]*")
+private fun isArabicLetter(c: Char): Boolean {
+    val block = Character.UnicodeBlock.of(c)
+    return block == Character.UnicodeBlock.ARABIC ||
+        block == Character.UnicodeBlock.ARABIC_SUPPLEMENT ||
+        block == Character.UnicodeBlock.ARABIC_EXTENDED_A ||
+        block == Character.UnicodeBlock.ARABIC_PRESENTATION_FORMS_A ||
+        block == Character.UnicodeBlock.ARABIC_PRESENTATION_FORMS_B
+}
+
+private fun isPersianRunContinuation(c: Char): Boolean {
+    if (c == '\u200C' || c == '\u200D') return true
+    val type = Character.getType(c)
+    return type == Character.NON_SPACING_MARK.toInt() ||
+        type == Character.ENCLOSING_MARK.toInt() ||
+        type == Character.COMBINING_SPACING_MARK.toInt()
+}
+
+/** True when a gap between Arabic runs may share one Vazirmatn span (whitespace / punctuation). */
+private fun canMergePersianGap(c: Char): Boolean {
+    if (c.isWhitespace() || c == '\u200C' || c == '\u200D') return true
+    if (c in '0'..'9' || c in 'A'..'Z' || c in 'a'..'z') return false
+    return !isArabicLetter(c)
+}
+
+/**
+ * Persian font ranges for [text]. Adjacent Arabic words separated only by whitespace or
+ * punctuation become one span so text layout does not switch fonts at every space.
+ * ASCII letters/digits keep the body font, matching the previous per-run Regex behavior.
+ */
+internal fun persianFontRanges(text: CharSequence): List<IntRange> {
+    val raw = ArrayList<IntRange>()
+    var i = 0
+    val n = text.length
+    while (i < n) {
+        if (!isArabicLetter(text[i])) {
+            i++
+            continue
+        }
+        val start = i++
+        while (i < n && (isArabicLetter(text[i]) || isPersianRunContinuation(text[i]))) i++
+        raw += start until i
+    }
+    if (raw.isEmpty()) return emptyList()
+    val merged = ArrayList<IntRange>(raw.size)
+    var current = raw[0]
+    for (index in 1 until raw.size) {
+        val next = raw[index]
+        val gapStart = current.last + 1
+        val gapEnd = next.first
+        var merge = true
+        var g = gapStart
+        while (g < gapEnd) {
+            if (!canMergePersianGap(text[g])) {
+                merge = false
+                break
+            }
+            g++
+        }
+        current = if (merge) current.first..next.last else {
+            merged += current
+            next
+        }
+    }
+    merged += current
+    return merged
+}
+
+internal fun hasArabicLetter(text: CharSequence): Boolean {
+    for (i in text.indices) if (isArabicLetter(text[i])) return true
+    return false
+}
+
+/** Survives LazyColumn disposal so recycled inbox rows skip script scanning for the same body. */
+private val contentFontCache = object : android.util.LruCache<String, AnnotatedString>(512) {}
 
 /** Content fonts follow script, independently of the language used by interface labels. */
-internal fun AnnotatedString.withContentFonts(): AnnotatedString = buildAnnotatedString {
-    append(this@withContentFonts)
-    addStyle(SpanStyle(fontFamily = body), 0, length)
-    persianRun.findAll(this@withContentFonts.text).forEach {
-        addStyle(SpanStyle(fontFamily = persian), it.range.first, it.range.last + 1)
+internal fun AnnotatedString.withContentFonts(): AnnotatedString {
+    val source = this
+    if (source.isEmpty()) return source
+    val cacheable = source.spanStyles.isEmpty() && source.getStringAnnotations(0, source.length).isEmpty()
+    if (cacheable) contentFontCache.get(source.text)?.let { return it }
+    val ranges = persianFontRanges(source.text)
+    // Latin-only: TextStyle.forContent already sets the body font — no AnnotatedString rebuild.
+    if (ranges.isEmpty()) {
+        if (cacheable) contentFontCache.put(source.text, source)
+        return source
     }
+    val styled = buildAnnotatedString {
+        append(source)
+        val persianStyle = SpanStyle(fontFamily = persian)
+        if (ranges.size == 1 && ranges[0].first == 0 && ranges[0].last == source.lastIndex) {
+            addStyle(persianStyle, 0, length)
+        } else {
+            addStyle(SpanStyle(fontFamily = body), 0, length)
+            for (range in ranges) {
+                addStyle(persianStyle, range.first, range.last + 1)
+            }
+        }
+    }
+    if (cacheable) contentFontCache.put(source.text, styled)
+    return styled
 }
 
 internal fun TextStyle.forContent(text: CharSequence): TextStyle =
-    copy(fontFamily = body, lineHeight = if (persianRun.containsMatchIn(text)) 1.7.em else 1.45.em)
+    forContentScript(hasArabicLetter(text))
+
+/** Same as [forContent] when the caller already knows whether the text needs Persian leading. */
+internal fun TextStyle.forContentScript(persianLeading: Boolean): TextStyle =
+    copy(fontFamily = body, lineHeight = if (persianLeading) 1.7.em else 1.45.em)
 
 /**
  * What people wrote (a message, a name) reads in its own direction, not the interface's: English

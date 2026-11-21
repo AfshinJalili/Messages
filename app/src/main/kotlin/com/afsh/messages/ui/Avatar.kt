@@ -33,8 +33,14 @@ import kotlinx.coroutines.withContext
 @Composable
 fun Avatar(title: String, photoUri: String, isGroup: Boolean, size: Dp = 50.dp) {
     val extras = Afsh.colors
-    val sizePx = with(LocalDensity.current) { size.roundToPx() }
-    val photo = rememberBitmap(photoUri, sizePx, sizePx, circle = true)
+    // Empty URI is the common inbox case (synthetic seed, unknown numbers): skip produceState /
+    // Glide entirely so scrolling 2k threads does not start a coroutine per row.
+    val photo = if (photoUri.isEmpty()) {
+        null
+    } else {
+        val sizePx = with(LocalDensity.current) { size.roundToPx() }
+        rememberBitmap(photoUri, sizePx, sizePx, circle = true)
+    }
     if (photo != null) {
         Image(
             photo,
@@ -47,10 +53,13 @@ fun Avatar(title: String, photoUri: String, isGroup: Boolean, size: Dp = 50.dp) 
         return
     }
     val initials = remember(title) { initials(title) }
+    val avatarColor = remember(title, extras) {
+        extras.avatars[Math.floorMod(title.hashCode(), extras.avatars.size)]
+    }
     Surface(
         Modifier.size(size),
         shape = CircleShape,
-        color = extras.avatars[Math.floorMod(title.hashCode(), extras.avatars.size)],
+        color = avatarColor,
         contentColor = extras.onAvatar,
     ) {
         Box(contentAlignment = Alignment.Center) {
