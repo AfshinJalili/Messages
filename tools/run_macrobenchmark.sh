@@ -11,6 +11,7 @@ export PATH="$SDK/emulator:$SDK/platform-tools:$SDK/cmdline-tools/latest/bin:$PA
 DEBUG_APP=com.afsh.messages.debug
 BENCH_APP=com.afsh.messages
 DEBUG_RUNNER=$DEBUG_APP.test/androidx.test.runner.AndroidJUnitRunner
+BENCH_RUNNER=com.afsh.messages.benchmark/androidx.test.runner.AndroidJUnitRunner
 out=.scratch/macrobenchmark
 mkdir -p "$out"
 
@@ -20,15 +21,18 @@ mkdir -p "$out"
 
 # Cached AVD snapshots may retain older APKs signed with a different debug key.
 echo "== uninstall stale packages"
-adb uninstall "$DEBUG_APP" >/dev/null 2>&1 || true
-adb uninstall "$DEBUG_APP.test" >/dev/null 2>&1 || true
-adb uninstall "$BENCH_APP" >/dev/null 2>&1 || true
-adb uninstall com.afsh.messages.benchmark >/dev/null 2>&1 || true
+adb shell cmd role remove-role-holder --user 0 android.app.role.SMS "$BENCH_APP" 2>/dev/null || true
+adb shell cmd role remove-role-holder --user 0 android.app.role.SMS "$DEBUG_APP" 2>/dev/null || true
+for pkg in "$DEBUG_APP" "$DEBUG_APP.test" "$BENCH_APP" com.afsh.messages.benchmark; do
+  adb shell pm uninstall --user 0 "$pkg" >/dev/null 2>&1 || true
+  adb uninstall "$pkg" >/dev/null 2>&1 || true
+done
 
 echo "== install debug (seeder) + benchmark app"
 adb install -r -g app/build/outputs/apk/debug/*.apk
 adb install -r -g app/build/outputs/apk/androidTest/debug/*.apk
 adb install -r -g app/build/outputs/apk/benchmark/*.apk
+adb install -r -g macrobenchmark/build/outputs/apk/benchmark/*.apk
 
 grant_perms() {
   local pkg=$1
@@ -134,10 +138,28 @@ done
 adb shell am force-stop $BENCH_APP
 
 echo "== run macrobenchmark"
-./gradlew :macrobenchmark:connectedBenchmarkAndroidTest --stacktrace \
-  | tee "$out/benchmark-gradle.txt"
+adb shell rm -rf /sdcard/Download/*benchmarkData.json 2>/dev/null || true
+adb shell am instrument -w -r \
+  -e androidx.benchmark.suppressErrors EMULATOR \
+  -e additionalTestOutputDir /sdcard/Download \
+  -e no-isolated-storage true \
+  -e class com.afsh.messages.benchmark.InboxStartupBenchmark \
+  $BENCH_RUNNER | tee "$out/benchmark.txt"
+
+if grep -qE "FAILURES|Error in |AssertionFailed|INSTRUMENTATION_STATUS_CODE: -2" "$out/benchmark.txt"; then
+  echo "macrobenchmark instrumentation failed"
+  exit 1
+fi
+grep -q "^OK (" "$out/benchmark.txt" || {
+  echo "macrobenchmark did not complete with OK"
+  exit 1
+}
 
 echo "== collect benchmark JSON"
+mkdir -p macrobenchmark/build/outputs
+adb pull /sdcard/Download/. macrobenchmark/build/outputs/ 2>/dev/null || true
+adb pull /sdcard/Android/media/com.afsh.messages.benchmark/. macrobenchmark/build/outputs/ 2>/dev/null || true
+adb pull /sdcard/Android/data/com.afsh.messages.benchmark/files/. macrobenchmark/build/outputs/ 2>/dev/null || true
 find macrobenchmark/build/outputs -name '*benchmarkData.json' | tee "$out/json-files.txt" || true
 mkdir -p "$out/outputs"
 cp -r macrobenchmark/build/outputs/. "$out/outputs/" 2>/dev/null || true

@@ -78,6 +78,9 @@ adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS >/dev/null 
 adb shell input keyevent KEYCODE_WAKEUP
 adb shell wm dismiss-keyguard >/dev/null 2>&1 || true
 # Cached AVD snapshots may retain an older APK signed with a different debug key.
+adb shell cmd role remove-role-holder --user 0 android.app.role.SMS "$APP" 2>/dev/null || true
+adb shell pm uninstall --user 0 "$APP" >/dev/null 2>&1 || true
+adb shell pm uninstall --user 0 "$APP.test" >/dev/null 2>&1 || true
 adb uninstall "$APP" >/dev/null 2>&1 || true
 adb uninstall "$APP.test" >/dev/null 2>&1 || true
 adb install -r -g app/build/outputs/apk/debug/*.apk >/dev/null
