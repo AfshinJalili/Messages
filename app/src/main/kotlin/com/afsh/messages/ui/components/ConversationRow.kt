@@ -105,28 +105,29 @@ fun ConversationRow(
     )
     ListItem(
         // The row's own description replaces its parts for TalkBack; the parts stay in the unmerged tree.
+        // clearAndSetSemantics must wrap Text, not sit on it — otherwise the title vanishes from the
+        // unmerged tree (StateNoticeChecks / TalkBack parts).
         headlineContent = {
-            val titleModifier = Modifier.clearAndSetSemantics { }
-            if (titleAnnotated != null) {
-                Text(
-                    titleAnnotated,
-                    style = titleTextStyle,
-                    color = colors.onSurface,
-                    maxLines = titleMaxLines,
-                    softWrap = titleMaxLines > 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = titleModifier,
-                )
-            } else {
-                Text(
-                    conversation.title,
-                    style = titleTextStyle,
-                    color = colors.onSurface,
-                    maxLines = titleMaxLines,
-                    softWrap = titleMaxLines > 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = titleModifier,
-                )
+            Box(Modifier.clearAndSetSemantics { }) {
+                if (titleAnnotated != null) {
+                    Text(
+                        titleAnnotated,
+                        style = titleTextStyle,
+                        color = colors.onSurface,
+                        maxLines = titleMaxLines,
+                        softWrap = titleMaxLines > 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                } else {
+                    Text(
+                        conversation.title,
+                        style = titleTextStyle,
+                        color = colors.onSurface,
+                        maxLines = titleMaxLines,
+                        softWrap = titleMaxLines > 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
         },
         supportingContent = {
