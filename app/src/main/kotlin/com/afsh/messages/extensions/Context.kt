@@ -78,7 +78,7 @@ import org.greenrobot.eventbus.EventBus
 import com.afsh.messages.models.Draft
 import com.afsh.messages.models.Message
 import com.afsh.messages.models.SearchResult
-import com.afsh.commons.extensions.formatDateOrTime
+import com.afsh.messages.ui.components.conversationListTimestamp
 import com.afsh.messages.models.MessageAttachment
 import com.afsh.messages.models.NamePhoto
 import com.afsh.messages.models.RecycleBinMessage
@@ -1654,11 +1654,7 @@ fun Context.messageSearchResult(message: Message): SearchResult {
         title = TextUtils.join(", ", message.participants.map { it.name })
     }
 
-    val date = (message.date * 1000L).formatDateOrTime(
-        context = this,
-        hideTimeOnOtherDays = true,
-        showCurrentYear = true
-    )
+    val date = conversationListTimestamp(this, message.date * 1000L)
 
     return SearchResult(
         messageId = message.id,

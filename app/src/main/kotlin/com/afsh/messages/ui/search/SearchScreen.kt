@@ -59,6 +59,7 @@ import com.afsh.messages.ui.components.SearchField
 import com.afsh.messages.ui.AfshTheme
 import com.afsh.messages.ui.forLabel
 import com.afsh.messages.ui.withContentFonts
+import com.afsh.messages.ui.withNumberOrder
 
 private val ControlHeight = 56.dp
 private val TouchTarget = 48.dp
@@ -251,7 +252,7 @@ private fun SearchResultRow(result: SearchResult, query: String, onOpen: (Search
             HighlightedText(result.title, query, Modifier.weight(1f), title = true)
             Text(
                 result.date,
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodySmall.withNumberOrder(result.date),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 softWrap = false,
