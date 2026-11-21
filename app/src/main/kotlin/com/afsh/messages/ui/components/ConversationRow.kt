@@ -47,6 +47,7 @@ import com.afsh.messages.R
 import com.afsh.messages.ui.Afsh
 import com.afsh.messages.ui.Avatar
 import com.afsh.messages.ui.forContent
+import com.afsh.messages.ui.forLabel
 import com.afsh.messages.ui.inbox.InboxRow
 import com.afsh.messages.ui.withContentFonts
 import com.afsh.commons.extensions.getTimeFormat
@@ -92,7 +93,7 @@ fun ConversationRow(
             Box(Modifier.clearAndSetSemantics { }) {
                 Text(
                     remember(conversation.title) { AnnotatedString(conversation.title).withContentFonts() },
-                    style = MaterialTheme.typography.titleMedium.forContent(conversation.title),
+                    style = MaterialTheme.typography.titleMedium.forLabel(conversation.title),
                     color = colors.onSurface,
                     maxLines = if (fontScale >= TWO_LINE_TITLE_SCALE) 2 else 1,
                     overflow = TextOverflow.Ellipsis,

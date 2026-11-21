@@ -307,7 +307,7 @@
 
     <!-- About -->
     <string name="other">Other</string>
-    <string name="app_version">App version: %s</string>
+    <string name="app_version">App version</string>
 
     <!-- New app (do not translate anything on the 4th line) -->
 

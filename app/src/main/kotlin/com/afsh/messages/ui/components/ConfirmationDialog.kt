@@ -1,6 +1,7 @@
 package com.afsh.messages.ui.components
 
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
@@ -72,12 +73,14 @@ fun RenameDialog(
         OutlinedTextField(
             value = name,
             onValueChange = { name = it },
-            modifier = Modifier.fillMaxWidth().focusRequester(focus).semantics { contentDescription = title },
+            modifier = Modifier.fillMaxWidth().heightIn(min = fieldMinHeight()).focusRequester(focus).semantics { contentDescription = title },
             placeholder = { Text(placeholder) },
             supportingText = { Text(explanation) },
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = { save() }),
             singleLine = true,
+            shape = MaterialTheme.shapes.medium,
+            colors = afshFieldColors(),
         )
     }
     LaunchedEffect(Unit) { focus.requestFocus() }
@@ -108,10 +111,12 @@ fun TextInputDialog(
         OutlinedTextField(
             value = value,
             onValueChange = { value = it },
-            modifier = Modifier.fillMaxWidth().focusRequester(focus).semantics { contentDescription = title },
+            modifier = Modifier.fillMaxWidth().heightIn(min = fieldMinHeight()).focusRequester(focus).semantics { contentDescription = title },
             textStyle = MaterialTheme.typography.bodyLarge.copy(fontFamily = FontFamily.Monospace, textDirection = TextDirection.Ltr),
             supportingText = { Text(problem ?: explanation) },
             isError = problem != null,
+            shape = MaterialTheme.shapes.medium,
+            colors = afshFieldColors(),
             keyboardOptions = KeyboardOptions(autoCorrectEnabled = false, imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = { save() }),
         )

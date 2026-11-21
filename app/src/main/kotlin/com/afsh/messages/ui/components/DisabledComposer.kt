@@ -1,9 +1,11 @@
 package com.afsh.messages.ui.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
@@ -16,7 +18,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.afsh.messages.R
 import com.afsh.messages.ui.Afsh
 
 private val IconSize = 24.dp
@@ -39,13 +40,33 @@ fun DisabledComposer(reason: String, modifier: Modifier = Modifier) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.sm),
         ) {
-            Box(Modifier.size(TargetSize), contentAlignment = Alignment.Center) {
+            Box(Modifier.size(TargetSize, fieldMinHeight()), contentAlignment = Alignment.Center) {
                 Icon(AfshIcon.Add.painter(), contentDescription = null, modifier = Modifier.size(IconSize))
             }
-            Surface(Modifier.weight(1f), shape = MaterialTheme.shapes.medium, color = colors.surface) {
-                DisabledComposerText(reason, Modifier.padding(Afsh.spacing.md))
+            Surface(
+                Modifier
+                    .weight(1f)
+                    .heightIn(min = fieldMinHeight()),
+                shape = MaterialTheme.shapes.medium,
+                color = colors.surface,
+                border = BorderStroke(1.dp, colors.secondaryContainer),
+            ) {
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = fieldMinHeight())
+                        .padding(horizontal = Afsh.spacing.md),
+                    contentAlignment = Alignment.CenterStart,
+                ) {
+                    DisabledComposerText(reason)
+                }
             }
-            Surface(Modifier.size(SendSlabWidth, TargetSize), shape = MaterialTheme.shapes.medium, color = colors.surfaceContainerHigh, contentColor = colors.onSurfaceVariant) {
+            Surface(
+                Modifier.size(SendSlabWidth, fieldMinHeight()),
+                shape = MaterialTheme.shapes.medium,
+                color = colors.surfaceContainerHigh,
+                contentColor = colors.onSurfaceVariant,
+            ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(AfshIcon.Send.painter(), contentDescription = null, modifier = Modifier.size(IconSize))
                 }

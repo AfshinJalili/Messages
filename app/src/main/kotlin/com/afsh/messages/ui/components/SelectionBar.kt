@@ -147,7 +147,7 @@ fun SelectionCheck(checked: Boolean, modifier: Modifier = Modifier) {
     }
 }
 
-/** One action of a [SelectionBar]. [destructive] paints it coral. */
+/** One action of a [SelectionBar]. [destructive] paints it in the error colour. */
 @Immutable
 data class BarAction(val label: String, val icon: AfshIcon, val destructive: Boolean = false, val onClick: () -> Unit)
 

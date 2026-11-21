@@ -45,7 +45,7 @@ import kotlin.math.abs
 private const val SWIPE_COMMIT_FRACTION = 0.5f
 private const val ARMED_ICON_SCALE = 1.25f
 
-/** How a swipe panel is tinted: coral for destructive, quiet grey, or the swipe-action role. */
+/** How a swipe panel is tinted: errorContainer for destructive, quiet grey, or the swipe-action role. */
 enum class SwipeTone { PRIMARY, QUIET, DESTRUCTIVE }
 
 /** What a swipe in one direction does, as the row's panel shows it. */

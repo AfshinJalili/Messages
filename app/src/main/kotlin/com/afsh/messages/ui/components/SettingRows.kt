@@ -26,6 +26,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.afsh.messages.ui.Afsh
+import com.afsh.messages.ui.withNumberOrder
 
 private val RowMinHeight = 48.dp
 private val SettingIconSize = 24.dp
@@ -71,7 +72,7 @@ fun SettingItem(
         modifier = (if (bleed) Modifier.bleed(SettingRowBleed) else Modifier)
             .then(modifier)
             .heightIn(min = RowMinHeight),
-        supportingContent = value?.let { { Text(it, style = MaterialTheme.typography.bodySmall) } },
+        supportingContent = value?.let { { Text(it, style = MaterialTheme.typography.bodySmall.withNumberOrder(it)) } },
         leadingContent = icon?.let {
             { Icon(it.painter(), contentDescription = null, modifier = Modifier.size(SettingIconSize)) }
         },
@@ -112,15 +113,17 @@ fun NavigationSetting(
     value: String? = null,
     disclosure: Boolean = true,
     destructive: Boolean = false,
+    enabled: Boolean = true,
     disclosureIcon: AfshIcon = AfshIcon.ChevronForward,
 ) {
     SettingItem(
         label = label,
         modifier = modifier
             .clip(MaterialTheme.shapes.small)
-            .clickable(role = Role.Button, onClick = onClick),
+            .clickable(enabled = enabled, role = Role.Button, onClick = onClick),
         icon = icon,
         value = value,
+        enabled = enabled,
         destructive = destructive,
         trailing = if (disclosure) {
             { Icon(disclosureIcon.painter(), contentDescription = null, modifier = Modifier.size(SettingIconSize)) }
@@ -174,7 +177,7 @@ fun RadioSetting(
     }
 }
 
-/** Component / switch: pine track with a white thumb when on. */
+/** Component / switch: primary track with a surface thumb when on. */
 @Composable
 fun afshSwitchColors() = with(MaterialTheme.colorScheme) {
     SwitchDefaults.colors(

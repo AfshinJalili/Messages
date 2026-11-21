@@ -1,5 +1,6 @@
 package com.afsh.messages.ui.components
 
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,10 +22,17 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.afsh.messages.ui.Afsh
 
@@ -37,8 +45,8 @@ private val CompactPanelPadding: PaddingValues
     @Composable get() = PaddingValues(horizontal = Afsh.spacing.lg, vertical = Afsh.spacing.md)
 
 /**
- * Library row, on a Material 3 [Card] holding a [ListItem]: a lilac mark, a label with its description, an
- * optional count badge and a disclosure chevron. The card is the touch target.
+ * Library row, on a Material 3 [Card] holding a [ListItem]: a secondaryContainer mark, a label with its
+ * description, an optional count badge and a disclosure chevron. The card is the touch target.
  */
 @Composable
 fun DestinationCard(
@@ -92,7 +100,7 @@ internal fun PanelCard(
     modifier: Modifier = Modifier,
     shape: Shape = MaterialTheme.shapes.medium,
     padding: PaddingValues = PaddingValues(Afsh.spacing.lg),
-    spacing: Dp = 4.dp,
+    spacing: Dp = Afsh.spacing.xs,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Card(
@@ -105,7 +113,7 @@ internal fun PanelCard(
 }
 
 /**
- * A lilac panel that explains a page: the Library principle (compact) or a call to action such as
+ * A secondaryContainer panel that explains a page: the Library principle (compact) or a call to action such as
  * Archive's "Need it in your inbox?" (prominent).
  */
 @Composable
@@ -136,18 +144,35 @@ fun InfoPanel(
     }
 }
 
-/** Component / empty state, on a Material 3 [Card]. */
+/** One sentence on the secondaryContainer panel, when a page needs a line of context and no title. */
 @Composable
-fun EmptyState(icon: AfshIcon, title: String, modifier: Modifier = Modifier, text: String? = null) {
+fun InfoPanel(body: String, modifier: Modifier = Modifier) {
+    val colors = MaterialTheme.colorScheme
+    PanelCard(
+        colors.secondaryContainer,
+        colors.onSecondaryContainer,
+        modifier,
+        shape = MaterialTheme.shapes.small,
+        padding = CompactPanelPadding,
+    ) {
+        Text(body, style = MaterialTheme.typography.bodyMedium, color = Afsh.colors.onSecondaryContainerVariant)
+    }
+}
+
+/** Component / empty state, on a Material 3 [Card]. [icon] is omitted when the card is only text. */
+@Composable
+fun EmptyState(icon: AfshIcon? = null, title: String, modifier: Modifier = Modifier, text: String? = null) {
     val colors = MaterialTheme.colorScheme
     PanelCard(
         colors.secondaryContainer,
         colors.onSecondaryContainer,
         modifier,
         padding = PaddingValues(horizontal = Afsh.spacing.lg, vertical = Afsh.spacing.xl),
-        spacing = 8.dp,
+        spacing = Afsh.spacing.sm,
     ) {
-        Icon(icon.painter(), contentDescription = null, tint = colors.primary, modifier = Modifier.size(34.dp))
+        if (icon != null) {
+            Icon(icon.painter(), contentDescription = null, tint = colors.primary, modifier = Modifier.size(34.dp))
+        }
         Text(title, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold))
         if (text != null) {
             Text(text, style = MaterialTheme.typography.bodyMedium, color = Afsh.colors.onSecondaryContainerVariant)
@@ -155,15 +180,66 @@ fun EmptyState(icon: AfshIcon, title: String, modifier: Modifier = Modifier, tex
     }
 }
 
-/** Component / attention notice and validation notice, on a Material 3 [Card]: coral container, title and detail. */
+/** Component / attention notice and validation notice, on a Material 3 [Card]: errorContainer, title and detail. */
 @Composable
 fun AttentionNotice(title: String, detail: String, modifier: Modifier = Modifier, icon: AfshIcon? = null) {
     val colors = MaterialTheme.colorScheme
-    PanelCard(colors.errorContainer, colors.onErrorContainer, modifier, spacing = if (icon != null) 8.dp else 4.dp) {
+    PanelCard(colors.errorContainer, colors.onErrorContainer, modifier, spacing = if (icon != null) Afsh.spacing.sm else Afsh.spacing.xs) {
         if (icon != null) {
             Icon(icon.painter(), contentDescription = null, tint = colors.error, modifier = Modifier.size(26.dp))
         }
         Text(title, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold))
         Text(detail, style = MaterialTheme.typography.bodyMedium)
     }
+}
+
+/**
+ * Fades whichever end of a horizontal scroll still has content, so a clipped chip reads as
+ * more of the row rather than a broken label. The mask is outside the scroll so it stays
+ * on the viewport. [Afsh.colors.mask] and [Afsh.colors.transparent] are the blend stops, not painted colors.
+ * In RTL, `horizontalScroll` starts at the right (`value == 0`), so the faded edges reverse.
+ */
+@Composable
+fun Modifier.fadingScrollEdges(scrollState: ScrollState, edge: Dp = 20.dp): Modifier {
+    val layoutDirection = LocalLayoutDirection.current
+    val transparent = Afsh.colors.transparent
+    val mask = Afsh.colors.mask
+    return graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+        .drawWithContent {
+            drawContent()
+            val edgePx = edge.toPx().coerceAtMost(size.width / 2f)
+            if (edgePx <= 0f) return@drawWithContent
+            val fadeLeft = if (layoutDirection == LayoutDirection.Ltr) {
+                scrollState.value > 0
+            } else {
+                scrollState.maxValue > 0 && scrollState.value < scrollState.maxValue
+            }
+            val fadeRight = if (layoutDirection == LayoutDirection.Ltr) {
+                scrollState.maxValue > 0 && scrollState.value < scrollState.maxValue
+            } else {
+                scrollState.value > 0
+            }
+            if (fadeLeft) {
+                drawRect(
+                    brush = Brush.horizontalGradient(
+                        0f to transparent,
+                        1f to mask,
+                        startX = 0f,
+                        endX = edgePx,
+                    ),
+                    blendMode = BlendMode.DstIn,
+                )
+            }
+            if (fadeRight) {
+                drawRect(
+                    brush = Brush.horizontalGradient(
+                        0f to mask,
+                        1f to transparent,
+                        startX = size.width - edgePx,
+                        endX = size.width,
+                    ),
+                    blendMode = BlendMode.DstIn,
+                )
+            }
+        }
 }

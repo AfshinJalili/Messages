@@ -186,6 +186,15 @@ internal fun TextStyle.forUserText(text: CharSequence): TextStyle = forContent(t
 /** A phone number or address isolated left to right, so "555 0142" never reads "0142 555" in Persian. */
 fun ltr(text: String): String = if (text.isEmpty()) text else "\u2066$text\u2069"
 
+/** A label with no letters is a number, so "+1555…" must not put the + at the other end in Persian. */
+fun CharSequence.isNumberLabel(): Boolean = none { it.isLetter() } && any { it.isDigit() }
+
+fun TextStyle.forLabel(text: CharSequence): TextStyle = forContent(text).withNumberOrder(text)
+
+/** A letter-free label such as "+1555…" stays left to right, so the + does not jump to the end in Persian. */
+fun TextStyle.withNumberOrder(text: CharSequence): TextStyle =
+    if (text.isNumberLabel()) copy(textDirection = TextDirection.Ltr) else this
+
 private fun typography(rtl: Boolean): Typography {
     val displayFamily = if (rtl) persian else display
     val bodyFamily = if (rtl) persian else body

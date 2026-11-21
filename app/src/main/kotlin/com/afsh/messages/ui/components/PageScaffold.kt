@@ -187,7 +187,7 @@ private fun PrimaryNavigation(navigation: PageNavigation, vertical: Boolean = fa
     PrimaryNavigation(navigation.selected, navigation.onSelect, counts = navigation.counts ?: shared, vertical = vertical)
 }
 
-/** Component / undo snackbar: ink slab, bold message, lime action. */
+/** Component / undo snackbar: inverseSurface slab, bold message, inverseAccent action. */
 @Composable
 fun AfshSnackbarHost(state: SnackbarHostState, modifier: Modifier = Modifier) {
     SnackbarHost(state, modifier) { data ->
