@@ -46,8 +46,7 @@ object UndoDeletion {
                                 version++
                                 action.completed()
                                 (batch?.activity?.get() as? com.afsh.messages.activities.SimpleActivity)?.refreshAfterDeletion()
-                                refreshConversations()
-                                refreshMessages()
+                                MessagingEvents.publish(MessagingEvent.ConversationsChanged(reconcile = true))
                             }
                         } catch (e: Exception) {
                             handler.post {
@@ -55,8 +54,7 @@ object UndoDeletion {
                                 action.undo()
                                 activity.showErrorToast(e)
                                 (batch?.activity?.get() as? com.afsh.messages.activities.SimpleActivity)?.refreshAfterDeletion()
-                                refreshConversations()
-                                refreshMessages()
+                                MessagingEvents.publish(MessagingEvent.ConversationsChanged(reconcile = true))
                             }
                         }
                     }
@@ -94,8 +92,7 @@ object UndoDeletion {
                 version++
                 current.actions.asReversed().forEach { it.undo() }
                 (activity as? com.afsh.messages.activities.SimpleActivity)?.refreshAfterDeletion()
-                refreshConversations()
-                refreshMessages()
+                MessagingEvents.publish(MessagingEvent.ConversationsChanged(reconcile = true))
             }
         }
         batch.dismiss = (activity as? UndoHost)?.showUndo(R.string.items_deleted, remaining, undo)

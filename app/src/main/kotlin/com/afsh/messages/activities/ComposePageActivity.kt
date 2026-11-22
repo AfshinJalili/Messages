@@ -16,9 +16,10 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import com.afsh.commons.helpers.isQPlus
+import com.afsh.messages.helpers.MessagingEvent
+import com.afsh.messages.helpers.MessagingEvents
 import com.afsh.messages.helpers.NavBadges
 import com.afsh.messages.helpers.UndoDeletion
-import com.afsh.messages.helpers.refreshConversations
 import com.afsh.messages.ui.AfshSystemBars
 import com.afsh.messages.ui.AfshTheme
 import com.afsh.messages.ui.components.PageNavigation
@@ -114,7 +115,7 @@ abstract class ComposePageActivity : SimpleActivity(), UndoDeletion.UndoHost {
         if (ids.isEmpty()) return
         UndoDeletion.threads.addAll(ids)
         reload()
-        refreshConversations()
+        MessagingEvents.publish(MessagingEvent.ConversationsChanged(reconcile = true))
         UndoDeletion.offer(
             this,
             undo = {

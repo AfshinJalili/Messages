@@ -29,7 +29,8 @@ import com.afsh.messages.helpers.InvalidBackupException
 import com.afsh.messages.helpers.MessagesExporter
 import com.afsh.messages.helpers.MessagesImporter
 import com.afsh.messages.helpers.NavBadges
-import com.afsh.messages.helpers.refreshConversations
+import com.afsh.messages.helpers.MessagingEvent
+import com.afsh.messages.helpers.MessagingEvents
 import com.afsh.messages.models.ImportResult
 import androidx.compose.ui.graphics.toArgb
 import com.afsh.messages.ui.afshColorScheme
@@ -206,8 +207,10 @@ class SettingsController(
                 exitProcess(0)
             }
 
-            is SettingsEvent.SetDateFormat -> update { activity.config.dateFormat = event.format }.also { refreshConversations() }
-            is SettingsEvent.SetUse24Hour -> update { activity.config.use24HourFormat = event.enabled }.also { refreshConversations() }
+            is SettingsEvent.SetDateFormat -> update { activity.config.dateFormat = event.format }
+                .also { MessagingEvents.publish(MessagingEvent.ConversationsChanged(reconcile = true)) }
+            is SettingsEvent.SetUse24Hour -> update { activity.config.use24HourFormat = event.enabled }
+                .also { MessagingEvents.publish(MessagingEvent.ConversationsChanged(reconcile = true)) }
             is SettingsEvent.SetSendOnEnter -> update { activity.config.sendOnEnter = event.enabled }
             is SettingsEvent.SetCharacterCounter -> update { activity.config.showCharacterCounter = event.enabled }
             is SettingsEvent.SetInboxUnreadCount ->

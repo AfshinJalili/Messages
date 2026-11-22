@@ -11,7 +11,8 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeRight
 import com.afsh.messages.activities.MainActivity
 import com.afsh.messages.extensions.conversationsDB
-import com.afsh.messages.helpers.refreshConversations
+import com.afsh.messages.helpers.MessagingEvent
+import com.afsh.messages.helpers.MessagingEvents
 import com.afsh.messages.helpers.SwipeAction
 import com.afsh.messages.helpers.UndoDeletion
 import com.afsh.messages.helpers.testUndoDurationMs
@@ -69,7 +70,7 @@ class DeletionChecks {
                 scenario.awaitUntil("Undo is offered again after recreation", timeoutMs = 5_000) { 
                     it.snackbarHost.currentSnackbarData != null 
                 }
-                refreshConversations()
+                MessagingEvents.publish(MessagingEvent.ConversationsChanged(reconcile = true))
                 instrumentation.waitForIdleSync()
                 check(!scenario.read { it.shows() }) { "Refresh resurrected a pending deletion" }
                 scenario.onActivity { activity ->

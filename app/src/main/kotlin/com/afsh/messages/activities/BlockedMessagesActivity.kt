@@ -2,10 +2,14 @@ package com.afsh.messages.activities
 
 import com.afsh.messages.extensions.markMessageRead
 import android.content.Intent
+import android.os.Bundle
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.messages.R
 import com.afsh.messages.extensions.config
@@ -13,6 +17,9 @@ import com.afsh.messages.extensions.deleteMessage
 import com.afsh.messages.extensions.getSpamMessages
 import com.afsh.messages.extensions.messagesDB
 import com.afsh.messages.helpers.InboxRepository
+import com.afsh.messages.helpers.MessagingEvents
+import com.afsh.messages.helpers.affectsSpam
+import kotlinx.coroutines.launch
 import com.afsh.messages.helpers.containsNumber
 import com.afsh.messages.helpers.OPEN_SPAM
 import com.afsh.messages.helpers.THREAD_ID
@@ -39,6 +46,17 @@ class BlockedMessagesActivity : ComposePageActivity() {
     @Composable
     override fun Page() {
         SpamScreen(state, libraryNavigation(), snackbarHost, ::onEvent)
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                MessagingEvents.events.collect { event ->
+                    if (event.affectsSpam()) reload()
+                }
+            }
+        }
     }
 
     override fun onResume() {

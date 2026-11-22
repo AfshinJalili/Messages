@@ -1,7 +1,5 @@
 package com.afsh.messages.helpers
 
-import com.afsh.messages.models.Events
-import org.greenrobot.eventbus.EventBus
 import org.joda.time.DateTime
 import org.joda.time.DateTimeZone
 import kotlin.math.abs
@@ -135,24 +133,6 @@ const val PICK_SAVE_DIR_INTENT = 50
 
 const val BLOCKED_KEYWORDS_EXPORT_DELIMITER = ","
 const val BLOCKED_KEYWORDS_EXPORT_EXTENSION = ".txt"
-
-fun refreshMessages() {
-    EventBus.getDefault().post(Events.RefreshMessages())
-}
-
-/**
- * Notifies screens that conversation rows changed.
- *
- * [reconcile] defaults to true for structural edits (archive, delete, import) that may need a
- * full Telephony pass. Receivers that already wrote the affected Room row must pass false: as the
- * default SMS app they wake on every message, and a full reconcile each time burns CPU and battery.
- */
-fun refreshConversations(reconcile: Boolean = true) {
-    if (reconcile) {
-        InboxRepository.refreshInbox()
-    }
-    EventBus.getDefault().post(Events.RefreshConversations())
-}
 
 /** Not to be used with real messages persisted in the telephony db. This is for internal use only (e.g. scheduled messages, notification ids etc). */
 fun generateRandomId(length: Int = 9): Long {
