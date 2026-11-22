@@ -4,72 +4,66 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.os.Handler
-import android.os.Looper
 import android.provider.Telephony.Sms
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.ProcessLifecycleOwner
 import com.afsh.commons.extensions.getMyContactsCursor
 import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.messages.extensions.getMessageRecipientAddress
 import com.afsh.messages.extensions.getNameFromAddress
+import com.afsh.messages.extensions.getSmsThreadId
 import com.afsh.messages.extensions.getThreadId
 import com.afsh.messages.extensions.messagesDB
 import com.afsh.messages.extensions.messagingUtils
-import com.afsh.messages.extensions.notificationHelper
-import com.afsh.messages.helpers.refreshConversations
-import com.afsh.messages.helpers.refreshMessages
+import com.afsh.messages.helpers.MessagingEvent
+import com.afsh.messages.helpers.MessagingEvents
 
-/** Handles updating databases and states when a SMS message is sent. */
+/** Handles updating databases and publishing send outcomes when an SMS message is sent or fails. */
 class SmsStatusSentReceiver : SendStatusReceiver() {
 
     override fun updateAndroidDatabase(context: Context, intent: Intent, receiverResultCode: Int) {
         val messageUri: Uri? = intent.data
-        val resultCode = resultCode
-        val messagingUtils = context.messagingUtils
-
-        val type = if (resultCode == Activity.RESULT_OK) {
+        val type = if (receiverResultCode == Activity.RESULT_OK) {
             Sms.MESSAGE_TYPE_SENT
         } else {
             Sms.MESSAGE_TYPE_FAILED
         }
-        messagingUtils.updateSmsMessageSendingStatus(messageUri, type)
-        messagingUtils.maybeShowErrorToast(
-            resultCode = resultCode,
-            errorCode = intent.getIntExtra(EXTRA_ERROR_CODE, NO_ERROR_CODE)
-        )
+        context.messagingUtils.updateSmsMessageSendingStatus(messageUri, type)
     }
 
     override fun updateAppDatabase(context: Context, intent: Intent, receiverResultCode: Int) {
-        val messageUri = intent.data
-        if (messageUri != null) {
-            val messageId = messageUri.lastPathSegment?.toLong() ?: 0L
-            ensureBackgroundThread {
-                val type = if (receiverResultCode == Activity.RESULT_OK) {
-                    Sms.MESSAGE_TYPE_SENT
-                } else {
-                    showSendingFailedNotification(context, messageId)
-                    Sms.MESSAGE_TYPE_FAILED
+        val messageUri = intent.data ?: return
+        val messageId = messageUri.lastPathSegment?.toLongOrNull() ?: 0L
+        val errorCode = intent.getIntExtra(EXTRA_ERROR_CODE, NO_ERROR_CODE)
+
+        ensureBackgroundThread {
+            val succeeded = receiverResultCode == Activity.RESULT_OK
+            val type = if (succeeded) Sms.MESSAGE_TYPE_SENT else Sms.MESSAGE_TYPE_FAILED
+            context.messagesDB.updateType(messageId, type)
+
+            val address = context.getMessageRecipientAddress(messageId)
+            val threadId = context.getSmsThreadId(messageId) ?: context.getThreadId(address)
+
+            if (succeeded) {
+                MessagingEvents.publish(
+                    MessagingEvent.MessageSent(
+                        threadId = threadId,
+                        messageId = messageId,
+                        isMms = false,
+                    )
+                )
+            } else {
+                val recipientName = context.getMyContactsCursor(favoritesOnly = false, withPhoneNumbersOnly = true).use {
+                    context.getNameFromAddress(address, it)
                 }
-
-                context.messagesDB.updateType(messageId, type)
-                refreshMessages()
-                refreshConversations(reconcile = false)
-            }
-        }
-    }
-
-    private fun showSendingFailedNotification(context: Context, messageId: Long) {
-        Handler(Looper.getMainLooper()).post {
-            if (ProcessLifecycleOwner.get().lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
-                return@post
-            }
-            val privateCursor = context.getMyContactsCursor(favoritesOnly = false, withPhoneNumbersOnly = true)
-            ensureBackgroundThread {
-                val address = context.getMessageRecipientAddress(messageId)
-                val threadId = context.getThreadId(address)
-                val recipientName = context.getNameFromAddress(address, privateCursor)
-                context.notificationHelper.showSendingFailedNotification(recipientName, threadId)
+                val reason = context.messagingUtils.sendErrorReason(receiverResultCode, errorCode).orEmpty()
+                MessagingEvents.publish(
+                    MessagingEvent.SendFailed(
+                        threadId = threadId,
+                        messageId = messageId,
+                        isMms = false,
+                        recipientName = recipientName,
+                        reason = reason,
+                    )
+                )
             }
         }
     }

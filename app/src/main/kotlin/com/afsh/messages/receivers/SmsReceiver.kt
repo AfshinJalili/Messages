@@ -11,18 +11,16 @@ import com.afsh.commons.models.PhoneNumber
 import com.afsh.commons.models.SimpleContact
 import com.afsh.messages.extensions.getConversations
 import com.afsh.messages.extensions.getNameFromAddress
-import com.afsh.messages.extensions.getNotificationBitmap
 import com.afsh.messages.extensions.getThreadId
 import com.afsh.messages.extensions.insertNewSMS
 import com.afsh.messages.extensions.insertOrUpdateConversation
 import com.afsh.messages.extensions.messagesDB
 import com.afsh.messages.extensions.shouldUnarchive
-import com.afsh.messages.extensions.showReceivedMessageNotification
 import com.afsh.messages.extensions.updateConversationArchivedStatus
 import com.afsh.messages.helpers.ConversationPreview
 import com.afsh.messages.helpers.IncomingSpamClassifier
-import com.afsh.messages.helpers.refreshConversations
-import com.afsh.messages.helpers.refreshMessages
+import com.afsh.messages.helpers.MessagingEvent
+import com.afsh.messages.helpers.MessagingEvents
 import com.afsh.messages.models.Message
 import com.afsh.messages.models.SpamMessage
 
@@ -79,7 +77,6 @@ class SmsReceiver : BroadcastReceiver() {
         spamReason: Int?,
     ) {
         val photoUri = SimpleContactsHelper(context).getPhotoUriFromPhoneNumber(address)
-        val bitmap = context.getNotificationBitmap(photoUri)
 
         val newMessageId = context.insertNewSMS(
             address = address,
@@ -140,19 +137,18 @@ class SmsReceiver : BroadcastReceiver() {
             context.updateConversationArchivedStatus(threadId, false)
         }
 
-        refreshMessages()
-        // Room already has this thread; a full provider reconcile on every SMS drains battery.
-        refreshConversations(reconcile = false)
-
-        if (spamReason == null) {
-            context.showReceivedMessageNotification(
+        // Room already has this thread; MessagingEvent.IncomingMessage never triggers a full reconcile.
+        MessagingEvents.publish(
+            MessagingEvent.IncomingMessage(
+                threadId = threadId,
                 messageId = newMessageId,
+                isMms = false,
+                isSpam = spamReason != null,
                 address = address,
                 senderName = senderName,
                 body = body,
-                threadId = threadId,
-                bitmap = bitmap
+                photoUri = photoUri,
             )
-        }
+        )
     }
 }

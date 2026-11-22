@@ -57,6 +57,8 @@ import com.afsh.messages.helpers.FILE_SIZE_NONE
 import com.afsh.messages.helpers.MAX_MESSAGE_LENGTH
 import com.afsh.messages.helpers.MESSAGES_LIMIT
 import com.afsh.messages.helpers.MessagingCache
+import com.afsh.messages.helpers.MessagingEvent
+import com.afsh.messages.helpers.MessagingEvents
 import com.afsh.messages.helpers.NotificationHelper
 import com.afsh.messages.helpers.ShortcutHelper
 import com.afsh.messages.helpers.generateRandomId
@@ -73,8 +75,6 @@ import com.afsh.messages.models.Attachment
 import com.afsh.messages.models.BlockedMessagesThread
 import com.afsh.messages.models.SpamReviewMessage
 import com.afsh.messages.models.Conversation
-import com.afsh.messages.models.Events
-import org.greenrobot.eventbus.EventBus
 import com.afsh.messages.models.Draft
 import com.afsh.messages.models.Message
 import com.afsh.messages.models.SearchResult
@@ -811,6 +811,24 @@ fun Context.getThreadSnippet(threadId: Long): String {
     return snippet
 }
 
+fun Context.getSmsThreadId(messageId: Long): Long? {
+    if (messageId == 0L) return null
+    messagesDB.getThreadIdForMessage(messageId)?.takeIf { it != 0L }?.let { return it }
+    return try {
+        contentResolver.query(
+            Sms.CONTENT_URI,
+            arrayOf(Sms.THREAD_ID),
+            "${Sms._ID} = ?",
+            arrayOf(messageId.toString()),
+            null,
+        )?.use { cursor ->
+            if (cursor.moveToFirst()) cursor.getLongValue(Sms.THREAD_ID).takeIf { it != 0L } else null
+        }
+    } catch (_: Exception) {
+        null
+    }
+}
+
 fun Context.getMessageRecipientAddress(messageId: Long): String {
     val uri = Sms.CONTENT_URI
     val projection = arrayOf(
@@ -1207,7 +1225,7 @@ fun Context.markVisibleMessagesRead(threadId: Long, visibleMessages: List<Messag
     }
     val count = getUnreadCountsByThread()[threadId] ?: 0
     conversationsDB.updateUnreadCount(threadId, count)
-    EventBus.getDefault().post(Events.ConversationReadStateChanged(threadId, count == 0, count))
+    MessagingEvents.publish(MessagingEvent.ReadStateChanged(threadId, count == 0, count))
     return completed
 }
 
@@ -1233,7 +1251,7 @@ fun Context.markThreadMessagesRead(threadId: Long) {
     messagesDB.markThreadRead(threadId)
     conversationsDB.markRead(threadId)
     config.clearManuallyUnread(threadId)
-    EventBus.getDefault().post(Events.ConversationReadStateChanged(threadId, true))
+    MessagingEvents.publish(MessagingEvent.ReadStateChanged(threadId, read = true, unreadCount = 0))
 }
 
 // Read state of spam belongs to the Spam screen, so thread-wide read and unread leave it alone.
@@ -1289,7 +1307,7 @@ fun Context.markThreadMessagesUnread(threadId: Long) {
     }
     val count = getUnreadCountsByThread()[threadId] ?: 0
     if (count > 0) conversationsDB.updateUnreadCount(threadId, count) else conversationsDB.markUnread(threadId)
-    EventBus.getDefault().post(Events.ConversationReadStateChanged(threadId, false, count.takeIf { it > 0 }))
+    MessagingEvents.publish(MessagingEvent.ReadStateChanged(threadId, read = false, unreadCount = count.takeIf { it > 0 }))
 }
 
 @SuppressLint("NewApi")
@@ -1307,26 +1325,6 @@ fun Context.getThreadId(addresses: Set<String>): Long {
         Threads.getOrCreateThreadId(this, addresses)
     } catch (_: Exception) {
         0L
-    }
-}
-
-fun Context.showReceivedMessageNotification(
-    messageId: Long,
-    address: String,
-    senderName: String,
-    body: String,
-    threadId: Long,
-    bitmap: Bitmap?,
-) {
-    Handler(Looper.getMainLooper()).post {
-        notificationHelper.showMessageNotification(
-            messageId = messageId,
-            address = address,
-            body = body,
-            threadId = threadId,
-            bitmap = bitmap,
-            sender = senderName
-        )
     }
 }
 

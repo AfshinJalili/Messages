@@ -11,6 +11,8 @@ import com.afsh.commons.extensions.showErrorToast
 import com.afsh.commons.helpers.SimpleContactsHelper
 import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.messages.extensions.*
+import com.afsh.messages.helpers.MessagingEvent
+import com.afsh.messages.helpers.MessagingEvents
 import com.afsh.messages.helpers.REPLY
 import com.afsh.messages.helpers.THREAD_ID
 import com.afsh.messages.helpers.THREAD_NUMBER
@@ -56,19 +58,21 @@ class DirectReplyReceiver : BroadcastReceiver() {
                 val photoUri = SimpleContactsHelper(context).getPhotoUriFromPhoneNumber(address)
                 val bitmap = context.getNotificationBitmap(photoUri)
                 Handler(Looper.getMainLooper()).post {
-                    context.notificationHelper.showMessageNotification(
+                    context.notificationHelper.appendDirectReplyNotification(
                         messageId = messageId,
                         address = address,
                         body = body,
                         threadId = threadId,
                         bitmap = bitmap,
-                        sender = null,
-                        alertOnlyOnce = true
                     )
                 }
 
+                // markThreadMessagesRead also publishes MessagingEvent.ReadStateChanged.
                 context.markThreadMessagesRead(threadId)
                 context.conversationsDB.markRead(threadId)
+                if (messageId != 0L) {
+                    MessagingEvents.publish(MessagingEvent.MessageSent(threadId = threadId, messageId = messageId, isMms = false))
+                }
             }
         }
     }

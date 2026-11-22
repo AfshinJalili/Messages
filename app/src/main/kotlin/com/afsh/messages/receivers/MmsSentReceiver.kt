@@ -7,18 +7,18 @@ import android.content.Intent
 import android.database.sqlite.SQLiteException
 import android.net.Uri
 import android.provider.Telephony
-import android.widget.Toast
-import com.afsh.messages.R
-import com.afsh.messages.extensions.deleteMessage
-import com.afsh.messages.helpers.ConversationSync
-import com.afsh.messages.helpers.refreshConversations
-import com.afsh.messages.helpers.refreshMessages
 import com.afsh.commons.extensions.showErrorToast
-import com.afsh.commons.extensions.toast
 import com.afsh.commons.helpers.ensureBackgroundThread
+import com.afsh.messages.R
+import com.afsh.messages.extensions.conversationsDB
+import com.afsh.messages.extensions.deleteMessage
+import com.afsh.messages.extensions.getConversations
+import com.afsh.messages.helpers.ConversationSync
+import com.afsh.messages.helpers.MessagingEvent
+import com.afsh.messages.helpers.MessagingEvents
 import java.io.File
 
-/** Handles updating databases and states when a MMS message is sent. */
+/** Handles updating databases and publishing send outcomes when an MMS message is sent or fails. */
 class MmsSentReceiver : SendStatusReceiver() {
 
     override fun updateAndroidDatabase(context: Context, intent: Intent, receiverResultCode: Int) {
@@ -27,8 +27,6 @@ class MmsSentReceiver : SendStatusReceiver() {
         val messageBox = if (receiverResultCode == Activity.RESULT_OK) {
             Telephony.Mms.MESSAGE_BOX_SENT
         } else {
-            val msg = context.getString(R.string.unknown_error_occurred_sending_message, receiverResultCode)
-            context.toast(msg = msg, length = Toast.LENGTH_LONG)
             Telephony.Mms.MESSAGE_BOX_FAILED
         }
 
@@ -55,11 +53,34 @@ class MmsSentReceiver : SendStatusReceiver() {
 
     override fun updateAppDatabase(context: Context, intent: Intent, receiverResultCode: Int) {
         val uri = intent.getStringExtra(EXTRA_CONTENT_URI)?.let(Uri::parse)
+        val messageId = uri?.lastPathSegment?.toLongOrNull() ?: 0L
         ensureBackgroundThread {
             // Without a full reconcile, Room still needs this thread's snippet/date/unread.
-            ConversationSync.syncThreadForMmsUri(context, uri)
-            refreshMessages()
-            refreshConversations(reconcile = false)
+            val threadId = ConversationSync.syncThreadForMmsUri(context, uri) ?: 0L
+            if (receiverResultCode == Activity.RESULT_OK) {
+                MessagingEvents.publish(
+                    MessagingEvent.MessageSent(
+                        threadId = threadId,
+                        messageId = messageId,
+                        isMms = true,
+                    )
+                )
+            } else {
+                val recipientName = context.conversationsDB.getConversationWithThreadId(threadId)?.title
+                    ?.ifEmpty { null }
+                    ?: context.getConversations(threadId).firstOrNull()?.title
+                    ?: ""
+                val reason = context.getString(R.string.unknown_error_occurred_sending_message, receiverResultCode)
+                MessagingEvents.publish(
+                    MessagingEvent.SendFailed(
+                        threadId = threadId,
+                        messageId = messageId,
+                        isMms = true,
+                        recipientName = recipientName,
+                        reason = reason,
+                    )
+                )
+            }
         }
     }
 

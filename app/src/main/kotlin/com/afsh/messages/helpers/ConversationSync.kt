@@ -8,9 +8,9 @@ import com.afsh.messages.extensions.insertOrUpdateConversation
 import com.afsh.commons.extensions.getLongValue
 
 /**
- * Targeted Room updates used by message receivers when [refreshConversations] runs with
- * `reconcile = false`. Each path writes the affected conversation (and sometimes unread) so the
- * inbox LiveData, badges and open thread still refresh without a full Telephony pass.
+ * Targeted Room updates used by message receivers that skip a full Telephony reconcile.
+ * Each path writes the affected conversation (and sometimes unread) so the inbox LiveData,
+ * badges, and open thread still refresh without a full Telephony pass.
  */
 object ConversationSync {
 
@@ -21,11 +21,12 @@ object ConversationSync {
         runCatching { context.insertOrUpdateConversation(conversation) }
     }
 
-    /** Resolve the Telephony thread id for an MMS content uri, then [syncThread]. */
-    fun syncThreadForMmsUri(context: Context, messageUri: Uri?) {
-        val threadId = threadIdForMms(context, messageUri) ?: return
+    /** Resolve the Telephony thread id for an MMS content uri, then [syncThread]. Returns the thread id, if found. */
+    fun syncThreadForMmsUri(context: Context, messageUri: Uri?): Long? {
+        val threadId = threadIdForMms(context, messageUri) ?: return null
         syncThread(context, threadId)
         InboxRepository.refreshUnreadCounts(context, listOf(threadId))
+        return threadId
     }
 
     private fun threadIdForMms(context: Context, messageUri: Uri?): Long? {
