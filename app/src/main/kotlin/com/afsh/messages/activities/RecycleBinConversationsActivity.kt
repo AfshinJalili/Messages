@@ -6,9 +6,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import com.afsh.commons.extensions.notificationManager
 import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.messages.extensions.conversationsDB
@@ -27,7 +24,6 @@ import com.afsh.messages.ui.library.RecycleBinEvent
 import com.afsh.messages.ui.library.RecycleBinScreen
 import com.afsh.messages.ui.library.RecycleBinUiState
 import com.afsh.messages.ui.library.RecycledConversation
-import kotlinx.coroutines.launch
 
 /**
  * 22 · Recycle bin. Restore is immediate. Delete forever and Empty recycle bin are confirmed on
@@ -43,13 +39,7 @@ class RecycleBinConversationsActivity : ComposePageActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                MessagingEvents.events.collect { event ->
-                    if (event.affectsConversationList()) reload()
-                }
-            }
-        }
+        reloadOnMessagingEvents { it.affectsConversationList() }
     }
 
     override fun onResume() {

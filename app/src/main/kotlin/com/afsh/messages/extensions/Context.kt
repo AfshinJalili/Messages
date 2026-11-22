@@ -814,18 +814,14 @@ fun Context.getThreadSnippet(threadId: Long): String {
 fun Context.getSmsThreadId(messageId: Long): Long? {
     if (messageId == 0L) return null
     messagesDB.getThreadIdForMessage(messageId)?.takeIf { it != 0L }?.let { return it }
-    return try {
-        contentResolver.query(
-            Sms.CONTENT_URI,
-            arrayOf(Sms.THREAD_ID),
-            "${Sms._ID} = ?",
-            arrayOf(messageId.toString()),
-            null,
-        )?.use { cursor ->
-            if (cursor.moveToFirst()) cursor.getLongValue(Sms.THREAD_ID).takeIf { it != 0L } else null
-        }
-    } catch (_: Exception) {
-        null
+    return contentResolver.query(
+        Sms.CONTENT_URI,
+        arrayOf(Sms.THREAD_ID),
+        "${Sms._ID} = ?",
+        arrayOf(messageId.toString()),
+        null,
+    )?.use { cursor ->
+        if (cursor.moveToFirst()) cursor.getLongValue(Sms.THREAD_ID).takeIf { it != 0L } else null
     }
 }
 

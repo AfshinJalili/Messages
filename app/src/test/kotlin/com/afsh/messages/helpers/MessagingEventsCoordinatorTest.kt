@@ -9,7 +9,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-private class FakeAttentionSink : AttentionSink {
+private class FakeMessagingEventHost : MessagingEventHost {
     val mutedThreads = mutableSetOf<Long>()
     val incomingAlerts = mutableListOf<MessagingEvent.IncomingMessage>()
     val sendFailureAlerts = mutableListOf<MessagingEvent.SendFailed>()
@@ -38,12 +38,12 @@ private class FakeAttentionSink : AttentionSink {
 class MessagingEventsCoordinatorTest {
 
     private var deviceLockedOrOff = false
-    private val sink = FakeAttentionSink()
+    private val host = FakeMessagingEventHost()
     private val presence = AppPresenceTracker(
         isDeviceLockedOrOff = { deviceLockedOrOff },
-        onEnterConversation = { sink.cancelConversationNotification(it) },
+        onEnterConversation = { host.cancelConversationNotification(it) },
     )
-    private val coordinator = MessagingEventCoordinator(presence, sink)
+    private val coordinator = MessagingEventCoordinator(presence, host)
 
     private fun incoming(
         threadId: Long = 10L,
@@ -80,9 +80,9 @@ class MessagingEventsCoordinatorTest {
         val sms = incoming(threadId = 10L, isMms = false)
         val mms = incoming(threadId = 10L, messageId = 101L, isMms = true)
 
-        assertEquals(AttentionDecision.ShowIncomingAlert, coordinator.publish(sms))
-        assertEquals(AttentionDecision.ShowIncomingAlert, coordinator.publish(mms))
-        assertEquals(listOf(sms, mms), sink.incomingAlerts)
+        assertEquals(AttentionDecision.ShowIncomingAlert(sms), coordinator.publish(sms))
+        assertEquals(AttentionDecision.ShowIncomingAlert(mms), coordinator.publish(mms))
+        assertEquals(listOf(sms, mms), host.incomingAlerts)
     }
 
     @Test
@@ -92,8 +92,8 @@ class MessagingEventsCoordinatorTest {
 
         assertEquals(AttentionDecision.Suppress, coordinator.publish(incoming(threadId = 10L, isMms = false)))
         assertEquals(AttentionDecision.Suppress, coordinator.publish(incoming(threadId = 10L, messageId = 101L, isMms = true)))
-        assertTrue(sink.incomingAlerts.isEmpty())
-        assertEquals(listOf(10L), sink.cancelledNotifications)
+        assertTrue(host.incomingAlerts.isEmpty())
+        assertEquals(listOf(10L), host.cancelledNotifications)
     }
 
     @Test
@@ -102,8 +102,8 @@ class MessagingEventsCoordinatorTest {
         presence.onConversationActive(threadB, threadId = 20L, isRecycleBin = false)
 
         val event = incoming(threadId = 10L)
-        assertEquals(AttentionDecision.ShowIncomingAlert, coordinator.publish(event))
-        assertEquals(listOf(event), sink.incomingAlerts)
+        assertEquals(AttentionDecision.ShowIncomingAlert(event), coordinator.publish(event))
+        assertEquals(listOf(event), host.incomingAlerts)
     }
 
     @Test
@@ -113,8 +113,8 @@ class MessagingEventsCoordinatorTest {
         assertEquals(AppPresence.InApp, presence.current())
 
         val event = incoming(threadId = 10L)
-        assertEquals(AttentionDecision.ShowIncomingAlert, coordinator.publish(event))
-        assertEquals(listOf(event), sink.incomingAlerts)
+        assertEquals(AttentionDecision.ShowIncomingAlert(event), coordinator.publish(event))
+        assertEquals(listOf(event), host.incomingAlerts)
     }
 
     @Test
@@ -122,11 +122,11 @@ class MessagingEventsCoordinatorTest {
         val recycleThread = Any()
         presence.onConversationActive(recycleThread, threadId = 10L, isRecycleBin = true)
         assertEquals(AppPresence.InApp, presence.current())
-        assertTrue(sink.cancelledNotifications.isEmpty())
+        assertTrue(host.cancelledNotifications.isEmpty())
 
         val event = incoming(threadId = 10L)
-        assertEquals(AttentionDecision.ShowIncomingAlert, coordinator.publish(event))
-        assertEquals(listOf(event), sink.incomingAlerts)
+        assertEquals(AttentionDecision.ShowIncomingAlert(event), coordinator.publish(event))
+        assertEquals(listOf(event), host.incomingAlerts)
     }
 
     @Test
@@ -138,8 +138,12 @@ class MessagingEventsCoordinatorTest {
         assertEquals(AppPresence.Locked, presence.current())
 
         val event = incoming(threadId = 10L)
-        assertEquals(AttentionDecision.ShowIncomingAlert, coordinator.publish(event))
-        assertEquals(listOf(event), sink.incomingAlerts)
+        assertEquals(AttentionDecision.ShowIncomingAlert(event), coordinator.publish(event))
+        assertEquals(listOf(event), host.incomingAlerts)
+
+        // Pausing the lock screen restores viewing the underlying conversation.
+        presence.onScreenPaused(lockScreen)
+        assertEquals(AppPresence.ViewingConversation(10L), presence.current())
     }
 
     @Test
@@ -150,8 +154,8 @@ class MessagingEventsCoordinatorTest {
         assertEquals(AppPresence.Locked, presence.current())
 
         val event = incoming(threadId = 10L)
-        assertEquals(AttentionDecision.ShowIncomingAlert, coordinator.publish(event))
-        assertEquals(listOf(event), sink.incomingAlerts)
+        assertEquals(AttentionDecision.ShowIncomingAlert(event), coordinator.publish(event))
+        assertEquals(listOf(event), host.incomingAlerts)
     }
 
     @Test
@@ -159,11 +163,11 @@ class MessagingEventsCoordinatorTest {
         val threadScreen = Any()
         deviceLockedOrOff = true
         presence.onConversationActive(threadScreen, threadId = 10L, isRecycleBin = false)
-        assertTrue(sink.cancelledNotifications.isEmpty())
+        assertTrue(host.cancelledNotifications.isEmpty())
 
         deviceLockedOrOff = false
         presence.onConversationActive(threadScreen, threadId = 10L, isRecycleBin = false)
-        assertEquals(listOf(10L), sink.cancelledNotifications)
+        assertEquals(listOf(10L), host.cancelledNotifications)
     }
 
     @Test
@@ -175,14 +179,17 @@ class MessagingEventsCoordinatorTest {
         presence.onScreenResumed(threadA)
 
         assertEquals(AppPresence.ViewingConversation(10L), presence.current())
-        assertEquals(listOf(10L), sink.cancelledNotifications)
+        assertEquals(listOf(10L), host.cancelledNotifications)
         assertEquals(AttentionDecision.Suppress, coordinator.publish(incoming(threadId = 10L)))
-        assertEquals(AttentionDecision.ShowIncomingAlert, coordinator.publish(incoming(threadId = 99L)))
+
+        val other = incoming(threadId = 99L)
+        assertEquals(AttentionDecision.ShowIncomingAlert(other), coordinator.publish(other))
 
         // Closing the detail pane reverts to InApp (Inbox still resumed)
         presence.onScreenPaused(threadA)
         assertEquals(AppPresence.InApp, presence.current())
-        assertEquals(AttentionDecision.ShowIncomingAlert, coordinator.publish(incoming(threadId = 10L)))
+        val afterClose = incoming(threadId = 10L)
+        assertEquals(AttentionDecision.ShowIncomingAlert(afterClose), coordinator.publish(afterClose))
     }
 
     @Test
@@ -190,11 +197,25 @@ class MessagingEventsCoordinatorTest {
         val threadScreen = Any()
         presence.onConversationActive(threadScreen, threadId = 0L, isRecycleBin = false)
         assertEquals(AppPresence.InApp, presence.current())
-        assertTrue(sink.cancelledNotifications.isEmpty())
+        assertTrue(host.cancelledNotifications.isEmpty())
 
-        presence.onConversationActive(threadScreen, threadId = 55L, isRecycleBin = false)
+        presence.onConversationThreadUpdated(threadScreen, threadId = 55L, isRecycleBin = false)
         assertEquals(AppPresence.ViewingConversation(55L), presence.current())
-        assertEquals(listOf(55L), sink.cancelledNotifications)
+        assertEquals(listOf(55L), host.cancelledNotifications)
+    }
+
+    @Test
+    fun `thread id update after pause cannot resurrect a backgrounded conversation`() {
+        val threadScreen = Any()
+        presence.onConversationActive(threadScreen, threadId = 10L, isRecycleBin = false)
+        presence.onScreenPaused(threadScreen)
+        assertEquals(AppPresence.Background, presence.current())
+
+        presence.onConversationThreadUpdated(threadScreen, threadId = 55L, isRecycleBin = false)
+        assertEquals(AppPresence.Background, presence.current())
+
+        val event = incoming(threadId = 55L)
+        assertEquals(AttentionDecision.ShowIncomingAlert(event), coordinator.publish(event))
     }
 
     // --- Spam & muted conversations ---
@@ -203,14 +224,14 @@ class MessagingEventsCoordinatorTest {
     fun `spam SMS and MMS are always suppressed regardless of App Presence`() {
         assertEquals(AttentionDecision.Suppress, coordinator.publish(incoming(threadId = 10L, isSpam = true)))
         assertEquals(AttentionDecision.Suppress, coordinator.publish(incoming(threadId = 10L, isMms = true, isSpam = true)))
-        assertTrue(sink.incomingAlerts.isEmpty())
+        assertTrue(host.incomingAlerts.isEmpty())
     }
 
     @Test
     fun `muted conversation incoming messages are suppressed regardless of App Presence`() {
-        sink.mutedThreads += 10L
+        host.mutedThreads += 10L
         assertEquals(AttentionDecision.Suppress, coordinator.publish(incoming(threadId = 10L)))
-        assertTrue(sink.incomingAlerts.isEmpty())
+        assertTrue(host.incomingAlerts.isEmpty())
     }
 
     // --- Outgoing SMS and MMS send failures ---
@@ -222,15 +243,15 @@ class MessagingEventsCoordinatorTest {
 
         val smsDeferred = async(start = CoroutineStart.UNDISPATCHED) { coordinator.inThreadFailures.first() }
         val smsFailure = sendFailed(threadId = 10L, isMms = false, reason = "No service")
-        assertEquals(AttentionDecision.ShowInThreadFailureReason, coordinator.publish(smsFailure))
+        assertEquals(AttentionDecision.ShowInThreadFailureReason(smsFailure), coordinator.publish(smsFailure))
         assertEquals(smsFailure, smsDeferred.await())
 
         val mmsDeferred = async(start = CoroutineStart.UNDISPATCHED) { coordinator.inThreadFailures.first() }
         val mmsFailure = sendFailed(threadId = 10L, messageId = 201L, isMms = true, reason = "MMS error")
-        assertEquals(AttentionDecision.ShowInThreadFailureReason, coordinator.publish(mmsFailure))
+        assertEquals(AttentionDecision.ShowInThreadFailureReason(mmsFailure), coordinator.publish(mmsFailure))
         assertEquals(mmsFailure, mmsDeferred.await())
 
-        assertTrue(sink.sendFailureAlerts.isEmpty())
+        assertTrue(host.sendFailureAlerts.isEmpty())
     }
 
     @Test
@@ -239,23 +260,23 @@ class MessagingEventsCoordinatorTest {
         presence.onConversationActive(otherThread, threadId = 20L, isRecycleBin = false)
 
         val smsFailure = sendFailed(threadId = 10L, isMms = false)
-        assertEquals(AttentionDecision.ShowSendFailureAlert, coordinator.publish(smsFailure))
+        assertEquals(AttentionDecision.ShowSendFailureAlert(smsFailure), coordinator.publish(smsFailure))
 
         presence.onScreenPaused(otherThread)
         assertEquals(AppPresence.Background, presence.current())
         val mmsFailure = sendFailed(threadId = 10L, messageId = 201L, isMms = true)
-        assertEquals(AttentionDecision.ShowSendFailureAlert, coordinator.publish(mmsFailure))
+        assertEquals(AttentionDecision.ShowSendFailureAlert(mmsFailure), coordinator.publish(mmsFailure))
 
-        assertEquals(listOf(smsFailure, mmsFailure), sink.sendFailureAlerts)
+        assertEquals(listOf(smsFailure, mmsFailure), host.sendFailureAlerts)
     }
 
     @Test
     fun `muting a conversation does not suppress outgoing send failure alerts`() {
-        sink.mutedThreads += 10L
+        host.mutedThreads += 10L
         val failure = sendFailed(threadId = 10L)
 
-        assertEquals(AttentionDecision.ShowSendFailureAlert, coordinator.publish(failure))
-        assertEquals(listOf(failure), sink.sendFailureAlerts)
+        assertEquals(AttentionDecision.ShowSendFailureAlert(failure), coordinator.publish(failure))
+        assertEquals(listOf(failure), host.sendFailureAlerts)
     }
 
     // --- Non-alerting events, reconcile battery guard, and subscriber filtering ---
@@ -272,25 +293,26 @@ class MessagingEventsCoordinatorTest {
         events.forEach { event ->
             assertEquals(AttentionDecision.Suppress, coordinator.publish(event))
         }
-        assertTrue(sink.incomingAlerts.isEmpty())
-        assertTrue(sink.sendFailureAlerts.isEmpty())
-        assertEquals(0, sink.inboxRefreshes)
+        assertTrue(host.incomingAlerts.isEmpty())
+        assertTrue(host.sendFailureAlerts.isEmpty())
+        assertEquals(0, host.inboxRefreshes)
     }
 
     @Test
     fun `structural conversation change and scheduled send trigger inbox reconcile`() {
         coordinator.publish(MessagingEvent.ConversationsChanged(reconcile = true))
         coordinator.publish(MessagingEvent.ScheduledMessageSent(threadId = 10L, messageId = 5L))
-        assertEquals(2, sink.inboxRefreshes)
+        assertEquals(2, host.inboxRefreshes)
     }
 
     @Test
-    fun `thread relevance filter isolates unrelated conversations and matches global changes`() {
+    fun `thread relevance filter isolates unrelated conversations, ignores single-thread metadata pauses, and matches global changes`() {
         assertTrue(incoming(threadId = 10L).affectsThread(10L))
         assertFalse(incoming(threadId = 10L).affectsThread(20L))
         assertTrue(MessagingEvent.DeliveryUpdated(threadId = null, messageId = 1L).affectsThread(20L))
         assertFalse(MessagingEvent.DeliveryUpdated(threadId = 10L, messageId = 1L).affectsThread(20L))
         assertTrue(MessagingEvent.ConversationsChanged(threadId = null, reconcile = true).affectsThread(20L))
+        assertFalse(MessagingEvent.ConversationsChanged(threadId = 10L, reconcile = false).affectsThread(10L))
         assertFalse(MessagingEvent.ConversationsChanged(threadId = 10L, reconcile = false).affectsThread(20L))
     }
 

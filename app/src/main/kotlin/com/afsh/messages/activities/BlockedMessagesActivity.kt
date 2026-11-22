@@ -7,9 +7,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.messages.R
 import com.afsh.messages.extensions.config
@@ -17,9 +14,7 @@ import com.afsh.messages.extensions.deleteMessage
 import com.afsh.messages.extensions.getSpamMessages
 import com.afsh.messages.extensions.messagesDB
 import com.afsh.messages.helpers.InboxRepository
-import com.afsh.messages.helpers.MessagingEvents
 import com.afsh.messages.helpers.affectsSpam
-import kotlinx.coroutines.launch
 import com.afsh.messages.helpers.containsNumber
 import com.afsh.messages.helpers.OPEN_SPAM
 import com.afsh.messages.helpers.THREAD_ID
@@ -50,13 +45,7 @@ class BlockedMessagesActivity : ComposePageActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                MessagingEvents.events.collect { event ->
-                    if (event.affectsSpam()) reload()
-                }
-            }
-        }
+        reloadOnMessagingEvents { it.affectsSpam() }
     }
 
     override fun onResume() {

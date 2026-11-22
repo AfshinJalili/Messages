@@ -206,6 +206,7 @@ import kotlinx.coroutines.CompletableDeferred
  */
 class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
     private var threadId = 0L
+    @Volatile
     private var isActivityVisible = false
     private var markReadInProgress = false
     private val updateScrollPosition = Runnable {
@@ -1067,6 +1068,14 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         }
     }
 
+    private fun syncActiveConversationThread() {
+        runOnUiThread {
+            if (isActivityVisible && !isDestroyed) {
+                MessagingEvents.onConversationThreadUpdated(this, threadId, isRecycleBin)
+            }
+        }
+    }
+
     private fun reloadMessages() {
         if (isRecycleBin) {
             return
@@ -1083,9 +1092,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         if (current.isNotEmpty() && current.all { it.isScheduled } && newMessages.isNotEmpty()) {
             // update scheduled messages with real thread id
             threadId = newThreadId
-            if (isActivityVisible) {
-                MessagingEvents.onConversationActive(this, threadId, isRecycleBin)
-            }
+            syncActiveConversationThread()
             updateScheduledMessagesThreadId(
                 messages = current.filter { it.threadId != threadId },
                 newThreadId = threadId
@@ -1857,9 +1864,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
                 if (data.isEmpty) {
                     // create a temporary thread until a real message is sent
                     threadId = message.threadId
-                    if (isActivityVisible) {
-                        MessagingEvents.onConversationActive(this, threadId, isRecycleBin)
-                    }
+                    syncActiveConversationThread()
                     createTemporaryThread(message, message.threadId, conversation)
                 }
                 val conversation = conversationsDB.getConversationWithThreadId(threadId)
@@ -2046,6 +2051,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
             createTemporaryThread(scheduledMessage, fakeThreadId, conversation)
             updateScheduledMessagesThreadId(messages, fakeThreadId)
             threadId = fakeThreadId
+            syncActiveConversationThread()
         }
     }
 

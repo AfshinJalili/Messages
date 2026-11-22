@@ -60,9 +60,9 @@ else:
             f"{rel(EVENTS_FILE)}: ConversationsChanged must take reconcile: Boolean = true "
             "so non-structural updates can skip the full provider pass"
         )
-    if "event.reconcile" not in events_text or "sink.refreshInbox()" not in events_text:
+    if "event.reconcile" not in events_text or "host.refreshInbox()" not in events_text:
         violations.append(
-            f"{rel(EVENTS_FILE)}: must only call sink.refreshInbox() when reconcile is true or for ScheduledMessageSent"
+            f"{rel(EVENTS_FILE)}: must only call host.refreshInbox() when reconcile is true or for ScheduledMessageSent"
         )
 
 # Targeted single-thread sync helper used when reconcile is skipped.

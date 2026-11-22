@@ -11,7 +11,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.ComposeView
 import androidx.core.view.WindowCompat
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
@@ -47,6 +49,17 @@ abstract class ComposePageActivity : SimpleActivity(), UndoDeletion.UndoHost {
 
     /** Reloads the page after a deletion commits or is undone. */
     protected open fun reload() {}
+
+    /** Reloads the page whenever a matching [MessagingEvent] arrives while started. */
+    protected fun reloadOnMessagingEvents(filter: (MessagingEvent) -> Boolean) {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                MessagingEvents.events.collect { event ->
+                    if (filter(event)) reload()
+                }
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

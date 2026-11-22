@@ -8,9 +8,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.messages.R
 import com.afsh.messages.extensions.config
@@ -31,7 +28,6 @@ import com.afsh.messages.ui.inbox.InboxRow
 import com.afsh.messages.ui.library.ArchiveEvent
 import com.afsh.messages.ui.library.ArchiveScreen
 import com.afsh.messages.ui.library.ArchiveUiState
-import kotlinx.coroutines.launch
 
 /**
  * 19 · Archive. Unarchiving hides the rows at once and writes the provider only when its Undo
@@ -74,13 +70,7 @@ class ArchivedConversationsActivity : ComposePageActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                MessagingEvents.events.collect { event ->
-                    if (event.affectsConversationList()) reload()
-                }
-            }
-        }
+        reloadOnMessagingEvents { it.affectsConversationList() }
     }
 
     override fun onResume() {

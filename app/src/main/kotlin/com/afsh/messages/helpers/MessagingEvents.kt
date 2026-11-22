@@ -86,7 +86,13 @@ sealed interface MessagingEvent {
     ) : MessagingEvent
 }
 
-/** Whether [this] event should cause a conversation view for [targetThreadId] to refresh. */
+/**
+ * Whether [this] event should cause a conversation timeline for [targetThreadId] to refresh.
+ *
+ * Bulk structural [MessagingEvent.ConversationsChanged] events (`threadId == null`, such as import
+ * or Undo deletion) refresh open threads; single-thread conversation-list metadata updates (such as
+ * saving a draft on pause) do not reload the timeline.
+ */
 fun MessagingEvent.affectsThread(targetThreadId: Long): Boolean = when (this) {
     is MessagingEvent.IncomingMessage -> threadId == targetThreadId
     is MessagingEvent.MessageSent -> threadId == targetThreadId
@@ -95,7 +101,7 @@ fun MessagingEvent.affectsThread(targetThreadId: Long): Boolean = when (this) {
     is MessagingEvent.ReadStateChanged -> threadId == targetThreadId
     is MessagingEvent.MessageDeleted -> threadId == targetThreadId
     is MessagingEvent.ScheduledMessageSent -> threadId == targetThreadId
-    is MessagingEvent.ConversationsChanged -> threadId == null || threadId == targetThreadId
+    is MessagingEvent.ConversationsChanged -> threadId == null
 }
 
 /** Whether [this] event can change the Spam review list. */
@@ -122,8 +128,8 @@ fun MessagingEvent.affectsConversationList(): Boolean = when (this) {
     is MessagingEvent.ConversationsChanged -> true
 }
 
-/** Platform side-effect adapter at the seam of [MessagingEventCoordinator]. */
-interface AttentionSink {
+/** Platform host adapter at the seam of [MessagingEventCoordinator]. */
+interface MessagingEventHost {
     fun isConversationMuted(threadId: Long): Boolean
     fun showIncomingAlert(event: MessagingEvent.IncomingMessage)
     fun showSendFailureAlert(event: MessagingEvent.SendFailed)
@@ -133,11 +139,11 @@ interface AttentionSink {
 
 /**
  * Single coordinator that evaluates [AttentionPolicy] against [presence], runs platform
- * notification / reconcile side effects through [sink], and broadcasts typed [MessagingEvent]s.
+ * notification / reconcile side effects through [host], and broadcasts typed [MessagingEvent]s.
  */
 class MessagingEventCoordinator(
     val presence: AppPresenceTracker,
-    private val sink: AttentionSink,
+    private val host: MessagingEventHost,
 ) {
     private val eventsFlow = MutableSharedFlow<MessagingEvent>(
         extraBufferCapacity = 64,
@@ -154,25 +160,22 @@ class MessagingEventCoordinator(
     fun publish(event: MessagingEvent): AttentionDecision {
         val flags = when (event) {
             is MessagingEvent.IncomingMessage ->
-                ConversationAttentionFlags(isMuted = sink.isConversationMuted(event.threadId))
+                ConversationAttentionFlags(isMuted = host.isConversationMuted(event.threadId))
             else -> ConversationAttentionFlags()
         }
         val decision = AttentionPolicy.decide(event, presence.current(), flags)
 
         when (decision) {
-            AttentionDecision.ShowIncomingAlert ->
-                if (event is MessagingEvent.IncomingMessage) sink.showIncomingAlert(event)
-            AttentionDecision.ShowSendFailureAlert ->
-                if (event is MessagingEvent.SendFailed) sink.showSendFailureAlert(event)
-            AttentionDecision.ShowInThreadFailureReason ->
-                if (event is MessagingEvent.SendFailed) inThreadFailuresFlow.tryEmit(event)
+            is AttentionDecision.ShowIncomingAlert -> host.showIncomingAlert(decision.event)
+            is AttentionDecision.ShowSendFailureAlert -> host.showSendFailureAlert(decision.event)
+            is AttentionDecision.ShowInThreadFailureReason -> inThreadFailuresFlow.tryEmit(decision.event)
             AttentionDecision.Suppress -> Unit
         }
 
         if (event is MessagingEvent.ScheduledMessageSent ||
             (event is MessagingEvent.ConversationsChanged && event.reconcile)
         ) {
-            sink.refreshInbox()
+            host.refreshInbox()
         }
 
         eventsFlow.tryEmit(event)
@@ -191,7 +194,7 @@ object MessagingEvents {
     @Volatile
     private var coordinator: MessagingEventCoordinator = createUnboundCoordinator()
 
-    val presence: AppPresenceTracker get() = coordinator.presence
+    internal val presence: AppPresenceTracker get() = coordinator.presence
     val events: SharedFlow<MessagingEvent> get() = coordinator.events
     val inThreadFailures: SharedFlow<MessagingEvent.SendFailed> get() = coordinator.inThreadFailures
 
@@ -200,7 +203,7 @@ object MessagingEvents {
         synchronized(this) {
             if (initialized) return
             val app = application.applicationContext
-            val sink = AndroidAttentionSink(app)
+            val host = AndroidMessagingEventHost(app)
             val powerManager = app.getSystemService(PowerManager::class.java)
             val keyguardManager = app.getSystemService(KeyguardManager::class.java)
             val tracker = AppPresenceTracker(
@@ -209,13 +212,15 @@ object MessagingEvents {
                     val keyguardLocked = keyguardManager != null && keyguardManager.isKeyguardLocked
                     screenOff || keyguardLocked || app.appLockManager.isLocked()
                 },
-                onEnterConversation = { threadId -> sink.cancelConversationNotification(threadId) },
+                onEnterConversation = { threadId -> host.cancelConversationNotification(threadId) },
             )
-            coordinator = MessagingEventCoordinator(tracker, sink)
+            coordinator = MessagingEventCoordinator(tracker, host)
             application.registerActivityLifecycleCallbacks(PresenceLifecycleCallbacks(tracker))
             initialized = true
         }
     }
+
+    fun currentPresence(): AppPresence = presence.current()
 
     fun publish(event: MessagingEvent): AttentionDecision = coordinator.publish(event)
 
@@ -223,19 +228,23 @@ object MessagingEvents {
         presence.onConversationActive(token, threadId, isRecycleBin)
     }
 
+    fun onConversationThreadUpdated(token: Any, threadId: Long, isRecycleBin: Boolean) {
+        presence.onConversationThreadUpdated(token, threadId, isRecycleBin)
+    }
+
     fun onConversationInactive(token: Any) {
         presence.onConversationInactive(token)
     }
 
     private fun createUnboundCoordinator(): MessagingEventCoordinator {
-        val noOpSink = object : AttentionSink {
+        val noOpHost = object : MessagingEventHost {
             override fun isConversationMuted(threadId: Long) = false
             override fun showIncomingAlert(event: MessagingEvent.IncomingMessage) = Unit
             override fun showSendFailureAlert(event: MessagingEvent.SendFailed) = Unit
             override fun cancelConversationNotification(threadId: Long) = Unit
             override fun refreshInbox() = Unit
         }
-        return MessagingEventCoordinator(AppPresenceTracker(), noOpSink)
+        return MessagingEventCoordinator(AppPresenceTracker(), noOpHost)
     }
 
     private class PresenceLifecycleCallbacks(
@@ -250,16 +259,10 @@ object MessagingEvents {
         }
 
         override fun onActivityPaused(activity: Activity) {
-            if (activity is AppLockActivity) {
-                tracker.onLockScreenInactive(activity)
-            }
             tracker.onScreenPaused(activity)
         }
 
         override fun onActivityDestroyed(activity: Activity) {
-            if (activity is AppLockActivity) {
-                tracker.onLockScreenInactive(activity)
-            }
             tracker.onScreenPaused(activity)
         }
 
@@ -269,7 +272,7 @@ object MessagingEvents {
         override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {}
     }
 
-    private class AndroidAttentionSink(private val context: Context) : AttentionSink {
+    private class AndroidMessagingEventHost(private val context: Context) : MessagingEventHost {
         private val mainHandler = Handler(Looper.getMainLooper())
 
         override fun isConversationMuted(threadId: Long): Boolean =

@@ -150,8 +150,18 @@ class RuntimeUxTicketChecks {
                 compose.onNodeWithTag(THREAD_JUMP_TAG).assertExists("History navigation arrow remains available")
                 compose.onNode(hasContentDescription(context.getString(R.string.scroll_to_latest_message)))
                     .assertExists("Read history has no unread counter")
-                sms(phone, threadId, false, 30)
-                MessagingEvents.publish(MessagingEvent.ConversationsChanged(threadId = threadId, reconcile = false))
+                val newId = sms(phone, threadId, false, 30)
+                MessagingEvents.publish(
+                    MessagingEvent.IncomingMessage(
+                        threadId = threadId,
+                        messageId = newId,
+                        isMms = false,
+                        isSpam = false,
+                        address = phone,
+                        senderName = "Unread scroll test",
+                        body = "msg 30",
+                    )
+                )
                 awaitCondition("One unread message shows a count") {
                     compose.onAllNodes(hasContentDescription(context.getString(R.string.scroll_to_unread_messages, 1)))
                         .fetchSemanticsNodes().isNotEmpty()

@@ -3,12 +3,12 @@ package com.afsh.messages.helpers
 /**
  * How the app should interrupt or cue the user for a [MessagingEvent].
  *
- * Pure policy output; see GLOSSARY.md ("Attention Policy") and ADR-0001.
+ * Pure policy output carrying the matched event payload; see GLOSSARY.md ("Attention Policy") and ADR-0001.
  */
 sealed interface AttentionDecision {
-    data object ShowIncomingAlert : AttentionDecision
-    data object ShowSendFailureAlert : AttentionDecision
-    data object ShowInThreadFailureReason : AttentionDecision
+    data class ShowIncomingAlert(val event: MessagingEvent.IncomingMessage) : AttentionDecision
+    data class ShowSendFailureAlert(val event: MessagingEvent.SendFailed) : AttentionDecision
+    data class ShowInThreadFailureReason(val event: MessagingEvent.SendFailed) : AttentionDecision
     data object Suppress : AttentionDecision
 }
 
@@ -31,13 +31,13 @@ object AttentionPolicy {
             flags.isMuted -> AttentionDecision.Suppress
             presence is AppPresence.ViewingConversation && presence.threadId == event.threadId ->
                 AttentionDecision.Suppress
-            else -> AttentionDecision.ShowIncomingAlert
+            else -> AttentionDecision.ShowIncomingAlert(event)
         }
 
         is MessagingEvent.SendFailed -> when {
             presence is AppPresence.ViewingConversation && presence.threadId == event.threadId ->
-                AttentionDecision.ShowInThreadFailureReason
-            else -> AttentionDecision.ShowSendFailureAlert
+                AttentionDecision.ShowInThreadFailureReason(event)
+            else -> AttentionDecision.ShowSendFailureAlert(event)
         }
 
         is MessagingEvent.MessageSent,

@@ -63,7 +63,8 @@ class MmsReceiver : MmsReceivedReceiver() {
         val senderName = context.getMyContactsCursor(favoritesOnly = false, withPhoneNumbersOnly = true).use {
             context.getNameFromAddress(address, it)
         }
-        val attachmentUri = mms.attachment?.attachments?.firstOrNull()?.getUri()?.toString()
+        val firstAttachment = mms.attachment?.attachments?.firstOrNull()
+        val attachmentUri = firstAttachment?.getUri()?.toString()
 
         val conversation = context.getConversations(mms.threadId).firstOrNull()
         if (conversation != null) {

@@ -7,6 +7,10 @@ import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.afsh.commons.extensions.appLockManager
+import com.afsh.commons.extensions.baseConfig
+import com.afsh.commons.helpers.PROTECTION_PIN
+import com.afsh.messages.activities.AppLockActivity
 import com.afsh.messages.activities.ThreadActivity
 import com.afsh.messages.helpers.IS_RECYCLE_BIN
 import com.afsh.messages.helpers.MessagingEvent
@@ -18,6 +22,8 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.math.BigInteger
+import java.security.MessageDigest
 
 @RunWith(AndroidJUnit4::class)
 class MessagingEventsChecks {
@@ -26,13 +32,14 @@ class MessagingEventsChecks {
     private val context = instrumentation.targetContext
     private val manager = context.getSystemService(NotificationManager::class.java)
 
-    private fun awaitCondition(timeoutMs: Long = 5_000L, predicate: () -> Boolean): Boolean {
-        val deadline = SystemClock.uptimeMillis() + timeoutMs
-        while (SystemClock.uptimeMillis() < deadline) {
-            if (predicate()) return true
+    private fun awaitNotification(threadId: Long, expectedPresent: Boolean, timeoutMs: Long = 5_000L): Boolean {
+        val deadline = SystemClock.elapsedRealtime() + timeoutMs
+        while (SystemClock.elapsedRealtime() < deadline) {
+            val present = manager.activeNotifications.any { it.id == threadId.hashCode() }
+            if (present == expectedPresent) return true
             SystemClock.sleep(50)
         }
-        return predicate()
+        return manager.activeNotifications.any { it.id == threadId.hashCode() } == expectedPresent
     }
 
     private fun cleanupThreadNotification(threadId: Long) {
@@ -51,21 +58,44 @@ class MessagingEventsChecks {
         body = body,
     )
 
+    private fun threadIntent(
+        threadId: Long,
+        phone: String,
+        title: String,
+        recycleBin: Boolean = false,
+    ): Intent = Intent(context, ThreadActivity::class.java)
+        .putExtra(THREAD_ID, threadId)
+        .putExtra(THREAD_NUMBER, phone)
+        .putExtra(THREAD_TITLE, title)
+        .apply { if (recycleBin) putExtra(IS_RECYCLE_BIN, true) }
+
+    private fun withSyntheticThread(
+        threadId: Long,
+        phone: String,
+        title: String,
+        extraCleanupIds: List<Long> = emptyList(),
+        block: () -> Unit,
+    ) {
+        val room = RoomOnlyThread(
+            context,
+            fixtureConversation(threadId, title, snippet = "Hi", phone = phone, scheduled = true),
+        )
+        room.insert()
+        try {
+            block()
+        } finally {
+            room.delete()
+            cleanupThreadNotification(threadId)
+            extraCleanupIds.forEach(::cleanupThreadNotification)
+        }
+    }
+
     @Test
     fun incomingEventSuppressedWhileViewingConversationAndAlertsForOtherThread() {
         val openThreadId = Long.MAX_VALUE - 41001
         val otherThreadId = Long.MAX_VALUE - 41002
-        val room = RoomOnlyThread(
-            context,
-            fixtureConversation(openThreadId, "Active Thread", snippet = "Hi", phone = "555019901", scheduled = true),
-        )
-        room.insert()
-        try {
-            val intent = Intent(context, ThreadActivity::class.java)
-                .putExtra(THREAD_ID, openThreadId)
-                .putExtra(THREAD_NUMBER, "555019901")
-                .putExtra(THREAD_TITLE, "Active Thread")
-            ActivityScenario.launch<ThreadActivity>(intent).use {
+        withSyntheticThread(openThreadId, "555019901", "Active Thread", listOf(otherThreadId)) {
+            ActivityScenario.launch<ThreadActivity>(threadIntent(openThreadId, "555019901", "Active Thread")).use {
                 instrumentation.waitForIdleSync()
 
                 // Active thread must be suppressed.
@@ -80,90 +110,83 @@ class MessagingEventsChecks {
                 MessagingEvents.publish(incoming(otherThreadId, "Alert for other thread"))
                 assertTrue(
                     "Other conversation must still post a tray notification",
-                    awaitCondition { manager.activeNotifications.any { it.id == otherThreadId.hashCode() } },
+                    awaitNotification(otherThreadId, expectedPresent = true),
                 )
             }
-        } finally {
-            room.delete()
-            cleanupThreadNotification(openThreadId)
-            cleanupThreadNotification(otherThreadId)
         }
     }
 
     @Test
     fun enteringConversationClearsExistingTrayNotification() {
         val threadId = Long.MAX_VALUE - 41003
-        val room = RoomOnlyThread(
-            context,
-            fixtureConversation(threadId, "Pending Alert", snippet = "Hi", phone = "555019903", scheduled = true),
-        )
-        room.insert()
-        try {
-            // Publish while backgrounded so a tray notification appears first.
+        withSyntheticThread(threadId, "555019903", "Pending Alert") {
             MessagingEvents.publish(incoming(threadId, "Arrived while away"))
             assertTrue(
                 "Background incoming message must post a tray notification",
-                awaitCondition { manager.activeNotifications.any { it.id == threadId.hashCode() } },
+                awaitNotification(threadId, expectedPresent = true),
             )
 
-            val intent = Intent(context, ThreadActivity::class.java)
-                .putExtra(THREAD_ID, threadId)
-                .putExtra(THREAD_NUMBER, "555019903")
-                .putExtra(THREAD_TITLE, "Pending Alert")
-            ActivityScenario.launch<ThreadActivity>(intent).use {
+            ActivityScenario.launch<ThreadActivity>(threadIntent(threadId, "555019903", "Pending Alert")).use {
                 assertTrue(
                     "Entering the conversation must clear its tray notification",
-                    awaitCondition { manager.activeNotifications.none { it.id == threadId.hashCode() } },
+                    awaitNotification(threadId, expectedPresent = false),
                 )
             }
-        } finally {
-            room.delete()
-            cleanupThreadNotification(threadId)
         }
     }
 
     @Test
     fun recycleBinConversationDoesNotSuppressIncomingNotification() {
         val threadId = Long.MAX_VALUE - 41004
-        val room = RoomOnlyThread(
-            context,
-            fixtureConversation(threadId, "Recycled Thread", snippet = "Deleted", phone = "555019904", scheduled = true),
-        )
-        room.insert()
-        try {
-            val intent = Intent(context, ThreadActivity::class.java)
-                .putExtra(THREAD_ID, threadId)
-                .putExtra(THREAD_NUMBER, "555019904")
-                .putExtra(THREAD_TITLE, "Recycled Thread")
-                .putExtra(IS_RECYCLE_BIN, true)
+        withSyntheticThread(threadId, "555019904", "Recycled Thread") {
+            val intent = threadIntent(threadId, "555019904", "Recycled Thread", recycleBin = true)
             ActivityScenario.launch<ThreadActivity>(intent).use {
                 instrumentation.waitForIdleSync()
                 MessagingEvents.publish(incoming(threadId, "Live message while in Recycle Bin"))
                 assertTrue(
                     "Recycle Bin view must not suppress live incoming notifications",
-                    awaitCondition { manager.activeNotifications.any { it.id == threadId.hashCode() } },
+                    awaitNotification(threadId, expectedPresent = true),
                 )
             }
-        } finally {
-            room.delete()
-            cleanupThreadNotification(threadId)
+        }
+    }
+
+    @Test
+    fun appLockDoesNotSuppressIncomingNotification() {
+        val threadId = Long.MAX_VALUE - 41006
+        val config = context.baseConfig
+        val wasOn = config.isAppPasswordProtectionOn
+        val previousHash = config.appPasswordHash
+        val previousType = config.appProtectionType
+        withSyntheticThread(threadId, "555019906", "Locked Thread") {
+            try {
+                config.appProtectionType = PROTECTION_PIN
+                config.appPasswordHash = sha1("1234")
+                config.isAppPasswordProtectionOn = true
+                context.appLockManager.lock()
+
+                ActivityScenario.launch<AppLockActivity>(Intent(context, AppLockActivity::class.java)).use {
+                    instrumentation.waitForIdleSync()
+                    MessagingEvents.publish(incoming(threadId, "Arrived while locked"))
+                    assertTrue(
+                        "App Lock must not suppress incoming notifications",
+                        awaitNotification(threadId, expectedPresent = true),
+                    )
+                }
+            } finally {
+                config.isAppPasswordProtectionOn = wasOn
+                config.appPasswordHash = previousHash
+                config.appProtectionType = previousType
+                context.appLockManager.unlock()
+            }
         }
     }
 
     @Test
     fun sendFailureShowsInThreadSnackbarWhenViewingConversation() {
         val threadId = Long.MAX_VALUE - 41005
-        val room = RoomOnlyThread(
-            context,
-            fixtureConversation(threadId, "Failure Thread", snippet = "Hi", phone = "555019905", scheduled = true),
-        )
-        room.insert()
-        try {
-            val intent = Intent(context, ThreadActivity::class.java)
-                .putExtra(THREAD_ID, threadId)
-                .putExtra(THREAD_NUMBER, "555019905")
-                .putExtra(THREAD_TITLE, "Failure Thread")
-            ActivityScenario.launch<ThreadActivity>(intent).use { scenario ->
+        withSyntheticThread(threadId, "555019905", "Failure Thread") {
+            ActivityScenario.launch<ThreadActivity>(threadIntent(threadId, "555019905", "Failure Thread")).use { scenario ->
                 instrumentation.waitForIdleSync()
                 val reason = "No service"
                 MessagingEvents.publish(
@@ -175,18 +198,16 @@ class MessagingEventsChecks {
                         reason = reason,
                     )
                 )
-                assertTrue(
-                    "Active conversation must show the send failure reason in its snackbar",
-                    awaitCondition {
-                        var shown: String? = null
-                        scenario.onActivity { shown = it.snackbarHost.currentSnackbarData?.visuals?.message }
-                        shown == reason
-                    },
-                )
+                scenario.awaitUntil("Active conversation must show the send failure reason in its snackbar") { activity ->
+                    val current = activity.snackbarHost.currentSnackbarData
+                    current?.visuals?.message == reason
+                }
             }
-        } finally {
-            room.delete()
-            cleanupThreadNotification(threadId)
         }
+    }
+
+    private fun sha1(value: String): String {
+        val digest = MessageDigest.getInstance("SHA-1").digest(value.toByteArray())
+        return BigInteger(1, digest).toString(16).padStart(40, '0')
     }
 }

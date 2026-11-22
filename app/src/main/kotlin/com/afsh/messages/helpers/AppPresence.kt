@@ -56,6 +56,20 @@ class AppPresenceTracker(
         }
     }
 
+    /**
+     * Updates the thread id for an already-resumed conversation (for example when a newly created
+     * or scheduled thread acquires its real Telephony id). Ignored if [token] is no longer resumed
+     * so asynchronous updates cannot resurrect a paused screen.
+     */
+    fun onConversationThreadUpdated(token: Any, threadId: Long, isRecycleBin: Boolean) {
+        update {
+            if (token in resumedScreens) {
+                activeConversations.remove(token)
+                activeConversations[token] = ConversationEntry(threadId = threadId, isRecycleBin = isRecycleBin)
+            }
+        }
+    }
+
     fun onConversationInactive(token: Any) {
         update {
             activeConversations.remove(token)
@@ -66,12 +80,6 @@ class AppPresenceTracker(
         update {
             resumedScreens.add(token)
             activeLockScreens.add(token)
-        }
-    }
-
-    fun onLockScreenInactive(token: Any) {
-        update {
-            activeLockScreens.remove(token)
         }
     }
 
