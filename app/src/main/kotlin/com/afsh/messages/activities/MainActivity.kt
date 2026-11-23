@@ -490,8 +490,7 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
         val now = System.currentTimeMillis()
         if (!config.useRecycleBin || config.lastRecycleBinCheck >= now - DAY_SECONDS * 1000) return
         config.lastRecycleBinCheck = now
-        val recycleBin = RecycleBinRepository.from(this)
-        ensureBackgroundThread { recycleBin.purgeExpired() }
+        ensureBackgroundThread { RecycleBinRepository.from(this).purgeExpired() }
     }
 
     private fun refreshDrafts() {
