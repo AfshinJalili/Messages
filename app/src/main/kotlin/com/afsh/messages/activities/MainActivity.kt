@@ -48,6 +48,7 @@ import com.afsh.commons.extensions.notificationManager
 import com.afsh.commons.extensions.openNotificationSettings
 import com.afsh.commons.extensions.syncGlobalConfig
 import com.afsh.commons.extensions.toast
+import com.afsh.commons.helpers.DAY_SECONDS
 import com.afsh.commons.helpers.KEY_PHONE
 import com.afsh.commons.extensions.hasPermission
 import com.afsh.commons.helpers.PERMISSION_READ_CONTACTS
@@ -60,19 +61,19 @@ import com.afsh.messages.App
 import com.afsh.messages.BuildConfig
 import com.afsh.messages.R
 import com.afsh.messages.ui.components.LocalListPane
+import com.afsh.messages.helpers.DraftsRepository
+import com.afsh.messages.helpers.RecycleBinRepository
 import com.afsh.messages.helpers.ListDetail
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.CompositionLocalProvider
 import com.afsh.messages.ui.components.confirm
 import com.afsh.messages.ui.components.showRenameDialog
-import com.afsh.messages.extensions.checkAndDeleteOldRecycleBinMessages
 import com.afsh.messages.extensions.clearAllMessagesIfNeeded
 import com.afsh.messages.extensions.config
 import com.afsh.messages.extensions.conversationsDB
 import com.afsh.messages.extensions.deleteConversation
 import com.afsh.messages.extensions.dialNumber
-import com.afsh.messages.extensions.getAllDrafts
 import com.afsh.messages.extensions.getUnreadSpamCounts
 import com.afsh.messages.helpers.NavBadges
 import com.afsh.messages.helpers.unreadMessageCount
@@ -236,7 +237,7 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
         // The bottom bar paints its own surface; a system scrim on top would double it.
         if (isQPlus()) window.isNavigationBarContrastEnforced = false
 
-        checkAndDeleteOldRecycleBinMessages()
+        purgeRecycleBinIfDue()
         clearAllMessagesIfNeeded {
             loadMessages()
         }
@@ -488,9 +489,18 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
         NavBadges.publish(inbox.navCounts)
     }
 
+    /** Once a day at most, erase messages that have sat in the recycle bin past its retention. */
+    private fun purgeRecycleBinIfDue() {
+        val now = System.currentTimeMillis()
+        if (!config.useRecycleBin || config.lastRecycleBinCheck >= now - DAY_SECONDS * 1000) return
+        config.lastRecycleBinCheck = now
+        val recycleBin = RecycleBinRepository.from(this)
+        ensureBackgroundThread { recycleBin.purgeExpired() }
+    }
+
     private fun refreshDrafts() {
         ensureBackgroundThread {
-            val fresh = getAllDrafts()
+            val fresh = DraftsRepository.from(this).getAll()
             runOnUiThread {
                 if (fresh != drafts) {
                     drafts = fresh

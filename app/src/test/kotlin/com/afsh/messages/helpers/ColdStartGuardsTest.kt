@@ -31,7 +31,7 @@ class ColdStartGuardsTest {
         val text = File(root, "helpers/InboxRepository.kt").readText()
         assertTrue(text.contains("fun scheduleLaunchReconcile"))
         assertTrue(text.contains("needsFullReconcile"))
-        assertTrue(text.contains("telephonyThreadDigest"))
+        assertTrue(text.contains("TelephonyReader(context).threadDigest()"))
         assertTrue(text.contains("force"))
     }
 

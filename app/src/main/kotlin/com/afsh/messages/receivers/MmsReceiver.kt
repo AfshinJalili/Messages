@@ -12,7 +12,6 @@ import com.afsh.commons.helpers.SimpleContactsHelper
 import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.messages.R
 import com.afsh.messages.extensions.getConversations
-import com.afsh.messages.extensions.getLatestMMS
 import com.afsh.messages.extensions.getNameFromAddress
 import com.afsh.messages.extensions.insertOrUpdateConversation
 import com.afsh.messages.extensions.shouldUnarchive
@@ -21,6 +20,7 @@ import com.afsh.messages.helpers.InboxRepository
 import com.afsh.messages.helpers.IncomingSpamClassifier
 import com.afsh.messages.helpers.MessagingEvent
 import com.afsh.messages.helpers.MessagingEvents
+import com.afsh.messages.helpers.TelephonyReader
 import com.afsh.messages.helpers.ReceiverUtils.isMessageFilteredOut
 import com.afsh.messages.models.Message
 
@@ -42,7 +42,7 @@ class MmsReceiver : MmsReceivedReceiver() {
     }
 
     override fun onMessageReceived(context: Context, messageUri: Uri) {
-        val mms = context.getLatestMMS() ?: return
+        val mms = TelephonyReader(context).getLatestMms() ?: return
         val address = mms.getSender()?.phoneNumbers?.firstOrNull()?.normalizedNumber ?: ""
         ensureBackgroundThread {
             handleMmsMessage(context, mms, address)
