@@ -250,6 +250,23 @@ class ConversationRepository(
     }
 
     /**
+     * Recomputes [threadId]'s denormalized inbox preview from Room: the latest message that is neither
+     * spam nor in the recycle bin, its date only when the thread has spam, and whether it is all spam.
+     * Nothing when Room has no row.
+     */
+    fun refreshPreview(threadId: Long) {
+        val conversation = conversations.getConversationWithThreadId(threadId) ?: return
+        val latest = messages.getLatestVisiblePreview(threadId)
+        val spamCount = messages.getThreadSpamCount(threadId)
+        conversations.updatePreview(
+            threadId = threadId,
+            snippet = latest?.body,
+            date = if (spamCount > 0) latest?.date else null,
+            allSpam = conversation.messageCount > 0 && spamCount >= conversation.messageCount,
+        )
+    }
+
+    /**
      * Copies Telephony's unread counts into Room ([threadIds] only, when given). Only counts that
      * changed are written, in one transaction: every UPDATE fires Room's invalidation even with the
      * same value, and each one re-ran the inbox query and rebuilt the list.
