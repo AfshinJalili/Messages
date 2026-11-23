@@ -443,13 +443,14 @@ private fun Context.getThreadSnippet(threadId: Long): String {
         Sms.BODY
     )
 
+    // Message.date is in seconds; the SMS table keeps milliseconds.
     val selection = "${Sms.THREAD_ID} = ? AND ${Sms.DATE} > ?"
     val selectionArgs = arrayOf(
         threadId.toString(),
-        latestMms?.date?.toString() ?: "0"
+        latestMms?.millis()?.toString() ?: "0"
     )
     try {
-        val cursor = contentResolver.query(uri, projection, selection, selectionArgs, sortOrder)
+        val cursor = contentResolver.query(uri, projection, selection, selectionArgs, "${Sms.DATE} DESC LIMIT 1")
         cursor?.use {
             if (cursor.moveToFirst()) {
                 snippet = cursor.getStringValue(Sms.BODY)
