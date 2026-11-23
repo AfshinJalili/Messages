@@ -1,5 +1,6 @@
 package com.afsh.messages.helpers
 
+import android.net.TestUri
 import android.net.Uri
 import com.afsh.messages.models.Attachment
 import com.afsh.messages.models.Conversation
@@ -289,6 +290,28 @@ class MessageSendCoordinatorTest {
         )
         assertEquals(MessageSendCoordinator.SaveRequest.Folder, sender.saveAttachments(listOf(photo, photo)))
         assertNull(sender.saveAttachments(emptyList()))
+    }
+
+    @Test
+    fun `the kept attachments are written once and reported saved`() {
+        val photo = attachment("content://mms/part/photo.png")
+        sender.saveAttachments(listOf(photo))
+
+        sender.saveTo(TestUri("content://file"))
+        sender.saveTo(TestUri("content://file"))
+
+        assertEquals(listOf(listOf(photo)), platform.written)
+        assertEquals(listOf("saved"), host.events)
+        assertEquals(1, host.failures.size)
+    }
+
+    @Test
+    fun `saving with nothing kept, as after the screen was recreated, fails instead of saying saved`() {
+        sender.saveTo(TestUri("content://folder"))
+
+        assertTrue(platform.written.isEmpty())
+        assertFalse("saved" in host.events)
+        assertEquals(1, host.failures.size)
     }
 
     @Test

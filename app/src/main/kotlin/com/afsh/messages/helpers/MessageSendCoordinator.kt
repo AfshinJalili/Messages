@@ -259,15 +259,22 @@ class MessageSendCoordinator(
         }
     }
 
-    /** Writes the attachments kept by [saveAttachments] to [destination], a file or a folder. */
+    /**
+     * Writes the attachments kept by [saveAttachments] to [destination], a file or a folder. They are kept in
+     * memory only, so after the screen was recreated there is nothing to write and this reports a failure.
+     */
     fun saveTo(destination: Uri) {
+        val attachments = pendingAttachmentsToSave.orEmpty()
+        pendingAttachmentsToSave = null
+        if (attachments.isEmpty()) {
+            host.failed(message = null)
+            return
+        }
         background {
             try {
-                if (platform.writeAttachments(pendingAttachmentsToSave.orEmpty(), destination)) host.attachmentsSaved()
+                if (platform.writeAttachments(attachments, destination)) host.attachmentsSaved()
             } catch (e: Exception) {
                 host.failed(e)
-            } finally {
-                pendingAttachmentsToSave = null
             }
         }
     }
