@@ -1,8 +1,6 @@
 package com.afsh.messages.activities
 
-import android.annotation.SuppressLint
 import android.app.Activity
-import android.app.AlarmManager
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
@@ -10,14 +8,9 @@ import android.content.Intent.FLAG_GRANT_WRITE_URI_PERMISSION
 import android.net.Uri
 import android.os.Bundle
 import android.provider.ContactsContract
-import android.provider.DocumentsContract
 import android.provider.MediaStore
-import android.provider.Telephony.Sms.MESSAGE_TYPE_QUEUED
-import android.provider.Telephony.Sms.STATUS_NONE
 import android.speech.RecognizerIntent
-import android.telephony.SmsManager
 import android.telephony.SmsMessage
-import android.telephony.SubscriptionInfo
 import android.text.TextUtils
 import android.text.format.DateUtils
 import android.text.format.DateUtils.FORMAT_NO_YEAR
@@ -38,7 +31,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.ComposeView
 import androidx.core.net.toUri
-import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -47,7 +39,6 @@ import com.afsh.messages.R
 import com.afsh.messages.extensions.clearExpiredScheduledMessages
 import com.afsh.messages.extensions.config
 import com.afsh.messages.extensions.conversationsDB
-import com.afsh.messages.extensions.copyToUri
 import com.afsh.messages.extensions.createTemporaryThread
 import com.afsh.messages.extensions.deleteConversation
 import com.afsh.messages.extensions.deleteMessage
@@ -57,9 +48,7 @@ import com.afsh.messages.extensions.filterNotInByKey
 import com.afsh.messages.extensions.getAddresses
 import com.afsh.messages.extensions.fileSize
 import com.afsh.messages.extensions.getThreadId
-import com.afsh.messages.extensions.getThreadParticipants
 import com.afsh.messages.extensions.getThreadTitle
-import com.afsh.messages.extensions.indexOfFirstOrNull
 import com.afsh.messages.extensions.isGifMimeType
 import com.afsh.messages.extensions.isImageMimeType
 import com.afsh.messages.extensions.isVCardMimeType
@@ -72,9 +61,6 @@ import com.afsh.messages.extensions.markThreadMessagesUnread
 import com.afsh.messages.extensions.messagesDB
 import com.afsh.messages.extensions.removeDiacriticsIfNeeded
 import com.afsh.messages.extensions.renameConversation
-import com.afsh.messages.extensions.shouldUnarchive
-import com.afsh.messages.extensions.subscriptionManagerCompat
-import com.afsh.messages.extensions.toArrayList
 import com.afsh.messages.extensions.toPickerPerson
 import com.afsh.messages.extensions.updateConversationArchivedStatus
 import com.afsh.messages.extensions.updateLastConversationMessage
@@ -91,6 +77,8 @@ import com.afsh.messages.helpers.ConversationPreview
 import com.afsh.messages.helpers.DraftsRepository
 import com.afsh.messages.helpers.RecycleBinRepository
 import com.afsh.messages.helpers.InboxRepository
+import com.afsh.messages.helpers.MessageSendCoordinator
+import com.afsh.messages.helpers.ParticipantResolver
 import com.afsh.messages.helpers.MESSAGES_LIMIT
 import com.afsh.messages.helpers.OPEN_SPAM
 import com.afsh.messages.helpers.OPEN_THREAD_SEARCH
@@ -119,16 +107,10 @@ import com.afsh.messages.helpers.contactAsText
 import com.afsh.messages.helpers.generateRandomId
 import com.afsh.messages.helpers.insertBlock
 import com.afsh.messages.messaging.cancelScheduleSendPendingIntent
-import com.afsh.messages.messaging.isLongMmsMessage
-import com.afsh.messages.messaging.isShortCodeWithLetters
-import com.afsh.messages.messaging.scheduleMessage
-import com.afsh.messages.messaging.sendMessageCompat
 import com.afsh.messages.models.Attachment
 import com.afsh.messages.models.AttachmentSelection
 import com.afsh.messages.models.Conversation
 import com.afsh.messages.models.Message
-import com.afsh.messages.models.MessageAttachment
-import com.afsh.messages.models.SIMCard
 import com.afsh.messages.models.ThreadItem
 import com.afsh.messages.ui.AfshSystemBars
 import com.afsh.messages.ui.AfshTheme
@@ -161,15 +143,11 @@ import com.afsh.messages.ui.thread.mediaItems
 import com.afsh.messages.ui.thread.messageFacts
 import com.afsh.messages.ui.thread.senderLine
 import com.afsh.messages.ui.thread.starKey
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import com.afsh.commons.extensions.copyToClipboard
 import com.afsh.commons.extensions.formatDate
-import com.afsh.commons.extensions.getFilenameFromPath
 import com.afsh.commons.extensions.getFilenameFromUri
-import com.afsh.commons.extensions.getMyContactsCursor
 import com.afsh.commons.extensions.getMyFileUri
 import com.afsh.commons.extensions.hasPermission
 import com.afsh.commons.extensions.hideKeyboard
@@ -181,14 +159,10 @@ import com.afsh.commons.extensions.showErrorToast
 import com.afsh.commons.extensions.toast
 import com.afsh.commons.helpers.ContactsHelper
 import com.afsh.commons.helpers.KEY_PHONE
-import com.afsh.commons.helpers.MyContactsContentProvider
 import com.afsh.commons.helpers.PERMISSION_READ_CONTACTS
 import com.afsh.commons.helpers.PERMISSION_READ_PHONE_STATE
 import com.afsh.commons.helpers.SimpleContactsHelper
 import com.afsh.commons.helpers.ensureBackgroundThread
-import com.afsh.commons.helpers.isSPlus
-import com.afsh.commons.models.PhoneNumber
-import com.afsh.commons.models.SimpleContact
 import org.joda.time.DateTime
 import java.io.File
 import kotlinx.coroutines.CompletableDeferred
@@ -236,15 +210,12 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         isHidden = { it.getStableId() in UndoDeletion.messages || threadId in UndoDeletion.threads },
     )
 
-    private var refreshedSinceSent = false
     private var refreshPendingWhileStopped = false
     private var threadItems = ArrayList<ThreadItem>()
     private var conversation: Conversation? = null
-    private var participants = ArrayList<SimpleContact>()
-    private var privateContacts = ArrayList<SimpleContact>()
+    private val people by lazy { ParticipantResolver.from(this) }
+    private val sender by lazy { MessageSendCoordinator.from(this, people, SendHost()) }
     private var addContactFieldReady = false
-    private val availableSIMCards = ArrayList<SIMCard>()
-    private var pendingAttachmentsToSave: List<Attachment>? = null
     private var capturedImageUri: Uri? = null
     private var isRecycleBin = false
     private var isLaunchedFromShortcut = false
@@ -285,19 +256,68 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
             backCallback.isEnabled = enabled
         }
 
-        override fun simChosen(subscriptionId: Int) {
-            participants.flatMap { contact -> contact.phoneNumbers.map { it.normalizedNumber } }.forEach {
-                config.saveUseSIMIdAtNumber(it, subscriptionId)
-            }
-        }
+        override fun simChosen(subscriptionId: Int) = people.chooseSim(subscriptionId)
 
-        override fun isMms(text: String, hasAttachments: Boolean) = isMmsMessage(text, hasAttachments)
+        override fun isMms(text: String, hasAttachments: Boolean) = sender.isMms(text, hasAttachments)
 
         override fun smsLength(text: String): Pair<Int, Int>? {
             if (!config.showCharacterCounter) return null
             val length = SmsMessage.calculateLength(text.removeDiacriticsIfNeeded(config.useSimpleCharacters), false)
             return length[0] to length[2]
         }
+    }
+
+    /** What [sender] needs from the conversation screen. */
+    private inner class SendHost : MessageSendCoordinator.Host {
+        override val threadId get() = this@ThreadActivity.threadId
+        override val conversation get() = this@ThreadActivity.conversation
+        override fun loaded(): List<Message> = data.list
+
+        override fun moveToThread(threadId: Long) {
+            this@ThreadActivity.threadId = threadId
+            syncActiveConversationThread()
+        }
+
+        override fun showStored(message: Message) {
+            data.upsert(message)
+            val newItems = getThreadItems()
+            runOnUiThread {
+                threadItems = newItems
+                publishItems(newItems)
+                holder.scrollToBottom()
+                if (sender.needsRefresh) {
+                    ensureBackgroundThread { reloadMessages() }
+                }
+            }
+        }
+
+        override fun reload() = reloadMessages()
+        override fun sent() = holder.clearMessage()
+
+        override fun scheduled() = runOnUiThread {
+            holder.clearMessage()
+            holder.clearSchedule()
+        }
+
+        override fun retryFailed(message: Message) = holder.retryFailed(message)
+
+        override fun timeInPast(retryMillis: Long?) {
+            toast(R.string.must_pick_time_in_the_future)
+            if (retryMillis != null) launchScheduleSendDialog(retryMillis)
+        }
+
+        override fun askForExactAlarms() = confirm(
+            title = getString(com.afsh.commons.R.string.permission_required),
+            explanation = getString(com.afsh.commons.R.string.allow_alarm_scheduled_messages),
+            confirmLabel = getString(R.string.open_settings),
+        ) {
+            openRequestExactAlarmSettings(BuildConfig.APPLICATION_ID)
+        }
+
+        override fun attachmentsSaved() = toast(com.afsh.commons.R.string.file_saved)
+        override fun failed(error: Exception) = showErrorToast(error)
+        override fun failed(message: String?) =
+            showErrorToast(message ?: getString(com.afsh.commons.R.string.unknown_error_occurred))
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -457,11 +477,12 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         when (event) {
             ThreadEvent.Back -> onBackPressedDispatcher.onBackPressed()
             ThreadEvent.OpenDetails -> if (conversation != null && !isRecycleBin) launchConversationDetails(threadId)
-            ThreadEvent.Dial -> if (participants.isNotEmpty()) dialNumber()
-            is ThreadEvent.Menu -> if (participants.isNotEmpty()) handleMenuItemAction(event.action)
+            ThreadEvent.Dial -> if (people.participants.isNotEmpty()) dialNumber()
+            is ThreadEvent.Menu -> if (people.participants.isNotEmpty()) handleMenuItemAction(event.action)
             is ThreadEvent.SearchSubmit -> jumpToNextMatch(event.query)
             is ThreadEvent.Act -> onMessageAction(event.action, event.messages)
-            is ThreadEvent.Retry -> resendMessage(event.message)
+            // Until the provider shows it leave the failed state, a second tap would transmit it again.
+            is ThreadEvent.Retry -> if (holder.startRetry(event.message)) sender.resend(event.message, holder.sendSubscriptionId)
             is ThreadEvent.OpenAttachment -> openAttachment(event.message, event.attachment)
             is ThreadEvent.CopyText -> copyToClipboard(event.text)
             ThreadEvent.JumpToLatest -> {
@@ -530,12 +551,12 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
             }
             MessageAction.SHARE -> shareTextIntent(first.body)
             MessageAction.SELECT_TEXT -> if (first.body.isNotBlank()) startActivity(SelectTextActivity.intent(this, senderLine(first), first.body))
-            MessageAction.DETAILS -> startActivity(MessageDetailsActivity.intent(this, messageFacts(first, simLabels)))
+            MessageAction.DETAILS -> startActivity(MessageDetailsActivity.intent(this, messageFacts(first, people.simLabels)))
             MessageAction.EDIT_SCHEDULED -> editScheduled.launch(
                 ScheduledMessageActivity.Request(first.id, ScheduleTarget(first.body, scheduleRecipient(first.subscriptionId)), first.millis()),
             )
             MessageAction.SEND_NOW -> sendScheduledNow(first)
-            MessageAction.SAVE_AS -> selected.flatMap { it.attachment?.attachments.orEmpty() }.takeIf { it.isNotEmpty() }?.let { saveMMS(it) }
+            MessageAction.SAVE_AS -> saveMMS(selected.flatMap { it.attachment?.attachments.orEmpty() })
             MessageAction.NOT_SPAM -> {
                 holder.clearSelection()
                 askNotSpam(selected)
@@ -552,6 +573,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
 
     /** Tells the holder what the conversation is: the header, its menu and the composer follow from it. */
     private fun refreshMenuItems() {
+        val participants = people.participants
         val single = participants.size == 1
         holder.showFacts(
             ThreadFacts(
@@ -568,7 +590,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
                 senderBlocked = single && config.spamNumbers.containsNumber(participants.getAddresses().first()),
                 senderAllowed = single && config.allowedNumbers.containsNumber(participants.getAddresses().first()),
                 muted = config.isConversationMuted(threadId),
-                specialNumber = isSpecialNumber(),
+                specialNumber = people.isSpecialNumber,
                 hasSpam = data.list.any { data.isSpam(it) },
                 deletePending = threadId in UndoDeletion.threads,
                 groupSubtitle = if (participants.size > 1) resources.getQuantityString(R.plurals.thread_people, participants.size, participants.size) else "",
@@ -584,7 +606,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
             items = items,
             starred = messageItems.filter { config.isMessageStarred(it.id, it.isMMS) }.mapTo(HashSet()) { it.starKey() },
             spamReasons = data.spamReasons,
-            simLabels = simLabels,
+            simLabels = people.simLabels,
             empty = data.providerReady && !isRecycleBin && data.isEmpty,
         )
     }
@@ -610,15 +632,6 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
             markSpamRead(threadItems.filterIsInstance<Message>().filter { data.isSpam(it) }.map { it.id })
         }
         return landing(isRecycleBin, openSpam, threadItems, data::isSpam)
-    }
-
-    private val simLabels: Map<Int, String> by lazy { loadSimLabels() }
-
-    @SuppressLint("MissingPermission")
-    private fun loadSimLabels(): Map<Int, String> {
-        val sims = subscriptionManagerCompat().activeSubscriptionInfoList.orEmpty()
-        // One SIM tells the reader nothing, so it is not labelled.
-        return if (sims.size < 2) emptyMap() else sims.associate { it.subscriptionId to "%d".format(it.simSlotIndex + 1) }
     }
 
     /**
@@ -653,7 +666,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
             )
         } else if (attachment.mimetype.isImageMimeType() || attachment.mimetype.isVideoMimeType()) {
             // 45: every photo and video loaded in this conversation, oldest first, opened at [attachment].
-            val (items, initial) = mediaItems(data.list, message, attachment, simLabels)
+            val (items, initial) = mediaItems(data.list, message, attachment, people.simLabels)
             if (initial < 0) {
                 launchViewIntent(uri, attachment.mimetype, attachment.filename)
             } else {
@@ -666,10 +679,8 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
 
     /** "To Mina Farahani", with "· SIM 1" when the phone has two SIMs. */
     private fun scheduleRecipient(subscriptionId: Int): String {
-        val name = conversation?.title?.takeIf { it.isNotEmpty() }
-            ?: participants.joinToString { it.name.ifEmpty { it.phoneNumbers.firstOrNull()?.value.orEmpty() } }
-        val to = getString(R.string.scheduled_to, name)
-        return simLabels[subscriptionId]?.let { getString(R.string.detail_pair, to, getString(R.string.message_sim_label, it)) } ?: to
+        val to = getString(R.string.scheduled_to, people.scheduleName(conversation?.title))
+        return people.simLabels[subscriptionId]?.let { getString(R.string.detail_pair, to, getString(R.string.message_sim_label, it)) } ?: to
     }
 
     private fun jumpToNextMatch(query: String) {
@@ -768,7 +779,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
             setupAdapter()
 
             runOnUiThread {
-                if (data.isEmpty && !isSpecialNumber()) {
+                if (data.isEmpty && !people.isSpecialNumber) {
                     window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE)
                     holder.requestFocus()
                 }
@@ -793,8 +804,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
             return
         }
         ensureBackgroundThread {
-            val privateCursor = getMyContactsCursor(favoritesOnly = false, withPhoneNumbersOnly = true)
-            privateContacts = MyContactsContentProvider.getSimpleContacts(this, privateCursor)
+            people.loadPrivateContacts()
 
             val cachedMessagesCode = ArrayList(data.list).hashCode()
             if (!isRecycleBin) {
@@ -806,10 +816,8 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
                 data.list = messages
             }
 
-            val hadParticipants = participants.isNotEmpty()
-            val hasParticipantWithoutName = participants.any { contact ->
-                contact.phoneNumbers.map { it.normalizedNumber }.contains(contact.name)
-            }
+            val hadParticipants = people.participants.isNotEmpty()
+            val hasParticipantWithoutName = people.hasUnnamed
             val messagesUnchanged = try {
                 data.list.hashCode() == cachedMessagesCode
             } catch (_: Exception) {
@@ -829,26 +837,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
             setupParticipants()
 
             // check if no participant came from a privately stored contact in Simple Contacts
-            var replacedPrivateNames = false
-            if (privateContacts.isNotEmpty()) {
-                val senderNumbersToReplace = HashMap<String, String>()
-                participants.filter { it.doesHavePhoneNumber(it.name) }.forEach { participant ->
-                    privateContacts.firstOrNull { it.doesHavePhoneNumber(participant.phoneNumbers.first().normalizedNumber) }
-                        ?.apply {
-                            senderNumbersToReplace[participant.phoneNumbers.first().normalizedNumber] =
-                                name
-                            participant.name = name
-                            participant.photoUri = photoUri
-                        }
-                }
-                if (senderNumbersToReplace.isNotEmpty()) replacedPrivateNames = true
-
-                data.list.forEach { message ->
-                    if (senderNumbersToReplace.keys.contains(message.senderName)) {
-                        message.senderName = senderNumbersToReplace[message.senderName]!!
-                    }
-                }
-            }
+            val replacedPrivateNames = people.applyPrivateNames(data.list)
 
             if (hadParticipants && messagesUnchanged && !replacedPrivateNames) {
                 data.providerReady = true
@@ -860,26 +849,10 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
                 return@ensureBackgroundThread
             }
 
-            if (participants.isEmpty()) {
-                val name = intent.getStringExtra(THREAD_TITLE) ?: ""
-                val number = intent.getStringExtra(THREAD_NUMBER)
-                if (number == null) {
-                    toast(com.afsh.commons.R.string.unknown_error_occurred)
-                    finish()
-                    return@ensureBackgroundThread
-                }
-
-                val phoneNumber = PhoneNumber(number, 0, "", number)
-                val contact = SimpleContact(
-                    rawId = 0,
-                    contactId = 0,
-                    name = name,
-                    photoUri = "",
-                    phoneNumbers = arrayListOf(phoneNumber),
-                    birthdays = ArrayList(),
-                    anniversaries = ArrayList()
-                )
-                participants.add(contact)
+            if (!people.fallBackTo(intent.getStringExtra(THREAD_TITLE) ?: "", intent.getStringExtra(THREAD_NUMBER))) {
+                toast(com.afsh.commons.R.string.unknown_error_occurred)
+                finish()
+                return@ensureBackgroundThread
             }
 
             if (!isRecycleBin) {
@@ -899,57 +872,11 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
     }
 
     private fun setupParticipants() {
-        if (participants.isEmpty()) {
-            participants = if (data.isEmpty) {
-                val intentNumbers = getPhoneNumbersFromIntent()
-                val participants = getThreadParticipants(threadId, null)
-                fixParticipantNumbers(participants, intentNumbers)
-            } else {
-                data.list.first().participants
-            }
+        if (people.resolve(threadId, data.list, intent.getStringExtra(THREAD_NUMBER))) {
             runOnUiThread {
                 maybeDisableShortCodeReply()
             }
         }
-    }
-
-    private fun getPhoneNumbersFromIntent(): ArrayList<String> {
-        val numberFromIntent = intent.getStringExtra(THREAD_NUMBER)
-        val numbers = ArrayList<String>()
-
-        if (numberFromIntent != null) {
-            if (numberFromIntent.startsWith('[') && numberFromIntent.endsWith(']')) {
-                val type = object : TypeToken<List<String>>() {}.type
-                numbers.addAll(Gson().fromJson(numberFromIntent, type))
-            } else {
-                numbers.add(numberFromIntent)
-            }
-        }
-        return numbers
-    }
-
-    private fun fixParticipantNumbers(
-        participants: ArrayList<SimpleContact>,
-        properNumbers: ArrayList<String>,
-    ): ArrayList<SimpleContact> {
-        for (number in properNumbers) {
-            for (participant in participants) {
-                @Suppress("UNCHECKED_CAST")
-                participant.phoneNumbers = participant.phoneNumbers.map {
-                    val numberWithoutPlus = number.replace("+", "")
-                    if (numberWithoutPlus == it.normalizedNumber.trim()) {
-                        if (participant.name == it.normalizedNumber) {
-                            participant.name = number
-                        }
-                        PhoneNumber(number, 0, "", number)
-                    } else {
-                        PhoneNumber(it.normalizedNumber, 0, "", it.normalizedNumber)
-                    }
-                } as ArrayList<PhoneNumber>
-            }
-        }
-
-        return participants
     }
 
     private fun loadMoreMessages() {
@@ -1074,12 +1001,12 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
             return
         }
 
-        refreshedSinceSent = true
+        sender.reloaded()
         data.allFetched = false
 
         val current = data.list
         val lastMaxId = current.filterNot { it.isScheduled }.maxByOrNull { it.id }?.id ?: 0L
-        val newThreadId = getThreadId(participants.getAddresses().toSet())
+        val newThreadId = getThreadId(people.addresses.toSet())
         val newMessages = telephony.getMessages(newThreadId, includeScheduledMessages = false,
             includeAllUnread = true, oldestLoadedDate = current.firstOrNull { !it.isScheduled }?.date)
         if (current.isNotEmpty() && current.all { it.isScheduled } && newMessages.isNotEmpty()) {
@@ -1197,7 +1124,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
     private fun unmarkSpam(selected: List<Message>, allowSender: Boolean = false) {
         ensureBackgroundThread {
             if (allowSender) {
-                (selected.map { it.senderPhoneNumber } + participants.getAddresses())
+                (selected.map { it.senderPhoneNumber } + people.addresses)
                     .filter { it.isNotEmpty() }.distinct().forEach { config.addAllowedNumber(it) }
             } else {
                 selected.map { it.senderPhoneNumber }.filter { it.isNotEmpty() && config.spamNumbers.containsNumber(it) }
@@ -1238,7 +1165,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
     }
 
     private fun alwaysSpamSender() {
-        val numbers = participants.getAddresses()
+        val numbers = people.addresses
         val names = conversation?.title ?: TextUtils.join(", ", numbers)
         confirm(
             title = resources.getQuantityString(R.plurals.always_spam_title, 1, names),
@@ -1253,7 +1180,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
     }
 
     private fun neverSpamSender() {
-        val numbers = participants.getAddresses()
+        val numbers = people.addresses
         val names = conversation?.title ?: TextUtils.join(", ", numbers)
         confirm(
             title = resources.getQuantityString(R.plurals.never_spam_title, 1, names),
@@ -1273,7 +1200,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
     }
 
     private fun blockOnThisPhone() {
-        val numbers = participants.getAddresses()
+        val numbers = people.addresses
         val names = conversation?.title ?: TextUtils.join(", ", numbers)
         confirm(
             title = resources.getQuantityString(R.plurals.block_on_phone_title, 1, names),
@@ -1346,13 +1273,13 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
     }
 
     private fun dialNumber() {
-        val phoneNumber = participants.first().phoneNumbers.first().normalizedNumber
+        val phoneNumber = people.participants.first().phoneNumbers.first().normalizedNumber
         dialNumber(phoneNumber)
     }
 
     private fun copyNumberToClipboard() {
         val phoneNumber = conversation?.phoneNumber
-            ?.ifEmpty { participants.firstOrNull()?.phoneNumbers?.firstOrNull()?.value }
+            ?.ifEmpty { people.participants.firstOrNull()?.phoneNumbers?.firstOrNull()?.value }
             ?: return
         copyToClipboard(phoneNumber)
     }
@@ -1370,7 +1297,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
 
     private fun addNumberToContact() {
         val phoneNumber =
-            participants.firstOrNull()?.phoneNumbers?.firstOrNull()?.normalizedNumber ?: return
+            people.participants.firstOrNull()?.phoneNumbers?.firstOrNull()?.normalizedNumber ?: return
         Intent().apply {
             action = Intent.ACTION_INSERT_OR_EDIT
             type = "vnd.android.cursor.item/contact"
@@ -1389,13 +1316,8 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         }
     }
 
-    private fun isSpecialNumber(): Boolean {
-        val addresses = participants.getAddresses()
-        return addresses.any { isShortCodeWithLetters(it) }
-    }
-
     private fun maybeDisableShortCodeReply() {
-        if (isSpecialNumber() && !isRecycleBin) {
+        if (people.isSpecialNumber && !isRecycleBin) {
             currentFocus?.clearFocus()
             hideKeyboard()
             holder.setText("")
@@ -1411,7 +1333,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         if (holder.people.open) {
             holder.closePeople()
         } else {
-            holder.openPeople(participants.map { it.toRecipient() })
+            holder.openPeople(people.recipients())
             loadPeopleContacts()
         }
     }
@@ -1428,7 +1350,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         }
         addContactFieldReady = true
         SimpleContactsHelper(this).getAvailableContacts(false) { contacts ->
-            val all = (contacts + privateContacts).sorted().map { it.toPickerPerson(resources) }.filter { it.phones.isNotEmpty() }
+            val all = (contacts + people.privateContacts).sorted().map { it.toPickerPerson(resources) }.filter { it.phones.isNotEmpty() }
             runOnUiThread {
                 if (isDestroyed || isFinishing) return@runOnUiThread
                 holder.showPeopleContacts(NewMessageUiState(contacts = all))
@@ -1448,14 +1370,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
     /** Applies Manage people: a different set of people is a different conversation, which opens in this one's place. */
     private fun applyManagePeople() {
         holder.closePeople()
-        val numbers = HashSet<String>()
-        participants.forEach { contact ->
-            contact.phoneNumbers.forEach {
-                numbers.add(it.normalizedNumber)
-            }
-        }
-
-        val newThreadId = getThreadId(numbers)
+        val newThreadId = getThreadId(people.addresses.toHashSet())
         if (threadId != newThreadId) {
             Intent(this, ThreadActivity::class.java).apply {
                 putExtra(THREAD_ID, newThreadId)
@@ -1465,34 +1380,15 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         }
     }
 
-    private fun SimpleContact.toRecipient(): Recipient {
-        val phone = phoneNumbers.firstOrNull()
-        return Recipient(phone?.normalizedNumber?.ifEmpty { phone.value } ?: "", name)
-    }
-
     private fun addPerson(recipient: Recipient) {
-        if (participants.any { it.toRecipient().number == recipient.number }) return
-        val phoneNumber = PhoneNumber(recipient.number, 0, "", recipient.number)
-        participants.add(
-            SimpleContact(
-                rawId = recipient.number.hashCode(),
-                contactId = recipient.number.hashCode(),
-                name = recipient.name,
-                photoUri = "",
-                phoneNumbers = arrayListOf(phoneNumber),
-                birthdays = ArrayList(),
-                anniversaries = ArrayList(),
-            )
-        )
-        holder.showPeople(participants.map { it.toRecipient() })
+        if (!people.add(recipient)) return
+        holder.showPeople(people.recipients())
         holder.refreshComposer()
     }
 
     private fun removePerson(recipient: Recipient) {
-        // The conversation's own person stays.
-        if (participants.firstOrNull()?.toRecipient() == recipient) return
-        participants = participants.filterNot { it.toRecipient() == recipient }.toCollection(ArrayList())
-        holder.showPeople(participants.map { it.toRecipient() })
+        if (!people.remove(recipient)) return
+        holder.showPeople(people.recipients())
         holder.refreshComposer()
     }
 
@@ -1500,55 +1396,10 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
 
     // region Send SIM
 
-    @SuppressLint("MissingPermission")
     private fun setupSIMSelector() {
-        val availableSIMs = subscriptionManagerCompat().activeSubscriptionInfoList ?: return
-        if (availableSIMs.size > 1) {
-            // this runs once for the cached thread and again after the provider refresh
-            availableSIMCards.clear()
-            availableSIMs.forEachIndexed { index, subscriptionInfo ->
-                var label = subscriptionInfo.displayName?.toString() ?: ""
-                if (subscriptionInfo.number?.isNotEmpty() == true) {
-                    label += " (${subscriptionInfo.number})"
-                }
-                // The physical slot, as the timeline's SIM labels use; the list position only orders the toggle.
-                val slot = subscriptionInfo.simSlotIndex.takeIf { it >= 0 }?.plus(1) ?: (index + 1)
-                availableSIMCards.add(SIMCard(slot, subscriptionInfo.subscriptionId, label))
-            }
-
-            val numbers = participants.flatMap { contact -> contact.phoneNumbers.map { it.normalizedNumber } }
-            if (numbers.isEmpty()) {
-                return
-            }
-
-            holder.showSims(availableSIMCards.toList(), getProperSimIndex(availableSIMs, numbers))
-        }
-    }
-
-    @SuppressLint("MissingPermission")
-    private fun getProperSimIndex(
-        availableSIMs: MutableList<SubscriptionInfo>,
-        numbers: List<String>,
-    ): Int {
-        val userPreferredSimId = config.getUseSIMIdAtNumber(numbers.first())
-        val userPreferredSimIdx =
-            availableSIMs.indexOfFirstOrNull { it.subscriptionId == userPreferredSimId }
-
-        val lastMessage = data.list.lastOrNull()
-        val senderPreferredSimIdx = if (lastMessage?.isReceivedMessage() == true) {
-            availableSIMs.indexOfFirstOrNull { it.subscriptionId == lastMessage.subscriptionId }
-        } else {
-            null
-        }
-
-        val defaultSmsSubscriptionId = SmsManager.getDefaultSmsSubscriptionId()
-        val systemPreferredSimIdx = if (defaultSmsSubscriptionId >= 0) {
-            availableSIMs.indexOfFirstOrNull { it.subscriptionId == defaultSmsSubscriptionId }
-        } else {
-            null
-        }
-
-        return userPreferredSimIdx ?: senderPreferredSimIdx ?: systemPreferredSimIdx ?: 0
+        // this runs once for the cached thread and again after the provider refresh
+        val (cards, index) = people.sendSims(data.list.lastOrNull()) ?: return
+        holder.showSims(cards, index)
     }
 
     // endregion
@@ -1680,29 +1531,16 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
     }
 
     private fun saveMMS(attachments: List<Attachment>) {
-        pendingAttachmentsToSave = attachments
-        if (attachments.size == 1) {
-            val attachment = attachments.first()
-            Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
-                type = attachment.mimetype
+        val (intent, requestCode) = when (val request = sender.saveAttachments(attachments) ?: return) {
+            is MessageSendCoordinator.SaveRequest.File -> Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+                type = request.mimetype
                 addCategory(Intent.CATEGORY_OPENABLE)
-                putExtra(Intent.EXTRA_TITLE, attachment.uriString.split("/").last())
-                launchActivityForResult(
-                    intent = this,
-                    requestCode = PICK_SAVE_FILE_INTENT,
-                    error = com.afsh.commons.R.string.system_service_disabled
-                )
-            }
-        } else {
-            Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).apply {
-                addCategory(Intent.CATEGORY_DEFAULT)
-                launchActivityForResult(
-                    intent = this,
-                    requestCode = PICK_SAVE_DIR_INTENT,
-                    error = com.afsh.commons.R.string.system_service_disabled
-                )
-            }
+                putExtra(Intent.EXTRA_TITLE, request.title)
+            } to PICK_SAVE_FILE_INTENT
+            MessageSendCoordinator.SaveRequest.Folder ->
+                Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).addCategory(Intent.CATEGORY_DEFAULT) to PICK_SAVE_DIR_INTENT
         }
+        launchActivityForResult(intent = intent, requestCode = requestCode, error = com.afsh.commons.R.string.system_service_disabled)
     }
 
     private fun saveAttachments(resultData: Intent) {
@@ -1710,53 +1548,11 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
             resultData.data!!, FLAG_GRANT_READ_URI_PERMISSION or FLAG_GRANT_WRITE_URI_PERMISSION
         )
         val destinationUri = resultData.data ?: return
-        ensureBackgroundThread {
-            try {
-                if (DocumentsContract.isTreeUri(destinationUri)) {
-                    val outputDir = DocumentFile.fromTreeUri(this, destinationUri)
-                        ?: return@ensureBackgroundThread
-                    pendingAttachmentsToSave?.forEach { attachment ->
-                        val documentFile = outputDir.createFile(
-                            attachment.mimetype,
-                            attachment.filename.takeIf { it.isNotBlank() }
-                                ?: attachment.uriString.getFilenameFromPath()
-                        ) ?: return@forEach
-                        copyToUri(src = attachment.getUri(), dst = documentFile.uri)
-                    }
-                } else {
-                    copyToUri(pendingAttachmentsToSave!!.first().getUri(), resultData.data!!)
-                }
-
-                toast(com.afsh.commons.R.string.file_saved)
-            } catch (e: Exception) {
-                showErrorToast(e)
-            } finally {
-                pendingAttachmentsToSave = null
-            }
-        }
-    }
-
-    private fun askForExactAlarmPermissionIfNeeded(callback: () -> Unit = {}) {
-        if (isSPlus()) {
-            val alarmManager: AlarmManager = getSystemService(ALARM_SERVICE) as AlarmManager
-            if (alarmManager.canScheduleExactAlarms()) {
-                callback()
-            } else {
-                confirm(
-                    title = getString(com.afsh.commons.R.string.permission_required),
-                    explanation = getString(com.afsh.commons.R.string.allow_alarm_scheduled_messages),
-                    confirmLabel = getString(R.string.open_settings),
-                ) {
-                    openRequestExactAlarmSettings(BuildConfig.APPLICATION_ID)
-                }
-            }
-        } else {
-            callback()
-        }
+        sender.saveTo(destinationUri)
     }
 
     private fun launchScheduleSendDialog(originalMillis: Long? = null) {
-        askForExactAlarmPermissionIfNeeded {
+        sender.whenExactAlarmsAllowed {
             val subscriptionId = holder.sendSubscriptionId ?: -1
             val target = ScheduleTarget(holder.text.trim(), scheduleRecipient(subscriptionId))
             sendLater.launch(SendLaterActivity.Request(target, originalMillis))
@@ -1779,29 +1575,9 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
     private fun onScheduledDecision(messageId: Long, decision: ScheduledMessageActivity.Decision) {
         val message = data.list.firstOrNull { it.id == messageId && it.isScheduled } ?: return
         when (decision) {
-            is ScheduledMessageActivity.Decision.Save -> updateScheduledMessage(message, decision.text, decision.time)
+            is ScheduledMessageActivity.Decision.Save -> sender.updateScheduled(message, decision.text, decision.time)
             ScheduledMessageActivity.Decision.SendNow -> sendScheduledNow(message)
             ScheduledMessageActivity.Decision.Cancel -> deleteMessages(listOf(message), false, false)
-        }
-    }
-
-    private fun updateScheduledMessage(message: Message, text: String, millis: Long) {
-        if (millis <= System.currentTimeMillis()) {
-            toast(R.string.must_pick_time_in_the_future)
-            return
-        }
-        ensureBackgroundThread {
-            val updated = message.copy(
-                body = text,
-                date = (millis / 1000).toInt(),
-                attachment = message.attachment?.copy(text = text),
-            )
-            // The alarm is keyed by the message id, so this replaces the old one.
-            scheduleMessage(updated)
-            insertOrUpdateMessage(updated)
-            conversationsDB.getConversationWithThreadId(threadId)?.let { current ->
-                if (current.snippet == message.body) conversationsDB.insertOrUpdate(current.copy(snippet = text))
-            }
         }
     }
 
@@ -1809,178 +1585,19 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
     private fun sendScheduledNow(message: Message) {
         data.list.removeAll { message.id == it.id }
         message.attachment?.attachments?.forEach { addAttachment(it.getUri()) }
-        sendNormalMessage(message.body, message.subscriptionId)
-        ensureBackgroundThread {
-            deleteScheduledMessage(message.id)
-            cancelScheduleSendPendingIntent(message.id)
-            reloadMessages()
-        }
+        sender.sendScheduledNow(message, holder.attachments)
     }
 
     // endregion
 
     // region Sending and deleting
 
-    private fun isMmsMessage(text: String, hasAttachments: Boolean = holder.attachments.isNotEmpty()): Boolean {
-        val isGroupMms = participants.size > 1 && config.sendGroupMessageMMS
-        return hasAttachments || isGroupMms || isLongMmsMessage(text)
-    }
-
     private fun sendMessage() {
         // Also while an image is still compressing: the original may be over the MMS limit.
         if (!holder.composer.hasContent(holder.text)) return
         holder.scrollToBottom()
-
-        val text = holder.text.removeDiacriticsIfNeeded(config.useSimpleCharacters)
-        val subscriptionId = holder.sendSubscriptionId ?: SmsManager.getDefaultSmsSubscriptionId()
-
-        val scheduledMillis = holder.scheduledMillis
-        if (scheduledMillis != null) {
-            sendScheduledMessage(text, subscriptionId, scheduledMillis)
-        } else {
-            sendNormalMessage(text, subscriptionId)
-        }
+        sender.send(holder.text, holder.attachments, holder.sendSubscriptionId, holder.scheduledMillis)
     }
-
-    private fun sendScheduledMessage(text: String, subscriptionId: Int, millis: Long) {
-        if (millis < System.currentTimeMillis() + 1000L) {
-            toast(R.string.must_pick_time_in_the_future)
-            launchScheduleSendDialog(millis)
-            return
-        }
-
-        refreshedSinceSent = false
-        try {
-            ensureBackgroundThread {
-                val messageId = generateRandomId()
-                val message = buildScheduledMessage(text, subscriptionId, messageId, millis)
-                if (data.isEmpty) {
-                    // create a temporary thread until a real message is sent
-                    threadId = message.threadId
-                    syncActiveConversationThread()
-                    createTemporaryThread(message, message.threadId, conversation)
-                }
-                val conversation = conversationsDB.getConversationWithThreadId(threadId)
-                if (conversation != null) {
-                    val nowSeconds = (System.currentTimeMillis() / 1000).toInt()
-                    conversationsDB.insertOrUpdate(
-                        conversation.copy(
-                            date = nowSeconds,
-                            snippet = message.body
-                        )
-                    )
-                }
-                scheduleMessage(message)
-                insertOrUpdateMessage(message)
-
-                runOnUiThread {
-                    holder.clearMessage()
-                    holder.clearSchedule()
-                }
-            }
-        } catch (e: Exception) {
-            showErrorToast(
-                e.localizedMessage ?: getString(com.afsh.commons.R.string.unknown_error_occurred)
-            )
-        }
-    }
-
-    private fun sendNormalMessage(text: String, subscriptionId: Int) {
-        val addresses = participants.getAddresses()
-        val attachments = buildMessageAttachments()
-
-        try {
-            refreshedSinceSent = false
-            sendMessageCompat(text, addresses, subscriptionId, attachments)
-            ensureBackgroundThread {
-                val messages = telephony.getMessages(threadId, limit = maxOf(1, attachments.size))
-                    .filterNotInByKey(data.list) { it.getStableId() }
-                for (message in messages) {
-                    insertOrUpdateMessage(message)
-                }
-            }
-            holder.clearMessage()
-        } catch (e: Exception) {
-            showErrorToast(e)
-        } catch (e: Error) {
-            showErrorToast(
-                e.localizedMessage ?: getString(com.afsh.commons.R.string.unknown_error_occurred)
-            )
-        }
-    }
-
-    /** C-M5: resends at once on the SIM shown, leaving the composer as it is. */
-    private fun resendMessage(message: Message) {
-        // Until the provider shows it leave the failed state, a second tap would transmit it again.
-        if (!holder.startRetry(message)) return
-        val subscriptionId = holder.sendSubscriptionId ?: SmsManager.getDefaultSmsSubscriptionId()
-        try {
-            refreshedSinceSent = false
-            sendMessageCompat(
-                message.body, participants.getAddresses(), subscriptionId, message.attachment?.attachments.orEmpty(), message,
-                // Today's settings must not turn a failed MMS into an SMS, which could not replace its row.
-                forceMms = message.isMMS,
-            )
-            ensureBackgroundThread { reloadMessages() }
-        } catch (e: Exception) {
-            holder.retryFailed(message)
-            showErrorToast(e)
-        } catch (e: Error) {
-            holder.retryFailed(message)
-            showErrorToast(e.localizedMessage ?: getString(com.afsh.commons.R.string.unknown_error_occurred))
-        }
-    }
-
-    private fun insertOrUpdateMessage(message: Message) {
-        data.upsert(message)
-
-        val newItems = getThreadItems()
-        runOnUiThread {
-            threadItems = newItems
-            publishItems(newItems)
-            holder.scrollToBottom()
-            if (!refreshedSinceSent) {
-                ensureBackgroundThread { reloadMessages() }
-            }
-        }
-        messagesDB.insertOrUpdate(message)
-        ConversationPreview.refresh(this, message.threadId)
-        val isOutgoing = !message.isReceivedMessage() && !message.isScheduled
-        if (isOutgoing) {
-            InboxRepository.bumpAfterOutgoing(this, message.threadId, message.body)
-        }
-        if (shouldUnarchive()) {
-            updateConversationArchivedStatus(message.threadId, false)
-        }
-        if (isOutgoing || shouldUnarchive()) {
-            MessagingEvents.publish(MessagingEvent.ConversationsChanged(threadId = message.threadId, reconcile = true))
-        }
-    }
-
-    private fun buildScheduledMessage(text: String, subscriptionId: Int, messageId: Long, millis: Long): Message {
-        val threadId = if (data.isEmpty) messageId else threadId
-        return Message(
-            id = messageId,
-            body = text,
-            type = MESSAGE_TYPE_QUEUED,
-            status = STATUS_NONE,
-            participants = participants,
-            date = (millis / 1000).toInt(),
-            read = false,
-            threadId = threadId,
-            isMMS = isMmsMessage(text),
-            attachment = MessageAttachment(messageId, text, buildMessageAttachments(messageId)),
-            senderPhoneNumber = "",
-            senderName = "",
-            senderPhotoUri = "",
-            subscriptionId = subscriptionId,
-            isScheduled = true
-        )
-    }
-
-    private fun buildMessageAttachments(messageId: Long = -1L) = holder.attachments
-        .map { Attachment(null, messageId, it.uri.toString(), it.mimetype, 0, 0, it.filename) }
-        .toArrayList()
 
     private fun deleteMessages(
         messagesToRemove: List<Message>,

@@ -44,3 +44,12 @@ fun ContentResolver.fileSize(uri: Uri): Long {
         return FILE_SIZE_NONE
     }
 }
+
+/** Copies the content at [src] over the file at [dst], truncating it first. */
+fun ContentResolver.copy(src: Uri, dst: Uri) {
+    openInputStream(src)?.use { input ->
+        openOutputStream(dst, "rwt")?.use { out ->
+            input.copyTo(out)
+        }
+    }
+}
