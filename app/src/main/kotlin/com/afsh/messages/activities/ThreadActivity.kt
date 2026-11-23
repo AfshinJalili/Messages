@@ -44,12 +44,9 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.afsh.messages.BuildConfig
 import com.afsh.messages.R
-import com.afsh.messages.extensions.clearExpiredScheduledMessages
 import com.afsh.messages.extensions.config
 import com.afsh.messages.extensions.conversationsDB
 import com.afsh.messages.extensions.copyToUri
-import com.afsh.messages.extensions.createTemporaryThread
-import com.afsh.messages.extensions.deleteConversation
 import com.afsh.messages.extensions.deleteMessage
 import com.afsh.messages.extensions.deleteScheduledMessage
 import com.afsh.messages.extensions.dialNumber
@@ -66,22 +63,17 @@ import com.afsh.messages.extensions.isVCardMimeType
 import com.afsh.messages.extensions.isVideoMimeType
 import com.afsh.messages.extensions.launchConversationDetails
 import com.afsh.messages.extensions.launchViewIntent
-import com.afsh.messages.extensions.markMessageRead
-import com.afsh.messages.extensions.markThreadMessagesRead
-import com.afsh.messages.extensions.markThreadMessagesUnread
 import com.afsh.messages.extensions.messagesDB
 import com.afsh.messages.extensions.removeDiacriticsIfNeeded
-import com.afsh.messages.extensions.renameConversation
 import com.afsh.messages.extensions.shouldUnarchive
 import com.afsh.messages.extensions.subscriptionManagerCompat
 import com.afsh.messages.extensions.toArrayList
 import com.afsh.messages.extensions.toPickerPerson
-import com.afsh.messages.extensions.updateConversationArchivedStatus
-import com.afsh.messages.extensions.updateLastConversationMessage
 import com.afsh.messages.extensions.updateScheduledMessagesThreadId
 import com.afsh.messages.helpers.CAPTURE_AUDIO_INTENT
 import com.afsh.messages.helpers.CAPTURE_PHOTO_INTENT
 import com.afsh.messages.helpers.CAPTURE_VIDEO_INTENT
+import com.afsh.messages.helpers.ConversationRepository
 import com.afsh.messages.helpers.EXTRA_VCARD_URI
 import com.afsh.messages.helpers.FILE_SIZE_NONE
 import com.afsh.messages.helpers.IS_LAUNCHED_FROM_SHORTCUT
@@ -215,6 +207,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
     private val drafts by lazy { DraftsRepository.from(this) }
     private val recycleBin by lazy { RecycleBinRepository.from(this) }
     private val telephony by lazy { TelephonyReader(this) }
+    private val conversationRepository by lazy { ConversationRepository.from(this) }
 
     private var darkTheme by mutableStateOf(false)
     private var textScale by mutableFloatStateOf(1f)
@@ -755,7 +748,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
             } catch (e: Exception) {
                 ArrayList()
             }
-            clearExpiredScheduledMessages(threadId, messages)
+            conversationRepository.clearExpiredScheduledMessages(threadId, messages)
             messages.removeAll { it.isScheduled && it.millis() < System.currentTimeMillis() }
 
             messages.sortBy { it.date }
@@ -1127,7 +1120,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         if (holder.readsAtBottom(includeScrolling = true) && data.hasUnread()) {
             val visibleThreadId = threadId
             ensureBackgroundThread {
-                markThreadMessagesRead(visibleThreadId)
+                conversationRepository.markThreadRead(visibleThreadId)
                 InboxRepository.refreshUnreadCounts(applicationContext, listOf(visibleThreadId))
             }
         }
@@ -1141,7 +1134,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         val visibleThreadId = threadId
         ensureBackgroundThread {
             try {
-                markThreadMessagesRead(visibleThreadId)
+                conversationRepository.markThreadRead(visibleThreadId)
                 InboxRepository.refreshUnreadCounts(applicationContext, listOf(visibleThreadId))
             } finally {
                 runOnUiThread {
@@ -1161,7 +1154,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         val unreadIds = data.markSpamReadLocally(ids)
         if (unreadIds.isEmpty()) return
         ensureBackgroundThread {
-            unreadIds.forEach { markMessageRead(it, isMMS = false) }
+            unreadIds.forEach { conversationRepository.markMessageRead(it, isMms = false) }
         }
     }
 
@@ -1308,7 +1301,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
                 },
                 commit = {
                     if (isRecycleBin) recycleBin.emptyConversation(deletedThread)
-                    else deleteConversation(deletedThread)
+                    else conversationRepository.delete(deletedThread)
                 },
                 completed = {
                     UndoDeletion.threads.remove(deletedThread)
@@ -1337,7 +1330,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
 
     private fun setArchived(archived: Boolean) {
         ensureBackgroundThread {
-            updateConversationArchivedStatus(threadId, archived)
+            conversationRepository.setArchived(threadId, archived)
             runOnUiThread {
                 MessagingEvents.publish(MessagingEvent.ConversationsChanged(reconcile = true))
                 finish()
@@ -1359,8 +1352,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
 
     private fun markAsUnread() {
         ensureBackgroundThread {
-            conversationsDB.markUnread(threadId)
-            markThreadMessagesUnread(threadId)
+            conversationRepository.markThreadUnread(threadId)
             runOnUiThread {
                 finish()
                 MessagingEvents.publish(MessagingEvent.ConversationsChanged(threadId = threadId, reconcile = false))
@@ -1383,7 +1375,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         val current = conversation ?: return
         showRenameDialog(current) { title ->
             ensureBackgroundThread {
-                conversation = renameConversation(current, newTitle = title)
+                conversation = conversationRepository.rename(current, newTitle = title)
                 runOnUiThread { refreshMenuItems() }
             }
         }
@@ -1858,7 +1850,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
                     // create a temporary thread until a real message is sent
                     threadId = message.threadId
                     syncActiveConversationThread()
-                    createTemporaryThread(message, message.threadId, conversation)
+                    conversationRepository.createScheduledConversation(message, message.threadId, conversation)
                 }
                 val conversation = conversationsDB.getConversationWithThreadId(threadId)
                 if (conversation != null) {
@@ -1950,7 +1942,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
             InboxRepository.bumpAfterOutgoing(this, message.threadId, message.body)
         }
         if (shouldUnarchive()) {
-            updateConversationArchivedStatus(message.threadId, false)
+            conversationRepository.setArchived(message.threadId, false)
         }
         if (isOutgoing || shouldUnarchive()) {
             MessagingEvents.publish(MessagingEvent.ConversationsChanged(threadId = message.threadId, reconcile = true))
@@ -2034,14 +2026,14 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
                 }
             }
         }
-        updateLastConversationMessage(threadId)
+        conversationRepository.refreshFromTelephony(listOf(threadId))
 
         // move all scheduled messages to a temporary thread when there are no real messages left
         val messages = data.list
         if (messages.isNotEmpty() && messages.all { it.isScheduled }) {
             val scheduledMessage = messages.last()
             val fakeThreadId = generateRandomId()
-            createTemporaryThread(scheduledMessage, fakeThreadId, conversation)
+            conversationRepository.createScheduledConversation(scheduledMessage, fakeThreadId, conversation)
             updateScheduledMessagesThreadId(messages, fakeThreadId)
             threadId = fakeThreadId
             syncActiveConversationThread()

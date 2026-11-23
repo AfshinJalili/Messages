@@ -9,15 +9,13 @@ import com.afsh.commons.helpers.SimpleContactsHelper
 import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.commons.models.PhoneNumber
 import com.afsh.commons.models.SimpleContact
-import com.afsh.messages.extensions.getConversations
 import com.afsh.messages.extensions.getNameFromAddress
 import com.afsh.messages.extensions.getThreadId
 import com.afsh.messages.extensions.insertNewSMS
-import com.afsh.messages.extensions.insertOrUpdateConversation
 import com.afsh.messages.extensions.messagesDB
 import com.afsh.messages.extensions.shouldUnarchive
-import com.afsh.messages.extensions.updateConversationArchivedStatus
 import com.afsh.messages.helpers.ConversationPreview
+import com.afsh.messages.helpers.ConversationRepository
 import com.afsh.messages.helpers.IncomingSpamClassifier
 import com.afsh.messages.helpers.MessagingEvent
 import com.afsh.messages.helpers.MessagingEvents
@@ -94,8 +92,9 @@ class SmsReceiver : BroadcastReceiver() {
             context.messagesDB.insertSpamMarker(SpamMessage(id = newMessageId, threadId = threadId, reason = spamReason))
         }
 
-        context.getConversations(threadId).firstOrNull()?.let { conv ->
-            runCatching { context.insertOrUpdateConversation(conv) }
+        val conversations = ConversationRepository.from(context)
+        conversations.conversation(threadId)?.let { conv ->
+            runCatching { conversations.insertOrUpdate(conv) }
         }
 
         val senderName = context.getMyContactsCursor(favoritesOnly = false, withPhoneNumbersOnly = true).use {
@@ -134,7 +133,7 @@ class SmsReceiver : BroadcastReceiver() {
         ConversationPreview.refresh(context, threadId)
 
         if (context.shouldUnarchive()) {
-            context.updateConversationArchivedStatus(threadId, false)
+            conversations.setArchived(threadId, false)
         }
 
         // Room already has this thread; MessagingEvent.IncomingMessage never triggers a full reconcile.

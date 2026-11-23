@@ -5,14 +5,10 @@ import android.provider.Telephony
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.afsh.messages.extensions.conversationsDB
-import com.afsh.messages.extensions.getSpamThreads
-import com.afsh.messages.extensions.getUnreadCountsByThread
-import com.afsh.messages.extensions.getUnreadSpamCounts
-import com.afsh.messages.extensions.insertOrUpdateConversation
 import com.afsh.messages.extensions.messagesDB
-import com.afsh.messages.extensions.removeOrphanSpamMarkers
 import com.afsh.messages.helpers.BLOCK_REASON_KEYWORD
 import com.afsh.messages.helpers.ConversationPreview
+import com.afsh.messages.helpers.ConversationRepository
 import com.afsh.messages.helpers.SpamBackfill
 import com.afsh.messages.models.SpamMessage
 import org.junit.Assume.assumeTrue
@@ -54,7 +50,7 @@ class SpamChecks {
         val threadId = Long.MAX_VALUE - 301
         val spamId = Long.MAX_VALUE - 3011
         withThread(threadId) {
-            context.insertOrUpdateConversation(conversation(threadId, messageCount = 1))
+            ConversationRepository.from(context).insertOrUpdate(conversation(threadId, messageCount = 1))
             context.messagesDB.insertOrUpdate(message(spamId, threadId, "win a prize", 500))
             ConversationPreview.refresh(context, threadId)
             check(inbox(threadId) != null) { "An unmarked thread must be visible" }
@@ -62,17 +58,17 @@ class SpamChecks {
             markSpam(spamId, threadId)
             check(inbox(threadId) == null) { "A thread whose only message is spam must be hidden" }
 
-            context.insertOrUpdateConversation(conversation(threadId, messageCount = 1))
+            ConversationRepository.from(context).insertOrUpdate(conversation(threadId, messageCount = 1))
             check(inbox(threadId) == null) { "A reconciler overwrite must not reveal a hidden thread" }
             check(context.conversationsDB.getAll().any { it.threadId == threadId }) {
                 "The reconciler must still see hidden rows"
             }
 
-            context.insertOrUpdateConversation(conversation(threadId, messageCount = 1, archived = true))
+            ConversationRepository.from(context).insertOrUpdate(conversation(threadId, messageCount = 1, archived = true))
             check(context.conversationsDB.getAllArchived().none { it.threadId == threadId }) {
                 "Hidden spam threads must not show in the archive either"
             }
-            context.insertOrUpdateConversation(conversation(threadId, messageCount = 1))
+            ConversationRepository.from(context).insertOrUpdate(conversation(threadId, messageCount = 1))
 
             context.messagesDB.deleteSpamMarker(spamId)
             ConversationPreview.refresh(context, threadId)
@@ -86,7 +82,7 @@ class SpamChecks {
         val realId = Long.MAX_VALUE - 3021
         val spamId = Long.MAX_VALUE - 3022
         withThread(threadId) {
-            context.insertOrUpdateConversation(conversation(threadId, messageCount = 2))
+            ConversationRepository.from(context).insertOrUpdate(conversation(threadId, messageCount = 2))
             context.messagesDB.insertOrUpdate(message(realId, threadId, "real", 100))
             context.messagesDB.insertOrUpdate(message(spamId, threadId, "spam", 500))
             markSpam(spamId, threadId)
@@ -103,11 +99,11 @@ class SpamChecks {
         val spamId = Long.MAX_VALUE - 3031
         withThread(threadId) {
             markSpam(spamId, threadId)
-            context.insertOrUpdateConversation(conversation(threadId, messageCount = 0))
+            ConversationRepository.from(context).insertOrUpdate(conversation(threadId, messageCount = 0))
             check(inbox(threadId) != null) { "An unfilled message count must keep the thread visible" }
 
             // Telephony counts MMS too, so an MMS in a spam SMS thread leaves the count above the markers.
-            context.insertOrUpdateConversation(conversation(threadId, messageCount = 2))
+            ConversationRepository.from(context).insertOrUpdate(conversation(threadId, messageCount = 2))
             check(inbox(threadId) != null) { "An unmarked message must keep the thread visible" }
         }
     }
@@ -117,7 +113,7 @@ class SpamChecks {
         val threadId = Long.MAX_VALUE - 304
         val sharedId = Long.MAX_VALUE - 3041
         withThread(threadId) {
-            context.insertOrUpdateConversation(conversation(threadId, messageCount = 2))
+            ConversationRepository.from(context).insertOrUpdate(conversation(threadId, messageCount = 2))
             context.messagesDB.insertOrUpdate(message(sharedId, threadId, "picture", 500, isMMS = true))
             markSpam(sharedId, threadId)
             check(inbox(threadId)?.snippet == "picture") { "An MMS must not be treated as spam by an SMS marker" }
@@ -129,7 +125,7 @@ class SpamChecks {
         val threadId = Long.MAX_VALUE - 305
         val spamId = Long.MAX_VALUE - 3051
         withThread(threadId) {
-            context.insertOrUpdateConversation(conversation(threadId, messageCount = 1))
+            ConversationRepository.from(context).insertOrUpdate(conversation(threadId, messageCount = 1))
             markSpam(spamId, threadId)
             check(inbox(threadId) == null)
 
@@ -170,12 +166,12 @@ class SpamChecks {
         assumeTrue("Needs an unread, unmarked SMS on the device", sms != null)
         val (id, threadId) = sms!!
 
-        val before = context.getUnreadCountsByThread()[threadId] ?: 0
-        val spamBefore = context.getUnreadSpamCounts()[threadId] ?: 0
+        val before = ConversationRepository.from(context).unreadCountsByThread()[threadId] ?: 0
+        val spamBefore = ConversationRepository.from(context).unreadSpamCounts()[threadId] ?: 0
         try {
             markSpam(id, threadId)
-            check((context.getUnreadCountsByThread()[threadId] ?: 0) == before - 1) { "Spam must not count as unread in the inbox" }
-            check((context.getUnreadSpamCounts()[threadId] ?: 0) == spamBefore + 1) { "Spam must count as unread spam" }
+            check((ConversationRepository.from(context).unreadCountsByThread()[threadId] ?: 0) == before - 1) { "Spam must not count as unread in the inbox" }
+            check((ConversationRepository.from(context).unreadSpamCounts()[threadId] ?: 0) == spamBefore + 1) { "Spam must count as unread spam" }
         } finally {
             context.messagesDB.deleteSpamMarker(id)
         }
@@ -197,7 +193,7 @@ class SpamChecks {
         try {
             markSpam(id, threadId)
             markSpam(orphanId, Long.MAX_VALUE - 307)
-            val threads = context.getSpamThreads()
+            val threads = ConversationRepository.from(context).spamThreads()
             val row = checkNotNull(threads.singleOrNull { it.threadId == threadId }) { "A marked SMS must be listed" }
             check(row.messageIds == listOf(id) && row.snippet == body.orEmpty()) { "Row must show only the marked SMS, was $row" }
             check(threads.none { orphanId in it.messageIds }) { "A marker without an SMS must not be listed" }
@@ -233,7 +229,7 @@ class SpamChecks {
         try {
             markSpam(id, threadId)
             markSpam(orphanId, Long.MAX_VALUE - 308)
-            context.removeOrphanSpamMarkers()
+            ConversationRepository.from(context).removeOrphanSpamMarkers()
             val left = context.messagesDB.getSpamIds().toSet()
             check(orphanId !in left) { "A marker whose SMS is gone must be removed" }
             check(id in left && left.containsAll(spamIds)) { "Markers of existing SMS must stay" }

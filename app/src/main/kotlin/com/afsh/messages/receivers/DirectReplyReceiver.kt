@@ -11,6 +11,7 @@ import com.afsh.commons.extensions.showErrorToast
 import com.afsh.commons.helpers.SimpleContactsHelper
 import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.messages.extensions.*
+import com.afsh.messages.helpers.ConversationRepository
 import com.afsh.messages.helpers.MessagingEvent
 import com.afsh.messages.helpers.MessagingEvents
 import com.afsh.messages.helpers.REPLY
@@ -50,7 +51,7 @@ class DirectReplyReceiver : BroadcastReceiver() {
                         context.messagesDB.insertOrUpdate(message)
                         messageId = message.id
 
-                        context.updateLastConversationMessage(threadId)
+                        ConversationRepository.from(context).refreshFromTelephony(listOf(threadId))
                     }
                 } catch (e: Exception) {
                     context.showErrorToast(e)
@@ -68,9 +69,8 @@ class DirectReplyReceiver : BroadcastReceiver() {
                     )
                 }
 
-                // markThreadMessagesRead also publishes MessagingEvent.ReadStateChanged.
-                context.markThreadMessagesRead(threadId)
-                context.conversationsDB.markRead(threadId)
+                // markThreadRead also publishes MessagingEvent.ReadStateChanged.
+                ConversationRepository.from(context).markThreadRead(threadId)
                 if (messageId != 0L) {
                     MessagingEvents.publish(MessagingEvent.MessageSent(threadId = threadId, messageId = messageId, isMms = false))
                 }

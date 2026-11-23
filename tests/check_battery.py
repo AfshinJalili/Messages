@@ -70,9 +70,9 @@ if not SYNC_FILE.is_file():
     violations.append(f"missing {rel(SYNC_FILE)}: receivers need a single-thread Room sync helper")
 else:
     sync_text = SYNC_FILE.read_text()
-    if "fun syncThread(" not in sync_text or "insertOrUpdateConversation" not in sync_text:
+    if "fun syncThread(" not in sync_text or "conversations.insertOrUpdate(" not in sync_text:
         violations.append(
-            f"{rel(SYNC_FILE)}: must expose syncThread that writes via insertOrUpdateConversation"
+            f"{rel(SYNC_FILE)}: must expose syncThread that writes via ConversationRepository.insertOrUpdate"
         )
 
 # --- Receivers must not full-reconcile on every wake --------------------------
@@ -85,14 +85,14 @@ ALLOW_RECONCILE = {"ScheduledMessageReceiver.kt"}
 # inbox snippet/date/unread, notifications, and an open thread correct without a full pass.
 ROOM_WRITES = {
     "SmsReceiver.kt": (
-        "insertOrUpdateConversation",
+        "conversations.insertOrUpdate(",
         "messagesDB.insertOrUpdate",
     ),
-    "MmsReceiver.kt": ("insertOrUpdateConversation",),
-    "MarkAsReadReceiver.kt": ("markRead", "markThreadMessagesRead"),
+    "MmsReceiver.kt": ("conversations.insertOrUpdate(",),
+    "MarkAsReadReceiver.kt": ("markThreadRead",),
     "SmsStatusSentReceiver.kt": ("updateType",),
     "MmsSentReceiver.kt": ("ConversationSync", "syncThread"),
-    "DeleteSmsReceiver.kt": ("updateLastConversationMessage", "deleteMessage"),
+    "DeleteSmsReceiver.kt": ("refreshFromTelephony", "deleteMessage"),
 }
 
 for path in kotlin_files(RECEIVERS):

@@ -25,8 +25,8 @@ import com.afsh.messages.extensions.dialNumber
 import com.afsh.messages.extensions.getContactFromAddress
 import com.afsh.messages.extensions.getThreadParticipants
 import com.afsh.messages.extensions.messagesDB
-import com.afsh.messages.extensions.renameConversation
 import com.afsh.messages.extensions.startContactDetailsIntent
+import com.afsh.messages.helpers.ConversationRepository
 import com.afsh.messages.helpers.OPEN_THREAD_SEARCH
 import com.afsh.messages.helpers.THREAD_ID
 import com.afsh.messages.messaging.isShortCodeWithLetters
@@ -101,7 +101,7 @@ class ConversationDetailsActivity : ComposePageActivity() {
             DetailsEvent.Rename -> conversation?.let { current ->
                 showRenameDialog(current) { title ->
                     state = state.copy(title = title)
-                    ensureBackgroundThread { conversation = renameConversation(current, newTitle = title) }
+                    ensureBackgroundThread { conversation = ConversationRepository.from(this).rename(current, newTitle = title) }
                 }
             }
             is DetailsEvent.SetCustomNotifications -> setCustomNotifications(event.enabled)

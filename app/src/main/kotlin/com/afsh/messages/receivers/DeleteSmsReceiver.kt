@@ -6,7 +6,7 @@ import android.content.Intent
 import com.afsh.commons.extensions.notificationManager
 import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.messages.extensions.deleteMessage
-import com.afsh.messages.extensions.updateLastConversationMessage
+import com.afsh.messages.helpers.ConversationRepository
 import com.afsh.messages.helpers.IS_MMS
 import com.afsh.messages.helpers.MESSAGE_ID
 import com.afsh.messages.helpers.MessagingEvent
@@ -22,7 +22,7 @@ class DeleteSmsReceiver : BroadcastReceiver() {
         context.notificationManager.cancel(threadId.hashCode())
         ensureBackgroundThread {
             context.deleteMessage(messageId, isMms)
-            context.updateLastConversationMessage(threadId)
+            ConversationRepository.from(context).refreshFromTelephony(listOf(threadId))
             MessagingEvents.publish(MessagingEvent.MessageDeleted(threadId = threadId, messageId = messageId, isMms = isMms))
         }
     }

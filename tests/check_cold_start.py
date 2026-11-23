@@ -66,8 +66,10 @@ if "installSplashScreen" not in main or "setKeepOnScreenCondition" not in main:
 repo = REPO.read_text()
 if "fun scheduleLaunchReconcile" not in repo:
     violations.append(f"{rel(REPO)}: missing scheduleLaunchReconcile")
-if "needsFullReconcile" not in repo or "TelephonyReader(context).threadDigest()" not in repo:
-    violations.append(f"{rel(REPO)}: launch reconcile must dirty-check via TelephonyReader.threadDigest")
+conversation_repo = (REPO.parent / "ConversationRepository.kt").read_text()
+if "needsFullReconcile" not in repo or "fun needsFullReconcile" not in conversation_repo \
+        or "telephony.threadDigest()" not in conversation_repo:
+    violations.append(f"{rel(REPO)}: launch reconcile must dirty-check via ConversationRepository.needsFullReconcile")
 if "force: Boolean = true" not in repo and "force: Boolean =" not in repo:
     violations.append(f"{rel(REPO)}: scheduleProviderReconcile needs a force flag for dirty-check launches")
 

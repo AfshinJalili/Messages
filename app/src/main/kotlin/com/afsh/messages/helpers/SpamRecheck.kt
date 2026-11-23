@@ -2,7 +2,6 @@ package com.afsh.messages.helpers
 
 import android.content.Context
 import com.afsh.messages.extensions.config
-import com.afsh.messages.extensions.getSpamMessages
 import com.afsh.messages.extensions.messagesDB
 
 /**
@@ -13,7 +12,7 @@ import com.afsh.messages.extensions.messagesDB
 object SpamRecheck {
     fun run(context: Context): Int {
         val patterns = context.config.spamPatterns
-        val released = context.getSpamMessages().filter { message ->
+        val released = ConversationRepository.from(context).spamMessages().filter { message ->
             when (message.reason) {
                 BLOCK_REASON_KEYWORD -> isCode(patterns, message.address, message.body)
                 BLOCK_REASON_RULE -> RuleBasedFilter.explain(patterns, message.address, message.body).verdict != FilterVerdict.BLOCK

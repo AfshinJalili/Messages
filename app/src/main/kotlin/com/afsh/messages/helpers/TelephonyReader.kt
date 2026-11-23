@@ -75,6 +75,29 @@ class TelephonyReader(context: Context) {
 
     /** Thread count and latest thread date (seconds); `-1 to -1` when the provider can't be read. */
     fun threadDigest(): Pair<Int, Int> = context.telephonyThreadDigest()
+
+    /** Every Telephony thread id, oldest thread first. */
+    fun threadIds(): List<Long> {
+        val ids = mutableListOf<Long>()
+        context.queryCursor(Threads.CONTENT_URI, arrayOf(Threads._ID), null, null, "${Threads.DATE} ASC", true) { cursor ->
+            ids.add(cursor.getLongValue(Threads._ID))
+        }
+        return ids
+    }
+
+    /** The address of SMS [messageId], or "" when it can't be read. */
+    fun getSmsAddress(messageId: Long): String {
+        try {
+            val selectionArgs = arrayOf(messageId.toString())
+            context.contentResolver.query(Sms.CONTENT_URI, arrayOf(Sms.ADDRESS), "${Sms._ID} = ?", selectionArgs, null)?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    return cursor.getStringValue(Sms.ADDRESS)
+                }
+            }
+        } catch (_: Exception) {
+        }
+        return ""
+    }
 }
 
 // Load through the oldest unread message, including read messages between unread bubbles.
@@ -310,7 +333,7 @@ private fun Context.getMMSSender(msgId: Long): String {
 /**
  * Cheap Telephony fingerprint for launch: thread count and latest date only.
  * Skips contact lookups, blocked-number filters, unread scans and draft merges that
- * [getConversations] pays for on a full reconcile.
+ * [TelephonyConversations.conversations] pays for on a full reconcile.
  */
 private fun Context.telephonyThreadDigest(): Pair<Int, Int> {
     val uri = "${Threads.CONTENT_URI}?simple=true".toUri()
@@ -319,7 +342,7 @@ private fun Context.telephonyThreadDigest(): Pair<Int, Int> {
     var count = 0
     var latest = 0
     try {
-        queryCursorUnsafe(uri, projection, selection, emptyArray(), null) { cursor ->
+        contentResolver.queryCursorUnsafe(uri, projection, selection, emptyArray(), null) { cursor ->
             count++
             var date = cursor.getLongValue(Threads.DATE)
             if (date.toString().length > 10) date /= 1000

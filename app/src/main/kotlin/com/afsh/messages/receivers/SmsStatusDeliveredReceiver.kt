@@ -7,9 +7,9 @@ import android.content.Intent
 import android.net.Uri
 import android.provider.Telephony.Sms
 import com.afsh.commons.helpers.ensureBackgroundThread
-import com.afsh.messages.extensions.getSmsThreadId
 import com.afsh.messages.extensions.messagesDB
 import com.afsh.messages.extensions.messagingUtils
+import com.afsh.messages.helpers.ConversationRepository
 import com.afsh.messages.helpers.MessagingEvent
 import com.afsh.messages.helpers.MessagingEvents
 
@@ -95,7 +95,7 @@ class SmsStatusDeliveredReceiver : SendStatusReceiver() {
                 if (status != Sms.Sent.STATUS_NONE) {
                     context.messagesDB.updateStatus(messageId, status)
                 }
-                val threadId = context.getSmsThreadId(messageId)
+                val threadId = ConversationRepository.from(context).smsThreadId(messageId)
                 MessagingEvents.publish(MessagingEvent.DeliveryUpdated(threadId = threadId, messageId = messageId))
             }
         }

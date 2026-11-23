@@ -1,0 +1,479 @@
+package com.afsh.messages.helpers
+
+import android.content.Context
+import com.afsh.commons.extensions.notificationManager
+import com.afsh.commons.extensions.showErrorToast
+import com.afsh.commons.helpers.SimpleContactsHelper
+import com.afsh.commons.helpers.ensureBackgroundThread
+import com.afsh.commons.models.SimpleContact
+import com.afsh.messages.extensions.config
+import com.afsh.messages.extensions.getAddresses
+import com.afsh.messages.extensions.getMessagesDB
+import com.afsh.messages.extensions.getNameAndPhotoFromPhoneNumber
+import com.afsh.messages.extensions.getThreadTitle
+import com.afsh.messages.extensions.shortcutHelper
+import com.afsh.messages.interfaces.ConversationsDao
+import com.afsh.messages.interfaces.DraftsDao
+import com.afsh.messages.interfaces.MessagesDao
+import com.afsh.messages.models.BlockedMessagesThread
+import com.afsh.messages.models.Conversation
+import com.afsh.messages.models.Message
+import com.afsh.messages.models.SpamReviewMessage
+import kotlin.time.Duration.Companion.minutes
+
+/** What a conversation change does outside Room and Telephony. */
+interface ConversationEffects {
+    /** Recomputes the inbox preview columns of [threadIds]. */
+    fun refreshPreview(threadIds: Collection<Long>)
+    fun publish(event: MessagingEvent)
+    fun setManuallyUnread(threadId: Long, messageId: Long, isMms: Boolean)
+    fun clearManuallyUnread(threadId: Long)
+
+    /** Drops what the app keeps per thread: cached participants, its notification channel, its shortcut. */
+    fun forgetThread(threadId: Long)
+
+    /** Creates or updates the launcher shortcut of [conversation], off the calling thread. */
+    fun updateShortcut(conversation: Conversation)
+
+    /** The contact name and photo of [address]; the address itself and "" when there is no contact. */
+    fun sender(address: String): Pair<String, String>
+
+    /** The contact photo of [address], or "". */
+    fun photoUri(address: String): String
+    fun onError(e: Exception)
+    fun runInTransaction(block: () -> Unit)
+}
+
+/**
+ * Owns conversations: their Room rows, the matching Telephony thread state (read, unread, archived,
+ * deleted) and their unread counts. Every write lands in Telephony first and Room second, and
+ * publishes what the open screens need to hear, so no caller touches the conversations table or a
+ * Telephony thread directly.
+ *
+ * Unread counts come from Telephony. Spam SMS are counted only by [unreadSpamCounts]; the inbox
+ * counts in [unreadCountsByThread] leave them out. Every call blocks; call it off the main thread.
+ */
+class ConversationRepository(
+    private val conversations: ConversationsDao,
+    private val messages: MessagesDao,
+    private val drafts: DraftsDao,
+    private val telephony: ConversationTelephony,
+    private val effects: ConversationEffects,
+    private val clock: () -> Long = System::currentTimeMillis,
+) {
+
+    // region Reads
+
+    /** Telephony's conversations ([threadId] only, when given), with unread counts and draft dates. */
+    fun conversations(
+        threadId: Long? = null,
+        privateContacts: List<SimpleContact> = emptyList(),
+        failOnError: Boolean = false,
+        onProgress: ((done: Int, total: Int) -> Unit)? = null,
+    ): ArrayList<Conversation> = telephony.conversations(
+        threadId = threadId,
+        privateContacts = privateContacts,
+        unreadCounts = unreadCountsByThread(),
+        draftDates = drafts.getAll().associate { it.threadId to it.date },
+        failOnError = failOnError,
+        onProgress = onProgress,
+    )
+
+    /** Telephony's row for [threadId], or null when the thread is gone or blocked. */
+    fun conversation(threadId: Long): Conversation? = conversations(threadId).firstOrNull()
+
+    /** Unread incoming messages per thread, spam left out. */
+    fun unreadCountsByThread(): Map<Long, Int> {
+        val result = HashMap<Long, Int>(128)
+        val spamIds = messages.getSpamIds().toHashSet()
+        telephony.unreadSms().forEach { (id, threadId) ->
+            if (id !in spamIds) result[threadId] = (result[threadId] ?: 0) + 1
+        }
+        telephony.unreadMmsThreadIds().forEach { threadId -> result[threadId] = (result[threadId] ?: 0) + 1 }
+        return result
+    }
+
+    /** Unread spam SMS per thread. */
+    fun unreadSpamCounts(): Map<Long, Int> {
+        val result = HashMap<Long, Int>()
+        val spamIds = messages.getSpamIds().toHashSet()
+        if (spamIds.isEmpty()) return result
+        telephony.unreadSms().forEach { (id, threadId) ->
+            if (id in spamIds) result[threadId] = (result[threadId] ?: 0) + 1
+        }
+        return result
+    }
+
+    /** True when Room has no rows (first import) or its count or latest date disagree with Telephony. */
+    fun needsFullReconcile(): Boolean {
+        val roomCount = conversations.getCount()
+        if (roomCount == 0) return true
+        val roomLatest = conversations.getLatestDate()
+        val (telephonyCount, telephonyLatest) = telephony.threadDigest()
+        if (telephonyCount < 0) return true
+        return telephonyCount != roomCount || telephonyLatest != roomLatest
+    }
+
+    /** The thread of SMS [messageId]: Room's when it knows, otherwise Telephony's. Null for 0 or unknown. */
+    fun smsThreadId(messageId: Long): Long? {
+        if (messageId == 0L) return null
+        messages.getThreadIdForMessage(messageId)?.takeIf { it != 0L }?.let { return it }
+        return telephony.smsThreadId(messageId)
+    }
+
+    /**
+     * The spam SMS, newest first, read from Telephony: a marker whose SMS was deleted elsewhere shows
+     * nothing. Each sender is resolved once.
+     */
+    fun spamMessages(): List<SpamReviewMessage> {
+        val markers = messages.getSpamMarkers().associateBy { it.id }
+        if (markers.isEmpty()) return emptyList()
+        val rows = telephony.smsRows(markers.keys)
+        val senders = HashMap<Long, Pair<String, String>>()
+        return rows.map { row ->
+            val (title, photo) = senders.getOrPut(row.threadId) {
+                val conversation = conversations.getConversationWithThreadId(row.threadId)
+                if (conversation != null) conversation.title to conversation.photoUri else effects.sender(row.address)
+            }
+            SpamReviewMessage(
+                id = row.id,
+                threadId = row.threadId,
+                address = row.address,
+                sender = title,
+                photoUri = photo,
+                body = row.body,
+                date = row.date,
+                read = row.read,
+                reason = markers.getValue(row.id).reason,
+            )
+        }.sortedByDescending { it.date }
+    }
+
+    /** The spam SMS grouped by Telephony thread, newest thread first. */
+    fun spamThreads(): List<BlockedMessagesThread> =
+        spamMessages().groupBy { it.threadId }.map { (threadId, messages) ->
+            val newest = messages.first()
+            BlockedMessagesThread(
+                threadId = threadId,
+                address = newest.address,
+                title = newest.sender,
+                photoUri = newest.photoUri,
+                snippet = newest.body,
+                date = newest.date,
+                count = messages.size,
+                unreadCount = messages.count { !it.read },
+                reason = newest.reason,
+                messageIds = messages.map { it.id }
+            )
+        }
+
+    // endregion
+
+    // region Writes
+
+    /**
+     * Stores a Telephony snapshot of a conversation, merged with the [cached] row (see
+     * [mergeConversationWithCache]), and refreshes its preview.
+     */
+    fun insertOrUpdate(
+        conversation: Conversation,
+        cached: Conversation? = conversations.getConversationWithThreadId(conversation.threadId),
+    ) {
+        val updated = mergeConversationWithCache(conversation, cached)
+        conversations.insertOrUpdate(updated)
+        effects.refreshPreview(listOf(updated.threadId))
+    }
+
+    /** Gives [conversation] a custom title. Returns the renamed row. */
+    fun rename(conversation: Conversation, newTitle: String): Conversation {
+        val updated = conversation.copy(title = newTitle, usesCustomTitle = true)
+        try {
+            conversations.insertOrUpdate(updated)
+            effects.updateShortcut(updated)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return updated
+    }
+
+    /** Archives or unarchives [threadId]. Room is left alone when Telephony has no archive. */
+    fun setArchived(threadId: Long, archived: Boolean) {
+        if (!telephony.setArchived(threadId, archived)) return
+        if (archived) conversations.moveToArchive(threadId) else conversations.unarchive(threadId)
+    }
+
+    /** Deletes [threadId] for good, from Telephony and Room; the recycle bin is not used. */
+    fun delete(threadId: Long) {
+        telephony.deleteThread(threadId)
+        conversations.deleteThreadId(threadId)
+        messages.deleteThreadMessages(threadId)
+        effects.forgetThread(threadId)
+    }
+
+    /** Drops the Room row of [threadId] only, for a thread Telephony no longer has or a temporary one. */
+    fun removeFromCache(threadId: Long) {
+        conversations.deleteThreadId(threadId)
+    }
+
+    /**
+     * Makes Telephony recompute thread dates and snippets, then stores each of [threadIds] afresh.
+     * Stops at the first thread Telephony no longer has. Failures are ignored.
+     */
+    fun refreshFromTelephony(threadIds: Iterable<Long>) {
+        try {
+            telephony.touchThreads()
+            for (threadId in threadIds) {
+                insertOrUpdate(conversations(threadId)[0])
+            }
+        } catch (_: Exception) {
+        }
+    }
+
+    /** Shows a just-sent [snippet] on [threadId] at once, read, without waiting for Telephony. */
+    fun bumpAfterOutgoing(threadId: Long, snippet: String) {
+        val now = (clock() / 1000).toInt()
+        val row = conversations.getConversationWithThreadId(threadId) ?: conversation(threadId) ?: return
+        conversations.insertOrUpdate(row.copy(snippet = snippet, date = now, read = true, unreadCount = 0))
+        effects.refreshPreview(listOf(threadId))
+    }
+
+    /**
+     * Copies Telephony's unread counts into Room ([threadIds] only, when given). Only counts that
+     * changed are written, in one transaction: every UPDATE fires Room's invalidation even with the
+     * same value, and each one re-ran the inbox query and rebuilt the list.
+     */
+    fun syncUnreadCounts(threadIds: Collection<Long> = emptyList()) {
+        val counts = unreadCountsByThread()
+        val wanted = threadIds.toHashSet()
+        val changed = conversations.getUnreadCounts()
+            .filter { (wanted.isEmpty() || it.threadId in wanted) && (counts[it.threadId] ?: 0) != it.unreadCount }
+        if (changed.isEmpty()) return
+        effects.runInTransaction {
+            changed.forEach { conversations.updateUnreadCount(it.threadId, counts[it.threadId] ?: 0) }
+        }
+    }
+
+    // endregion
+
+    // region Read state
+
+    /** Marks one message read in Telephony and Room. False when Telephony had no such message. */
+    fun markMessageRead(id: Long, isMms: Boolean): Boolean {
+        if (!telephony.markMessageRead(id, isMms)) return false
+        messages.markRead(id, isMms)
+        return true
+    }
+
+    /**
+     * Marks the unread incoming [visibleMessages] of [threadId] read, then stores the thread's new
+     * unread count. Returns the stable ids of the messages marked.
+     */
+    fun markVisibleMessagesRead(threadId: Long, visibleMessages: List<Message>): Set<Long> {
+        val completed = HashSet<Long>()
+        visibleMessages.filter { it.threadId == threadId && it.isReceivedMessage() && !it.isScheduled && !it.read }.forEach { message ->
+            try {
+                if (markMessageRead(message.id, message.isMMS)) completed.add(message.getStableId())
+            } catch (e: Exception) {
+                effects.onError(e)
+            }
+        }
+        val count = unreadCountsByThread()[threadId] ?: 0
+        conversations.updateUnreadCount(threadId, count)
+        effects.publish(MessagingEvent.ReadStateChanged(threadId, count == 0, count))
+        return completed
+    }
+
+    /**
+     * Marks every incoming message of [threadId] read. Spam keeps its read state: that belongs to the
+     * Spam screen.
+     */
+    fun markThreadRead(threadId: Long) {
+        telephony.markThreadRead(threadId, skipSmsIds = messages.getThreadSpamIds(threadId))
+        messages.markThreadRead(threadId)
+        conversations.markRead(threadId)
+        effects.clearManuallyUnread(threadId)
+        effects.publish(MessagingEvent.ReadStateChanged(threadId, read = true, unreadCount = 0))
+    }
+
+    /**
+     * Marks only the newest received message unread, as Google Messages does, so the inbox shows a dot
+     * rather than the size of the whole thread. The message is remembered as manually unread, so the
+     * thread opens without a "new messages" divider above it. Spam is never the one marked.
+     */
+    fun markThreadUnread(threadId: Long) {
+        val target = telephony.newestIncoming(threadId, skipSmsIds = messages.getThreadSpamIds(threadId))
+        if (target != null) {
+            val (messageId, isMms) = target
+            telephony.markMessageUnread(messageId, isMms)
+            messages.markUnread(messageId, isMms)
+            effects.setManuallyUnread(threadId, messageId, isMms)
+        }
+        val count = unreadCountsByThread()[threadId] ?: 0
+        if (count > 0) conversations.updateUnreadCount(threadId, count) else conversations.markUnread(threadId)
+        effects.publish(MessagingEvent.ReadStateChanged(threadId, read = false, unreadCount = count.takeIf { it > 0 }))
+    }
+
+    // endregion
+
+    // region Spam markers
+
+    /**
+     * Drops spam markers whose SMS is gone from Telephony (deleted by another app): extra markers can
+     * hide a thread that has real messages. A failed query removes nothing.
+     */
+    fun removeOrphanSpamMarkers() {
+        val markers = messages.getSpamMarkers()
+        if (markers.isEmpty()) return
+        val existing = telephony.existingSmsIds(markers.map { it.id }) ?: return
+        val removed = markers.filter { it.id !in existing }
+        removed.forEach { messages.deleteSpamMarker(it.id) }
+        if (removed.isNotEmpty()) effects.refreshPreview(removed.map { it.threadId })
+    }
+
+    // endregion
+
+    // region Scheduled conversations
+
+    /**
+     * Stores a temporary conversation [threadId] for a scheduled [message] in a thread Telephony does
+     * not have yet. A custom title of the [cached] row is kept.
+     */
+    fun createScheduledConversation(message: Message, threadId: Long, cached: Conversation?) {
+        val addresses = message.participants.getAddresses()
+        val photoUri = if (addresses.size == 1) effects.photoUri(addresses.first()) else ""
+        val title = if (cached != null && cached.usesCustomTitle) cached.title else message.participants.getThreadTitle()
+        val conversation = Conversation(
+            threadId = threadId,
+            snippet = message.body,
+            date = message.date,
+            read = true,
+            title = title,
+            photoUri = photoUri,
+            isGroupConversation = addresses.size > 1,
+            phoneNumber = addresses.first(),
+            isScheduled = true,
+            usesCustomTitle = cached?.usesCustomTitle == true,
+            isArchived = false,
+            unreadCount = 0,
+        )
+        try {
+            conversations.insertOrUpdate(conversation)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    /**
+     * Deletes the scheduled messages of [threadId] ([messagesToDelete], when given) that are more than
+     * a minute overdue. A temporary conversation left with none is deleted too.
+     */
+    fun clearExpiredScheduledMessages(threadId: Long, messagesToDelete: List<Message>? = null) {
+        val messages = messagesToDelete ?: this.messages.getScheduledThreadMessages(threadId)
+        val cutoff = clock() - 1.minutes.inWholeMilliseconds
+        try {
+            messages.filter { it.isScheduled && it.millis() < cutoff }.forEach { this.messages.delete(it.id) }
+            if (messages.filterNot { it.isScheduled && it.millis() < cutoff }.isEmpty()) {
+                val conversation = conversations.getConversationWithThreadId(threadId)
+                if (conversation != null && conversation.isScheduled) {
+                    conversations.deleteThreadId(threadId)
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    // endregion
+
+    companion object {
+        fun from(context: Context): ConversationRepository {
+            val app = context.applicationContext
+            val database = app.getMessagesDB()
+            return ConversationRepository(
+                conversations = database.ConversationsDao(),
+                messages = database.MessagesDao(),
+                drafts = database.DraftsDao(),
+                telephony = TelephonyConversations(app),
+                effects = AndroidConversationEffects(app),
+            )
+        }
+    }
+}
+
+/**
+ * Merges a Telephony [incoming] conversation snapshot with the cached Room row while preserving
+ * app-owned metadata, optimistic local send bumps, and protection against stale reconcile reads.
+ *
+ * A stale provider snapshot (no newer date and no higher message count) must not undo a local
+ * mark-read, whereas a newly arrived message must immediately surface its unread state and count.
+ */
+internal fun mergeConversationWithCache(
+    incoming: Conversation,
+    cached: Conversation?,
+): Conversation {
+    if (cached == null) return incoming
+    var updated = incoming
+    if (cached.usesCustomTitle) {
+        updated = updated.copy(
+            title = cached.title,
+            usesCustomTitle = true,
+        )
+    }
+    if (cached.isScheduled) {
+        updated = updated.copy(
+            date = cached.date,
+            isScheduled = true,
+        )
+    }
+    // Keep a newer local preview (e.g. optimistic send bump) until Telephony catches up.
+    if (cached.date > updated.date) {
+        updated = updated.copy(
+            date = cached.date,
+            snippet = cached.snippet,
+        )
+    }
+    val hasNewerMessage = incoming.date > cached.date || incoming.messageCount > cached.messageCount
+    if (cached.read && cached.unreadCount == 0 && !updated.read && !hasNewerMessage) {
+        updated = updated.copy(read = true, unreadCount = 0)
+    }
+    // REPLACE would clear denormalized preview columns; keep them until refresh below.
+    return updated.copy(
+        previewSnippet = cached.previewSnippet,
+        previewDate = cached.previewDate,
+        allSpam = cached.allSpam,
+    )
+}
+
+private class AndroidConversationEffects(private val app: Context) : ConversationEffects {
+    override fun refreshPreview(threadIds: Collection<Long>) = ConversationPreview.refresh(app, threadIds)
+    override fun publish(event: MessagingEvent) {
+        MessagingEvents.publish(event)
+    }
+    override fun setManuallyUnread(threadId: Long, messageId: Long, isMms: Boolean) =
+        app.config.setManuallyUnread(threadId, messageId, isMms)
+    override fun clearManuallyUnread(threadId: Long) = app.config.clearManuallyUnread(threadId)
+
+    override fun forgetThread(threadId: Long) {
+        MessagingCache.participantsCache.remove(threadId)
+        val config = app.config
+        if (config.customNotifications.contains(threadId.toString())) {
+            config.removeCustomNotificationsByThreadId(threadId)
+            app.notificationManager.deleteNotificationChannel(threadId.toString())
+        }
+        val shortcuts = app.shortcutHelper
+        if (shortcuts.getShortcut(threadId) != null) {
+            shortcuts.removeShortcutForThread(threadId)
+        }
+    }
+
+    override fun updateShortcut(conversation: Conversation) {
+        ensureBackgroundThread { app.shortcutHelper.createOrUpdateShortcut(conversation) }
+    }
+
+    override fun sender(address: String): Pair<String, String> =
+        app.getNameAndPhotoFromPhoneNumber(address).let { it.name to it.photoUri.orEmpty() }
+
+    override fun photoUri(address: String): String = SimpleContactsHelper(app).getPhotoUriFromPhoneNumber(address)
+    override fun onError(e: Exception) = app.showErrorToast(e)
+    override fun runInTransaction(block: () -> Unit) = app.getMessagesDB().runInTransaction(block)
+}
