@@ -1496,41 +1496,55 @@ fun Context.subscriptionManagerCompat(): SubscriptionManager {
     return getSystemService(SubscriptionManager::class.java)
 }
 
+/**
+ * Merges a Telephony [incoming] conversation snapshot with the cached Room row while preserving
+ * app-owned metadata, optimistic local send bumps, and protection against stale reconcile reads.
+ *
+ * A stale provider snapshot (no newer date and no higher message count) must not undo a local
+ * mark-read, whereas a newly arrived message must immediately surface its unread state and count.
+ */
+internal fun mergeConversationWithCache(
+    incoming: Conversation,
+    cached: Conversation?,
+): Conversation {
+    if (cached == null) return incoming
+    var updated = incoming
+    if (cached.usesCustomTitle) {
+        updated = updated.copy(
+            title = cached.title,
+            usesCustomTitle = true,
+        )
+    }
+    if (cached.isScheduled) {
+        updated = updated.copy(
+            date = cached.date,
+            isScheduled = true,
+        )
+    }
+    // Keep a newer local preview (e.g. optimistic send bump) until Telephony catches up.
+    if (cached.date > updated.date) {
+        updated = updated.copy(
+            date = cached.date,
+            snippet = cached.snippet,
+        )
+    }
+    val hasNewerMessage = incoming.date > cached.date || incoming.messageCount > cached.messageCount
+    if (cached.read && cached.unreadCount == 0 && !updated.read && !hasNewerMessage) {
+        updated = updated.copy(read = true, unreadCount = 0)
+    }
+    // REPLACE would clear denormalized preview columns; keep them until refresh below.
+    return updated.copy(
+        previewSnippet = cached.previewSnippet,
+        previewDate = cached.previewDate,
+        allSpam = cached.allSpam,
+    )
+}
+
 fun Context.insertOrUpdateConversation(
     conversation: Conversation,
     cachedConv: Conversation? = conversationsDB.getConversationWithThreadId(conversation.threadId),
 ) {
-    var updatedConv = conversation
-    if (cachedConv != null) {
-        if (cachedConv.usesCustomTitle) {
-            updatedConv = updatedConv.copy(
-                title = cachedConv.title,
-                usesCustomTitle = true,
-            )
-        }
-        if (cachedConv.isScheduled) {
-            updatedConv = updatedConv.copy(
-                date = cachedConv.date,
-                isScheduled = true,
-            )
-        }
-        // Keep a newer local preview (e.g. optimistic send bump) until Telephony catches up.
-        if (cachedConv.date > updatedConv.date) {
-            updatedConv = updatedConv.copy(
-                date = cachedConv.date,
-                snippet = cachedConv.snippet,
-            )
-        }
-        if (cachedConv.read && cachedConv.unreadCount == 0 && !updatedConv.read) {
-            updatedConv = updatedConv.copy(read = true, unreadCount = 0)
-        }
-        // REPLACE would clear denormalized preview columns; keep them until refresh below.
-        updatedConv = updatedConv.copy(
-            previewSnippet = cachedConv.previewSnippet,
-            previewDate = cachedConv.previewDate,
-            allSpam = cachedConv.allSpam,
-        )
-    }
+    val updatedConv = mergeConversationWithCache(conversation, cachedConv)
     conversationsDB.insertOrUpdate(updatedConv)
     ConversationPreview.refresh(this, updatedConv.threadId)
 }
