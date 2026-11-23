@@ -39,8 +39,6 @@ import com.afsh.commons.extensions.notificationManager
 import com.afsh.commons.extensions.queryCursor
 import com.afsh.commons.extensions.showErrorToast
 import com.afsh.commons.extensions.trimToComparableNumber
-import com.afsh.commons.helpers.DAY_SECONDS
-import com.afsh.commons.helpers.MONTH_SECONDS
 import com.afsh.commons.helpers.MyContactsContentProvider
 import com.afsh.commons.helpers.PERMISSION_READ_CONTACTS
 import com.afsh.commons.helpers.SimpleContactsHelper
@@ -75,13 +73,11 @@ import com.afsh.messages.models.Attachment
 import com.afsh.messages.models.BlockedMessagesThread
 import com.afsh.messages.models.SpamReviewMessage
 import com.afsh.messages.models.Conversation
-import com.afsh.messages.models.Draft
 import com.afsh.messages.models.Message
 import com.afsh.messages.models.SearchResult
 import com.afsh.messages.ui.components.conversationListTimestamp
 import com.afsh.messages.models.MessageAttachment
 import com.afsh.messages.models.NamePhoto
-import com.afsh.messages.models.RecycleBinMessage
 import org.xmlpull.v1.XmlPullParserException
 import java.io.FileNotFoundException
 import kotlin.time.Duration.Companion.minutes
@@ -1090,65 +1086,6 @@ fun Context.deleteConversation(threadId: Long) {
     }
 }
 
-fun Context.checkAndDeleteOldRecycleBinMessages(callback: (() -> Unit)? = null) {
-    if (
-        config.useRecycleBin
-        && config.lastRecycleBinCheck < System.currentTimeMillis() - DAY_SECONDS * 1000
-    ) {
-        config.lastRecycleBinCheck = System.currentTimeMillis()
-        ensureBackgroundThread {
-            try {
-                messagesDB.getOldRecycleBinMessages(
-                    timestamp = System.currentTimeMillis() - MONTH_SECONDS * 1000L
-                ).forEach { message ->
-                    deleteMessage(message.id, message.isMMS)
-                }
-                callback?.invoke()
-            } catch (_: Exception) {
-            }
-        }
-    }
-}
-
-fun Context.emptyMessagesRecycleBin() {
-    val messages = messagesDB.getAllRecycleBinMessages()
-    for (message in messages) {
-        deleteMessage(message.id, message.isMMS)
-    }
-}
-
-fun Context.emptyMessagesRecycleBinForConversation(threadId: Long) {
-    val messages = messagesDB.getThreadMessagesFromRecycleBin(threadId)
-    for (message in messages) {
-        deleteMessage(message.id, message.isMMS)
-    }
-}
-
-fun Context.restoreAllMessagesFromRecycleBinForConversation(threadId: Long) {
-    messagesDB.deleteThreadMessagesFromRecycleBin(threadId)
-    ConversationPreview.refresh(this, threadId)
-}
-
-fun Context.moveMessageToRecycleBin(id: Long) {
-    try {
-        val threadId = messagesDB.getThreadIdForMessage(id)
-        messagesDB.insertRecycleBinEntry(RecycleBinMessage(id, System.currentTimeMillis()))
-        if (threadId != null) ConversationPreview.refresh(this, threadId)
-    } catch (e: Exception) {
-        showErrorToast(e)
-    }
-}
-
-fun Context.restoreMessageFromRecycleBin(id: Long) {
-    try {
-        val threadId = messagesDB.getThreadIdForMessage(id)
-        messagesDB.deleteFromRecycleBin(id)
-        if (threadId != null) ConversationPreview.refresh(this, threadId)
-    } catch (e: Exception) {
-        showErrorToast(e)
-    }
-}
-
 fun Context.updateConversationArchivedStatus(threadId: Long, archived: Boolean) {
     val uri = Threads.CONTENT_URI
     val values = ContentValues().apply {
@@ -1372,53 +1309,6 @@ fun Context.getNotificationBitmap(photoUri: String): Bitmap? {
 
 fun Context.removeDiacriticsIfNeeded(text: String): String {
     return if (config.useSimpleCharacters) text.normalizeString() else text
-}
-
-fun Context.getSmsDraft(threadId: Long): String {
-    val draft = try {
-        draftsDB.getDraftById(threadId)
-    } catch (_: Exception) {
-        null
-    }
-
-    return draft?.body.orEmpty()
-}
-
-fun Context.getAllDrafts(): HashMap<Long, String> {
-    val drafts = HashMap<Long, String>()
-    try {
-        draftsDB.getAll().forEach {
-            drafts[it.threadId] = it.body
-        }
-    } catch (e: Exception) {
-        e.printStackTrace()
-    }
-
-    return drafts
-}
-
-fun Context.saveSmsDraft(body: String, threadId: Long) {
-    val draft = Draft(
-        threadId = threadId,
-        body = body,
-        date = System.currentTimeMillis()
-    )
-
-    try {
-        draftsDB.insertOrUpdate(draft)
-    } catch (e: Exception) {
-        e.printStackTrace()
-        showErrorToast(e)
-    }
-}
-
-fun Context.deleteSmsDraft(threadId: Long) {
-    try {
-        draftsDB.delete(threadId)
-    } catch (e: Exception) {
-        e.printStackTrace()
-        showErrorToast(e)
-    }
 }
 
 fun Context.updateLastConversationMessage(threadId: Long) {

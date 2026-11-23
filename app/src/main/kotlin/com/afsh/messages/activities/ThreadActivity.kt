@@ -52,14 +52,11 @@ import com.afsh.messages.extensions.createTemporaryThread
 import com.afsh.messages.extensions.deleteConversation
 import com.afsh.messages.extensions.deleteMessage
 import com.afsh.messages.extensions.deleteScheduledMessage
-import com.afsh.messages.extensions.deleteSmsDraft
 import com.afsh.messages.extensions.dialNumber
-import com.afsh.messages.extensions.emptyMessagesRecycleBinForConversation
 import com.afsh.messages.extensions.filterNotInByKey
 import com.afsh.messages.extensions.getAddresses
 import com.afsh.messages.extensions.getFileSizeFromUri
 import com.afsh.messages.extensions.getMessages
-import com.afsh.messages.extensions.getSmsDraft
 import com.afsh.messages.extensions.getThreadId
 import com.afsh.messages.extensions.getThreadParticipants
 import com.afsh.messages.extensions.getThreadTitle
@@ -74,12 +71,8 @@ import com.afsh.messages.extensions.markMessageRead
 import com.afsh.messages.extensions.markThreadMessagesRead
 import com.afsh.messages.extensions.markThreadMessagesUnread
 import com.afsh.messages.extensions.messagesDB
-import com.afsh.messages.extensions.moveMessageToRecycleBin
 import com.afsh.messages.extensions.removeDiacriticsIfNeeded
 import com.afsh.messages.extensions.renameConversation
-import com.afsh.messages.extensions.restoreAllMessagesFromRecycleBinForConversation
-import com.afsh.messages.extensions.restoreMessageFromRecycleBin
-import com.afsh.messages.extensions.saveSmsDraft
 import com.afsh.messages.extensions.shouldUnarchive
 import com.afsh.messages.extensions.subscriptionManagerCompat
 import com.afsh.messages.extensions.toArrayList
@@ -96,6 +89,8 @@ import com.afsh.messages.helpers.IS_LAUNCHED_FROM_SHORTCUT
 import com.afsh.messages.helpers.IS_RECYCLE_BIN
 import com.afsh.messages.helpers.ImageCompressor
 import com.afsh.messages.helpers.ConversationPreview
+import com.afsh.messages.helpers.DraftsRepository
+import com.afsh.messages.helpers.RecycleBinRepository
 import com.afsh.messages.helpers.InboxRepository
 import com.afsh.messages.helpers.MESSAGES_LIMIT
 import com.afsh.messages.helpers.OPEN_SPAM
@@ -218,6 +213,8 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
     private var restoredText: String? = null
     private var restoredAttachments: List<Uri> = emptyList()
     private val imageCompressor by lazy { ImageCompressor(this) }
+    private val drafts by lazy { DraftsRepository.from(this) }
+    private val recycleBin by lazy { RecycleBinRepository.from(this) }
 
     private var darkTheme by mutableStateOf(false)
     private var textScale by mutableFloatStateOf(1f)
@@ -372,7 +369,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
                 runOnUiThread { refreshMenuItems() }
             }
 
-            val smsDraft = getSmsDraft(threadId)
+            val smsDraft = drafts.get(threadId)
             if (smsDraft.isNotEmpty()) {
                 runOnUiThread { holder.setText(smsDraft) }
             }
@@ -445,11 +442,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         val draftMessage = holder.text
         val hasAttachments = holder.attachments.isNotEmpty()
         ensureBackgroundThread {
-            if (draftMessage.isNotEmpty() && !hasAttachments) {
-                saveSmsDraft(draftMessage, threadId)
-            } else {
-                deleteSmsDraft(threadId)
-            }
+            drafts.store(threadId, draftMessage, hasAttachments)
         }
     }
 
@@ -1314,7 +1307,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
                     refreshMenuItems()
                 },
                 commit = {
-                    if (isRecycleBin) emptyMessagesRecycleBinForConversation(deletedThread)
+                    if (isRecycleBin) recycleBin.emptyConversation(deletedThread)
                     else deleteConversation(deletedThread)
                 },
                 completed = {
@@ -1333,7 +1326,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
             confirmLabel = getString(R.string.restore),
         ) {
             ensureBackgroundThread {
-                restoreAllMessagesFromRecycleBinForConversation(threadId)
+                recycleBin.restoreConversation(threadId)
                 runOnUiThread {
                     MessagingEvents.publish(MessagingEvent.ConversationsChanged(reconcile = true))
                     finish()
@@ -2033,9 +2026,9 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
                 cancelScheduleSendPendingIntent(messageId)
             } else {
                 if (toRecycleBin) {
-                    moveMessageToRecycleBin(messageId)
+                    recycleBin.moveToRecycleBin(messageId)
                 } else if (fromRecycleBin) {
-                    restoreMessageFromRecycleBin(messageId)
+                    recycleBin.restore(messageId)
                 } else {
                     deleteMessage(messageId, message.isMMS)
                 }

@@ -21,13 +21,13 @@ import com.afsh.messages.R as AppR
 import com.afsh.messages.activities.BlockRulesActivity
 import com.afsh.messages.activities.SimpleActivity
 import com.afsh.messages.extensions.config
-import com.afsh.messages.extensions.emptyMessagesRecycleBin
 import com.afsh.messages.extensions.messagesDB
 import com.afsh.messages.helpers.BackupFile
 import com.afsh.messages.helpers.ExportOutcome
 import com.afsh.messages.helpers.InvalidBackupException
 import com.afsh.messages.helpers.MessagesExporter
 import com.afsh.messages.helpers.MessagesImporter
+import com.afsh.messages.helpers.RecycleBinRepository
 import com.afsh.messages.helpers.NavBadges
 import com.afsh.messages.helpers.MessagingEvent
 import com.afsh.messages.helpers.MessagingEvents
@@ -235,7 +235,7 @@ class SettingsController(
             SettingsEvent.ToggleAppLock -> toggleAppLock()
             is SettingsEvent.SetUseRecycleBin -> update { activity.config.useRecycleBin = event.enabled }
             SettingsEvent.EmptyRecycleBin -> activity.lifecycleScope.launch {
-                withContext(Dispatchers.IO) { activity.emptyMessagesRecycleBin() }
+                withContext(Dispatchers.IO) { RecycleBinRepository.from(activity).emptyAll() }
                 state = state.copy(recycleBinMessages = 0)
             }
 

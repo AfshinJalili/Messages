@@ -9,12 +9,11 @@ import androidx.compose.runtime.setValue
 import com.afsh.commons.extensions.notificationManager
 import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.messages.extensions.conversationsDB
-import com.afsh.messages.extensions.emptyMessagesRecycleBinForConversation
 import com.afsh.messages.extensions.messagesDB
-import com.afsh.messages.extensions.restoreAllMessagesFromRecycleBinForConversation
 import com.afsh.messages.helpers.IS_RECYCLE_BIN
 import com.afsh.messages.helpers.MessagingEvent
 import com.afsh.messages.helpers.MessagingEvents
+import com.afsh.messages.helpers.RecycleBinRepository
 import com.afsh.messages.helpers.THREAD_ID
 import com.afsh.messages.helpers.THREAD_TITLE
 import com.afsh.messages.helpers.UndoDeletion
@@ -78,7 +77,7 @@ class RecycleBinConversationsActivity : ComposePageActivity() {
         val remaining = state.conversations.filter { it.conversation.threadId != conversation.threadId }
         state = state.copy(conversations = remaining)
         ensureBackgroundThread {
-            restoreAllMessagesFromRecycleBinForConversation(conversation.threadId)
+            RecycleBinRepository.from(this).restoreConversation(conversation.threadId)
             runOnUiThread {
                 reload()
                 MessagingEvents.publish(MessagingEvent.ConversationsChanged(reconcile = true))
@@ -88,7 +87,7 @@ class RecycleBinConversationsActivity : ComposePageActivity() {
 
     private fun erase(threadIds: List<Long>) {
         deleteConversationsWithUndo(threadIds) { threadId ->
-            emptyMessagesRecycleBinForConversation(threadId)
+            RecycleBinRepository.from(this).emptyConversation(threadId)
             notificationManager.cancel(threadId.hashCode())
         }
     }
