@@ -36,7 +36,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.afsh.commons.extensions.formatSize
 import com.afsh.messages.R
-import com.afsh.messages.extensions.getFileSizeFromUri
+import com.afsh.messages.extensions.fileSize
 import com.afsh.messages.extensions.isImageMimeType
 import com.afsh.messages.extensions.isVCardMimeType
 import com.afsh.messages.extensions.isVideoMimeType
@@ -127,7 +127,7 @@ internal fun rememberVCardSummary(uri: Uri): Pair<String, String> {
 internal fun rememberFileSize(uri: Uri): String {
     val context = LocalContext.current
     val size by produceState("", uri) {
-        value = withContext(Dispatchers.IO) { runCatching { context.getFileSizeFromUri(uri).formatSize() }.getOrDefault("") }
+        value = withContext(Dispatchers.IO) { runCatching { context.contentResolver.fileSize(uri).formatSize() }.getOrDefault("") }
     }
     return size
 }

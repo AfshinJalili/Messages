@@ -2,7 +2,6 @@ package com.afsh.messages.extensions
 
 import android.annotation.SuppressLint
 import android.app.Application
-import android.content.ContentResolver
 import android.content.ContentValues
 import android.content.Context
 import android.database.Cursor
@@ -956,9 +955,6 @@ fun Context.updateLastConversationMessage(threadIds: Iterable<Long>) {
     } catch (_: Exception) {
     }
 }
-
-/** Kept for `ui/thread/ThreadScreen.kt` until #297 moves it to [ContentResolver.fileSize]. */
-fun Context.getFileSizeFromUri(uri: Uri): Long = contentResolver.fileSize(uri)
 
 // fix a glitch at enabling Release version minifying from 5.12.3
 // reset messages in 5.14.3 again, as PhoneNumber is no longer minified
