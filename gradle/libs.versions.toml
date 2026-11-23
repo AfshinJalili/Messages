@@ -2,7 +2,7 @@
 androidx-window = "1.4.0"
 #jetbrains
 kotlin = "2.4.21"
-kotlinxSerializationJson = "1.11.0"
+kotlinxSerializationJson = "1.13.0"
 #KSP
 ksp = "2.3.12"
 #Detekt
