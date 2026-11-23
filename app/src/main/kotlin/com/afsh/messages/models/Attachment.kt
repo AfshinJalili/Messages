@@ -1,11 +1,13 @@
 package com.afsh.messages.models
 
+import androidx.compose.runtime.Immutable
 import androidx.core.net.toUri
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 
+@Immutable
 @Entity(tableName = "attachments", indices = [(Index(value = ["message_id"], unique = true))])
 data class Attachment(
     @PrimaryKey(autoGenerate = true) var id: Long?,

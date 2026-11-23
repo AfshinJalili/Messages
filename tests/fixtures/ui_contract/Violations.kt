@@ -1,0 +1,17 @@
+// Each line breaks one rule of tests/check_ui_contract.py; the check's self-test expects every rule to fire here.
+fun lucide() = Icon(painterResource(R.drawable.ic_lucide_search), null)
+fun spacing() = Modifier.padding(horizontal = 16.dp)
+fun gap() = Arrangement.spacedBy(6.dp)
+fun nested() = PaddingValues(start = Afsh.spacing.md, end = if (x) 0.dp else 4.dp)
+fun radius() = RoundedCornerShape(12.dp)
+fun corner() = CutCornerShape(CornerSize(8.dp))
+fun token() = RoundedCornerShape(Afsh.spacing.sm)
+fun color() = colorResource(R.color.m3_primary_container)
+fun context() = ContextCompat.getColor(context, R.color.surface_light)
+fun role() = MaterialTheme.colorScheme.onPrimaryContainer
+fun materialIcons() = Icon(Icons.Default.Search, null)
+fun imageVector() = ImageVector.Builder("x", 24.dp, 24.dp, 24f, 24f).build()
+fun painterDrawable() = painterResource(R.drawable.ic_msym_search)
+fun fontFamily() = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace)
+fun contentFontHelper() = Text(AnnotatedString(x).withContentFonts(), style = MaterialTheme.typography.titleMedium.forLabel(x))
+fun textFieldFonts() = BasicTextField(value = v, onValueChange = {})

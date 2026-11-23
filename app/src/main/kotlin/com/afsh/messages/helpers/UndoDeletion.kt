@@ -6,8 +6,8 @@ import android.os.Looper
 import android.os.SystemClock
 import android.view.View
 import com.google.android.material.snackbar.Snackbar
-import org.fossify.commons.extensions.showErrorToast
-import org.fossify.commons.helpers.ensureBackgroundThread
+import com.afsh.commons.extensions.showErrorToast
+import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.messages.R
 import java.util.concurrent.ConcurrentHashMap
 
@@ -46,8 +46,7 @@ object UndoDeletion {
                                 version++
                                 action.completed()
                                 (batch?.activity?.get() as? com.afsh.messages.activities.SimpleActivity)?.refreshAfterDeletion()
-                                refreshConversations()
-                                refreshMessages()
+                                MessagingEvents.publish(MessagingEvent.ConversationsChanged(reconcile = true))
                             }
                         } catch (e: Exception) {
                             handler.post {
@@ -55,8 +54,7 @@ object UndoDeletion {
                                 action.undo()
                                 activity.showErrorToast(e)
                                 (batch?.activity?.get() as? com.afsh.messages.activities.SimpleActivity)?.refreshAfterDeletion()
-                                refreshConversations()
-                                refreshMessages()
+                                MessagingEvents.publish(MessagingEvent.ConversationsChanged(reconcile = true))
                             }
                         }
                     }
@@ -94,13 +92,12 @@ object UndoDeletion {
                 version++
                 current.actions.asReversed().forEach { it.undo() }
                 (activity as? com.afsh.messages.activities.SimpleActivity)?.refreshAfterDeletion()
-                refreshConversations()
-                refreshMessages()
+                MessagingEvents.publish(MessagingEvent.ConversationsChanged(reconcile = true))
             }
         }
         batch.dismiss = (activity as? UndoHost)?.showUndo(R.string.items_deleted, remaining, undo)
             ?: Snackbar.make(activity.findViewById<View>(android.R.id.content), R.string.items_deleted, remaining)
-                .setAction(org.fossify.commons.R.string.undo) { undo() }
+                .setAction(com.afsh.commons.R.string.undo) { undo() }
                 .also { it.show() }
                 .let { snackbar -> { snackbar.dismiss() } }
     }

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- RTL: new screen slides in from the end edge (physical left). -->
+<translate xmlns:android="http://schemas.android.com/apk/res/android"
+    android:duration="@integer/motion_open_ms"
+    android:fromXDelta="-100%p"
+    android:interpolator="@interpolator/emphasized_decelerate"
+    android:toXDelta="0"
+    android:fillEnabled="true"
+    android:fillBefore="true"
+    android:fillAfter="true"
+    android:zAdjustment="top" />

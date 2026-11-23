@@ -1,6 +1,5 @@
 package com.afsh.messages.activities
 
-import android.content.Intent
 import android.os.Bundle
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
@@ -12,14 +11,18 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.ComposeView
 import androidx.core.view.WindowCompat
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
-import org.fossify.commons.helpers.isQPlus
+import com.afsh.commons.helpers.isQPlus
+import com.afsh.messages.helpers.MessagingEvent
+import com.afsh.messages.helpers.MessagingEvents
 import com.afsh.messages.helpers.NavBadges
 import com.afsh.messages.helpers.UndoDeletion
-import com.afsh.messages.helpers.refreshConversations
+import com.afsh.messages.ui.AfshSystemBars
 import com.afsh.messages.ui.AfshTheme
 import com.afsh.messages.ui.components.PageNavigation
 import com.afsh.messages.ui.components.TopDestination
@@ -47,17 +50,33 @@ abstract class ComposePageActivity : SimpleActivity(), UndoDeletion.UndoHost {
     /** Reloads the page after a deletion commits or is undone. */
     protected open fun reload() {}
 
+    /** Reloads the page whenever a matching [MessagingEvent] arrives while started. */
+    protected fun reloadOnMessagingEvents(filter: (MessagingEvent) -> Boolean) {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                MessagingEvents.events.collect { event ->
+                    if (filter(event)) reload()
+                }
+            }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         refreshTheme()
         setContentView(
             ComposeView(this).apply {
                 setContent {
-                    AfshTheme(dark = darkTheme, textScale = textScale) { Page() }
+                    AfshTheme(dark = darkTheme, textScale = textScale) {
+                        AfshSystemBars(window)
+                        Page()
+                    }
                 }
             },
         )
         WindowCompat.setDecorFitsSystemWindows(window, false)
+        // The bottom bar paints its own surface; a system scrim on top would double it.
+        if (isQPlus()) window.isNavigationBarContrastEnforced = false
     }
 
     override fun onResume() {
@@ -95,11 +114,9 @@ abstract class ComposePageActivity : SimpleActivity(), UndoDeletion.UndoHost {
     /** Settings sub-pages keep the navigation with Settings active (R5-34). */
     protected fun settingsNavigation() = PageNavigation(TopDestination.SETTINGS, ::navigateTo)
 
+    /** Clears pushed screens and brings Main forward on [destination] with the shared tab host. */
     protected open fun navigateTo(destination: TopDestination) {
-        when (destination) {
-            TopDestination.SETTINGS -> startActivity(Intent(this, SettingsActivity::class.java))
-            else -> startActivity(MainActivity.topLevelIntent(this, destination))
-        }
+        startActivity(MainActivity.topLevelIntent(this, destination))
     }
 
     /**
@@ -111,7 +128,7 @@ abstract class ComposePageActivity : SimpleActivity(), UndoDeletion.UndoHost {
         if (ids.isEmpty()) return
         UndoDeletion.threads.addAll(ids)
         reload()
-        refreshConversations()
+        MessagingEvents.publish(MessagingEvent.ConversationsChanged(reconcile = true))
         UndoDeletion.offer(
             this,
             undo = {
@@ -163,7 +180,7 @@ abstract class ComposePageActivity : SimpleActivity(), UndoDeletion.UndoHost {
             val result = withTimeoutOrNull(durationMs) {
                 snackbarHost.showSnackbar(
                     message = message,
-                    actionLabel = getString(org.fossify.commons.R.string.undo),
+                    actionLabel = getString(com.afsh.commons.R.string.undo),
                     duration = SnackbarDuration.Indefinite,
                 )
             }

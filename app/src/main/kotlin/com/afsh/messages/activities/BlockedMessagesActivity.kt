@@ -2,17 +2,19 @@ package com.afsh.messages.activities
 
 import com.afsh.messages.extensions.markMessageRead
 import android.content.Intent
+import android.os.Bundle
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import org.fossify.commons.helpers.ensureBackgroundThread
+import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.messages.R
 import com.afsh.messages.extensions.config
 import com.afsh.messages.extensions.deleteMessage
 import com.afsh.messages.extensions.getSpamMessages
 import com.afsh.messages.extensions.messagesDB
 import com.afsh.messages.helpers.InboxRepository
+import com.afsh.messages.helpers.affectsSpam
 import com.afsh.messages.helpers.containsNumber
 import com.afsh.messages.helpers.OPEN_SPAM
 import com.afsh.messages.helpers.THREAD_ID
@@ -39,6 +41,11 @@ class BlockedMessagesActivity : ComposePageActivity() {
     @Composable
     override fun Page() {
         SpamScreen(state, libraryNavigation(), snackbarHost, ::onEvent)
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        reloadOnMessagingEvents { it.affectsSpam() }
     }
 
     override fun onResume() {
@@ -83,7 +90,7 @@ class BlockedMessagesActivity : ComposePageActivity() {
             SpamEvent.Back -> finish()
             SpamEvent.OpenRules -> startActivity(Intent(this, BlockRulesActivity::class.java))
             is SpamEvent.Open -> openThread(event.message)
-            is SpamEvent.NotSpam -> restore(event.messages)
+            is SpamEvent.NotSpam -> restore(event.messages, neverSpamSender = event.neverSpamSender)
             is SpamEvent.BlockSender -> {
                 val addresses = event.messages.map { it.address }.filter { it.isNotEmpty() }.distinct()
                 ensureBackgroundThread { addresses.forEach { config.addSpamNumber(it) } }
@@ -104,10 +111,11 @@ class BlockedMessagesActivity : ComposePageActivity() {
     }
 
     /**
-     * Not spam moves each chosen sender's spam back to their conversation, with one Undo. A sender on
-     * the app's block list is unblocked too; otherwise their next message would land here again.
+     * Not spam moves each chosen sender's spam back to their conversation, with one Undo.
+     * [neverSpamSender] allowlists them; otherwise they only leave the always-spam list if they
+     * were on it, without being allowlisted.
      */
-    private fun restore(messages: List<SpamReviewMessage>) {
+    private fun restore(messages: List<SpamReviewMessage>, neverSpamSender: Boolean) {
         val threadIds = messages.mapTo(HashSet()) { it.threadId }
         if (threadIds.isEmpty()) return
         val moved = state.messages.filter { it.threadId in threadIds }
@@ -122,8 +130,13 @@ class BlockedMessagesActivity : ComposePageActivity() {
             onTimeout = {
                 ensureBackgroundThread {
                     threadIds.forEach { messagesDB.deleteThreadSpamMarkers(it) }
-                    moved.map { it.address }.filter { it.isNotEmpty() && config.spamNumbers.containsNumber(it) }
-                        .distinct().forEach { config.removeSpamNumber(it) }
+                    val addresses = moved.map { it.address }.filter { it.isNotEmpty() }.distinct()
+                    if (neverSpamSender) {
+                        addresses.forEach { config.addAllowedNumber(it) }
+                    } else {
+                        addresses.filter { config.spamNumbers.containsNumber(it) }
+                            .forEach { config.removeSpamNumber(it) }
+                    }
                     InboxRepository.refreshUnreadCounts(this, threadIds.toList())
                     runOnUiThread {
                         restoring -= threadIds

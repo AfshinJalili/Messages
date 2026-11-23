@@ -2,42 +2,45 @@ package com.afsh.messages.helpers
 
 import android.content.Context
 import androidx.core.content.ContextCompat
-import org.fossify.commons.extensions.getProperBackgroundColor
-import org.fossify.commons.extensions.trimToComparableNumber
-import org.fossify.commons.helpers.ACCENT_COLOR
-import org.fossify.commons.helpers.BACKGROUND_COLOR
-import org.fossify.commons.helpers.BaseConfig
-import org.fossify.commons.helpers.IS_SYSTEM_THEME_ENABLED
-import org.fossify.commons.helpers.PRIMARY_COLOR
-import org.fossify.commons.helpers.TEXT_COLOR
+import com.afsh.commons.extensions.trimToComparableNumber
+import com.afsh.commons.helpers.BACKGROUND_COLOR
+import com.afsh.commons.helpers.BaseConfig
+import com.afsh.commons.helpers.IS_SYSTEM_THEME_ENABLED
+import com.afsh.commons.helpers.TEXT_COLOR
 import com.afsh.messages.R
 import com.afsh.messages.extensions.getDefaultKeyboardHeight
 import com.afsh.messages.models.Conversation
-
 class Config(context: Context) : BaseConfig(context) {
     companion object {
         fun newInstance(context: Context) = Config(context)
     }
 
-    fun applyCobaltDefaults() {
-        if (prefs.getBoolean("cobalt_defaults_applied", false)) return
-        val background = context.getProperBackgroundColor()
-        val cobalt = context.cobaltColorFor(background)
-        val legacyGreen = ContextCompat.getColor(context, org.fossify.commons.R.color.md_green_900)
-        if (!prefs.contains(PRIMARY_COLOR) || primaryColor == legacyGreen) primaryColor = cobalt
-        if (!prefs.contains(ACCENT_COLOR) || accentColor == legacyGreen) accentColor = cobalt
-        // Adopt the brand by default; keep explicit theme and custom-color choices.
-        if (!prefs.contains(IS_SYSTEM_THEME_ENABLED)) {
-            val light = cobalt == ContextCompat.getColor(context, R.color.brand_cobalt)
-            if (!prefs.contains(BACKGROUND_COLOR)) {
-                backgroundColor = ContextCompat.getColor(context, if (light) R.color.surface_light else R.color.surface_dark)
+    /**
+     * Runs at every start. The first run defaults Appearance to System (follow device light/dark);
+     * every run points Commons' stored accent at the theme's primary role, so nothing (app lock,
+     * Commons widgets) keeps an older palette. Wallpaper / Material You never applies.
+     */
+    fun applyThemeDefaults() {
+        if (!prefs.getBoolean(THEME_DEFAULTS_APPLIED, false)) {
+            if (!prefs.contains(IS_SYSTEM_THEME_ENABLED)) {
+                isSystemThemeEnabled = true
+                if (!prefs.contains(BACKGROUND_COLOR)) {
+                    backgroundColor = ContextCompat.getColor(context, com.afsh.commons.R.color.m3_surface)
+                }
+                if (!prefs.contains(TEXT_COLOR)) {
+                    textColor = ContextCompat.getColor(context, com.afsh.commons.R.color.m3_on_surface)
+                }
             }
-            if (!prefs.contains(TEXT_COLOR)) {
-                textColor = ContextCompat.getColor(context, if (light) R.color.on_surface_light else R.color.on_surface_dark)
-            }
-            isSystemThemeEnabled = false
+            prefs.edit().putBoolean(THEME_DEFAULTS_APPLIED, true).apply()
         }
-        prefs.edit().putBoolean("cobalt_defaults_applied", true).apply()
+        syncAccentWithTheme()
+    }
+
+    /** Commons' accent follows the theme's primary role; call after the light or dark choice changes. */
+    fun syncAccentWithTheme() {
+        val primary = context.primaryRoleColor()
+        if (primaryColor != primary) primaryColor = primary
+        if (accentColor != primary) accentColor = primary
     }
 
     fun saveUseSIMIdAtNumber(number: String, SIMId: Int) {
@@ -179,6 +182,23 @@ class Config(context: Context) : BaseConfig(context) {
         get() = prefs.getBoolean(MESSAGES_IMPORTED, false)
         set(messagesImported) = prefs.edit().putBoolean(MESSAGES_IMPORTED, messagesImported).apply()
 
+    /**
+     * `"threadId:attempts"` entries for message-import failures. Cleared when import finishes.
+     * See [ImportFailureLedger].
+     */
+    var importThreadFailures: Set<String>
+        get() = prefs.getStringSet(IMPORT_THREAD_FAILURES, emptySet()) ?: emptySet()
+        set(importThreadFailures) = prefs.edit()
+            .putStringSet(IMPORT_THREAD_FAILURES, HashSet(importThreadFailures))
+            .apply()
+
+    /** Thread ids whose messages were read successfully (including empty). Cleared when import finishes. */
+    var importHandledThreads: Set<String>
+        get() = prefs.getStringSet(IMPORT_HANDLED_THREADS, emptySet()) ?: emptySet()
+        set(importHandledThreads) = prefs.edit()
+            .putStringSet(IMPORT_HANDLED_THREADS, HashSet(importHandledThreads))
+            .apply()
+
     var keyboardHeight: Int
         get() = prefs.getInt(SOFT_KEYBOARD_HEIGHT, context.getDefaultKeyboardHeight())
         set(keyboardHeight) = prefs.edit().putInt(SOFT_KEYBOARD_HEIGHT, keyboardHeight).apply()
@@ -238,6 +258,11 @@ class Config(context: Context) : BaseConfig(context) {
     fun addAllowedNumber(number: String) {
         spamNumbers = spamNumbers.filterNot { setOf(it).containsNumber(number) }.toSet()
         allowedNumbers = allowedNumbers.plus(number)
+    }
+
+    /** Removes every stored form of [number] from the never-spam allowlist. */
+    fun removeAllowedNumber(number: String) {
+        allowedNumbers = allowedNumbers.filterNot { setOf(it).containsNumber(number) }.toSet()
     }
 
     /** Senders the user blocked in the app. Their SMS are still stored, but go to Spam. */

@@ -6,7 +6,7 @@ import android.util.Xml
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
-import org.fossify.commons.helpers.isUpsideDownCakePlus
+import com.afsh.commons.helpers.isUpsideDownCakePlus
 import com.afsh.messages.models.BackupType
 import com.afsh.messages.models.ImportResult
 import com.afsh.messages.models.MessagesBackup
@@ -64,7 +64,7 @@ class MessagesImporter(private val context: Context) {
             }
         }
         writer.fixConversationDates()
-        refreshConversations()
+        MessagingEvents.publish(MessagingEvent.ConversationsChanged(reconcile = true))
         return tally.result()
     }
 
@@ -72,7 +72,7 @@ class MessagesImporter(private val context: Context) {
         val tally = Tally()
         val input = context.contentResolver.openInputStream(uri) ?: throw InvalidBackupException("Cannot open $uri")
         input.use { it.readSmsXml(tally) }
-        refreshConversations()
+        MessagingEvents.publish(MessagingEvent.ConversationsChanged(reconcile = true))
         return tally.result()
     }
 

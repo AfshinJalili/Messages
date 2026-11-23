@@ -1,10 +1,3 @@
-# EventBus
--keepattributes *Annotation*
--keepclassmembers class ** {
-    @org.greenrobot.eventbus.Subscribe <methods>;
-}
--keep enum org.greenrobot.eventbus.ThreadMode { *; }
-
 # Keep `Companion` object fields of serializable classes.
 # This avoids serializer lookup through `getDeclaredClasses` as done for named companion objects.
 -if @kotlinx.serialization.Serializable class **
@@ -30,7 +23,7 @@
 }
 
 # Gson
--keep class org.fossify.commons.models.SimpleContact { *; }
+-keep class com.afsh.commons.models.SimpleContact { *; }
 -keep class com.afsh.messages.models.Attachment { *; }
 -keep class com.afsh.messages.models.MessageAttachment { *; }
 

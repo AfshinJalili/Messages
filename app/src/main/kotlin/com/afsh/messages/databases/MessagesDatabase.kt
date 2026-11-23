@@ -32,7 +32,7 @@ import com.afsh.messages.models.SpamMessage
         Draft::class,
         SpamMessage::class
     ],
-    version = 14
+    version = 15
 )
 @TypeConverters(Converters::class)
 abstract class MessagesDatabase : RoomDatabase() {
@@ -73,6 +73,7 @@ abstract class MessagesDatabase : RoomDatabase() {
                             .addMigrations(MIGRATION_11_12)
                             .addMigrations(MIGRATION_12_13)
                             .addMigrations(MIGRATION_13_14)
+                            .addMigrations(MIGRATION_14_15)
                             .build()
                     }
                 }
@@ -198,6 +199,27 @@ abstract class MessagesDatabase : RoomDatabase() {
                 db.apply {
                     execSQL("CREATE TABLE IF NOT EXISTS `blocked_messages` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `address` TEXT NOT NULL, `body` TEXT NOT NULL, `date` INTEGER NOT NULL, `reason` INTEGER NOT NULL)")
                 }
+            }
+        }
+
+        /**
+         * Denormalizes the inbox preview onto conversations so the list query no longer runs
+         * correlated subqueries over messages / spam_messages per row.
+         */
+        private val MIGRATION_14_15 = object : Migration(14, 15) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE conversations ADD COLUMN preview_snippet TEXT")
+                db.execSQL("ALTER TABLE conversations ADD COLUMN preview_date INTEGER")
+                db.execSQL("ALTER TABLE conversations ADD COLUMN all_spam INTEGER NOT NULL DEFAULT 0")
+                // One-time backfill; the inbox list never runs these correlated subqueries again.
+                db.execSQL(
+                    """
+                    UPDATE conversations SET
+                    preview_snippet = (SELECT body FROM messages LEFT OUTER JOIN recycle_bin_messages ON messages.id = recycle_bin_messages.id WHERE recycle_bin_messages.id IS NULL AND messages.thread_id = conversations.thread_id AND NOT (messages.is_mms = 0 AND messages.id IN (SELECT id FROM spam_messages)) ORDER BY messages.date DESC LIMIT 1),
+                    preview_date = CASE WHEN (SELECT COUNT(*) FROM spam_messages WHERE spam_messages.thread_id = conversations.thread_id) > 0 THEN (SELECT date FROM messages LEFT OUTER JOIN recycle_bin_messages ON messages.id = recycle_bin_messages.id WHERE recycle_bin_messages.id IS NULL AND messages.thread_id = conversations.thread_id AND NOT (messages.is_mms = 0 AND messages.id IN (SELECT id FROM spam_messages)) ORDER BY messages.date DESC LIMIT 1) END,
+                    all_spam = CASE WHEN message_count > 0 AND (SELECT COUNT(*) FROM spam_messages WHERE spam_messages.thread_id = conversations.thread_id) >= message_count THEN 1 ELSE 0 END
+                    """.trimIndent()
+                )
             }
         }
     }

@@ -1,11 +1,11 @@
 package com.afsh.messages.helpers
 
 import android.content.Context
-import org.fossify.commons.extensions.baseConfig
-import org.fossify.commons.extensions.getMyContactsCursor
-import org.fossify.commons.extensions.isNumberBlocked
-import org.fossify.commons.helpers.ContactLookupResult
-import org.fossify.commons.helpers.SimpleContactsHelper
+import com.afsh.commons.extensions.baseConfig
+import com.afsh.commons.extensions.getMyContactsCursor
+import com.afsh.commons.extensions.isNumberBlocked
+import com.afsh.commons.helpers.ContactLookupResult
+import com.afsh.commons.helpers.SimpleContactsHelper
 import com.afsh.messages.extensions.config
 import com.afsh.messages.helpers.ReceiverUtils.isMessageFilteredOut
 

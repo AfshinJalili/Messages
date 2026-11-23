@@ -34,7 +34,6 @@ class LibraryChecks {
             compose.onNodeWithText(text(destination.description)).assertExists()
         }
         check(opened == LibraryDestination.entries) { "Opened $opened" }
-        compose.onNodeWithText(text(R.string.library_principle_title)).assertExists()
     }
 
     @Test
@@ -46,8 +45,7 @@ class LibraryChecks {
             }
         }
         compose.onNodeWithText(text(R.string.archived_conversations)).assertDoesNotExist()
-        compose.onNodeWithText(text(org.fossify.commons.R.string.recycle_bin)).assertDoesNotExist()
-        val count = String.format(compose.activity.resources.configuration.locales[0], "%d", 7)
-        compose.onNodeWithText(count).assertExists()
+        compose.onNodeWithText(text(com.afsh.commons.R.string.recycle_bin)).assertDoesNotExist()
+        compose.onNodeWithText(compose.activity.localizedNumber(7)).assertExists()
     }
 }

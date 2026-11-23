@@ -19,8 +19,8 @@ import com.afsh.messages.extensions.*
 import com.afsh.messages.helpers.THREAD_ID
 import com.afsh.messages.helpers.THREAD_NUMBER
 import com.afsh.messages.helpers.THREAD_TITLE
-import com.afsh.messages.helpers.refreshConversations
-import com.afsh.messages.helpers.refreshMessages
+import com.afsh.messages.helpers.MessagingEvent
+import com.afsh.messages.helpers.MessagingEvents
 import com.afsh.messages.models.Message
 import com.afsh.messages.models.ThreadItem.ThreadUnreadSeparator
 import com.afsh.messages.ui.thread.THREAD_JUMP_TAG
@@ -77,26 +77,18 @@ class RuntimeUxTicketChecks {
             context.insertOrUpdateConversation(fixture)
             ActivityScenario.launch<MainActivity>(Intent(context, MainActivity::class.java)).use { scenario ->
                 awaitCondition("Read fixture appears") {
-                    var found = false
-                    scenario.onActivity { activity ->
-                        found = activity.inboxRows.any { it.threadId == threadId && it.conversation.read }
-                    }
-                    found
+                    scenario.read { activity -> activity.inboxRows.any { it.threadId == threadId && it.conversation.read } }
                 }
                 repeat(2) { index ->
                     sms(phone, threadId, false, index + 1)
-                    refreshConversations()
+                    MessagingEvents.publish(MessagingEvent.ConversationsChanged(reconcile = true))
                     var detail = ""
                     awaitCondition("Inbound count ${index + 1} reaches visible inbox", {
                         "$detail; provider=${context.getUnreadCountsByThread()[threadId]}; cached=${context.conversationsDB.getConversationWithThreadId(threadId)?.unreadCount}"
                     }) {
-                        var correct = false
-                        scenario.onActivity { activity ->
-                            val row = activity.inboxRows.singleOrNull { it.threadId == threadId }?.conversation
-                            detail = "row=${row?.read}/${row?.unreadCount}"
-                            correct = row?.read == false && row.unreadCount == index + 1
-                        }
-                        correct
+                        val row = scenario.read { activity -> activity.inboxRows.singleOrNull { it.threadId == threadId }?.conversation }
+                        detail = "row=${row?.read}/${row?.unreadCount}"
+                        row?.read == false && row.unreadCount == index + 1
                     }
                 }
             }
@@ -113,21 +105,12 @@ class RuntimeUxTicketChecks {
             val intent = Intent(context, ThreadActivity::class.java)
                 .putExtra(THREAD_ID, threadId).putExtra(THREAD_NUMBER, phone).putExtra(THREAD_TITLE, "Scroll fixture")
             ActivityScenario.launch<ThreadActivity>(intent).use { scenario ->
-                awaitCondition("Thread loads history") {
-                    var loaded = false
-                    scenario.onActivity { loaded = it.timelineItems.size > 30 }
-                    loaded
-                }
+                awaitCondition("Thread loads history") { scenario.read { it.timelineItems.size > 30 } }
                 awaitCondition("Many unreads open at first unread, not bottom") {
-                    var correct = false
-                    scenario.onActivity {
-                        correct = it.timelineItems.isNotEmpty() && !it.timelineSettledAtBottom
-                    }
-                    correct
+                    scenario.read { it.timelineItems.isNotEmpty() && !it.timelineSettledAtBottom }
                 }
                 assertEquals(12, context.getUnreadCountsByThread()[threadId])
-                var size = 0
-                scenario.onActivity { size = it.timelineItems.size }
+                val size = scenario.read { it.timelineItems.size }
                 // The timeline is newest-first, so the oldest rows are at the far end.
                 compose.onNodeWithTag(THREAD_LIST_TAG).performScrollToIndex(size - 4)
                 instrumentation.waitForIdleSync()
@@ -136,21 +119,11 @@ class RuntimeUxTicketChecks {
             assertEquals("Leaving mid-thread preserves all unreads", 12, remainingAfterMidScrollLeave)
 
             ActivityScenario.launch<ThreadActivity>(intent).use { scenario ->
-                awaitCondition("Thread reloads") {
-                    var loaded = false
-                    scenario.onActivity { loaded = it.timelineItems.size > 30 }
-                    loaded
-                }
-                awaitCondition("Opens at the first unread, away from the bottom") {
-                    var away = false
-                    scenario.onActivity { away = !it.timelineSettledAtBottom }
-                    away
-                }
+                awaitCondition("Thread reloads") { scenario.read { it.timelineItems.size > 30 } }
+                awaitCondition("Opens at the first unread, away from the bottom") { scenario.read { !it.timelineSettledAtBottom } }
                 compose.onNodeWithTag(THREAD_JUMP_TAG).performClick()
                 awaitCondition("Jump to latest marks the whole thread read") {
-                    var settled = false
-                    scenario.onActivity { settled = it.timelineSettledAtBottom }
-                    settled && (context.getUnreadCountsByThread()[threadId] ?: 0) == 0
+                    scenario.read { it.timelineSettledAtBottom } && (context.getUnreadCountsByThread()[threadId] ?: 0) == 0
                 }
             }
             assertEquals(0, context.conversationsDB.getConversationWithThreadId(threadId)?.unreadCount)
@@ -170,20 +143,25 @@ class RuntimeUxTicketChecks {
             val intent = Intent(context, ThreadActivity::class.java)
                 .putExtra(THREAD_ID, threadId).putExtra(THREAD_NUMBER, phone).putExtra(THREAD_TITLE, "Unread scroll test")
             ActivityScenario.launch<ThreadActivity>(intent).use { scenario ->
-                awaitCondition("Read history loads") {
-                    var loaded = false
-                    scenario.onActivity { loaded = it.timelineItems.size >= 30 }
-                    loaded
-                }
-                var size = 0
-                scenario.onActivity { size = it.timelineItems.size }
+                awaitCondition("Read history loads") { scenario.read { it.timelineItems.size >= 30 } }
+                val size = scenario.read { it.timelineItems.size }
                 compose.onNodeWithTag(THREAD_LIST_TAG).performScrollToIndex(size - 3)
                 instrumentation.waitForIdleSync()
                 compose.onNodeWithTag(THREAD_JUMP_TAG).assertExists("History navigation arrow remains available")
                 compose.onNode(hasContentDescription(context.getString(R.string.scroll_to_latest_message)))
                     .assertExists("Read history has no unread counter")
-                sms(phone, threadId, false, 30)
-                refreshMessages()
+                val newId = sms(phone, threadId, false, 30)
+                MessagingEvents.publish(
+                    MessagingEvent.IncomingMessage(
+                        threadId = threadId,
+                        messageId = newId,
+                        isMms = false,
+                        isSpam = false,
+                        address = phone,
+                        senderName = "Unread scroll test",
+                        body = "msg 30",
+                    )
+                )
                 awaitCondition("One unread message shows a count") {
                     compose.onAllNodes(hasContentDescription(context.getString(R.string.scroll_to_unread_messages, 1)))
                         .fetchSemanticsNodes().isNotEmpty()
@@ -198,10 +176,7 @@ class RuntimeUxTicketChecks {
                 Screenshots.capture("msg15-unread-fab")
                 compose.onNodeWithTag(THREAD_JUMP_TAG).performClick()
                 awaitCondition("A single tap reaches bottom, reads the visible message and removes the divider") {
-                    var reached = false
-                    scenario.onActivity {
-                        reached = it.timelineSettledAtBottom && !it.timelineItems.contains(ThreadUnreadSeparator)
-                    }
+                    val reached = scenario.read { it.timelineSettledAtBottom && !it.timelineItems.contains(ThreadUnreadSeparator) }
                     reached && (context.getUnreadCountsByThread()[threadId] ?: 0) == 0 &&
                         compose.onAllNodes(hasContentDescription(context.getString(R.string.scroll_to_unread_messages, 1))).fetchSemanticsNodes().isEmpty()
                 }

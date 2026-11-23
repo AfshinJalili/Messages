@@ -4,24 +4,23 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.provider.Telephony
-import org.fossify.commons.extensions.getMyContactsCursor
-import org.fossify.commons.helpers.SimpleContactsHelper
-import org.fossify.commons.helpers.ensureBackgroundThread
-import org.fossify.commons.models.PhoneNumber
-import org.fossify.commons.models.SimpleContact
+import com.afsh.commons.extensions.getMyContactsCursor
+import com.afsh.commons.helpers.SimpleContactsHelper
+import com.afsh.commons.helpers.ensureBackgroundThread
+import com.afsh.commons.models.PhoneNumber
+import com.afsh.commons.models.SimpleContact
 import com.afsh.messages.extensions.getConversations
 import com.afsh.messages.extensions.getNameFromAddress
-import com.afsh.messages.extensions.getNotificationBitmap
 import com.afsh.messages.extensions.getThreadId
 import com.afsh.messages.extensions.insertNewSMS
 import com.afsh.messages.extensions.insertOrUpdateConversation
 import com.afsh.messages.extensions.messagesDB
 import com.afsh.messages.extensions.shouldUnarchive
-import com.afsh.messages.extensions.showReceivedMessageNotification
 import com.afsh.messages.extensions.updateConversationArchivedStatus
+import com.afsh.messages.helpers.ConversationPreview
 import com.afsh.messages.helpers.IncomingSpamClassifier
-import com.afsh.messages.helpers.refreshConversations
-import com.afsh.messages.helpers.refreshMessages
+import com.afsh.messages.helpers.MessagingEvent
+import com.afsh.messages.helpers.MessagingEvents
 import com.afsh.messages.models.Message
 import com.afsh.messages.models.SpamMessage
 
@@ -78,7 +77,6 @@ class SmsReceiver : BroadcastReceiver() {
         spamReason: Int?,
     ) {
         val photoUri = SimpleContactsHelper(context).getPhotoUriFromPhoneNumber(address)
-        val bitmap = context.getNotificationBitmap(photoUri)
 
         val newMessageId = context.insertNewSMS(
             address = address,
@@ -132,23 +130,25 @@ class SmsReceiver : BroadcastReceiver() {
         )
 
         context.messagesDB.insertOrUpdate(message)
+        // Conversation write above may have refreshed before this row existed in Room.
+        ConversationPreview.refresh(context, threadId)
 
         if (context.shouldUnarchive()) {
             context.updateConversationArchivedStatus(threadId, false)
         }
 
-        refreshMessages()
-        refreshConversations()
-
-        if (spamReason == null) {
-            context.showReceivedMessageNotification(
+        // Room already has this thread; MessagingEvent.IncomingMessage never triggers a full reconcile.
+        MessagingEvents.publish(
+            MessagingEvent.IncomingMessage(
+                threadId = threadId,
                 messageId = newMessageId,
+                isMms = false,
+                isSpam = spamReason != null,
                 address = address,
                 senderName = senderName,
                 body = body,
-                threadId = threadId,
-                bitmap = bitmap
+                photoUri = photoUri,
             )
-        }
+        )
     }
 }

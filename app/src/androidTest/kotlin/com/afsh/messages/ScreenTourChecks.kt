@@ -29,10 +29,10 @@ class ScreenTourChecks {
     @Test
     fun libraryRendersAndIsCaptured() {
         val library = compose.activity.getString(R.string.inbox_nav_library)
-        compose.waitUntil(RENDER_TIMEOUT_MS) { compose.onAllNodes(hasText(library)).fetchSemanticsNodes().isNotEmpty() }
-        compose.onAllNodes(hasText(library))[0].performClick()
-        val principle = compose.activity.getString(R.string.library_principle_title)
-        compose.waitUntil(RENDER_TIMEOUT_MS) { compose.onAllNodes(hasText(principle)).fetchSemanticsNodes().isNotEmpty() }
+        compose.waitUntil(RENDER_TIMEOUT_MS) { compose.onAllNodes(isNavigationItem(library)).fetchSemanticsNodes().isNotEmpty() }
+        compose.onNode(isNavigationItem(library)).performClick()
+        val starred = compose.activity.getString(R.string.starred_messages)
+        compose.waitUntil(RENDER_TIMEOUT_MS) { compose.onAllNodes(hasText(starred)).fetchSemanticsNodes().isNotEmpty() }
         compose.waitForIdle()
         check(Screenshots.capture("17-library").length() > 0)
     }

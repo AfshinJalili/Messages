@@ -1,7 +1,5 @@
 package com.afsh.messages.helpers
 
-import com.afsh.messages.models.Events
-import org.greenrobot.eventbus.EventBus
 import org.joda.time.DateTime
 import org.joda.time.DateTimeZone
 import kotlin.math.abs
@@ -17,8 +15,9 @@ const val OPEN_SPAM = "open_spam"
 const val SEARCHED_MESSAGE_ID = "searched_message_id"
 const val SEARCHED_MESSAGE_IS_MMS = "searched_message_is_mms"
 const val USE_SIM_ID_PREFIX = "use_sim_id_"
-const val NOTIFICATION_CHANNEL_ID = "fossify_messages"
+const val NOTIFICATION_CHANNEL_ID = "messages"
 const val SHOW_CHARACTER_COUNTER = "show_character_counter"
+const val THEME_DEFAULTS_APPLIED = "theme_defaults_applied"
 const val SHOW_INBOX_UNREAD_COUNT = "show_inbox_unread_count"
 const val USE_SIMPLE_CHARACTERS = "use_simple_characters"
 const val SEND_ON_ENTER = "send_on_enter"
@@ -40,6 +39,8 @@ const val IMPORT_SMS = "import_sms"
 const val IMPORT_MMS = "import_mms"
 const val WAS_DB_CLEARED = "was_db_cleared_4"
 const val MESSAGES_IMPORTED = "messages_imported"
+const val IMPORT_THREAD_FAILURES = "import_thread_failures"
+const val IMPORT_HANDLED_THREADS = "import_handled_threads"
 const val EXTRA_VCARD_URI = "vcard"
 const val SCHEDULED_MESSAGE_ID = "scheduled_message_id"
 const val SOFT_KEYBOARD_HEIGHT = "soft_keyboard_height"
@@ -71,6 +72,9 @@ const val MAX_RECENT_SEARCHES = 5
 
 /** Longer than Snackbar.LENGTH_LONG (2.75s); the inbox swipe undo needs to survive a glance away. */
 const val SWIPE_UNDO_DURATION_MS = 5000
+
+/** Undo duration for instrumented tests to avoid racing the undo window on large inboxes. */
+@JvmField var testUndoDurationMs: Int? = null
 
 // blocked message reasons
 const val BLOCK_REASON_KEYWORD = 1
@@ -129,15 +133,6 @@ const val PICK_SAVE_DIR_INTENT = 50
 
 const val BLOCKED_KEYWORDS_EXPORT_DELIMITER = ","
 const val BLOCKED_KEYWORDS_EXPORT_EXTENSION = ".txt"
-
-fun refreshMessages() {
-    EventBus.getDefault().post(Events.RefreshMessages())
-}
-
-fun refreshConversations() {
-    InboxRepository.refreshInbox()
-    EventBus.getDefault().post(Events.RefreshConversations())
-}
 
 /** Not to be used with real messages persisted in the telephony db. This is for internal use only (e.g. scheduled messages, notification ids etc). */
 fun generateRandomId(length: Int = 9): Long {

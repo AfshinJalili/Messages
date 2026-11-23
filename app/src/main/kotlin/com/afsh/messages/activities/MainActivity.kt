@@ -21,7 +21,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.core.view.WindowCompat
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -35,23 +35,27 @@ import com.afsh.messages.ui.search.SEARCH_DEBOUNCE_MS
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
-import org.fossify.commons.extensions.applyColorFilter
-import org.fossify.commons.extensions.appLaunched
-import org.fossify.commons.extensions.appLockManager
-import org.fossify.commons.extensions.convertToBitmap
-import org.fossify.commons.extensions.copyToClipboard
-import org.fossify.commons.extensions.hideKeyboard
-import org.fossify.commons.extensions.launchActivityIntent
-import org.fossify.commons.extensions.notificationManager
-import org.fossify.commons.extensions.openNotificationSettings
-import org.fossify.commons.extensions.toast
-import org.fossify.commons.helpers.KEY_PHONE
-import org.fossify.commons.extensions.hasPermission
-import org.fossify.commons.helpers.PERMISSION_READ_CONTACTS
-import org.fossify.commons.helpers.PERMISSION_READ_SMS
-import org.fossify.commons.helpers.PERMISSION_SEND_SMS
-import org.fossify.commons.helpers.ensureBackgroundThread
-import org.fossify.commons.helpers.isQPlus
+import com.afsh.commons.extensions.applyColorFilter
+import com.afsh.commons.extensions.appLaunched
+import com.afsh.commons.extensions.appLockManager
+import com.afsh.commons.extensions.baseConfig
+import com.afsh.commons.extensions.convertToBitmap
+import com.afsh.commons.extensions.copyToClipboard
+import com.afsh.commons.extensions.hideKeyboard
+import com.afsh.commons.extensions.isSystemInDarkMode
+import com.afsh.commons.extensions.launchActivityIntent
+import com.afsh.commons.extensions.notificationManager
+import com.afsh.commons.extensions.openNotificationSettings
+import com.afsh.commons.extensions.syncGlobalConfig
+import com.afsh.commons.extensions.toast
+import com.afsh.commons.helpers.KEY_PHONE
+import com.afsh.commons.extensions.hasPermission
+import com.afsh.commons.helpers.PERMISSION_READ_CONTACTS
+import com.afsh.commons.helpers.PERMISSION_READ_SMS
+import com.afsh.commons.helpers.PERMISSION_SEND_SMS
+import com.afsh.commons.helpers.ensureBackgroundThread
+import com.afsh.commons.helpers.isQPlus
+import com.afsh.commons.R as CommonsR
 import com.afsh.messages.App
 import com.afsh.messages.BuildConfig
 import com.afsh.messages.R
@@ -89,13 +93,17 @@ import com.afsh.messages.helpers.SWIPE_UNDO_DURATION_MS
 import com.afsh.messages.helpers.SpamBackfill
 import com.afsh.messages.helpers.SwipeAction
 import com.afsh.messages.helpers.THREAD_ID
+import com.afsh.messages.helpers.testUndoDurationMs
 import com.afsh.messages.helpers.THREAD_TITLE
 import com.afsh.messages.helpers.UndoDeletion
-import com.afsh.messages.helpers.refreshConversations
+import com.afsh.messages.helpers.blockNumbersOnPhone
+import com.afsh.messages.helpers.MessagingEvent
+import com.afsh.messages.helpers.MessagingEvents
 import com.afsh.messages.helpers.sortedForInbox
 import com.afsh.messages.helpers.swipeAction
 import com.afsh.messages.models.Conversation
 import com.afsh.messages.models.SearchResult
+import com.afsh.messages.ui.AfshSystemBars
 import com.afsh.messages.ui.AfshTheme
 import com.afsh.messages.ui.afshDark
 import com.afsh.messages.ui.afshTextScale
@@ -110,8 +118,8 @@ import com.afsh.messages.ui.components.TopDestination
 import com.afsh.messages.ui.inbox.LibraryDestination
 
 class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
-    // The root of the task: it opens with the launcher's motion and is never pushed.
-    override val usesScreenMotion = false
+    // Task root: launcher open keeps the system motion (AppTheme.Afsh.Root_*).
+    override val isTaskRootTheme = true
 
     private val MAKE_DEFAULT_APP_REQUEST = 1
 
@@ -119,7 +127,8 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
     private var searchJob: Job? = null
     private val searchRepository by lazy { SearchRepository(this) }
     private var inboxConversations = listOf<Conversation>()
-    private var providerReconcileActive = false
+    private var roomSnapshotReceived = false
+    private var splashReady = false
     private var resumedBefore = false
     // 73: the last provider refresh failed; cleared by the next one that succeeds.
     private var refreshFailed = false
@@ -136,11 +145,13 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
     private var inbox by mutableStateOf(InboxUiState())
     private var darkTheme by mutableStateOf(false)
     private var textScale by mutableFloatStateOf(1f)
-    private var libraryOpen by mutableStateOf(false)
+    private var topDestination by mutableStateOf(TopDestination.INBOX)
     // 32 or 33 while the app cannot work yet; null once the inbox can load.
     private var firstRun by mutableStateOf<FirstRunStep?>(null)
     @VisibleForTesting
     internal val snackbarHost = SnackbarHostState()
+    // Constructed here so Activity Result contracts register before onCreate finishes.
+    private val settings = com.afsh.messages.ui.settings.SettingsController(this, snackbarHost, ::refreshInboxTheme)
 
     private val root by lazy { ComposeView(this) }
 
@@ -149,12 +160,35 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
 
     @SuppressLint("InlinedApi")
     override fun onCreate(savedInstanceState: Bundle?) {
+        val splash = installSplashScreen()
+        splash.setKeepOnScreenCondition { !splashReady }
+        // Same theme sync SplashActivity used to do before handing off to MainActivity.
+        syncGlobalConfig {
+            baseConfig.apply {
+                if (isSystemThemeEnabled) {
+                    val isUsingSystemDarkTheme = isSystemInDarkMode()
+                    textColor = resources.getColor(
+                        if (isUsingSystemDarkTheme) CommonsR.color.m3_on_surface_dark
+                        else CommonsR.color.m3_on_surface,
+                        theme
+                    )
+                    backgroundColor = resources.getColor(
+                        if (isUsingSystemDarkTheme) CommonsR.color.m3_surface_dark
+                        else CommonsR.color.m3_surface,
+                        theme
+                    )
+                }
+            }
+        }
         super.onCreate(savedInstanceState)
         setContentView(root)
         inboxFilter = InboxFilter.entries.getOrNull(savedInstanceState?.getInt(INBOX_FILTER) ?: 0) ?: InboxFilter.ALL
         savedInstanceState?.getLongArray(INBOX_SELECTION)?.let { inbox = inbox.copy(selected = it.toSet()) }
         appLaunched(BuildConfig.APPLICATION_ID)
-        libraryOpen = savedInstanceState?.getBoolean(LIBRARY_OPEN) ?: (intent.topDestination() == TopDestination.LIBRARY)
+        topDestination = savedInstanceState?.topDestination()
+            ?: intent.topDestination()
+            ?: TopDestination.INBOX
+        settings.onCreate(savedInstanceState)
         search = SearchUiState(
             open = savedInstanceState?.getBoolean(SEARCH_OPEN) ?: false,
             query = savedInstanceState?.getString(SEARCH_QUERY).orEmpty(),
@@ -168,6 +202,7 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
             val listPane = remember(LocalConfiguration.current) { ListDetail.isPane(this) }
             CompositionLocalProvider(LocalListPane provides listPane) {
                 AfshTheme(dark = darkTheme, textScale = textScale) {
+                    AfshSystemBars(window)
                     val step = firstRun
                     if (step != null) FirstRunScreen(step, ::onFirstRun) else InboxScreen(
                         state = inbox,
@@ -182,7 +217,9 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
                         onSearch = ::openSearch,
                         onNewMessage = ::launchNewConversation,
                         onLibrary = ::openLibrary,
-                        onSettings = ::launchSettings,
+                        selectedTab = topDestination,
+                        onSelectTab = ::selectTab,
+                        settingsContent = { settings.Content() },
                         search = search,
                         onSearchQuery = ::searchTextChanged,
                         onSearchFilter = ::setSearchFilter,
@@ -190,18 +227,14 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
                         onSearchBack = ::closeSearch,
                         onSearchRetry = ::loadSearchResults,
                         onRetryRefresh = { InboxRepository.retry(this) },
-                        libraryOpen = libraryOpen,
-                        onLibraryTab = {
-                            closeSearch()
-                            libraryOpen = it
-                            applySystemBars()
-                        },
                     )
                 }
             }
         }
 
         setupEdgeToEdge()
+        // The bottom bar paints its own surface; a system scrim on top would double it.
+        if (isQPlus()) window.isNavigationBarContrastEnforced = false
 
         checkAndDeleteOldRecycleBinMessages()
         clearAllMessagesIfNeeded {
@@ -212,8 +245,8 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
     override fun onResume() {
         super.onResume()
         refreshInboxTheme()
+        settings.onResume()
         if (search.open) loadSearchResults()
-        applySystemBars()
         refreshSpamBadge()
         refreshDrafts()
         publish()
@@ -231,7 +264,8 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
         outState.putBoolean(SEARCH_OPEN, search.open)
         outState.putString(SEARCH_QUERY, search.query)
         outState.putInt(SEARCH_FILTER, search.filter.ordinal)
-        outState.putBoolean(LIBRARY_OPEN, libraryOpen)
+        outState.putString(TOP_DESTINATION, topDestination.name)
+        settings.onSaveInstanceState(outState)
         outState.putInt(INBOX_FILTER, inboxFilter.ordinal)
         outState.putLongArray(INBOX_SELECTION, inbox.selected.toLongArray())
         super.onSaveInstanceState(outState)
@@ -255,17 +289,13 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        intent.topDestination()?.let { destination ->
-            closeSearch()
-            libraryOpen = destination == TopDestination.LIBRARY
-            applySystemBars()
-        }
+        intent.topDestination()?.let(::selectTab)
     }
 
     override fun onBackPressedCompat(): Boolean {
-        if (libraryOpen && !search.open) {
-            libraryOpen = false
-            applySystemBars()
+        if (topDestination == TopDestination.SETTINGS && settings.handleBack()) return true
+        if (topDestination != TopDestination.INBOX && !search.open) {
+            selectTab(TopDestination.INBOX)
             return true
         }
         return when {
@@ -292,16 +322,6 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
         textScale = afshTextScale()
     }
 
-    private fun applySystemBars() {
-        // The bottom bar paints its own surface; a system scrim on top would double it.
-        if (isQPlus()) window.isNavigationBarContrastEnforced = false
-        // Inbox and Library both open with the pine band.
-        WindowCompat.getInsetsController(window, window.decorView).apply {
-            isAppearanceLightStatusBars = false
-            isAppearanceLightNavigationBars = !darkTheme
-        }
-    }
-
     override fun onActivityResult(requestCode: Int, resultCode: Int, resultData: Intent?) {
         super.onActivityResult(requestCode, resultCode, resultData)
         // Declining Android's prompt leaves 32 up, so the person can read why and try again.
@@ -311,7 +331,7 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
     /** 32 until the app is the SMS app; 33 while SMS access is missing; otherwise straight to the inbox. */
     private fun loadMessages() {
         if (isQPlus() && getSystemService(RoleManager::class.java)?.isRoleAvailable(RoleManager.ROLE_SMS) != true) {
-            toast(org.fossify.commons.R.string.unknown_error_occurred)
+            toast(com.afsh.commons.R.string.unknown_error_occurred)
             finish()
             return
         }
@@ -320,6 +340,7 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
             !hasPermission(PERMISSION_READ_SMS) || !hasPermission(PERMISSION_SEND_SMS) -> FirstRunStep.PERMISSIONS
             else -> null
         }
+        if (firstRun != null) splashReady = true
         if (firstRun == null) askPermissions()
     }
 
@@ -385,7 +406,6 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
         // Contacts permission may have just been granted; the inbox's contact cache needs its observer.
         (application as App).watchContacts()
         InboxRepository.setReconcileListener { status ->
-            providerReconcileActive = status == ReconcileStatus.RUNNING
             when (status) {
                 ReconcileStatus.FAILED -> refreshFailed = true
                 ReconcileStatus.DONE -> refreshFailed = false
@@ -397,13 +417,16 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
         }
         conversationsDB.observeNonArchivedWithLatestSnippet().observe(this) { rows ->
             if (isDestroyed || isFinishing) return@observe
+            roomSnapshotReceived = true
+            splashReady = true
             inboxConversations = rows.map { it.toConversation() }
             archiving.retainAll(inboxConversations.map { it.threadId }.toSet())
             publish()
             // Marker changes also invalidate this query, so new spam updates the badge here.
             refreshSpamBadge()
         }
-        InboxRepository.scheduleProviderReconcile(this, immediate = true)
+        // Paint Room first; full Telephony reconcile only when the cheap digest says it is dirty.
+        InboxRepository.scheduleLaunchReconcile(this)
         SpamBackfill.run(this)
         if (!importObserved) {
             importObserved = true
@@ -445,7 +468,11 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
             filter = inboxFilter,
             unreadMessages = present.unreadMessageCount(),
             inboxCountShown = config.showInboxUnreadCount,
-            loading = providerReconcileActive && inboxConversations.isEmpty(),
+            // Only the first import: Room has answered and still has no rows. Do not block on Telephony.
+            loading = roomSnapshotReceived &&
+                inboxConversations.isEmpty() &&
+                importProgress == null &&
+                !config.messagesImported,
             refreshFailed = refreshFailed,
             importProgress = importProgress,
             // A selection must not act on rows the current filter or an undo window hides. Before the
@@ -455,6 +482,8 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
             recycleBinAvailable = config.useRecycleBin,
             swipeLeft = config.swipeAction(towardsRight = false),
             swipeRight = config.swipeAction(towardsRight = true),
+            spamNumbers = config.spamNumbers,
+            allowedNumbers = config.allowedNumbers,
         )
         NavBadges.publish(inbox.navCounts)
     }
@@ -486,7 +515,8 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
         inbox = inbox.copy(selected = emptySet())
     }
 
-    private fun handleSwipe(row: InboxRow, action: SwipeAction) {
+    @VisibleForTesting
+    internal fun handleSwipe(row: InboxRow, action: SwipeAction) {
         val conversation = row.conversation
         window.decorView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
         when (action) {
@@ -500,8 +530,17 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
     /** Muting is harmless and instantly reversible, so it applies at once and Undo flips it back. */
     private fun toggleMute(conversation: Conversation, muted: Boolean) {
         setMuted(listOf(conversation), muted)
-        val message = if (muted) R.string.conversation_muted else R.string.conversation_unmuted
-        showUndo(message, onUndo = { setMuted(listOf(conversation), !muted) })
+        showMuteUndo(listOf(conversation), muted)
+    }
+
+    private fun showMuteUndo(conversations: List<Conversation>, muted: Boolean) {
+        val count = conversations.size.coerceAtLeast(1)
+        val message = resources.getQuantityString(
+            if (muted) R.plurals.conversation_muted else R.plurals.conversation_unmuted,
+            count,
+            count,
+        )
+        showUndo(message, onUndo = { setMuted(conversations, !muted) })
     }
 
     private fun setMuted(conversations: List<Conversation>, muted: Boolean) {
@@ -521,6 +560,10 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
     }
 
     private fun showUndo(message: Int, onUndo: () -> Unit, onTimeout: () -> Unit = {}) {
+        showUndo(getString(message), onUndo, onTimeout)
+    }
+
+    private fun showUndo(message: String, onUndo: () -> Unit, onTimeout: () -> Unit = {}) {
         launchUndo(message, undoTimeoutMs(), onUndo, onTimeout)
     }
 
@@ -529,7 +572,7 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
      * replaces this snackbar, the deletion commits then instead of lingering without an Undo.
      */
     override fun showUndo(message: Int, durationMs: Int, onUndo: () -> Unit): () -> Unit {
-        val job = launchUndo(message, durationMs.toLong(), onUndo, onTimeout = { UndoDeletion.commitNow(this) })
+        val job = launchUndo(getString(message), durationMs.toLong(), onUndo, onTimeout = { UndoDeletion.commitNow(this) })
         val settle = undoSettle
         // UndoDeletion dismisses its own snackbar when batches merge, time out or re-show; that is not
         // a replacement by another action, so the deletion must not commit early.
@@ -543,7 +586,7 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
      * Every undo shares one host. A new one dismisses the current one, which settles it through its
      * timeout path. Cancelling the job hides the snackbar without running either callback.
      */
-    private fun launchUndo(message: Int, durationMs: Long, onUndo: () -> Unit, onTimeout: () -> Unit): Job {
+    private fun launchUndo(message: String, durationMs: Long, onUndo: () -> Unit, onTimeout: () -> Unit): Job {
         // Settle and cancel the previous offer before showing this one. Only dismissing it let a second
         // showSnackbar queue behind the first, so Undo "reshowed" a snackbar instead of undoing.
         undoJob?.cancel()
@@ -552,8 +595,8 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
         return lifecycleScope.launch {
             val result = withTimeoutOrNull(durationMs) {
                 snackbarHost.showSnackbar(
-                    message = getString(message),
-                    actionLabel = getString(org.fossify.commons.R.string.undo),
+                    message = message,
+                    actionLabel = getString(com.afsh.commons.R.string.undo),
                     duration = SnackbarDuration.Indefinite,
                 )
             }
@@ -564,7 +607,8 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
 
     /** Honours the system "time to take action" accessibility setting on API 29+. */
     private fun undoTimeoutMs(): Long {
-        val base = SWIPE_UNDO_DURATION_MS
+        // Allow tests to override the undo duration to avoid racing the window on large inboxes
+        val base = testUndoDurationMs ?: SWIPE_UNDO_DURATION_MS
         if (!isQPlus()) return base.toLong()
         val flags = AccessibilityManager.FLAG_CONTENT_TEXT or AccessibilityManager.FLAG_CONTENT_CONTROLS
         return getSystemService(AccessibilityManager::class.java).getRecommendedTimeoutMillis(base, flags).toLong()
@@ -603,7 +647,7 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
         UndoDeletion.threads.addAll(ids)
         clearSelection()
         publish()
-        refreshConversations()
+        MessagingEvents.publish(MessagingEvent.ConversationsChanged(reconcile = true))
         UndoDeletion.offer(
             this,
             undo = {
@@ -618,7 +662,7 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
             },
             completed = {
                 UndoDeletion.threads.removeAll(ids)
-                refreshConversations()
+                MessagingEvents.publish(MessagingEvent.ConversationsChanged(reconcile = true))
             },
         )
     }
@@ -638,8 +682,10 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
             InboxAction.MARK_READ -> updateInBackground { selected.filter { !it.read }.forEach { markThreadMessagesRead(it.threadId) } }
             InboxAction.MARK_UNREAD -> updateInBackground { selected.filter { it.read }.forEach { markThreadMessagesUnread(it.threadId) } }
             InboxAction.MUTE, InboxAction.UNMUTE -> {
-                setMuted(selected, muted = action == InboxAction.MUTE)
+                val muted = action == InboxAction.MUTE
+                setMuted(selected, muted = muted)
                 clearSelection()
+                showMuteUndo(selected, muted)
             }
 
             InboxAction.PIN, InboxAction.UNPIN -> {
@@ -666,16 +712,54 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
             }
 
             InboxAction.DETAILS -> launchConversationDetails(first.threadId)
-            InboxAction.BLOCK -> {
-                val names = selected.joinToString(", ") { it.title }
+            InboxAction.ALWAYS_SPAM -> {
+                val count = selected.size.coerceAtLeast(1)
+                val title = if (count == 1) {
+                    resources.getQuantityString(R.plurals.always_spam_title, 1, selected.first().title)
+                } else {
+                    resources.getQuantityString(R.plurals.always_spam_title, count, count)
+                }
                 confirm(
-                    title = getString(R.string.block_sender_title, names),
-                    explanation = getString(R.string.block_sender_text),
-                    confirmLabel = getString(R.string.block_sender),
+                    title = title,
+                    explanation = resources.getQuantityString(R.plurals.always_spam_text, count),
+                    confirmLabel = resources.getQuantityString(R.plurals.always_spam, count),
+                ) {
+                    selected.forEach { config.addSpamNumber(it.phoneNumber) }
+                    clearSelection()
+                }
+            }
+
+            InboxAction.NEVER_SPAM -> {
+                val count = selected.size.coerceAtLeast(1)
+                val title = if (count == 1) {
+                    resources.getQuantityString(R.plurals.never_spam_title, 1, selected.first().title)
+                } else {
+                    resources.getQuantityString(R.plurals.never_spam_title, count, count)
+                }
+                confirm(
+                    title = title,
+                    explanation = resources.getQuantityString(R.plurals.never_spam_text, count),
+                    confirmLabel = resources.getQuantityString(R.plurals.never_spam, count),
+                ) {
+                    selected.forEach { config.addAllowedNumber(it.phoneNumber) }
+                    clearSelection()
+                }
+            }
+
+            InboxAction.BLOCK_ON_PHONE -> {
+                val count = selected.size.coerceAtLeast(1)
+                val title = if (count == 1) {
+                    resources.getQuantityString(R.plurals.block_on_phone_title, 1, selected.first().title)
+                } else {
+                    resources.getQuantityString(R.plurals.block_on_phone_title, count, count)
+                }
+                confirm(
+                    title = title,
+                    explanation = resources.getQuantityString(R.plurals.block_on_phone_text, count),
+                    confirmLabel = resources.getQuantityString(R.plurals.block_on_phone, count),
                     destructive = true,
                 ) {
-                    // App-level block: new SMS from these numbers are stored and go to Spam. Existing messages stay where they are.
-                    selected.forEach { config.addSpamNumber(it.phoneNumber) }
+                    blockNumbersOnPhone(selected.map { it.phoneNumber })
                     clearSelection()
                 }
             }
@@ -692,7 +776,7 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
                 if (toRecycleBin) R.plurals.delete_conversations_to_bin_text else R.plurals.delete_conversations_forever_text,
                 count,
             ),
-            confirmLabel = getString(if (toRecycleBin) org.fossify.commons.R.string.delete else R.string.delete_forever),
+            confirmLabel = getString(if (toRecycleBin) com.afsh.commons.R.string.delete else R.string.delete_forever),
             destructive = !toRecycleBin,
         ) { deleteWithUndo(conversations) }
     }
@@ -708,7 +792,7 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
         ensureBackgroundThread {
             work()
             runOnUiThread {
-                refreshConversations()
+                MessagingEvents.publish(MessagingEvent.ConversationsChanged(reconcile = true))
                 clearSelection()
             }
         }
@@ -739,7 +823,8 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
             try {
                 manager.dynamicShortcuts = listOf(newConversation)
                 config.lastHandledShortcutColor = appIconColor
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                android.util.Log.w(TAG, "Failed to update dynamic shortcuts", e)
             }
         }
     }
@@ -748,10 +833,10 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
     private fun getCreateNewContactShortcut(appIconColor: Int): ShortcutInfo {
         val newEvent = getString(R.string.new_conversation)
         val drawable =
-            AppCompatResources.getDrawable(this, org.fossify.commons.R.drawable.shortcut_plus)
+            AppCompatResources.getDrawable(this, R.drawable.shortcut_new_conversation)
 
         (drawable as LayerDrawable).findDrawableByLayerId(
-            org.fossify.commons.R.id.shortcut_plus_background
+            R.id.shortcut_new_conversation_background
         ).applyColorFilter(appIconColor)
 
         val bmp = drawable.convertToBitmap()
@@ -769,7 +854,6 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
 
     private fun openSearch() {
         search = SearchUiState(open = true, recent = config.recentSearches, importProgress = importProgress)
-        applySystemBars()
     }
 
     private fun closeSearch() {
@@ -777,7 +861,6 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
         searchJob?.cancel()
         search = SearchUiState(importProgress = importProgress)
         hideKeyboard()
-        applySystemBars()
     }
 
     private fun setSearchFilter(filter: SearchFilter) {
@@ -857,15 +940,16 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
         }
     }
 
-    private fun launchSettings() {
+    private fun selectTab(destination: TopDestination) {
         closeSearch()
         hideKeyboard()
-        startActivity(Intent(this, SettingsActivity::class.java))
+        if (destination != TopDestination.SETTINGS) settings.resetToOverview()
+        topDestination = destination
     }
 
     companion object {
+        private const val TAG = "MainActivity"
         private const val TOP_DESTINATION = "top_destination"
-        private const val LIBRARY_OPEN = "library_open"
         private const val SEARCH_OPEN = "search_open"
         private const val SEARCH_QUERY = "search_query"
         private const val SEARCH_FILTER = "search_filter"
@@ -877,7 +961,14 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
                 .putExtra(TOP_DESTINATION, destination.name)
                 .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
 
-        private fun Intent.topDestination() = getStringExtra(TOP_DESTINATION)?.let { name ->
+        private fun Intent.topDestination(): TopDestination? = when {
+            action == Intent.ACTION_APPLICATION_PREFERENCES -> TopDestination.SETTINGS
+            else -> getStringExtra(TOP_DESTINATION)?.let { name ->
+                TopDestination.entries.firstOrNull { it.name == name }
+            }
+        }
+
+        private fun Bundle.topDestination() = getString(TOP_DESTINATION)?.let { name ->
             TopDestination.entries.firstOrNull { it.name == name }
         }
     }

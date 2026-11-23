@@ -3,7 +3,7 @@ package com.afsh.messages.receivers
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import org.fossify.commons.helpers.ensureBackgroundThread
+import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.messages.extensions.rescheduleAllScheduledMessages
 
 /**

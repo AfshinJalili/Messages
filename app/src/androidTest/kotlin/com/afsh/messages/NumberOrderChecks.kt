@@ -4,25 +4,20 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.semantics.SemanticsActions
 import androidx.activity.ComponentActivity
-import android.view.WindowManager
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onChild
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.text.LinkAnnotation
-import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.afsh.messages.models.Conversation
 import com.afsh.messages.ui.AfshTheme
-import com.afsh.messages.ui.inbox.InboxRow
 import com.afsh.messages.ui.components.SnippetText
 import com.afsh.messages.ui.thread.MessageText
 import com.afsh.messages.ui.thread.linkify
@@ -41,10 +36,7 @@ class NumberOrderChecks {
 
     @Before
     fun keepSyntheticActivityVisible() {
-        compose.activityRule.scenario.onActivity {
-            it.window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON or
-                WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON)
-        }
+        compose.activityRule.scenario.onActivity { it.keepOnScreen() }
     }
 
     private val samples = listOf(
@@ -79,10 +71,10 @@ class NumberOrderChecks {
                         CompositionLocalProvider(LocalLayoutDirection provides direction) {
                             samples.forEachIndexed { i, body ->
                                 Box(Modifier.width(360.dp).testTag("bubble-$direction-$i")) {
-                                    MessageText(body, Color.Black, Color.Blue, links = true) {}
+                                    MessageText(body, MaterialTheme.colorScheme.onSurface, MaterialTheme.colorScheme.primary, links = true) {}
                                 }
                                 Box(Modifier.width(360.dp).testTag("inbox-$direction-$i")) {
-                                    SnippetText(InboxRow(Conversation(i.toLong(), body, 1, true, "KESHAVARZI", "", false, "KESHAVARZI"), draft = null, pinned = false, muted = false), unread = false)
+                                    SnippetText(inboxRow(fixtureConversation(i.toLong(), "KESHAVARZI", snippet = body, phone = "KESHAVARZI")), unread = false)
                                 }
                             }
                         }
@@ -91,10 +83,7 @@ class NumberOrderChecks {
             }
         }
         for (direction in directions) for (i in samples.indices) for (view in listOf("bubble", "inbox")) {
-            val layouts = mutableListOf<TextLayoutResult>()
-            compose.onNodeWithTag("$view-$direction-$i").onChild().fetchSemanticsNode()
-                .config[SemanticsActions.GetTextLayoutResult].action!!.invoke(layouts)
-            val layout = layouts.single()
+            val layout = compose.onNodeWithTag("$view-$direction-$i").onChild().textLayout()
             // Selection paths follow drawn runs; getBoundingBox can invert a box at a font/bidi boundary.
             assertInOrder("$view $direction", layout.layoutInput.text.text) { layout.getPathForRange(it, it + 1).getBounds().left }
         }

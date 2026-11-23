@@ -2,22 +2,21 @@ package com.afsh.messages
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.semantics.SemanticsActions
 import androidx.activity.ComponentActivity
-import android.view.WindowManager
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onChild
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
@@ -33,13 +32,14 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.em
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.afsh.messages.models.Conversation
+import com.afsh.messages.helpers.ImportProgress
 import com.afsh.messages.ui.AfshTheme
 import com.afsh.messages.ui.forContent
-import com.afsh.messages.ui.inbox.InboxRow
+import com.afsh.messages.ui.components.ImportNotice
+import com.afsh.messages.ui.components.PatternText
 import com.afsh.messages.ui.components.SnippetText
+import com.afsh.messages.ui.message.SelectTextScreen
 import com.afsh.messages.ui.thread.MessageText
 import com.afsh.messages.ui.thread.COMPOSER_FIELD_TAG
 import com.afsh.messages.ui.thread.ComposerState
@@ -62,10 +62,7 @@ class ContentFontChecks {
 
     @Before
     fun keepSyntheticActivityVisible() {
-        compose.activityRule.scenario.onActivity {
-            it.window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON or
-                WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON)
-        }
+        compose.activityRule.scenario.onActivity { it.keepOnScreen() }
     }
 
     private val samples = listOf(
@@ -76,12 +73,7 @@ class ContentFontChecks {
         "Latin message only",
     )
 
-    private fun layout(tag: String): TextLayoutResult {
-        val results = mutableListOf<TextLayoutResult>()
-        compose.onNodeWithTag(tag).onChild().fetchSemanticsNode()
-            .config[SemanticsActions.GetTextLayoutResult].action!!.invoke(results)
-        return results.single()
-    }
+    private fun layout(tag: String): TextLayoutResult = compose.onNodeWithTag(tag).onChild().textLayout()
 
     @Test
     fun bubblesPreviewsAndDraftsKeepMetricsAcrossUiDirectionsAndScales() {
@@ -96,14 +88,21 @@ class ContentFontChecks {
                         AfshTheme(dark = false, textScale = 1.2f) {
                             samples.forEachIndexed { i, body ->
                                 Box(Modifier.width(280.dp).testTag("bubble-$scale-$direction-$i")) {
-                                    MessageText(body, Color.Black, Color.Blue, links = true) {}
+                                    // Tight width avoids Compose's ParagraphLayoutCache.slowCreateTextLayoutResultOrNull false didOverflowWidth on short String text under loose constraints.
+                                    MessageText(
+                                        body,
+                                        MaterialTheme.colorScheme.onSurface,
+                                        MaterialTheme.colorScheme.primary,
+                                        links = true,
+                                        modifier = Modifier.fillMaxWidth(),
+                                    ) {}
                                 }
                                 for (draft in listOf(false, true)) {
                                     Box(Modifier.width(280.dp).testTag("preview-$draft-$scale-$direction-$i")) {
-                                        SnippetText(InboxRow(
-                                            Conversation(i.toLong(), body, 1, true, "Synthetic", "", false, "Synthetic"),
-                                            draft = if (draft) body else null, pinned = false, muted = false,
-                                        ), unread = false)
+                                        SnippetText(
+                                            inboxRow(fixtureConversation(i.toLong(), "Synthetic", snippet = body, phone = "Synthetic"), draft = if (draft) body else null),
+                                            unread = false,
+                                        )
                                     }
                                 }
                             }
@@ -124,12 +123,13 @@ class ContentFontChecks {
                     assertEquals("$surface sample $i offset $offset", ltr.getPathForRange(offset, offset + 1).getBounds().width,
                         rtl.getPathForRange(offset, offset + 1).getBounds().width, 0.1f)
                 }
-                if (surface == "bubble") assertFalse(ltr.hasVisualOverflow)
+                if (surface == "bubble") assertFalse("bubble sample $i scale $scale overflowed", ltr.hasVisualOverflow)
             }
             for (direction in LayoutDirection.entries) {
                 val draft = layout("preview-true-$scale-$direction-$i")
                 assertTrue(draft.layoutInput.text.spanStyles.any { it.item.fontWeight == FontWeight.Bold })
-                assertEquals(if (i == samples.lastIndex) 1.45.em else 1.7.em, draft.layoutInput.style.lineHeight)
+                // A draft takes the content line height of what was written, not the interface's.
+                assertEquals(TextStyle().forContent(samples[i]).lineHeight, draft.layoutInput.style.lineHeight)
             }
         }
         assertTrue(layout("bubble-1.6-Ltr-0").size.height > layout("bubble-1.0-Ltr-0").size.height)
@@ -179,8 +179,9 @@ class ContentFontChecks {
                 it.start <= start && it.end >= start + sample.length && it.item.fontFamily != null && it.item.fontFamily != base
             })
         }
-        assertEquals(1.7.em, TextStyle().forContent("فارسی").lineHeight)
-        assertEquals(1.45.em, TextStyle().forContent("English").lineHeight)
+        // Persian needs more leading than Latin for its marks; the exact values are the theme's.
+        assertTrue(TextStyle().forContent("فارسی").lineHeight.value > TextStyle().forContent("English").lineHeight.value)
+        assertEquals(TextStyle().forContent("فارسی").lineHeight, TextStyle().forContent("Hello فارسی").lineHeight)
         assertEquals("", AnnotatedString("").withContentFonts().text)
     }
 
@@ -204,13 +205,64 @@ class ContentFontChecks {
                 assertEquals(sample, value.value.text)
                 assertEquals(sample.length, value.value.selection.end)
             }
-            val layouts = mutableListOf<TextLayoutResult>()
-            compose.onNodeWithTag(COMPOSER_FIELD_TAG).fetchSemanticsNode()
-                .config[SemanticsActions.GetTextLayoutResult].action!!.invoke(layouts)
-            val result = layouts.single()
+            val result = compose.onNodeWithTag(COMPOSER_FIELD_TAG).textLayout()
             assertEquals(sample, result.layoutInput.text.text)
-            assertEquals(1.7.em, result.layoutInput.style.lineHeight)
+            assertEquals(TextStyle().forContent(sample).lineHeight, result.layoutInput.style.lineHeight)
             assertEquals(AnnotatedString(sample).withContentFonts().spanStyles, result.layoutInput.text.spanStyles)
         }
+    }
+
+    @Test
+    fun selectTextScreenAppliesScriptFontsInBothDirections() {
+        val sample = "Hello می\u200Cروم سَلَام 123"
+        val sender = "مینا فراهانی · 12:41"
+        val direction = mutableStateOf(LayoutDirection.Ltr)
+        compose.setContent {
+            CompositionLocalProvider(LocalLayoutDirection provides direction.value) {
+                AfshTheme(dark = false) {
+                    SelectTextScreen(sender = sender, body = sample, onBack = {}, onCopy = {})
+                }
+            }
+        }
+        for (uiDirection in LayoutDirection.entries) {
+            compose.runOnIdle { direction.value = uiDirection }
+            val bodyLayout = compose.onNodeWithText(sample).textLayout()
+            assertEquals(TextStyle().forContent(sample).lineHeight, bodyLayout.layoutInput.style.lineHeight)
+            assertEquals(AnnotatedString(sample).withContentFonts().spanStyles, bodyLayout.layoutInput.text.spanStyles)
+            val senderLayout = compose.onNodeWithText(sender).textLayout()
+            assertEquals(AnnotatedString(sender).withContentFonts().spanStyles, senderLayout.layoutInput.text.spanStyles)
+        }
+    }
+
+    @Test
+    fun importNoticeUsesThemeFontWithTabularDigitsNotMonospace() {
+        val direction = mutableStateOf(LayoutDirection.Ltr)
+        compose.setContent {
+            CompositionLocalProvider(LocalLayoutDirection provides direction.value) {
+                AfshTheme(dark = false) {
+                    ImportNotice(ImportProgress(55))
+                }
+            }
+        }
+        val percentText = compose.activity.getString(R.string.import_progress_percent, 55)
+        for (uiDirection in LayoutDirection.entries) {
+            compose.runOnIdle { direction.value = uiDirection }
+            val result = compose.onNodeWithText(percentText, useUnmergedTree = true).textLayout()
+            assertEquals("tnum", result.layoutInput.style.fontFeatureSettings)
+            assertFalse(result.layoutInput.style.fontFamily == FontFamily.Monospace)
+        }
+    }
+
+    @Test
+    fun patternTextKeepsMonospaceAsciiAndVazirmatnPersian() {
+        val pattern = "\\b(رمز|کد)\\b"
+        compose.setContent {
+            AfshTheme(dark = false) {
+                PatternText(pattern)
+            }
+        }
+        val result = compose.onNodeWithText(pattern).textLayout()
+        assertEquals(FontFamily.Monospace, result.layoutInput.style.fontFamily)
+        assertTrue(result.layoutInput.text.spanStyles.any { it.item.fontFamily != null && it.item.fontFamily != FontFamily.Monospace })
     }
 }

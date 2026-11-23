@@ -40,7 +40,7 @@ fun Activity.confirm(
         title = title,
         explanation = explanation,
         confirmLabel = confirmLabel,
-        dismissLabel = getString(org.fossify.commons.R.string.cancel),
+        dismissLabel = getString(com.afsh.commons.R.string.cancel),
         onConfirm = {
             dismiss()
             onConfirm()
@@ -55,7 +55,7 @@ fun Activity.inform(title: String, text: String) = showAfshDialog { dismiss ->
     MessageDialog(
         title = title,
         text = text,
-        dismissLabel = getString(org.fossify.commons.R.string.ok),
+        dismissLabel = getString(com.afsh.commons.R.string.ok),
         onDismiss = dismiss,
     )
 }
@@ -66,7 +66,7 @@ fun <T> Activity.choose(title: String, choices: List<Choice<T>>, onChoose: (T) -
         title = title,
         choices = choices,
         selected = null,
-        dismissLabel = getString(org.fossify.commons.R.string.cancel),
+        dismissLabel = getString(com.afsh.commons.R.string.cancel),
         onChoose = {
             dismiss()
             onChoose(it)
@@ -83,7 +83,7 @@ fun Activity.showRenameDialog(conversation: Conversation, onRename: (String) -> 
         placeholder = conversation.title,
         explanation = getString(R.string.rename_explanation),
         confirmLabel = getString(R.string.save_name),
-        dismissLabel = getString(org.fossify.commons.R.string.cancel),
+        dismissLabel = getString(com.afsh.commons.R.string.cancel),
         onRename = {
             dismiss()
             onRename(it)

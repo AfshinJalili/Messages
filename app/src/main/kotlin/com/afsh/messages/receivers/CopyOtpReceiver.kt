@@ -3,8 +3,8 @@ package com.afsh.messages.receivers
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import org.fossify.commons.extensions.copyToClipboard
-import org.fossify.commons.extensions.notificationManager
+import com.afsh.commons.extensions.copyToClipboard
+import com.afsh.commons.extensions.notificationManager
 import com.afsh.messages.helpers.OTP_CODE
 import com.afsh.messages.helpers.THREAD_ID
 

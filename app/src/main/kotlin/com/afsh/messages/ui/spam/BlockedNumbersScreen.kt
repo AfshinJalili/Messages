@@ -19,65 +19,130 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.afsh.messages.R
-import com.afsh.messages.ui.components.EmptyState
+import com.afsh.messages.ui.Afsh
 import com.afsh.messages.ui.components.AfshButton
+import com.afsh.messages.ui.components.AfshIcon
+import com.afsh.messages.ui.components.ContentText
+import com.afsh.messages.ui.components.EmptyState
 import com.afsh.messages.ui.components.PageContentPadding
 import com.afsh.messages.ui.components.PageNavigation
 import com.afsh.messages.ui.components.PageScaffold
+import com.afsh.messages.ui.components.SectionHeading
 import com.afsh.messages.ui.components.TextAction
-import com.afsh.messages.ui.withContentFonts
 
 private val SenderRowHeight = 58.dp
 
+/** Which of the three Filter rules sender lists a row belongs to. */
+enum class FilterSenderKind { AlwaysSpam, NeverSpam, AndroidBlocked }
+
 /**
- * A blocked sender. [inSystemList] means Android's own block list holds it (messages never
- * arrive); otherwise the app files its messages in Spam.
+ * A sender on one of the Filter rules lists. [AlwaysSpam] files future messages in Spam;
+ * [NeverSpam] keeps them in the inbox; [AndroidBlocked] means the phone may drop them.
  */
 @Immutable
-data class BlockedSender(val number: String, val name: String?, val inSystemList: Boolean) {
-    val key get() = "${if (inSystemList) "s" else "a"}:$number"
+data class BlockedSender(val number: String, val name: String?, val kind: FilterSenderKind) {
+    val key get() = "${kind.name}:$number"
 }
 
 @Immutable
-data class BlockedNumbersUiState(val loading: Boolean = true, val senders: List<BlockedSender> = emptyList())
+data class BlockedNumbersUiState(
+    val loading: Boolean = true,
+    val senders: List<BlockedSender> = emptyList(),
+)
 
-/** 38 · Blocked numbers / manage. Unblocking is immediate; Block a number opens the add page. */
+/** 38 · Filter senders: always-spam, never-spam and Android-blocked, in three labeled sections. */
 @Composable
 fun BlockedNumbersScreen(
     state: BlockedNumbersUiState,
     navigation: PageNavigation,
     onBack: () -> Unit,
-    onUnblock: (BlockedSender) -> Unit,
+    onRemove: (BlockedSender) -> Unit,
     onBlockNumber: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val always = remember(state.senders) { state.senders.filter { it.kind == FilterSenderKind.AlwaysSpam } }
+    val never = remember(state.senders) { state.senders.filter { it.kind == FilterSenderKind.NeverSpam } }
+    val android = remember(state.senders) { state.senders.filter { it.kind == FilterSenderKind.AndroidBlocked } }
+    val empty = !state.loading && always.isEmpty() && never.isEmpty() && android.isEmpty()
+
     PageScaffold(
-        title = stringResource(org.fossify.commons.R.string.blocked_numbers),
+        title = stringResource(R.string.filter_senders),
         modifier = modifier,
-        subtitle = stringResource(R.string.blocked_numbers_subtitle),
         onBack = onBack,
         navigation = navigation,
     ) {
-        LazyColumn(contentPadding = PageContentPadding, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        LazyColumn(contentPadding = PageContentPadding, verticalArrangement = Arrangement.spacedBy(Afsh.spacing.md)) {
             when {
                 state.loading -> item(key = "loading") { LinearProgressIndicator(Modifier.fillMaxWidth()) }
-                state.senders.isEmpty() -> item(key = "empty") {
+                empty -> item(key = "empty") {
                     EmptyState(
-                        icon = R.drawable.ic_lucide_shield_ban,
+                        icon = AfshIcon.SpamShield,
                         title = stringResource(R.string.no_blocked_numbers),
                         text = stringResource(R.string.no_blocked_numbers_text),
                     )
                 }
 
-                else -> items(state.senders, key = { it.key }) { sender ->
-                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        SenderRow(sender, onUnblock = { onUnblock(sender) })
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                else -> {
+                    item(key = "always-heading") {
+                        SectionHeading(stringResource(R.string.always_spam_list))
+                    }
+                    if (always.isEmpty()) {
+                        item(key = "always-empty") {
+                            Text(
+                                stringResource(R.string.no_always_spam_senders),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    } else {
+                        items(always, key = { it.key }) { sender ->
+                            SenderSectionRow(sender, onRemove = { onRemove(sender) })
+                        }
+                    }
+
+                    item(key = "never-heading") {
+                        SectionHeading(stringResource(R.string.never_spam_list))
+                    }
+                    if (never.isEmpty()) {
+                        item(key = "never-empty") {
+                            Text(
+                                stringResource(R.string.no_never_spam_senders),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    } else {
+                        items(never, key = { it.key }) { sender ->
+                            SenderSectionRow(sender, onRemove = { onRemove(sender) })
+                        }
+                    }
+
+                    item(key = "android-heading") {
+                        SectionHeading(stringResource(R.string.android_blocked))
+                    }
+                    item(key = "android-text") {
+                        Text(
+                            stringResource(R.string.android_blocked_text),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    if (android.isEmpty()) {
+                        item(key = "android-empty") {
+                            Text(
+                                stringResource(R.string.no_android_blocked),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    } else {
+                        items(android, key = { it.key }) { sender ->
+                            SenderSectionRow(sender, onRemove = { onRemove(sender) })
+                        }
                     }
                 }
             }
@@ -93,25 +158,40 @@ fun BlockedNumbersScreen(
 }
 
 @Composable
-private fun SenderRow(sender: BlockedSender, onUnblock: () -> Unit) {
+private fun SenderSectionRow(sender: BlockedSender, onRemove: () -> Unit) {
     val label = sender.name ?: sender.number
     val description = listOfNotNull(sender.name, sender.number).distinct().joinToString(", ")
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .heightIn(min = SenderRowHeight),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            remember(label) { AnnotatedString(label).withContentFonts() },
-            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier
-                .weight(1f)
-                .semantics { contentDescription = description },
-        )
-        TextAction(stringResource(org.fossify.commons.R.string.unblock), onClick = onUnblock)
+    val action = when (sender.kind) {
+        FilterSenderKind.NeverSpam -> stringResource(R.string.remove_never_spam, label)
+        FilterSenderKind.AlwaysSpam, FilterSenderKind.AndroidBlocked ->
+            stringResource(com.afsh.commons.R.string.unblock)
+    }
+    Column(verticalArrangement = Arrangement.spacedBy(Afsh.spacing.md)) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .heightIn(min = SenderRowHeight),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            ContentText(
+                label,
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .weight(1f)
+                    .semantics { contentDescription = description },
+            )
+            TextAction(
+                when (sender.kind) {
+                    FilterSenderKind.NeverSpam -> stringResource(com.afsh.commons.R.string.remove)
+                    else -> stringResource(com.afsh.commons.R.string.unblock)
+                },
+                onClick = onRemove,
+                modifier = Modifier.semantics { contentDescription = action },
+            )
+        }
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
     }
 }

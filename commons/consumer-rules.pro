@@ -6,7 +6,7 @@
 -keep public class * extends java.lang.Exception
 
 -keep class android.support.v7.widget.SearchView { *; }
--keep class org.fossify.commons.models.PhoneNumber { *; }
+-keep class com.afsh.commons.models.PhoneNumber { *; }
 
 # Joda
 -dontwarn org.joda.convert.**

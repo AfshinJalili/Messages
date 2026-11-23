@@ -1,14 +1,16 @@
 package com.afsh.messages.ui.inbox
 
-import androidx.annotation.DrawableRes
+import androidx.annotation.AnyRes
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Immutable
 import com.afsh.messages.R
 import com.afsh.messages.helpers.ImportProgress
 import com.afsh.messages.helpers.InboxFilter
 import com.afsh.messages.helpers.SwipeAction
+import com.afsh.messages.helpers.containsNumber
 import com.afsh.messages.messaging.isShortCodeWithLetters
 import com.afsh.messages.models.Conversation
+import com.afsh.messages.ui.components.AfshIcon
 import com.afsh.messages.ui.components.navCounts
 import java.util.Calendar
 
@@ -37,6 +39,8 @@ data class InboxUiState(
     val recycleBinAvailable: Boolean = true,
     val swipeLeft: SwipeAction = SwipeAction.NONE,
     val swipeRight: SwipeAction = SwipeAction.NONE,
+    val spamNumbers: Set<String> = emptySet(),
+    val allowedNumbers: Set<String> = emptySet(),
 ) {
     val selecting get() = selected.isNotEmpty()
     val navCounts get() = navCounts(unreadSpam, unreadMessages, inboxCountShown)
@@ -69,28 +73,36 @@ fun InboxRow.section(now: Calendar): InboxSection {
 private fun Calendar.sameDayAs(other: Calendar) =
     get(Calendar.YEAR) == other.get(Calendar.YEAR) && get(Calendar.DAY_OF_YEAR) == other.get(Calendar.DAY_OF_YEAR)
 
-enum class InboxAction(@StringRes val label: Int, @DrawableRes val icon: Int) {
-    ARCHIVE(R.string.archive, R.drawable.ic_lucide_archive),
-    MARK_UNREAD(R.string.mark_as_unread, R.drawable.ic_lucide_mail),
-    MARK_READ(R.string.mark_as_read, R.drawable.ic_lucide_mail_open),
-    MUTE(R.string.mute_conversation, R.drawable.ic_lucide_bell_off),
-    UNMUTE(R.string.unmute_conversation, R.drawable.ic_lucide_bell),
-    PIN(R.string.pin_conversation, R.drawable.ic_lucide_pin),
-    UNPIN(R.string.unpin_conversation, R.drawable.ic_lucide_pin_off),
-    DELETE(org.fossify.commons.R.string.delete, R.drawable.ic_lucide_trash_2),
-    DIAL(org.fossify.commons.R.string.dial_number, R.drawable.ic_lucide_phone),
-    ADD_TO_CONTACT(org.fossify.commons.R.string.add_number_to_contact, R.drawable.ic_lucide_user_plus),
-    COPY_NUMBER(org.fossify.commons.R.string.copy_number_to_clipboard, R.drawable.ic_lucide_copy),
-    RENAME(R.string.rename_conversation, R.drawable.ic_lucide_pencil),
-    DETAILS(R.string.conversation_details, R.drawable.ic_lucide_info),
-    BLOCK(org.fossify.commons.R.string.block_number, R.drawable.ic_lucide_ban),
+enum class InboxAction(@AnyRes val label: Int, val icon: AfshIcon, val labelIsQuantity: Boolean = false) {
+    ARCHIVE(R.string.archive, AfshIcon.Archive),
+    MARK_UNREAD(R.string.mark_as_unread, AfshIcon.Mail),
+    MARK_READ(R.string.mark_as_read, AfshIcon.MailOpen),
+    MUTE(R.string.mute_conversation, AfshIcon.NotificationsOff),
+    UNMUTE(R.string.unmute_conversation, AfshIcon.Notifications),
+    PIN(R.string.pin_conversation, AfshIcon.Pin),
+    UNPIN(R.string.unpin_conversation, AfshIcon.Unpin),
+    DELETE(com.afsh.commons.R.string.delete, AfshIcon.Delete),
+    DIAL(com.afsh.commons.R.string.dial_number, AfshIcon.Call),
+    ADD_TO_CONTACT(com.afsh.commons.R.string.add_number_to_contact, AfshIcon.PersonAdd),
+    COPY_NUMBER(com.afsh.commons.R.string.copy_number_to_clipboard, AfshIcon.Copy),
+    RENAME(R.string.rename_conversation, AfshIcon.Edit),
+    DETAILS(R.string.conversation_details, AfshIcon.Info),
+    ALWAYS_SPAM(R.plurals.always_spam, AfshIcon.SpamShield, labelIsQuantity = true),
+    NEVER_SPAM(R.plurals.never_spam, AfshIcon.Verified, labelIsQuantity = true),
+    BLOCK_ON_PHONE(R.plurals.block_on_phone, AfshIcon.Block, labelIsQuantity = true),
 }
 
 /** Declaration order of [InboxAction] is the display order; the bar shows the first few, the rest overflow. */
-fun availableActions(selected: List<InboxRow>, archiveAvailable: Boolean): List<InboxAction> {
+fun availableActions(
+    selected: List<InboxRow>,
+    archiveAvailable: Boolean,
+    spamNumbers: Collection<String> = emptySet(),
+    allowedNumbers: Collection<String> = emptySet(),
+): List<InboxAction> {
     val first = selected.firstOrNull() ?: return emptyList()
     val single = selected.size == 1
     val person = single && !first.conversation.isGroupConversation
+    val oneToOne = selected.isNotEmpty() && selected.none { it.conversation.isGroupConversation }
     return InboxAction.entries.filter { action ->
         when (action) {
             InboxAction.ARCHIVE -> archiveAvailable
@@ -104,7 +116,11 @@ fun availableActions(selected: List<InboxRow>, archiveAvailable: Boolean): List<
             InboxAction.ADD_TO_CONTACT, InboxAction.COPY_NUMBER -> person
             InboxAction.RENAME -> single && first.conversation.isGroupConversation
             InboxAction.DETAILS -> single
-            InboxAction.DELETE, InboxAction.BLOCK -> true
+            InboxAction.DELETE -> true
+            InboxAction.ALWAYS_SPAM -> selected.any { !spamNumbers.containsNumber(it.conversation.phoneNumber) }
+            InboxAction.NEVER_SPAM -> oneToOne &&
+                selected.any { !allowedNumbers.containsNumber(it.conversation.phoneNumber) }
+            InboxAction.BLOCK_ON_PHONE -> oneToOne
         }
     }
 }
@@ -129,11 +145,11 @@ fun InboxFilter.emptyTitle() = when (this) {
 }
 
 // Child activities return to the Library tab retained by the inbox composition.
-enum class LibraryDestination(@StringRes val label: Int, @StringRes val description: Int, @DrawableRes val icon: Int) {
-    STARRED(R.string.starred_messages, R.string.library_starred_description, R.drawable.ic_lucide_star),
-    ARCHIVE(R.string.archived_conversations, R.string.library_archive_description, R.drawable.ic_lucide_archive),
-    SPAM(R.string.inbox_spam, R.string.library_spam_description, R.drawable.ic_lucide_shield_ban),
-    RECYCLE_BIN(org.fossify.commons.R.string.recycle_bin, R.string.library_recycle_description, R.drawable.ic_lucide_trash_2);
+enum class LibraryDestination(@StringRes val label: Int, @StringRes val description: Int, val icon: AfshIcon) {
+    STARRED(R.string.starred_messages, R.string.library_starred_description, AfshIcon.Star),
+    ARCHIVE(R.string.archived_conversations, R.string.library_archive_description, AfshIcon.Archive),
+    SPAM(R.string.inbox_spam, R.string.library_spam_description, AfshIcon.SpamShield),
+    RECYCLE_BIN(com.afsh.commons.R.string.recycle_bin, R.string.library_recycle_description, AfshIcon.Delete);
 
     fun isAvailable(state: InboxUiState) = when (this) {
         ARCHIVE -> state.archiveAvailable

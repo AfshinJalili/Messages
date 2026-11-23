@@ -3,7 +3,7 @@ Closes #
 ## What changed
 
 ## Design
-<!-- Frames in design/afsh.pen, or "none" -->
+<!-- Screen or component in DESIGN.md, or "none" -->
 
 ## Verification
 <!-- Build and test results from the test agent -->

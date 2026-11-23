@@ -1,67 +1,51 @@
 package com.afsh.messages
 
-import android.content.Context
-import android.content.ContextWrapper
-import androidx.room.Room
-import androidx.room.migration.Migration
+import androidx.activity.ComponentActivity
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.width
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.test.assertHeightIsAtLeast
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeLeft
+import androidx.compose.ui.test.swipeRight
+import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.platform.app.InstrumentationRegistry
-import com.afsh.messages.databases.MessagesDatabase
-import com.afsh.messages.extensions.config
 import com.afsh.messages.extensions.extractOtpCode
-import com.afsh.messages.helpers.Config
 import com.afsh.messages.helpers.InboxFilter
 import com.afsh.messages.helpers.SwipeAction
 import com.afsh.messages.helpers.category
 import com.afsh.messages.helpers.sortedForInbox
-import com.afsh.messages.models.Conversation
-import org.json.JSONObject
-import org.junit.Rule
-import org.junit.Test
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.test.assertHeightIsAtLeast
-import androidx.compose.ui.test.getUnclippedBoundsInRoot
-import androidx.compose.ui.test.hasContentDescription
-import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.width
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.semantics.SemanticsActions
-import androidx.compose.ui.test.performSemanticsAction
-import androidx.compose.ui.text.TextLayoutResult
-import androidx.compose.ui.unit.Density
-import androidx.compose.ui.unit.LayoutDirection
-import com.afsh.messages.ui.components.ConversationRow
-import androidx.activity.ComponentActivity
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.compose.ui.test.onNodeWithText
 import com.afsh.messages.helpers.swipeAction
+import com.afsh.messages.models.Conversation
 import com.afsh.messages.ui.AfshTheme
+import com.afsh.messages.ui.components.AfshIcon
+import com.afsh.messages.ui.components.ConversationRow
+import com.afsh.messages.ui.components.SwipeGesture
+import com.afsh.messages.ui.components.SwipeTone
+import com.afsh.messages.ui.components.SwipeableRow
+import com.afsh.messages.ui.components.TopDestination
 import com.afsh.messages.ui.inbox.InboxAction
-import com.afsh.messages.ui.inbox.InboxRow
-import com.afsh.messages.ui.inbox.InboxScreen
 import com.afsh.messages.ui.inbox.InboxSection
 import com.afsh.messages.ui.inbox.InboxUiState
 import com.afsh.messages.ui.inbox.PRIMARY_ACTION_COUNT
 import com.afsh.messages.ui.inbox.availableActions
 import com.afsh.messages.ui.inbox.section
 import com.afsh.messages.ui.inbox.splitForBar
-import java.util.Calendar
+import org.junit.Rule
+import org.junit.Test
 import org.junit.runner.RunWith
+import java.util.Calendar
 
-/** Database fixtures are disposable. Activity checks open the inbox and a synthetic thread; no messages are sent. */
+/** In-memory rows, throwaway settings and a throwaway database only; the real inbox and settings are never touched. */
 @RunWith(AndroidJUnit4::class)
 class InboxChecks {
-    private val instrumentation = InstrumentationRegistry.getInstrumentation()
-    private val targetContext: Context = instrumentation.targetContext
-
     // An activity rule so assertions resolve strings in the same locale the screen renders in (the
     // test phone runs Persian, which also localizes digits).
     @get:Rule
@@ -69,7 +53,7 @@ class InboxChecks {
     private fun text(id: Int) = compose.activity.getString(id)
 
     private fun row(id: Long, title: String, read: Boolean = true, pinned: Boolean = false, muted: Boolean = false, isGroup: Boolean = false, phone: String = "+15551234567") =
-        InboxRow(Conversation(id, "hi", 1, read, title, "", isGroup, phone), draft = null, pinned = pinned, muted = muted)
+        inboxRow(fixtureConversation(id, title, read = read, phone = phone, isGroup = isGroup), pinned = pinned, muted = muted)
 
     /** Selection swaps the search field for same-height controls; rows must not move under the finger. */
     @Test
@@ -77,18 +61,13 @@ class InboxChecks {
         var state by mutableStateOf(InboxUiState(rows = listOf(row(1, "Mina"), row(2, "Dad", read = false))))
         compose.setContent {
             AfshTheme(dark = false) {
-                InboxScreen(
-                    state = state,
-                    snackbarHostState = remember { SnackbarHostState() },
-                    onOpen = {}, onToggleSelection = {}, onSelectAll = {}, onClearSelection = {}, onAction = {},
-                    onSwipe = { _, _ -> }, onFilter = {}, onSearch = {}, onNewMessage = {}, onLibrary = {}, onSettings = {},
-                )
+                TestInbox(state)
             }
         }
         val dadRow = hasContentDescription("Dad", substring = true)
         val before = compose.onNode(dadRow).getUnclippedBoundsInRoot().top
         state = state.copy(selected = setOf(1L))
-        compose.onNodeWithText(compose.activity.resources.getQuantityString(R.plurals.inbox_selected, 1, 1)).assertExists()
+        compose.onNodeWithText(compose.activity.quantity(R.plurals.inbox_selected, 1)).assertExists()
         check(compose.onNode(dadRow).getUnclippedBoundsInRoot().top == before)
     }
 
@@ -97,18 +76,11 @@ class InboxChecks {
     fun navigationTargetsAreAtLeast48dp() {
         compose.setContent {
             AfshTheme(dark = false) {
-                InboxScreen(
-                    state = InboxUiState(rows = listOf(row(1, "Mina"))),
-                    snackbarHostState = remember { SnackbarHostState() },
-                    onOpen = {}, onToggleSelection = {}, onSelectAll = {}, onClearSelection = {}, onAction = {},
-                    onSwipe = { _, _ -> }, onFilter = {}, onSearch = {}, onNewMessage = {}, onLibrary = {}, onSettings = {},
-                )
+                TestInbox(InboxUiState(rows = listOf(row(1, "Mina"))))
             }
         }
-        listOf(
-            R.string.inbox_nav_inbox, R.string.inbox_nav_library, org.fossify.commons.R.string.settings,
-            InboxFilter.ALL.label, InboxFilter.UNREAD.label,
-        ).forEach {
+        TopDestination.entries.forEach { compose.onNode(isNavigationItem(text(it.label))).assertHeightIsAtLeast(48.dp) }
+        listOf(InboxFilter.ALL.label, InboxFilter.UNREAD.label).forEach {
             compose.onNodeWithText(text(it)).assertHeightIsAtLeast(48.dp)
         }
     }
@@ -158,37 +130,24 @@ class InboxChecks {
     }
 
     @Test
-    fun messageMetadataSeparatesSmsAndMms() {
-        val preferenceName = "metadata-regression"
-        val context = object : ContextWrapper(targetContext) {
-            override fun getSharedPreferences(name: String?, mode: Int) =
-                targetContext.getSharedPreferences(preferenceName, mode)
-        }
-        val prefs = context.getSharedPreferences(preferenceName, Context.MODE_PRIVATE)
-        prefs.edit().clear().commit()
-        try {
-            val config = Config(context)
-            val sms = com.afsh.messages.models.Message(
-                123, "test", android.provider.Telephony.Sms.MESSAGE_TYPE_INBOX, -1, ArrayList(), 0, false, 0L, false, null, "test", "test", "", -1
-            )
-            val mms = sms.copy(isMMS = true)
-            config.setMessageStarred(sms.id, sms.isMMS, true)
-            check(config.isMessageStarred(sms.id, sms.isMMS))
-            check(!config.isMessageStarred(mms.id, mms.isMMS)) { "Starring SMS also stars unrelated MMS with the same provider ID" }
-            config.setMessageReaction(sms.id, sms.isMMS, "👍")
-            check(config.getMessageReaction(sms.id, sms.isMMS) == "👍")
-            check(config.getMessageReaction(mms.id, mms.isMMS) == null) { "SMS reaction leaks to MMS" }
-            config.setMessageStarred(mms.id, mms.isMMS, true)
-            config.setMessageStarred(sms.id, sms.isMMS, false)
-            check(config.isMessageStarred(mms.id, mms.isMMS))
-            check(!config.isMessageStarred(sms.id, sms.isMMS))
-            config.setMessageReaction(mms.id, mms.isMMS, "❤️")
-            config.setMessageReaction(sms.id, sms.isMMS, null)
-            check(config.getMessageReaction(mms.id, mms.isMMS) == "❤️")
-            check(config.getMessageReaction(sms.id, sms.isMMS) == null)
-        } finally {
-            prefs.edit().clear().commit()
-        }
+    fun messageMetadataSeparatesSmsAndMms() = IsolatedPreferences("metadata-regression").use { prefs ->
+        val config = prefs.config
+        val sms = fixtureMessage(123, "test", threadId = 0, date = 0, read = false, address = "test", senderName = "test")
+        val mms = sms.copy(isMMS = true)
+        config.setMessageStarred(sms.id, sms.isMMS, true)
+        check(config.isMessageStarred(sms.id, sms.isMMS))
+        check(!config.isMessageStarred(mms.id, mms.isMMS)) { "Starring SMS also stars unrelated MMS with the same provider ID" }
+        config.setMessageReaction(sms.id, sms.isMMS, "👍")
+        check(config.getMessageReaction(sms.id, sms.isMMS) == "👍")
+        check(config.getMessageReaction(mms.id, mms.isMMS) == null) { "SMS reaction leaks to MMS" }
+        config.setMessageStarred(mms.id, mms.isMMS, true)
+        config.setMessageStarred(sms.id, sms.isMMS, false)
+        check(config.isMessageStarred(mms.id, mms.isMMS))
+        check(!config.isMessageStarred(sms.id, sms.isMMS))
+        config.setMessageReaction(mms.id, mms.isMMS, "❤️")
+        config.setMessageReaction(sms.id, sms.isMMS, null)
+        check(config.getMessageReaction(mms.id, mms.isMMS) == "❤️")
+        check(config.getMessageReaction(sms.id, sms.isMMS) == null)
     }
 
     private fun conversation(
@@ -198,11 +157,11 @@ class InboxChecks {
         threadId: Long = 1,
         date: Int = 1,
         isGroup: Boolean = false,
-    ) = Conversation(threadId, snippet, date, true, title, "", isGroup, phoneNumber)
+    ) = fixtureConversation(threadId, title, snippet = snippet, date = date, phone = phoneNumber, isGroup = isGroup)
 
     @Test
     fun conversationStateDiff() {
-        val original = Conversation(1, "Preview", 1, true, "Sender", "", false, "123")
+        val original = conversation("Sender", "123", snippet = "Preview")
         check(!Conversation.areContentsTheSame(original, original.copy(isArchived = true)))
         check(!Conversation.areContentsTheSame(original, original.copy(isScheduled = true)))
     }
@@ -221,25 +180,20 @@ class InboxChecks {
     }
 
     @Test
-    fun pinnedConversationsKeepPinOrder() {
-        val config = targetContext.config
-        val original = config.pinnedConversations
-        try {
-            config.pinnedConversations = linkedSetOf("3", "1")
-            config.addPinnedConversationByThreadId(2)
-            check(config.pinnedConversations.toList() == listOf("3", "1", "2"))
+    fun pinnedConversationsKeepPinOrder() = IsolatedPreferences("inbox-pins").use { prefs ->
+        val config = prefs.config
+        config.pinnedConversations = linkedSetOf("3", "1")
+        config.addPinnedConversationByThreadId(2)
+        check(config.pinnedConversations.toList() == listOf("3", "1", "2"))
 
-            val sorted = listOf(
-                conversation("a", "1", threadId = 1, date = 50),
-                conversation("b", "2", threadId = 2, date = 10),
-                conversation("c", "3", threadId = 3, date = 99),
-                conversation("d", "4", threadId = 4, date = 100),
-            ).sortedForInbox(config.pinnedConversations)
-            // newest pin first, then the rest by date; recency never reorders the pinned block
-            check(sorted.map { it.threadId } == listOf(2L, 1L, 3L, 4L))
-        } finally {
-            config.pinnedConversations = original
-        }
+        val sorted = listOf(
+            conversation("a", "1", threadId = 1, date = 50),
+            conversation("b", "2", threadId = 2, date = 10),
+            conversation("c", "3", threadId = 3, date = 99),
+            conversation("d", "4", threadId = 4, date = 100),
+        ).sortedForInbox(config.pinnedConversations)
+        // newest pin first, then the rest by date; recency never reorders the pinned block
+        check(sorted.map { it.threadId } == listOf(2L, 1L, 3L, 4L))
     }
 
     /** At 1.3× text the name wraps, the preview stays one line, and nothing leaves the row (R2-15, D15). */
@@ -249,15 +203,9 @@ class InboxChecks {
         val row = row(1, "FILIMO subscription and account notices", read = false, pinned = true, muted = true, phone = "FILIMO")
             .let { it.copy(conversation = it.conversation.copy(snippet = "برای ورود کد تایید را وارد کنید. Your verification code is 123456.", unreadCount = 120)) }
         compose.setContent {
-            val density = LocalDensity.current
-            CompositionLocalProvider(
-                LocalDensity provides Density(density.density, fontScale = 1.3f),
-                LocalLayoutDirection provides if (rtl) LayoutDirection.Rtl else LayoutDirection.Ltr,
-            ) {
-                AfshTheme(dark = false) {
-                    Box(Modifier.width(360.dp)) {
-                        ConversationRow(row, selected = false, selecting = false, onClick = {}, onLongClick = {})
-                    }
+            TestTheme(rtl = rtl, fontScale = 1.3f) {
+                Box(Modifier.width(360.dp)) {
+                    ConversationRow(row, selected = false, selecting = false, onClick = {}, onLongClick = {})
                 }
             }
         }
@@ -266,15 +214,44 @@ class InboxChecks {
             compose.waitForIdle()
             val rowBounds = compose.onNode(hasContentDescription("FILIMO", substring = true)).getUnclippedBoundsInRoot()
             val preview = compose.onNodeWithText("Your verification code", substring = true, useUnmergedTree = true)
-            val previewLayout = mutableListOf<TextLayoutResult>()
-            preview.performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(previewLayout) }
-            check(previewLayout.single().lineCount == 1) { "Preview wraps (rtl=$direction)" }
+            check(preview.textLayout().lineCount == 1) { "Preview wraps (rtl=$direction)" }
             val previewBounds = preview.getUnclippedBoundsInRoot()
-            check(previewBounds.bottom <= rowBounds.bottom && previewBounds.left >= rowBounds.left && previewBounds.right <= rowBounds.right) {
-                "Preview leaves the row (rtl=$direction): $previewBounds in $rowBounds"
+            check(previewBounds inside rowBounds) { "Preview leaves the row (rtl=$direction): $previewBounds in $rowBounds" }
+            compose.onNodeWithText(compose.activity.localizedNumber(120), useUnmergedTree = true).assertExists()
+        }
+    }
+
+    /**
+     * Swipe settings are physical: a leftward swipe reports left under RTL too, and a short fast
+     * flick never commits Delete or Archive.
+     */
+    @Test
+    fun swipeRowDirectionsAndFlicks() {
+        var rtl by mutableStateOf(false)
+        val swipes = mutableListOf<Boolean>()
+        val gesture = SwipeGesture(R.string.archive, AfshIcon.Archive, SwipeTone.PRIMARY)
+        compose.setContent {
+            TestTheme(rtl = rtl) {
+                Box(Modifier.width(360.dp)) {
+                    SwipeableRow(left = gesture, right = gesture, enabled = true, onSwipe = { swipes += it }) {
+                        ConversationRow(row(1, "Mina"), selected = false, selecting = false, onClick = {}, onLongClick = {})
+                    }
+                }
             }
-            compose.onNodeWithText(String.format(compose.activity.resources.configuration.locales[0], "%d", 120), useUnmergedTree = true)
-                .assertExists()
+        }
+        val mina = compose.onNode(hasContentDescription("Mina", substring = true))
+        for (direction in listOf(false, true)) {
+            rtl = direction
+            swipes.clear()
+            compose.waitForIdle()
+            mina.performTouchInput { swipeLeft(startX = centerX, endX = centerX - width * 0.25f, durationMillis = 40) }
+            compose.waitForIdle()
+            check(swipes.isEmpty()) { "A short flick committed (rtl=$direction): $swipes" }
+            mina.performTouchInput { swipeLeft() }
+            compose.waitForIdle()
+            mina.performTouchInput { swipeRight() }
+            compose.waitForIdle()
+            check(swipes == listOf(false, true)) { "Swipes were not physical (rtl=$direction): $swipes" }
         }
     }
 
@@ -309,75 +286,76 @@ class InboxChecks {
         check("code 1234۵۶۷۸۹".extractOtpCode() == null)
 
         // Unsaved long-number senders still use OTP detection for Business classification.
-        val sender = Conversation(1, "کد تایید شما ۰۰۷۸۹۰ است", 1, true, "+15551234567", "", false, "+15551234567")
+        val sender = conversation("+15551234567", "+15551234567", snippet = "کد تایید شما ۰۰۷۸۹۰ است")
         check(sender.category() == InboxFilter.BUSINESS)
         check(sender.copy(snippet = "رمز صادر نشد حساب 123456*7890").category() == InboxFilter.UNKNOWN)
     }
 
     /** Swipe settings are physical directions; archive goes dead where the provider cannot archive. */
     @Test
-    fun swipeActions() {
-        val config = targetContext.config
-        val originalLeft = config.swipeLeftAction
-        val originalRight = config.swipeRightAction
-        val originalArchiveAvailable = config.isArchiveAvailable
-        try {
-            config.isArchiveAvailable = true
-            config.swipeLeftAction = SwipeAction.ARCHIVE
-            config.swipeRightAction = SwipeAction.DELETE
-            check(config.swipeAction(towardsRight = false) == SwipeAction.ARCHIVE)
-            check(config.swipeAction(towardsRight = true) == SwipeAction.DELETE)
+    fun swipeActions() = IsolatedPreferences("inbox-swipes").use { prefs ->
+        val config = prefs.config
+        config.isArchiveAvailable = true
+        config.swipeLeftAction = SwipeAction.ARCHIVE
+        config.swipeRightAction = SwipeAction.DELETE
+        check(config.swipeAction(towardsRight = false) == SwipeAction.ARCHIVE)
+        check(config.swipeAction(towardsRight = true) == SwipeAction.DELETE)
 
-            config.isArchiveAvailable = false
-            check(config.swipeAction(towardsRight = false) == SwipeAction.NONE)
-            check(config.swipeAction(towardsRight = true) == SwipeAction.DELETE)
-        } finally {
-            config.swipeLeftAction = originalLeft
-            config.swipeRightAction = originalRight
-            config.isArchiveAvailable = originalArchiveAvailable
+        config.isArchiveAvailable = false
+        check(config.swipeAction(towardsRight = false) == SwipeAction.NONE)
+        check(config.swipeAction(towardsRight = true) == SwipeAction.DELETE)
+    }
+
+    @Test
+    fun migration11to12() = migratedDatabase(
+        name = "inbox-migration-check.db",
+        version = 11,
+        migrations = listOf("MIGRATION_11_12", "MIGRATION_12_13", "MIGRATION_13_14", "MIGRATION_14_15"),
+        seed = { db ->
+            db.execSQL("INSERT INTO drafts (thread_id, body, date) VALUES (1, 'keep draft', 123)")
+            db.execSQL("INSERT INTO blocked_messages (address, body, date, reason) VALUES ('test', 'keep spam', 123, 1)")
+        },
+    ) { room ->
+        val db = room.openHelper.writableDatabase
+        check(room.DraftsDao().getDraftById(1)?.body == "keep draft")
+        db.query("SELECT body FROM blocked_messages").use { check(it.moveToFirst() && it.getString(0) == "keep spam") }
+        db.query("PRAGMA index_info(index_messages_thread_id_date)").use { cursor ->
+            val columns = mutableListOf<String>()
+            while (cursor.moveToNext()) columns.add(cursor.getString(2))
+            check(columns == listOf("thread_id", "date"))
+        }
+        db.query("PRAGMA table_info(conversations)").use { cursor ->
+            val columns = mutableSetOf<String>()
+            while (cursor.moveToNext()) columns.add(cursor.getString(1))
+            check("preview_snippet" in columns && "preview_date" in columns && "all_spam" in columns)
         }
     }
 
     @Test
-    fun migration11to12() {
-        val name = "inbox-migration-check.db"
-        targetContext.deleteDatabase(name)
-        try {
-            val schema = instrumentation.context.assets.open("com.afsh.messages.databases.MessagesDatabase/11.json")
-                .bufferedReader().use { JSONObject(it.readText()).getJSONObject("database") }
-            targetContext.openOrCreateDatabase(name, Context.MODE_PRIVATE, null).use { db ->
-                val entities = schema.getJSONArray("entities")
-                for (i in 0 until entities.length()) {
-                    val entity = entities.getJSONObject(i)
-                    db.execSQL(entity.getString("createSql").replace("\${TABLE_NAME}", entity.getString("tableName")))
-                    val indices = entity.optJSONArray("indices") ?: continue
-                    for (j in 0 until indices.length()) {
-                        db.execSQL(indices.getJSONObject(j).getString("createSql").replace("\${TABLE_NAME}", entity.getString("tableName")))
-                    }
-                }
-                db.execSQL("INSERT INTO drafts (thread_id, body, date) VALUES (1, 'keep draft', 123)")
-                db.execSQL("INSERT INTO blocked_messages (address, body, date, reason) VALUES ('test', 'keep spam', 123, 1)")
-                db.version = 11
-            }
-            val migrations = listOf("MIGRATION_11_12", "MIGRATION_12_13", "MIGRATION_13_14").map {
-                MessagesDatabase::class.java.getDeclaredField(it).apply { isAccessible = true }.get(null) as Migration
-            }
-            val room = Room.databaseBuilder(targetContext, MessagesDatabase::class.java, name)
-                .addMigrations(*migrations.toTypedArray()).build()
-            try {
-                val db = room.openHelper.writableDatabase // Opens and validates against the actual Room entity schema.
-                check(room.DraftsDao().getDraftById(1)?.body == "keep draft")
-                db.query("SELECT body FROM blocked_messages").use { check(it.moveToFirst() && it.getString(0) == "keep spam") }
-                db.query("PRAGMA index_info(index_messages_thread_id_date)").use { cursor ->
-                    val columns = mutableListOf<String>()
-                    while (cursor.moveToNext()) columns.add(cursor.getString(2))
-                    check(columns == listOf("thread_id", "date"))
-                }
-            } finally {
-                room.close()
-            }
-        } finally {
-            targetContext.deleteDatabase(name)
-        }
+    fun migration14to15() = migratedDatabase(
+        name = "inbox-preview-migration-check.db",
+        version = 14,
+        migrations = listOf("MIGRATION_14_15"),
+        seed = { db ->
+            db.execSQL(
+                "INSERT INTO conversations (thread_id, snippet, date, read, title, photo_uri, is_group_conversation, phone_number, is_scheduled, uses_custom_title, archived, unread_count, message_count) " +
+                    "VALUES (3, 'provider', 1, 1, 'Preview', '', 0, '5550200', 0, 0, 0, 0, 2)"
+            )
+            db.execSQL(
+                "INSERT INTO messages (id, body, type, participants, date, read, thread_id, is_mms, sender_phone_number, sender_name, sender_photo_uri, subscription_id, status, is_scheduled) " +
+                    "VALUES (10, 'visible-body', 1, '[]', 5, 1, 3, 0, '', '', '', -1, -1, 0)"
+            )
+            db.execSQL(
+                "INSERT INTO messages (id, body, type, participants, date, read, thread_id, is_mms, sender_phone_number, sender_name, sender_photo_uri, subscription_id, status, is_scheduled) " +
+                    "VALUES (11, 'spam-body', 1, '[]', 9, 1, 3, 0, '', '', '', -1, -1, 0)"
+            )
+            db.execSQL("INSERT INTO spam_messages (id, thread_id, reason, marked_ts) VALUES (11, 3, 1, 1)")
+        },
+    ) { room ->
+        val row = room.ConversationsDao().getNonArchived().single()
+        check(row.threadId == 3L)
+        check(row.snippet == "visible-body") { "Migration must backfill the visible preview as the inbox snippet" }
+        check(row.date == 5) { "Spam threads must take their date from the latest visible message" }
+        check(!row.allSpam)
     }
 }

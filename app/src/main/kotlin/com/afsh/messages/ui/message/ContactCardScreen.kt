@@ -16,7 +16,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.afsh.messages.R
+import com.afsh.messages.ui.Afsh
 import com.afsh.messages.ui.ltr
+import com.afsh.messages.ui.components.AfshIcon
 import com.afsh.messages.ui.components.EmptyState
 import com.afsh.messages.ui.components.IdentityCard
 import com.afsh.messages.ui.components.LabeledField
@@ -58,7 +60,7 @@ fun ContactCardScreen(
         when {
             cards == null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
             cards.isEmpty() -> EmptyState(
-                icon = R.drawable.ic_lucide_user,
+                icon = AfshIcon.Person,
                 title = stringResource(R.string.contact_card_unreadable),
                 modifier = Modifier.fillMaxSize(),
             )
@@ -66,12 +68,12 @@ fun ContactCardScreen(
             else -> Column(
                 Modifier
                     .verticalScroll(rememberScrollState())
-                    .padding(start = 20.dp, top = 20.dp, end = 20.dp, bottom = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                    .padding(start = Afsh.spacing.xl, top = Afsh.spacing.xl, end = Afsh.spacing.xl, bottom = Afsh.spacing.xxl),
+                verticalArrangement = Arrangement.spacedBy(Afsh.spacing.md),
             ) {
                 cards.forEach { card ->
                     IdentityCard(
-                        name = card.name.ifEmpty { stringResource(org.fossify.commons.R.string.unknown) },
+                        name = card.name.ifEmpty { stringResource(com.afsh.commons.R.string.unknown) },
                         detail = state.source,
                         avatarSize = ContactAvatarSize,
                     )

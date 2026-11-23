@@ -11,11 +11,11 @@ import androidx.core.content.IntentCompat
 import ezvcard.property.Email
 import ezvcard.property.Organization
 import ezvcard.property.Telephone
-import org.fossify.commons.extensions.launchActivityIntent
-import org.fossify.commons.extensions.normalizePhoneNumber
+import com.afsh.commons.extensions.launchActivityIntent
+import com.afsh.commons.extensions.normalizePhoneNumber
 import com.afsh.messages.R
 import com.afsh.messages.extensions.dialNumber
-import org.fossify.commons.extensions.sendEmailIntent
+import com.afsh.commons.extensions.sendEmailIntent
 import com.afsh.messages.helpers.EXTRA_VCARD_URI
 import com.afsh.messages.helpers.parseVCardFromUri
 import com.afsh.messages.models.VCardWrapper
@@ -51,7 +51,7 @@ class VCardViewerActivity : ComposePageActivity() {
         fields = wrapper.properties.filter { it.value.isNotEmpty() }.map { property ->
             when (property.property) {
                 is Telephone -> CardField(property.type.ifEmpty { getString(R.string.phone_number) }, property.value, FieldAction.DIAL)
-                is Email -> CardField(property.type.ifEmpty { getString(org.fossify.commons.R.string.email) }, property.value, FieldAction.EMAIL)
+                is Email -> CardField(property.type.ifEmpty { getString(com.afsh.commons.R.string.email) }, property.value, FieldAction.EMAIL)
                 is Organization -> CardField(getString(R.string.company), property.value)
                 else -> CardField(property.type, property.value)
             }

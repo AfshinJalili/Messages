@@ -1,11 +1,12 @@
 package com.afsh.messages
 
+import android.provider.Telephony
+import com.afsh.messages.models.Message
+import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
@@ -19,19 +20,16 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.swipeDown
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import org.fossify.commons.models.SimpleContact
-import org.fossify.commons.extensions.formatTime
+import com.afsh.commons.models.SimpleContact
+import com.afsh.commons.extensions.formatTime
 import com.afsh.messages.helpers.ThreadDates
 import com.afsh.messages.models.Attachment
-import com.afsh.messages.models.Message
 import com.afsh.messages.models.MessageAttachment
 import com.afsh.messages.models.ThreadItem.ThreadDateTime
 import com.afsh.messages.models.buildThreadItems
-import com.afsh.messages.ui.AfshTheme
 import com.afsh.messages.ui.thread.THREAD_LIST_TAG
 import com.afsh.messages.ui.thread.THREAD_STICKY_DATE_TAG
 import com.afsh.messages.ui.thread.ThreadTimeline
@@ -53,10 +51,11 @@ class ThreadDateChecks {
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
     private val firstDay = DateTime.now().withMonthOfYear(9).withDayOfMonth(11).withTimeAtStartOfDay()
 
-    private fun message(id: Int, date: DateTime, sim: Int = 1) = Message(
+    private fun message(id: Int, date: DateTime, sim: Int = 1) = fixtureMessage(
         id.toLong(), "Message $id. A longer message to check wrapping and the separate time footer.",
-        2, 0, arrayListOf(), (date.millis / 1000).toInt(), true, Long.MAX_VALUE - 12,
-        false, null, "", "Date fixture", "", sim)
+        threadId = Long.MAX_VALUE - 12, date = (date.millis / 1000).toInt(), type = Telephony.Sms.MESSAGE_TYPE_SENT, status = 0,
+        address = "", senderName = "Date fixture", subscriptionId = sim,
+    )
 
     private fun fixture(): List<Message> {
         val messages = arrayListOf(message(1, firstDay.plusMinutes(1)), message(2, firstDay.plusHours(15), 2),
@@ -76,11 +75,9 @@ class ThreadDateChecks {
     )
 
     private fun show(state: ThreadUiState, rtl: Boolean = false, textScale: Float = 1f) = compose.setContent {
-        CompositionLocalProvider(LocalLayoutDirection provides if (rtl) LayoutDirection.Rtl else LayoutDirection.Ltr) {
-            AfshTheme(dark = false, textScale = textScale) {
-                Box(Modifier.size(360.dp, 640.dp)) {
-                    ThreadTimeline(state, SnackbarHostState(), {})
-                }
+        TestTheme(rtl = rtl, textScale = textScale) {
+            Box(Modifier.size(360.dp, 640.dp)) {
+                ThreadTimeline(state, SnackbarHostState(), {})
             }
         }
     }
@@ -99,7 +96,8 @@ class ThreadDateChecks {
         compose.onAllNodes(hasContentDescription(context.getString(R.string.message_delivered), substring = true)).onFirst().assertExists()
         compose.onNodeWithText("Document.pdf").assertExists()
         openGroupedSimMessageDetails()
-        compose.onNode(hasText(sheetInfo())).assertExists()
+        compose.onNode(isSheet(sheetInfo())).assertExists()
+        compose.onNode(hasText(sheetInfo()) and hasAnyAncestor(isSheet(sheetInfo()))).assertExists()
     }
 
     @Test fun stickyDateFollowsTopDayThenFades() {
@@ -119,7 +117,7 @@ class ThreadDateChecks {
         show(state(), rtl = true, textScale = 1.5f)
         compose.onNodeWithTag(THREAD_LIST_TAG).performScrollToIndex(state().items.size - 12)
         openGroupedSimMessageDetails()
-        val meta = compose.onNode(hasText(sheetInfo())).getUnclippedBoundsInRoot()
+        val meta = compose.onNode(hasText(sheetInfo()) and hasAnyAncestor(isSheet(sheetInfo()))).getUnclippedBoundsInRoot()
         // The sheet is its own full-width window, so it is bounded by the screen, not the 360 dp host.
         val screen = context.resources.configuration.screenWidthDp.dp
         assertTrue("Sheet info ${meta.left}..${meta.right} fits 0..$screen", meta.left >= 0.dp && meta.right <= screen)

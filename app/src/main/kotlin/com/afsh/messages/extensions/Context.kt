@@ -25,37 +25,40 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.request.RequestOptions
 import com.google.android.mms.pdu_alt.PduHeaders
-import org.fossify.commons.extensions.areDigitsOnly
-import org.fossify.commons.extensions.getBlockedNumbers
-import org.fossify.commons.extensions.getIntValue
-import org.fossify.commons.extensions.getIntValueOr
-import org.fossify.commons.extensions.getLongValue
-import org.fossify.commons.extensions.getMyContactsCursor
-import org.fossify.commons.extensions.getStringValue
-import org.fossify.commons.extensions.hasPermission
-import org.fossify.commons.extensions.isNumberBlocked
-import org.fossify.commons.extensions.normalizeString
-import org.fossify.commons.extensions.notificationManager
-import org.fossify.commons.extensions.queryCursor
-import org.fossify.commons.extensions.showErrorToast
-import org.fossify.commons.extensions.trimToComparableNumber
-import org.fossify.commons.helpers.DAY_SECONDS
-import org.fossify.commons.helpers.MONTH_SECONDS
-import org.fossify.commons.helpers.MyContactsContentProvider
-import org.fossify.commons.helpers.PERMISSION_READ_CONTACTS
-import org.fossify.commons.helpers.SimpleContactsHelper
-import org.fossify.commons.helpers.ensureBackgroundThread
-import org.fossify.commons.helpers.isQPlus
-import org.fossify.commons.models.PhoneNumber
-import org.fossify.commons.models.SimpleContact
+import com.afsh.commons.extensions.areDigitsOnly
+import com.afsh.commons.extensions.getBlockedNumbers
+import com.afsh.commons.extensions.getIntValue
+import com.afsh.commons.extensions.getIntValueOr
+import com.afsh.commons.extensions.getLongValue
+import com.afsh.commons.extensions.getMyContactsCursor
+import com.afsh.commons.extensions.getStringValue
+import com.afsh.commons.extensions.hasPermission
+import com.afsh.commons.extensions.isNumberBlocked
+import com.afsh.commons.extensions.normalizeString
+import com.afsh.commons.extensions.notificationManager
+import com.afsh.commons.extensions.queryCursor
+import com.afsh.commons.extensions.showErrorToast
+import com.afsh.commons.extensions.trimToComparableNumber
+import com.afsh.commons.helpers.DAY_SECONDS
+import com.afsh.commons.helpers.MONTH_SECONDS
+import com.afsh.commons.helpers.MyContactsContentProvider
+import com.afsh.commons.helpers.PERMISSION_READ_CONTACTS
+import com.afsh.commons.helpers.SimpleContactsHelper
+import com.afsh.commons.helpers.ensureBackgroundThread
+import com.afsh.commons.helpers.isQPlus
+import com.afsh.commons.models.PhoneNumber
+import com.afsh.commons.models.SimpleContact
 import com.afsh.messages.R
 import com.afsh.messages.databases.MessagesDatabase
 import com.afsh.messages.helpers.AttachmentUtils.parseAttachmentNames
 import com.afsh.messages.helpers.Config
+import com.afsh.messages.helpers.ConversationPreview
 import com.afsh.messages.helpers.FILE_SIZE_NONE
 import com.afsh.messages.helpers.MAX_MESSAGE_LENGTH
 import com.afsh.messages.helpers.MESSAGES_LIMIT
 import com.afsh.messages.helpers.MessagingCache
+import com.afsh.messages.helpers.MessagingEvent
+import com.afsh.messages.helpers.MessagingEvents
 import com.afsh.messages.helpers.NotificationHelper
 import com.afsh.messages.helpers.ShortcutHelper
 import com.afsh.messages.helpers.generateRandomId
@@ -72,12 +75,10 @@ import com.afsh.messages.models.Attachment
 import com.afsh.messages.models.BlockedMessagesThread
 import com.afsh.messages.models.SpamReviewMessage
 import com.afsh.messages.models.Conversation
-import com.afsh.messages.models.Events
-import org.greenrobot.eventbus.EventBus
 import com.afsh.messages.models.Draft
 import com.afsh.messages.models.Message
 import com.afsh.messages.models.SearchResult
-import org.fossify.commons.extensions.formatDateOrTime
+import com.afsh.messages.ui.components.conversationListTimestamp
 import com.afsh.messages.models.MessageAttachment
 import com.afsh.messages.models.NamePhoto
 import com.afsh.messages.models.RecycleBinMessage
@@ -445,13 +446,16 @@ fun Context.getSpamThreads(): List<BlockedMessagesThread> =
 
 // Spam deleted by another app leaves its marker behind, and extra markers can hide a thread that has real messages.
 fun Context.removeOrphanSpamMarkers() {
-    val markerIds = messagesDB.getSpamIds()
-    if (markerIds.isEmpty()) return
+    val markers = messagesDB.getSpamMarkers()
+    if (markers.isEmpty()) return
+    val markerIds = markers.map { it.id }
     // A failed query must not look like "every SMS is gone", so no cursor means no cleanup.
     val existing = contentResolver.query(Sms.CONTENT_URI, arrayOf(Sms._ID), "${Sms._ID} IN (${markerIds.joinToString()})", null, null)
         ?.use { cursor -> HashSet<Long>().apply { while (cursor.moveToNext()) add(cursor.getLong(0)) } }
         ?: return
-    markerIds.filterNot { it in existing }.forEach { messagesDB.deleteSpamMarker(it) }
+    val removed = markers.filter { it.id !in existing }
+    removed.forEach { messagesDB.deleteSpamMarker(it.id) }
+    if (removed.isNotEmpty()) ConversationPreview.refresh(this, removed.map { it.threadId })
 }
 
 fun Context.getUnreadCountsByThread(): Map<Long, Int> {
@@ -476,6 +480,30 @@ fun Context.getUnreadCountsByThread(): Map<Long, Int> {
     ) { bump(it.getLongValue(Mms.THREAD_ID)) }
 
     return result
+}
+
+/**
+ * Cheap Telephony fingerprint for launch: thread count and latest date only.
+ * Skips contact lookups, blocked-number filters, unread scans and draft merges that
+ * [getConversations] pays for on a full reconcile.
+ */
+fun Context.telephonyThreadDigest(): Pair<Int, Int> {
+    val uri = "${Threads.CONTENT_URI}?simple=true".toUri()
+    val projection = arrayOf(Threads.DATE)
+    val selection = "${Threads.MESSAGE_COUNT} > 0"
+    var count = 0
+    var latest = 0
+    try {
+        queryCursorUnsafe(uri, projection, selection, emptyArray(), null) { cursor ->
+            count++
+            var date = cursor.getLongValue(Threads.DATE)
+            if (date.toString().length > 10) date /= 1000
+            if (date > latest) latest = date.toInt()
+        }
+    } catch (_: Exception) {
+        return -1 to -1
+    }
+    return count to latest
 }
 
 fun Context.getConversations(
@@ -600,7 +628,7 @@ fun Context.getConversations(
  * Per-call caches for [getConversations]. Each thread used to cost one canonical-address query per
  * recipient plus two contact lookups, so a first import of a few hundred threads took half a minute.
  * Addresses now come from one query, and names and photos come from [MessagingCache.namePhoto], which
- * outlives the call, so the reconcile that runs on every return to the inbox does not look them up again.
+ * outlives the call, so a later dirty-check reconcile does not look them up again.
  */
 private class ThreadLookups(
     private val context: Context,
@@ -781,6 +809,20 @@ fun Context.getThreadSnippet(threadId: Long): String {
     } catch (_: Exception) {
     }
     return snippet
+}
+
+fun Context.getSmsThreadId(messageId: Long): Long? {
+    if (messageId == 0L) return null
+    messagesDB.getThreadIdForMessage(messageId)?.takeIf { it != 0L }?.let { return it }
+    return contentResolver.query(
+        Sms.CONTENT_URI,
+        arrayOf(Sms.THREAD_ID),
+        "${Sms._ID} = ?",
+        arrayOf(messageId.toString()),
+        null,
+    )?.use { cursor ->
+        if (cursor.moveToFirst()) cursor.getLongValue(Sms.THREAD_ID).takeIf { it != 0L } else null
+    }
 }
 
 fun Context.getMessageRecipientAddress(messageId: Long): String {
@@ -1084,11 +1126,14 @@ fun Context.emptyMessagesRecycleBinForConversation(threadId: Long) {
 
 fun Context.restoreAllMessagesFromRecycleBinForConversation(threadId: Long) {
     messagesDB.deleteThreadMessagesFromRecycleBin(threadId)
+    ConversationPreview.refresh(this, threadId)
 }
 
 fun Context.moveMessageToRecycleBin(id: Long) {
     try {
+        val threadId = messagesDB.getThreadIdForMessage(id)
         messagesDB.insertRecycleBinEntry(RecycleBinMessage(id, System.currentTimeMillis()))
+        if (threadId != null) ConversationPreview.refresh(this, threadId)
     } catch (e: Exception) {
         showErrorToast(e)
     }
@@ -1096,7 +1141,9 @@ fun Context.moveMessageToRecycleBin(id: Long) {
 
 fun Context.restoreMessageFromRecycleBin(id: Long) {
     try {
+        val threadId = messagesDB.getThreadIdForMessage(id)
         messagesDB.deleteFromRecycleBin(id)
+        if (threadId != null) ConversationPreview.refresh(this, threadId)
     } catch (e: Exception) {
         showErrorToast(e)
     }
@@ -1174,7 +1221,7 @@ fun Context.markVisibleMessagesRead(threadId: Long, visibleMessages: List<Messag
     }
     val count = getUnreadCountsByThread()[threadId] ?: 0
     conversationsDB.updateUnreadCount(threadId, count)
-    EventBus.getDefault().post(Events.ConversationReadStateChanged(threadId, count == 0, count))
+    MessagingEvents.publish(MessagingEvent.ReadStateChanged(threadId, count == 0, count))
     return completed
 }
 
@@ -1200,7 +1247,7 @@ fun Context.markThreadMessagesRead(threadId: Long) {
     messagesDB.markThreadRead(threadId)
     conversationsDB.markRead(threadId)
     config.clearManuallyUnread(threadId)
-    EventBus.getDefault().post(Events.ConversationReadStateChanged(threadId, true))
+    MessagingEvents.publish(MessagingEvent.ReadStateChanged(threadId, read = true, unreadCount = 0))
 }
 
 // Read state of spam belongs to the Spam screen, so thread-wide read and unread leave it alone.
@@ -1256,7 +1303,7 @@ fun Context.markThreadMessagesUnread(threadId: Long) {
     }
     val count = getUnreadCountsByThread()[threadId] ?: 0
     if (count > 0) conversationsDB.updateUnreadCount(threadId, count) else conversationsDB.markUnread(threadId)
-    EventBus.getDefault().post(Events.ConversationReadStateChanged(threadId, false, count.takeIf { it > 0 }))
+    MessagingEvents.publish(MessagingEvent.ReadStateChanged(threadId, read = false, unreadCount = count.takeIf { it > 0 }))
 }
 
 @SuppressLint("NewApi")
@@ -1274,26 +1321,6 @@ fun Context.getThreadId(addresses: Set<String>): Long {
         Threads.getOrCreateThreadId(this, addresses)
     } catch (_: Exception) {
         0L
-    }
-}
-
-fun Context.showReceivedMessageNotification(
-    messageId: Long,
-    address: String,
-    senderName: String,
-    body: String,
-    threadId: Long,
-    bitmap: Bitmap?,
-) {
-    Handler(Looper.getMainLooper()).post {
-        notificationHelper.showMessageNotification(
-            messageId = messageId,
-            address = address,
-            body = body,
-            threadId = threadId,
-            bitmap = bitmap,
-            sender = senderName
-        )
     }
 }
 
@@ -1469,36 +1496,57 @@ fun Context.subscriptionManagerCompat(): SubscriptionManager {
     return getSystemService(SubscriptionManager::class.java)
 }
 
+/**
+ * Merges a Telephony [incoming] conversation snapshot with the cached Room row while preserving
+ * app-owned metadata, optimistic local send bumps, and protection against stale reconcile reads.
+ *
+ * A stale provider snapshot (no newer date and no higher message count) must not undo a local
+ * mark-read, whereas a newly arrived message must immediately surface its unread state and count.
+ */
+internal fun mergeConversationWithCache(
+    incoming: Conversation,
+    cached: Conversation?,
+): Conversation {
+    if (cached == null) return incoming
+    var updated = incoming
+    if (cached.usesCustomTitle) {
+        updated = updated.copy(
+            title = cached.title,
+            usesCustomTitle = true,
+        )
+    }
+    if (cached.isScheduled) {
+        updated = updated.copy(
+            date = cached.date,
+            isScheduled = true,
+        )
+    }
+    // Keep a newer local preview (e.g. optimistic send bump) until Telephony catches up.
+    if (cached.date > updated.date) {
+        updated = updated.copy(
+            date = cached.date,
+            snippet = cached.snippet,
+        )
+    }
+    val hasNewerMessage = incoming.date > cached.date || incoming.messageCount > cached.messageCount
+    if (cached.read && cached.unreadCount == 0 && !updated.read && !hasNewerMessage) {
+        updated = updated.copy(read = true, unreadCount = 0)
+    }
+    // REPLACE would clear denormalized preview columns; keep them until refresh below.
+    return updated.copy(
+        previewSnippet = cached.previewSnippet,
+        previewDate = cached.previewDate,
+        allSpam = cached.allSpam,
+    )
+}
+
 fun Context.insertOrUpdateConversation(
     conversation: Conversation,
     cachedConv: Conversation? = conversationsDB.getConversationWithThreadId(conversation.threadId),
 ) {
-    var updatedConv = conversation
-    if (cachedConv != null) {
-        if (cachedConv.usesCustomTitle) {
-            updatedConv = updatedConv.copy(
-                title = cachedConv.title,
-                usesCustomTitle = true,
-            )
-        }
-        if (cachedConv.isScheduled) {
-            updatedConv = updatedConv.copy(
-                date = cachedConv.date,
-                isScheduled = true,
-            )
-        }
-        // Keep a newer local preview (e.g. optimistic send bump) until Telephony catches up.
-        if (cachedConv.date > updatedConv.date) {
-            updatedConv = updatedConv.copy(
-                date = cachedConv.date,
-                snippet = cachedConv.snippet,
-            )
-        }
-        if (cachedConv.read && cachedConv.unreadCount == 0 && !updatedConv.read) {
-            updatedConv = updatedConv.copy(read = true, unreadCount = 0)
-        }
-    }
+    val updatedConv = mergeConversationWithCache(conversation, cachedConv)
     conversationsDB.insertOrUpdate(updatedConv)
+    ConversationPreview.refresh(this, updatedConv.threadId)
 }
 
 fun Context.renameConversation(conversation: Conversation, newTitle: String): Conversation {
@@ -1614,11 +1662,7 @@ fun Context.messageSearchResult(message: Message): SearchResult {
         title = TextUtils.join(", ", message.participants.map { it.name })
     }
 
-    val date = (message.date * 1000L).formatDateOrTime(
-        context = this,
-        hideTimeOnOtherDays = true,
-        showCurrentYear = true
-    )
+    val date = conversationListTimestamp(this, message.date * 1000L)
 
     return SearchResult(
         messageId = message.id,

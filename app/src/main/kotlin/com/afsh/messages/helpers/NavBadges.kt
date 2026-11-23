@@ -10,7 +10,7 @@ import com.afsh.messages.ui.components.navCounts
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import org.fossify.commons.helpers.ensureBackgroundThread
+import com.afsh.commons.helpers.ensureBackgroundThread
 
 /**
  * The navigation badge counts every screen shows. The inbox publishes them as it updates; other

@@ -1,6 +1,5 @@
 package com.afsh.messages.helpers
 
-import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import com.afsh.messages.R
 
@@ -8,12 +7,11 @@ import com.afsh.messages.R
 enum class SwipeAction(
     val id: Int,
     @StringRes val label: Int,
-    @DrawableRes val icon: Int,
 ) {
-    NONE(0, R.string.swipe_action_none, 0),
-    ARCHIVE(1, R.string.archive, R.drawable.ic_archive_vector),
-    DELETE(2, org.fossify.commons.R.string.delete, org.fossify.commons.R.drawable.ic_delete_vector),
-    MUTE(3, R.string.mute_conversation, R.drawable.ic_bell_off_vector);
+    NONE(0, R.string.swipe_action_none),
+    ARCHIVE(1, R.string.archive),
+    DELETE(2, com.afsh.commons.R.string.delete),
+    MUTE(3, R.string.mute_conversation);
 
     companion object {
         fun fromId(id: Int) = entries.firstOrNull { it.id == id } ?: NONE

@@ -1,10 +1,12 @@
 package com.afsh.messages.ui.message
 
 import androidx.compose.ui.text.style.TextDirection
+import com.afsh.messages.ui.ContentFontVisualTransformation
 import com.afsh.messages.ui.forUserText
 import android.os.Bundle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -28,7 +30,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -37,11 +38,17 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import com.afsh.messages.R
 import com.afsh.messages.ui.Afsh
+import com.afsh.messages.ui.components.AfshIcon
+import com.afsh.messages.ui.components.ContentDirection
+import com.afsh.messages.ui.components.ContentText
 import com.afsh.messages.ui.components.DetailRow
+import com.afsh.messages.ui.components.BubbleTone
+import com.afsh.messages.ui.components.MessageBubble
 import com.afsh.messages.ui.components.AfshButton
 import com.afsh.messages.ui.components.PageScaffold
 
-private val PageContentPadding = Modifier.padding(start = 20.dp, top = 20.dp, end = 20.dp, bottom = 24.dp)
+private val PageContentPadding: Modifier
+    @Composable get() = Modifier.padding(start = Afsh.spacing.xl, top = Afsh.spacing.xl, end = Afsh.spacing.xl, bottom = Afsh.spacing.xxl)
 private val StatusIconSize = 16.dp
 
 /** What the tick beside the time says. */
@@ -80,7 +87,6 @@ data class MessageFacts(val body: String, val time: String, val mark: DeliveryMa
 /** 13 · Message / details: the message as it looks in the thread, then its facts. */
 @Composable
 fun MessageDetailsScreen(facts: MessageFacts, onBack: () -> Unit, modifier: Modifier = Modifier) {
-    val colors = MaterialTheme.colorScheme
     PageScaffold(
         title = stringResource(R.string.message_details),
         subtitle = stringResource(R.string.message_details_subtitle),
@@ -91,18 +97,11 @@ fun MessageDetailsScreen(facts: MessageFacts, onBack: () -> Unit, modifier: Modi
             Modifier
                 .verticalScroll(rememberScrollState())
                 .then(PageContentPadding),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(Afsh.spacing.md),
         ) {
-            Column(
-                Modifier
-                    .fillMaxWidth()
-                    .clip(MaterialTheme.shapes.medium)
-                    .background(colors.primaryContainer)
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
+            MessageBubble(BubbleTone.Sent, MaterialTheme.shapes.medium, Modifier.fillMaxWidth(), contentPadding = PaddingValues(Afsh.spacing.lg)) {
                 if (facts.body.isNotEmpty()) {
-                    Text(facts.body, style = MaterialTheme.typography.bodyLarge.forUserText(facts.body), color = colors.onPrimaryContainer)
+                    ContentText(facts.body, style = MaterialTheme.typography.bodyLarge, direction = ContentDirection.Text)
                 }
                 DeliveryLine(facts.time, facts.mark)
             }
@@ -121,13 +120,13 @@ private fun DeliveryLine(time: String, mark: DeliveryMark) {
     }
     Row(
         Modifier.semantics(mergeDescendants = true) { contentDescription = listOfNotNull(time, label).joinToString(", ") },
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.xs),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(time, style = MaterialTheme.typography.bodySmall, color = accent)
         if (mark != DeliveryMark.NONE) {
-            val icon = if (mark == DeliveryMark.DELIVERED) R.drawable.ic_lucide_check_check else R.drawable.ic_lucide_check
-            Icon(painterResource(icon), contentDescription = null, tint = accent, modifier = Modifier.size(StatusIconSize))
+            val icon = if (mark == DeliveryMark.DELIVERED) AfshIcon.CheckAll else AfshIcon.Check
+            Icon(icon.painter(), contentDescription = null, tint = accent, modifier = Modifier.size(StatusIconSize))
         }
     }
 }
@@ -143,7 +142,7 @@ fun SelectTextScreen(sender: String, body: String, onBack: () -> Unit, onCopy: (
     val selection = value.selection
     val selected = if (selection.collapsed) "" else body.substring(selection.min, selection.max)
     PageScaffold(
-        title = stringResource(org.fossify.commons.R.string.select_text),
+        title = stringResource(com.afsh.commons.R.string.select_text),
         subtitle = stringResource(R.string.select_text_subtitle),
         onBack = onBack,
         modifier = modifier,
@@ -152,17 +151,21 @@ fun SelectTextScreen(sender: String, body: String, onBack: () -> Unit, onCopy: (
             Modifier
                 .verticalScroll(rememberScrollState())
                 .then(PageContentPadding),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(Afsh.spacing.md),
         ) {
             Column(
                 Modifier
                     .fillMaxWidth()
                     .clip(MaterialTheme.shapes.medium)
                     .background(colors.surfaceContainer)
-                    .padding(horizontal = 16.dp, vertical = 20.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                    .padding(horizontal = Afsh.spacing.lg, vertical = Afsh.spacing.xl),
+                verticalArrangement = Arrangement.spacedBy(Afsh.spacing.sm),
             ) {
-                Text(sender, style = MaterialTheme.typography.labelMedium.copy(textDirection = TextDirection.Content), color = colors.onSurfaceVariant)
+                ContentText(
+                    sender,
+                    style = MaterialTheme.typography.labelMedium.copy(textDirection = TextDirection.Content),
+                    color = colors.onSurfaceVariant,
+                )
                 CompositionLocalProvider(
                     LocalTextSelectionColors provides TextSelectionColors(colors.primary, colors.secondaryContainer),
                 ) {
@@ -172,6 +175,7 @@ fun SelectTextScreen(sender: String, body: String, onBack: () -> Unit, onCopy: (
                         onValueChange = { value = it.copy(text = body, selection = it.selection.coerceIn(body.length)) },
                         readOnly = true,
                         textStyle = MaterialTheme.typography.bodyLarge.forUserText(body).copy(color = colors.onSurface),
+                        visualTransformation = ContentFontVisualTransformation,
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }

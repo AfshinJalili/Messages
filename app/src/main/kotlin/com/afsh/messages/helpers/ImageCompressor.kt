@@ -6,9 +6,9 @@ import android.graphics.BitmapFactory
 import android.graphics.Matrix
 import android.media.ExifInterface
 import android.net.Uri
-import org.fossify.commons.extensions.getCompressionFormat
-import org.fossify.commons.extensions.getMyFileUri
-import org.fossify.commons.helpers.ensureBackgroundThread
+import com.afsh.commons.extensions.getCompressionFormat
+import com.afsh.commons.extensions.getMyFileUri
+import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.messages.extensions.extension
 import com.afsh.messages.extensions.getExtensionFromMimeType
 import com.afsh.messages.extensions.getFileSizeFromUri

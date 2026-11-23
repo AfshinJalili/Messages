@@ -1,24 +1,24 @@
 package com.afsh.messages.ui.components
 
-import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.afsh.messages.R
+import com.afsh.messages.ui.Afsh
 
 private val IconSize = 24.dp
 private val TargetSize = 48.dp
@@ -32,34 +32,45 @@ private val SendSlabWidth = 64.dp
 @Composable
 fun DisabledComposer(reason: String, modifier: Modifier = Modifier) {
     val colors = MaterialTheme.colorScheme
-    Row(
-        modifier
-            .fillMaxWidth()
-            .background(colors.surfaceContainer)
-            .padding(horizontal = 16.dp, vertical = 12.dp)
-            .semantics(mergeDescendants = true) {},
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Box(Modifier.size(TargetSize), contentAlignment = Alignment.Center) {
-            Icon(painterResource(R.drawable.ic_lucide_plus), contentDescription = null, tint = colors.onSurfaceVariant, modifier = Modifier.size(IconSize))
-        }
-        DisabledComposerText(
-            reason,
+    Surface(modifier.fillMaxWidth(), color = colors.surfaceContainer, contentColor = colors.onSurfaceVariant) {
+        Row(
             Modifier
-                .weight(1f)
-                .clip(MaterialTheme.shapes.medium)
-                .background(colors.surface)
-                .padding(12.dp),
-        )
-        Box(
-            Modifier
-                .size(SendSlabWidth, TargetSize)
-                .clip(MaterialTheme.shapes.medium)
-                .background(colors.surfaceContainerHigh),
-            contentAlignment = Alignment.Center,
+                .padding(horizontal = Afsh.spacing.lg, vertical = Afsh.spacing.md)
+                .semantics(mergeDescendants = true) {},
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.sm),
         ) {
-            Icon(painterResource(R.drawable.ic_lucide_send), contentDescription = null, tint = colors.onSurfaceVariant, modifier = Modifier.size(IconSize))
+            Box(Modifier.size(TargetSize, fieldMinHeight()), contentAlignment = Alignment.Center) {
+                Icon(AfshIcon.Add.painter(), contentDescription = null, modifier = Modifier.size(IconSize))
+            }
+            Surface(
+                Modifier
+                    .weight(1f)
+                    .heightIn(min = fieldMinHeight()),
+                shape = MaterialTheme.shapes.medium,
+                color = colors.surface,
+                border = BorderStroke(1.dp, colors.secondaryContainer),
+            ) {
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = fieldMinHeight())
+                        .padding(horizontal = Afsh.spacing.md),
+                    contentAlignment = Alignment.CenterStart,
+                ) {
+                    DisabledComposerText(reason)
+                }
+            }
+            Surface(
+                Modifier.size(SendSlabWidth, fieldMinHeight()),
+                shape = MaterialTheme.shapes.medium,
+                color = colors.surfaceContainerHigh,
+                contentColor = colors.onSurfaceVariant,
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(AfshIcon.Send.painter(), contentDescription = null, modifier = Modifier.size(IconSize))
+                }
+            }
         }
     }
 }

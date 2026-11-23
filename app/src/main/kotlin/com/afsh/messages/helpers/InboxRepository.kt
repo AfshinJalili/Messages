@@ -4,10 +4,11 @@ import com.afsh.messages.extensions.getMessagesDB
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
-import org.fossify.commons.helpers.ensureBackgroundThread
+import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.messages.extensions.conversationsDB
 import com.afsh.messages.extensions.getConversations
 import com.afsh.messages.extensions.getUnreadCountsByThread
+import com.afsh.messages.extensions.telephonyThreadDigest
 
 /**
  * Room is the inbox source of truth. This schedules provider reconciliation and applies
@@ -19,11 +20,14 @@ object InboxRepository {
     private var appContext: Context? = null
     private var reconciling = false
     private var reconcilePending = false
+    private var pendingForce = false
     private var reconcileListener: ((ReconcileStatus) -> Unit)? = null
 
     private val reconcileRunnable = Runnable {
         val context = appContext ?: return@Runnable
-        runProviderReconcile(context)
+        val force = pendingForce
+        pendingForce = false
+        runProviderReconcile(context, force = force)
     }
 
     fun init(context: Context) {
@@ -35,25 +39,46 @@ object InboxRepository {
     }
 
     /** 73's Retry: reconcile with the provider now rather than after the debounce. */
-    fun retry(context: Context) = scheduleProviderReconcile(context, immediate = true)
+    fun retry(context: Context) = scheduleProviderReconcile(context, immediate = true, force = true)
 
-    /** Lightweight inbox refresh: sync unread badges from Telephony, then debounce a full reconcile. */
+    /** Lightweight inbox refresh: sync unread badges from Telephony, then debounce a reconcile. */
     fun refreshInbox(context: Context? = null, reconcile: Boolean = true) {
         val app = resolveContext(context) ?: return
         refreshUnreadCounts(app)
         if (reconcile) {
-            scheduleProviderReconcile(app)
+            // Dirty-check: Room already holds structural edits; only pull Telephony when it drifted.
+            scheduleProviderReconcile(app, force = false)
         }
     }
 
-    fun scheduleProviderReconcile(context: Context? = null, immediate: Boolean = false) {
+    /**
+     * @param force when false, a cheap thread-count / latest-date check can skip [getConversations].
+     * Launch and resume use force=false so a warm Room DB paints without a full Telephony pass.
+     * Explicit repairs (retry, spam backfill) pass force=true.
+     */
+    fun scheduleProviderReconcile(
+        context: Context? = null,
+        immediate: Boolean = false,
+        force: Boolean = true,
+    ) {
         val app = resolveContext(context) ?: return
+        pendingForce = pendingForce || force
         handler.removeCallbacks(reconcileRunnable)
         if (immediate) {
             handler.post(reconcileRunnable)
         } else {
             handler.postDelayed(reconcileRunnable, RECONCILE_DEBOUNCE_MS)
         }
+    }
+
+    /**
+     * Cold-start path: refresh unread badges, then reconcile only when Room is empty or the
+     * Telephony digest disagrees with Room.
+     */
+    fun scheduleLaunchReconcile(context: Context) {
+        val app = resolveContext(context) ?: return
+        refreshUnreadCounts(app)
+        scheduleProviderReconcile(app, immediate = true, force = false)
     }
 
     fun refreshUnreadCounts(context: Context? = null, threadIds: Collection<Long> = emptyList()) {
@@ -87,38 +112,63 @@ object InboxRepository {
                         unreadCount = 0,
                     )
                 )
+                ConversationPreview.refresh(app, threadId)
             }
         }
     }
 
-    private fun runProviderReconcile(context: Context) {
+    private fun runProviderReconcile(context: Context, force: Boolean) {
         if (reconciling) {
             reconcilePending = true
+            pendingForce = pendingForce || force
             return
         }
         reconciling = true
-        reconcileListener?.invoke(ReconcileStatus.RUNNING)
-        InboxReconciler.reconcile(
-            context = context,
-            onFinished = {
-                refreshUnreadCounts(context)
-                InboxImport.importMessagesIfNeeded(context)
-                reconciling = false
-                reconcileListener?.invoke(ReconcileStatus.DONE)
-                if (reconcilePending) {
-                    reconcilePending = false
-                    scheduleProviderReconcile(context, immediate = true)
+        ensureBackgroundThread {
+            val needsFull = force || needsFullReconcile(context)
+            handler.post {
+                if (!needsFull) {
+                    reconciling = false
+                    reconcileListener?.invoke(ReconcileStatus.DONE)
+                    drainPending(context)
+                    return@post
                 }
-            },
-            onFailed = {
-                reconciling = false
-                reconcileListener?.invoke(ReconcileStatus.FAILED)
-                if (reconcilePending) {
-                    reconcilePending = false
-                    scheduleProviderReconcile(context, immediate = true)
-                }
-            },
-        )
+                reconcileListener?.invoke(ReconcileStatus.RUNNING)
+                InboxReconciler.reconcile(
+                    context = context,
+                    onFinished = {
+                        refreshUnreadCounts(context)
+                        InboxImport.importMessagesIfNeeded(context)
+                        reconciling = false
+                        reconcileListener?.invoke(ReconcileStatus.DONE)
+                        drainPending(context)
+                    },
+                    onFailed = {
+                        reconciling = false
+                        reconcileListener?.invoke(ReconcileStatus.FAILED)
+                        drainPending(context)
+                    },
+                )
+            }
+        }
+    }
+
+    private fun drainPending(context: Context) {
+        if (!reconcilePending) return
+        reconcilePending = false
+        val force = pendingForce
+        pendingForce = false
+        scheduleProviderReconcile(context, immediate = true, force = force)
+    }
+
+    /** True when Room has no rows (first import) or Telephony count/latest-date disagree with Room. */
+    internal fun needsFullReconcile(context: Context): Boolean {
+        val roomCount = context.conversationsDB.getCount()
+        if (roomCount == 0) return true
+        val roomLatest = context.conversationsDB.getLatestDate()
+        val (telephonyCount, telephonyLatest) = context.telephonyThreadDigest()
+        if (telephonyCount < 0) return true
+        return telephonyCount != roomCount || telephonyLatest != roomLatest
     }
 
     private fun resolveContext(context: Context?): Context? {

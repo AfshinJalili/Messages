@@ -3,15 +3,15 @@ package com.afsh.messages.receivers
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import org.fossify.commons.extensions.notificationManager
-import org.fossify.commons.helpers.ensureBackgroundThread
+import com.afsh.commons.extensions.notificationManager
+import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.messages.extensions.deleteMessage
 import com.afsh.messages.extensions.updateLastConversationMessage
 import com.afsh.messages.helpers.IS_MMS
 import com.afsh.messages.helpers.MESSAGE_ID
+import com.afsh.messages.helpers.MessagingEvent
+import com.afsh.messages.helpers.MessagingEvents
 import com.afsh.messages.helpers.THREAD_ID
-import com.afsh.messages.helpers.refreshConversations
-import com.afsh.messages.helpers.refreshMessages
 
 class DeleteSmsReceiver : BroadcastReceiver() {
 
@@ -23,8 +23,7 @@ class DeleteSmsReceiver : BroadcastReceiver() {
         ensureBackgroundThread {
             context.deleteMessage(messageId, isMms)
             context.updateLastConversationMessage(threadId)
-            refreshMessages()
-            refreshConversations()
+            MessagingEvents.publish(MessagingEvent.MessageDeleted(threadId = threadId, messageId = messageId, isMms = isMms))
         }
     }
 }

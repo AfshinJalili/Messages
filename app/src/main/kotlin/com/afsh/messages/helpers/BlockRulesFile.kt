@@ -1,43 +1,63 @@
 package com.afsh.messages.helpers
 
-import org.json.JSONArray
-import org.json.JSONException
-import org.json.JSONObject
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.json.Json
 import java.io.InputStream
 import java.io.OutputStream
 
-/** The block rules one device moves to another (51): app-level blocked numbers and phrases. */
-data class BlockRules(val numbers: Set<String>, val phrases: Set<String>)
+/**
+ * The filter rules one device moves to another (51): app-level always-spam numbers, never-spam
+ * allowlist, and phrases.
+ */
+data class BlockRules(
+    val numbers: Set<String>,
+    val phrases: Set<String>,
+    val allowed: Set<String> = emptySet(),
+)
 
 /**
- * Reads and writes block rules as `{"version":1,"numbers":[…],"phrases":[…]}`. Files from the
- * old keyword export (keywords joined by [BLOCKED_KEYWORDS_EXPORT_DELIMITER]) still import as
- * phrases.
+ * Reads and writes filter rules as
+ * `{"version":1,"numbers":[…],"phrases":[…],"allowed":[…]}`. Older files without `allowed` still
+ * import (empty allowlist). Files from the old keyword export (keywords joined by
+ * [BLOCKED_KEYWORDS_EXPORT_DELIMITER]) still import as phrases.
  */
 object BlockRulesFile {
     private const val VERSION = 1
 
+    private val json = Json {
+        ignoreUnknownKeys = true
+        prettyPrint = true
+        prettyPrintIndent = "  "
+        encodeDefaults = true
+    }
+
     fun write(rules: BlockRules, output: OutputStream) {
-        val json = JSONObject()
-            .put("version", VERSION)
-            .put("numbers", JSONArray(rules.numbers.sorted()))
-            .put("phrases", JSONArray(rules.phrases.sorted()))
-        output.bufferedWriter().use { it.write(json.toString(2)) }
+        val payload = BlockRulesJson(
+            version = VERSION,
+            numbers = rules.numbers.sorted(),
+            phrases = rules.phrases.sorted(),
+            allowed = rules.allowed.sorted(),
+        )
+        output.bufferedWriter().use { it.write(json.encodeToString(BlockRulesJson.serializer(), payload)) }
     }
 
     fun read(input: InputStream): BlockRules {
         val text = input.bufferedReader().use { it.readText() }.trim()
         return try {
-            val json = JSONObject(text)
-            BlockRules(json.strings("numbers"), json.strings("phrases"))
-        } catch (_: JSONException) {
+            val parsed = json.decodeFromString(BlockRulesJson.serializer(), text)
+            BlockRules(parsed.numbers.toSet(), parsed.phrases.toSet(), parsed.allowed.toSet())
+        } catch (_: SerializationException) {
             val phrases = text.split(BLOCKED_KEYWORDS_EXPORT_DELIMITER).map { it.trim() }.filter { it.isNotEmpty() }
             BlockRules(emptySet(), phrases.toSet())
         }
     }
 
-    private fun JSONObject.strings(name: String): Set<String> {
-        val array = optJSONArray(name) ?: return emptySet()
-        return (0 until array.length()).map { array.getString(it).trim() }.filter { it.isNotEmpty() }.toSet()
-    }
+    @Serializable
+    private data class BlockRulesJson(
+        val version: Int = VERSION,
+        val numbers: List<String> = emptyList(),
+        val phrases: List<String> = emptyList(),
+        val allowed: List<String> = emptyList(),
+    )
 }

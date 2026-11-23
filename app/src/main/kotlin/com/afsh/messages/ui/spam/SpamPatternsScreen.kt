@@ -1,7 +1,6 @@
 package com.afsh.messages.ui.spam
 
 import androidx.annotation.StringRes
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -13,6 +12,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -28,37 +30,35 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.style.TextDirection
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import com.afsh.messages.R
 import com.afsh.messages.helpers.FilterResult
 import com.afsh.messages.helpers.FilterRule
 import com.afsh.messages.helpers.FilterVerdict
+import com.afsh.messages.helpers.RuleBasedFilter
 import com.afsh.messages.helpers.SpamPatternGroup
 import com.afsh.messages.helpers.SpamPatterns
-import com.afsh.messages.helpers.RuleBasedFilter
+import com.afsh.messages.ui.Afsh
 import com.afsh.messages.ui.components.AfshButton
+import com.afsh.messages.ui.components.AfshIcon
 import com.afsh.messages.ui.components.AttentionNotice
 import com.afsh.messages.ui.components.ButtonKind
 import com.afsh.messages.ui.components.ConfirmationDialog
+import com.afsh.messages.ui.components.ContentDirection
+import com.afsh.messages.ui.components.ContentText
 import com.afsh.messages.ui.components.PageContentPadding
 import com.afsh.messages.ui.components.PageNavigation
 import com.afsh.messages.ui.components.PageScaffold
+import com.afsh.messages.ui.components.PatternText
 import com.afsh.messages.ui.components.SectionHeading
 import com.afsh.messages.ui.components.TextFieldSlab
 import com.afsh.messages.ui.components.TextInputDialog
-import com.afsh.messages.ui.forContent
-import com.afsh.messages.ui.withContentFonts
 
 private val PatternRowHeight = 50.dp
 
@@ -82,18 +82,22 @@ sealed interface SpamPatternsEvent {
 private fun SpamPatternGroup.title() = when (this) {
     SpamPatternGroup.CODE_WORDS -> R.string.spam_patterns_code_words
     SpamPatternGroup.CODE -> R.string.spam_patterns_code
-    SpamPatternGroup.UNSUBSCRIBE -> R.string.spam_patterns_unsubscribe
+    SpamPatternGroup.TRANSACTIONAL -> R.string.spam_patterns_transactional
     SpamPatternGroup.LINKS -> R.string.spam_patterns_links
     SpamPatternGroup.MARKETING -> R.string.spam_patterns_marketing
+    SpamPatternGroup.PROMO_EMOJI -> R.string.spam_patterns_promo_emoji
+    SpamPatternGroup.PROMO_EMOJI_WEAK -> R.string.spam_patterns_promo_emoji_weak
 }
 
 @StringRes
 private fun SpamPatternGroup.description() = when (this) {
     SpamPatternGroup.CODE_WORDS -> R.string.spam_patterns_code_words_text
     SpamPatternGroup.CODE -> R.string.spam_patterns_code_text
-    SpamPatternGroup.UNSUBSCRIBE -> R.string.spam_patterns_unsubscribe_text
+    SpamPatternGroup.TRANSACTIONAL -> R.string.spam_patterns_transactional_text
     SpamPatternGroup.LINKS -> R.string.spam_patterns_links_text
     SpamPatternGroup.MARKETING -> R.string.spam_patterns_marketing_text
+    SpamPatternGroup.PROMO_EMOJI -> R.string.spam_patterns_promo_emoji_text
+    SpamPatternGroup.PROMO_EMOJI_WEAK -> R.string.spam_patterns_promo_emoji_weak_text
 }
 
 /** The pattern being edited: [index] is null for a new one. */
@@ -117,7 +121,6 @@ fun SpamPatternsScreen(
     PageScaffold(
         title = stringResource(R.string.spam_patterns),
         modifier = modifier,
-        subtitle = stringResource(R.string.spam_patterns_subtitle),
         onBack = { onEvent(SpamPatternsEvent.Back) },
         navigation = navigation,
         snackbarHostState = snackbarHostState,
@@ -125,7 +128,7 @@ fun SpamPatternsScreen(
         LazyColumn(
             Modifier.imePadding(),
             contentPadding = PageContentPadding,
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(Afsh.spacing.md),
         ) {
             if (!state.filterEnabled) {
                 item(key = "off") {
@@ -138,7 +141,7 @@ fun SpamPatternsScreen(
             item(key = "try") { TryMessage(state.patterns) }
             SpamPatternGroup.entries.forEach { group ->
                 item(key = "h:${group.key}") {
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(Afsh.spacing.xs)) {
                         SectionHeading(stringResource(group.title()))
                         Text(
                             stringResource(group.description()),
@@ -157,7 +160,7 @@ fun SpamPatternsScreen(
                 item(key = "a:${group.key}") { AddPattern { editing = Editing(group, null, "") } }
             }
             item(key = "actions") {
-                Column(Modifier.padding(top = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(Modifier.padding(top = Afsh.spacing.md), verticalArrangement = Arrangement.spacedBy(Afsh.spacing.sm)) {
                     AfshButton(
                         stringResource(if (state.rechecking) R.string.spam_patterns_rechecking else R.string.spam_patterns_recheck),
                         onClick = { confirmRecheck = true },
@@ -182,7 +185,7 @@ fun SpamPatternsScreen(
             current = current.current,
             explanation = stringResource(R.string.spam_patterns_regex_hint),
             confirmLabel = stringResource(R.string.spam_patterns_save),
-            dismissLabel = stringResource(org.fossify.commons.R.string.cancel),
+            dismissLabel = stringResource(com.afsh.commons.R.string.cancel),
             error = { SpamPatterns.error(it) },
             onSave = {
                 editing = null
@@ -196,7 +199,7 @@ fun SpamPatternsScreen(
             title = stringResource(R.string.spam_patterns_reset),
             explanation = stringResource(R.string.spam_patterns_reset_text),
             confirmLabel = stringResource(R.string.spam_patterns_reset),
-            dismissLabel = stringResource(org.fossify.commons.R.string.cancel),
+            dismissLabel = stringResource(com.afsh.commons.R.string.cancel),
             onConfirm = {
                 confirmReset = false
                 onEvent(SpamPatternsEvent.Reset)
@@ -210,7 +213,7 @@ fun SpamPatternsScreen(
             title = stringResource(R.string.spam_patterns_recheck),
             explanation = stringResource(R.string.spam_patterns_recheck_text),
             confirmLabel = stringResource(R.string.spam_patterns_recheck),
-            dismissLabel = stringResource(org.fossify.commons.R.string.cancel),
+            dismissLabel = stringResource(com.afsh.commons.R.string.cancel),
             onConfirm = {
                 confirmRecheck = false
                 onEvent(SpamPatternsEvent.Recheck)
@@ -226,21 +229,21 @@ private fun TryMessage(patterns: SpamPatterns) {
     var body by rememberSaveable { mutableStateOf("") }
     var sender by rememberSaveable { mutableStateOf("") }
     val colors = MaterialTheme.colorScheme
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(Afsh.spacing.sm)) {
         SectionHeading(stringResource(R.string.spam_patterns_try))
         TextFieldSlab(
             value = body,
             onValueChange = { body = it },
             placeholder = stringResource(R.string.spam_patterns_try_message),
             singleLine = false,
-            textStyle = MaterialTheme.typography.bodyLarge.forContent(body),
+            textStyle = MaterialTheme.typography.bodyLarge,
         )
         TextFieldSlab(
             value = sender,
             onValueChange = { sender = it },
             placeholder = stringResource(R.string.spam_patterns_try_sender),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-            textStyle = MaterialTheme.typography.bodyLarge.forContent(sender),
+            textStyle = MaterialTheme.typography.bodyLarge,
         )
         if (body.isNotBlank()) {
             val result = remember(patterns, sender, body) { RuleBasedFilter.explain(patterns, sender, body) }
@@ -248,29 +251,35 @@ private fun TryMessage(patterns: SpamPatterns) {
                 background = if (result.verdict == FilterVerdict.ALLOW) colors.secondaryContainer else colors.errorContainer,
                 color = if (result.verdict == FilterVerdict.ALLOW) colors.onSecondaryContainer else colors.onErrorContainer,
             )
-            Column(
-                Modifier
-                    .fillMaxWidth()
-                    .clip(MaterialTheme.shapes.medium)
-                    .background(colors.surfaceContainer)
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.medium,
+                colors = CardDefaults.cardColors(
+                    containerColor = colors.surfaceContainer,
+                    contentColor = colors.onSurface,
+                ),
             ) {
-                Text(
-                    stringResource(result.label()),
-                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                    color = if (result.verdict == FilterVerdict.BLOCK) colors.error else colors.onSurface,
-                )
-                Text(
-                    remember(body, result, highlight) {
-                        buildAnnotatedString {
-                            append(body)
-                            result.matches.forEach { addStyle(highlight, it.range.first, it.range.last + 1) }
-                        }.withContentFonts()
-                    },
-                    style = MaterialTheme.typography.bodyLarge.forContent(body),
-                    color = colors.onSurface,
-                )
+                Column(
+                    Modifier.padding(Afsh.spacing.lg),
+                    verticalArrangement = Arrangement.spacedBy(Afsh.spacing.sm),
+                ) {
+                    Text(
+                        stringResource(result.label()),
+                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                        color = if (result.verdict == FilterVerdict.BLOCK) colors.error else colors.onSurface,
+                    )
+                    ContentText(
+                        remember(body, result, highlight) {
+                            buildAnnotatedString {
+                                append(body)
+                                result.matches.forEach { addStyle(highlight, it.range.first, it.range.last + 1) }
+                            }
+                        },
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = colors.onSurface,
+                        direction = ContentDirection.Inherit,
+                    )
+                }
             }
         }
     }
@@ -279,7 +288,7 @@ private fun TryMessage(patterns: SpamPatterns) {
 @StringRes
 private fun FilterResult.label() = when (rule) {
     FilterRule.ONE_TIME_CODE -> R.string.spam_patterns_result_code
-    FilterRule.UNSUBSCRIBE -> R.string.spam_patterns_result_unsubscribe
+    FilterRule.TRANSACTIONAL -> R.string.spam_patterns_result_transactional
     FilterRule.MARKETING -> R.string.spam_patterns_result_marketing
     null -> R.string.spam_patterns_result_none
 }
@@ -295,18 +304,17 @@ private fun PatternRow(pattern: String, onEdit: () -> Unit, onRemove: () -> Unit
             .clickable(role = Role.Button, onClickLabel = stringResource(R.string.spam_patterns_edit), onClick = onEdit),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            remember(pattern) { AnnotatedString(pattern) },
-            style = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace, textDirection = TextDirection.Ltr),
+        PatternText(
+            pattern,
+            style = MaterialTheme.typography.bodyMedium,
             color = colors.onSurface,
             modifier = Modifier.weight(1f),
         )
         IconButton(onClick = onRemove) {
             Icon(
-                painterResource(R.drawable.ic_lucide_x),
+                AfshIcon.Close.painter(),
                 contentDescription = stringResource(R.string.spam_patterns_remove, pattern),
-                tint = colors.error,
-                modifier = Modifier.size(17.dp),
+                tint = colors.onSurfaceVariant,
             )
         }
     }
@@ -315,18 +323,24 @@ private fun PatternRow(pattern: String, onEdit: () -> Unit, onRemove: () -> Unit
 @Composable
 private fun AddPattern(onClick: () -> Unit) {
     val colors = MaterialTheme.colorScheme
+    val label = stringResource(R.string.spam_patterns_add)
     Row(
         Modifier
-            .heightIn(min = PatternRowHeight)
+            .fillMaxWidth()
+            .heightIn(min = 48.dp)
             .clip(MaterialTheme.shapes.small)
-            .clickable(role = Role.Button, onClick = onClick)
-            .padding(end = 8.dp),
+            .clickable(role = Role.Button, onClickLabel = label, onClick = onClick),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.sm),
     ) {
-        Icon(painterResource(R.drawable.ic_lucide_plus), contentDescription = null, tint = colors.primary, modifier = Modifier.size(20.dp))
+        Icon(
+            AfshIcon.Add.painter(),
+            contentDescription = null,
+            tint = colors.primary,
+            modifier = Modifier.size(24.dp),
+        )
         Text(
-            stringResource(R.string.spam_patterns_add),
+            label,
             style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
             color = colors.primary,
         )

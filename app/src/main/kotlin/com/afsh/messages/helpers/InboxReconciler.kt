@@ -2,10 +2,10 @@ package com.afsh.messages.helpers
 
 import com.afsh.messages.extensions.getMessagesDB
 import android.content.Context
-import org.fossify.commons.extensions.getMyContactsCursor
-import org.fossify.commons.extensions.showErrorToast
-import org.fossify.commons.helpers.MyContactsContentProvider
-import org.fossify.commons.helpers.ensureBackgroundThread
+import com.afsh.commons.extensions.getMyContactsCursor
+import com.afsh.commons.extensions.showErrorToast
+import com.afsh.commons.helpers.MyContactsContentProvider
+import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.messages.extensions.clearExpiredScheduledMessages
 import com.afsh.messages.extensions.config
 import com.afsh.messages.extensions.conversationsDB
@@ -43,15 +43,13 @@ object InboxReconciler {
                 }
                 // An empty cache means the first import: the inbox shows how far it has got.
                 val firstImport = allCached.isEmpty()
-                val conversations = try {
-                    app.getConversations(
-                        privateContacts = privateContacts,
-                        failOnError = true,
-                        onProgress = if (firstImport) InboxImport::reportConversations else null,
-                    )
-                } finally {
-                    if (firstImport) InboxImport.conversationsDone()
-                }
+                val conversations = app.getConversations(
+                    privateContacts = privateContacts,
+                    failOnError = true,
+                    onProgress = if (firstImport) InboxImport::reportConversations else null,
+                )
+                // Hold the bar through Room writes; message indexing continues the same percent.
+                if (firstImport) InboxImport.conversationsDone()
                 val cachedIds = allCached.mapTo(HashSet()) { it.threadId }
                 val conversationsById = conversations.associateBy { it.threadId }
                 val conversationsByNumber = conversations.asReversed().associateBy { it.phoneNumber }
@@ -61,7 +59,7 @@ object InboxReconciler {
                 app.getMessagesDB().runInTransaction {
                     conversations.forEach { clonedConversation ->
                         if (cachedIds.add(clonedConversation.threadId)) {
-                            app.conversationsDB.insertOrUpdate(clonedConversation)
+                            app.insertOrUpdateConversation(clonedConversation, cachedConv = null)
                             if (!clonedConversation.isArchived) {
                                 cachedConversations.add(clonedConversation)
                             }
@@ -95,7 +93,9 @@ object InboxReconciler {
                         }
                     }
 
-                    cachedConversations.forEach { conversation ->
+                    // Only temporary scheduled threads can expire; querying every inbox row
+                    // on each reconcile was a free CPU tax after every resume and SMS.
+                    allCached.filter { it.isScheduled }.forEach { conversation ->
                         app.clearExpiredScheduledMessages(conversation.threadId)
                     }
                 }
@@ -108,6 +108,7 @@ object InboxReconciler {
 
                 onFinished()
             } catch (e: Exception) {
+                InboxImport.abort()
                 appContext(context).showErrorToast(e)
                 onFailed()
             }

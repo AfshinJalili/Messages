@@ -1,48 +1,55 @@
 # AFSH design system
 
-Personal messaging as a clear, living line between people. The inbox favors sender, latest meaning, and urgency over decorative conversation cards. Cool mineral paper, deep pine ink, sharp lime for new activity, lilac for media, coral for attention. A fine route line, round contact markers, flat slabs, and strong typography replace the current cobalt styling. No literal vintage hardware.
+Personal messaging as a clear, living line between people. The inbox favors sender, latest meaning, and urgency over decorative conversation cards. The palette is Google Material 3 (GM3) system colors — primary blue `#0B57D0` and its tonal surface and container roles — matching Google Messages when dynamic color is off. A fine route line, round contact markers, flat slabs, and strong typography.
 
-The design source is `design/afsh.pen` (encrypted; edit only through the pen CLI or pencil MCP). PNG exports in `design/exports/` are previews only; the canvas is the truth. Screens are fixed 390 × 844 frames and the design decides open questions through issues labeled `design-gap`.
+This file is the design source. PNG exports in `design/exports/` are previews. Screens are specified at 390 × 844, and open questions are issues labeled `design-gap`.
 
-Theme: `ui/AfshTheme.kt`. The palette lives in `res/values/colors.xml` (`afsh_*`) because `tests/check_design_tokens.py` rejects inline colors. Roles and type are in Kotlin. Light or dark follows the app's background setting. The Commons accent and custom colors do not apply to Compose screens. Fonts are bundled from google/fonts (OFL): Funnel Sans, Atkinson Hyperlegible, and Vazirmatn for RTL labels. Message content, previews, drafts, and search excerpts use Atkinson for Latin and Vazirmatn for Arabic-script runs regardless of app language, preserving weight and link styling. Content containing Arabic script uses 1.7em leading; other content uses 1.45em.
+Theme: `ui/AfshTheme.kt`. The palette is Google Material 3 (GM3) system colors defined once in `commons/src/main/res/values/colors.xml` (`m3_*`, with `gm3-sys-color-*` sources cited in that file) because `tests/check_design_tokens.py` rejects inline colors, framework `@android:color/*` (except transparent), and duplicate color names across modules. Roles and type are in Kotlin, and only the theme looks up color resources: screens read `MaterialTheme.colorScheme` or `Afsh.colors` (for example `liftScrim` and `themePreview`), and `tests/check_ui_contract.py` rejects `colorResource` elsewhere. Light or dark follows Appearance → System (device night mode) or the explicit light/dark choice. There is no Material You / dynamic-color path — `afshColorScheme` always reads the static GM3 tokens. The Commons accent and custom color pickers do not apply to Compose screens. Fonts are bundled from google/fonts (OFL): Funnel Sans, Atkinson Hyperlegible, and Vazirmatn for RTL labels. Message content, previews, drafts, and search excerpts use Atkinson for Latin and Vazirmatn for Arabic-script runs regardless of app language, preserving weight and link styling. Content containing Arabic script uses 1.7em leading; other content uses 1.45em.
 
 ## Product idea
 
 The inbox acts like an open line: sender, latest meaning, and urgency are visible in one continuous list. Conversations put message text first and leave the composer at the bottom of the phone viewport. The navigation has three destinations: Inbox, Library, and Settings. Library collects saved, archived, spam, and recently deleted conversations so those tasks stay findable without crowding the inbox.
 
-The palette uses mineral paper (`$paper`), deep pine (`$pine`, `$ink`), lime for new or active activity (`$lime`), lilac for media and retained drafts (`$lilac`), and coral for attention (`$coral`). Color also appears with words, shape, or line weight so status does not depend on hue alone. Sender initials identify contacts when a photo is unavailable.
+The palette is Google Material 3 (GM3) static system colors (primary blue `#0B57D0` and its tonal roles), the same tokens Google Messages / Gmail / Drive use when dynamic color is off. Color also appears with words, shape, or line weight so status does not depend on hue alone. Sender initials identify contacts when a photo is unavailable.
 
-## Screen map (numbers are frames in the design file)
+## Screen map
 
-| Area | Views in the canvas |
+| Area | Views |
 | --- | --- |
 | Inbox and finding people | 01 everyday inbox, 02 unread, 03 search entry, 04 results, 05 new recipient, 23 delete with Undo, 34 empty inbox, 41 multi-select, 42 invalid number, 53 no search matches |
 | Conversations and composing | 06 personal, 07 media, 08 group, 09 details, 10 selected message, 11 attachments, 12 schedule, 13 message details, 14 contact card, 15 thread search, 16 new group, 35 failed send, 36 dark theme, 37 Persian RTL, 39 rename, 40 thread actions, 43 delete confirmation, 44 selectable text, 45 media viewer, 47 scheduled edit, 52 jump to new messages, 54 saved draft |
-| Library and safety | 17 Library, 18 Starred, 19 Archive, 20 Spam review, 21 block rules, 22 Recycle Bin, 38 blocked numbers, 50 add blocked phrase, 51 move block rules |
+| Library and safety | 17 Library, 18 Starred, 19 Archive, 20 Spam review, 21 filter rules, 22 Recycle Bin, 38 blocked numbers, 50 add blocked phrase, 51 move filter rules |
 | Settings and setup | 24 overview, 25 appearance, 26 writing and sending, 27 notifications, 28 privacy and lock, 29 backup and restore, 30 export, 31 import review, 32 default SMS setup, 33 permissions, 46 app lock, 48 About, 49 gestures and dates |
 
 ## Behavior decisions
 
-- **Attention:** unread rows use a small pine signal and remain in the Unread filter until opened or explicitly marked read. Marking a conversation unread by hand marks only its newest received message, as Google Messages does: the row shows a dot, not a count, and the thread opens with no new messages divider. The thread offers a new messages jump control when the reader is away from the latest message.
+- **Attention:** unread rows use a small primary signal and remain in the Unread filter until opened or explicitly marked read. Marking a conversation unread by hand marks only its newest received message, as Google Messages does: the row shows a dot, not a count, and the thread opens with no new messages divider. The thread offers a new messages jump control when the reader is away from the latest message.
 - **Drafts:** unfinished text stays in its conversation. View 54 shows the retained entry and a draft notice; the component board includes the compact draft treatment.
 - **Sending:** the composer distinguishes enabled and disabled states. Sending, sent/delivered, failed, and blocked each have visible text; sending and blocked also use distinct status lines. A failed message offers recovery through its attention state.
-- **Keep at top:** the current app's pin action remains as **Keep at top** in conversation actions (view 40). A future implementation should persist its order in the inbox; the concept does not show a special pinned section.
+- **Keep at top:** **Pin to the top** and **Unpin** actions persist the pinned order at the top of the inbox. Pinned conversations appear in a dedicated section above unpinned ones.
 - **Destructive actions:** conversation removal first exposes Undo. Recycle Bin offers restoration, and a separate confirmation surface covers permanent deletion.
-- **Unwanted traffic:** Spam review, block rules, blocked numbers, and phrase rules are reachable from Library and settings. Blocked content remains reviewable and recoverable.
+- **Unwanted traffic:** Spam review, filter rules, blocked numbers, and phrase rules are reachable from Library and settings. Blocked content remains reviewable and recoverable.
 - **Search:** entry, populated results, and no matches are separate views. Search spans words, people, and media as expressed in the entry view.
 - **Device realities:** dual SIM choice, SMS/MMS limits, group MMS, delivery reports, default SMS role, permissions, local backup, notifications, and app lock have dedicated surfaces or settings.
 
 ## Components and variations
 
-In the app, the reusable parts of board `00b` live in `ui/components/`: primary navigation (bar or rail), page app bar, buttons, destination card, info panel, empty state, attention notice, decision option, confirmation dialog, setting rows (section heading, navigation, switch, radio, checkbox), snackbar and `PageScaffold`, which composes a secondary page from them. Compose pages outside the inbox extend `ComposePageActivity`, which applies the theme and shows deletion Undo on the page's snackbar.
+In the app, the reusable parts of board `00b` live in `ui/components/`: primary navigation (Material 3's navigation bar, or its navigation rail on wide and short windows; items are tabs and icons come from `AfshIcon`), page app bar, buttons, destination card, info panel, empty state, attention notice, confirmation dialog, setting rows (section heading, navigation, switch, radio), snackbar and `PageScaffold`, which composes a secondary page from them. Buttons and setting rows sit on stock Material 3 parts with colours from theme roles: `AfshButton` on `Button` (primary, danger) and `FilledTonalButton` (secondary, quiet), `FloatingButton` on `ExtendedFloatingActionButton` (new message, jump to latest), `SendButton` on `FilledIconButton`, and every setting row on `ListItem` with a stock `Switch` or `RadioButton`. The whole row is the target, found in tests by its label and role. The page app bar is the stock Material 3 `TopAppBar` in the header role, with pinned scroll behavior wired by `PageScaffold`; screens never build their own top bar. Compose pages outside the inbox extend `ComposePageActivity`, which applies the theme and shows Undo on the page's snackbar (deletion Undo and other undoable actions). `ThreadActivity` hosts its own snackbar for message actions and manages its Compose content directly. Shared UI components include `ConversationRow` (inbox list item) and `Avatar` (contact/group photo or initials with `AfshIcon.Person`/`AfshIcon.People` fallback icons).
 
 ### Dialogs
 
-Every dialog, popup and picker in the app is drawn by one component, `AfshDialog` in `ui/components/AfshDialog.kt`; the archive confirmation is the reference. The frame is a 24dp-cornered `surfaceContainer` card at most 400dp wide, 24dp padding, a `headlineSmall` title, body text in `bodyLarge`, 16dp between parts, and the actions last, stacked full width through `DialogActions`: the confirming button above (SECONDARY for an ordinary decision, PRIMARY when the dialog collects a value, DANGER for a permanent action), then a QUIET dismiss button. Pickers pass `wide = true`, which keeps 12dp at the sides so the 360dp calendar fits.
+Every dialog, popup and picker in the app is drawn by one component, `AfshDialog` in `ui/components/AfshDialog.kt`, which is the stock Material 3 `AlertDialog` with its theme roles: a `surfaceContainerHigh` card in the `extraLarge` shape (28dp), 24dp padding, a `headlineSmall` title and `bodyLarge` text, 16dp between parts of the content, and the content scrolling when short of room. The actions are Material text buttons at the end: the dismiss label, then the confirming action passed as a `DialogConfirm` (painted in the `error` role when `destructive`, disabled until the dialog has a valid value). Fields in a dialog are the stock `OutlinedTextField`, with the explanation or the error as its supporting text. The calendar is `AfshDatePickerDialog`, the stock Material 3 `DatePickerDialog` with the same actions; the clock is a `TimePicker` inside `AfshDialog`.
 
-Use the dialog that fits before writing a new one: `ConfirmationDialog` (decide), `MessageDialog` (inform), `ChoiceDialog` (pick one), `RenameDialog` and `TextInputDialog` (type a value). An activity outside one Compose tree calls `confirm`, `inform`, `choose` or `showAfshDialog` from `DialogHost.kt`. Never use Compose `Dialog`, `AlertDialog`, `DatePickerDialog`, Android or Material dialog builders, or a Fossify Commons dialog. `tests/check_dialogs.py` fails on any of them; the one exception is Commons' `SecurityDialog` for app lock, until it has an AFSH version.
+Use the dialog that fits before writing a new one: `ConfirmationDialog` (decide), `MessageDialog` (inform), `ChoiceDialog` (pick one), `RenameDialog` and `TextInputDialog` (type a value). An activity outside one Compose tree calls `confirm`, `inform`, `choose` or `showAfshDialog` from `DialogHost.kt`. Never use Compose `Dialog`, `AlertDialog`, `DatePickerDialog`, `TimePickerDialog`, Android or Material dialog builders outside `AfshDialog.kt`, or a dialog from `commons`. `tests/check_dialogs.py` fails on any of them, and on a hand-built frame (window `Dialog`, `Surface` card or fixed corner) inside `AfshDialog.kt`. App lock uses `SecuritySetupDialog` (Compose, in `ui/applock/`). `MainActivity` is the launcher and keeps the AndroidX splash on screen until the first Room inbox snapshot.
 
-Selection mode has one source of truth too. Every selection bar is `SelectionBar` in `ui/components/SelectionBar.kt`: icon-only (each label is the TalkBack description and the long-press tooltip, never visible text), extra actions behind More options, and exactly the navigation bar's height so swapping the two never moves the list. A page built on `PageScaffold` passes a `PageSelection` (count, clear, select all, actions) and gets the whole mode: the "n selected" app bar with Close and Select all, the bar rising over the navigation, and Back clearing the selection. The inbox band and the conversation header keep their own top bars but use the same `SelectionBar` and `selectionTitle`. People are picked with `PeoplePicker` (New group and the conversation's Manage people).
+System bar icons follow the theme, never a constant. Each activity calls `AfshSystemBars(window)` (`ui/SystemBars.kt`) inside its `AfshTheme`: the status bar icons take whichever of black or white has more contrast on the `header` role, and the navigation bar icons do the same on `surface`. Recoloring the header needs no status bar change.
+
+### Sheets
+
+Every bottom sheet is drawn by one component, `AfshSheet` in `ui/components/AfshSheet.kt`, on the stock Material 3 modal bottom sheet: a 28dp-topped `surfaceContainer` sheet that opens fully expanded, with the stock drag handle in `outlineVariant`, the scrim, drag and Back to dismiss, and system bar and keyboard insets. Its content scrolls when short of room. The sheet's `title` names the pane for TalkBack and tests and shows as a `titleLarge` heading; the message sheet hides it because its first line is the date · time · SIM line, and drops the scrim because the lifted bubble dims the page itself. Rows are `AfshSheetItem` on the Material 3 list item: a leading icon in `primary` (on a `secondaryContainer` tile in the attach sheet), the label, an optional supporting line, and the error colour for Delete. A row acts through `dismissThen`, so the sheet slides away before a dialog, picker or page opens, and a cancelled hide never acts. Never use `ModalBottomSheet` or `BottomSheetScaffold` directly; `tests/check_sheets.py` fails on them.
+
+
+Selection mode has one source of truth too. Every selection bar is `SelectionBar` in `ui/components/SelectionBar.kt`, the stock Material 3 `BottomAppBar` on `surfaceContainer` (`tests/check_material_components.py` fails on a hand-built frame): icon-only (each label is the TalkBack description and the long-press tooltip, never visible text), extra actions behind More options, and exactly the navigation bar's height so swapping the two never moves the list (over the composer it takes the composer frame's height instead). That height is written once, as `BottomBarHeight` in `Navigation.kt`; every bar that stands in for the navigation reads it. A page built on `PageScaffold` passes a `PageSelection` (count, clear, select all, actions) and gets the whole mode: the "n selected" app bar with Close and Select all, the bar rising over the navigation, and Back clearing the selection. The inbox band keeps its own top bar, and the conversation's top bar is `ThreadTopBar` in `ui/thread/ThreadTopBar.kt`, a stock Material 3 `TopAppBar` on the header color role that grows with the font scale; both use the same `SelectionBar` and `selectionTitle`. People are picked with `PeoplePicker` (New group and the conversation's Manage people).
 
 Board `00b` holds navigation, composer, button hierarchy, filter chips, type scale, snackbar, attention notice, empty state, attachment tile, and concrete draft, sending, blocked, disabled, focused, and loading examples. Board `00` holds the palette, type, line language, and system principles. The phone views show light, dark, and RTL conversation variations. The RTL header reverses action order, right-aligns identity, and keeps the message entry at the right edge.
 
@@ -51,22 +58,37 @@ Every numbered phone frame is a fixed 390 × 844 design viewport. Long lists and
 
 ## Asset provenance
 
-`design/afsh.pen` contains fictional message content and names for visual demonstration.
+The screen examples use fictional message content and names.
 
-The family-album image in the media message and full-screen viewer was generated in Pendev with this prompt:
+The family-album image used in earlier media-message concepts was generated in Pendev with this prompt:
 
 > Documentary overhead photograph of a well-loved family photo album open on a wooden dining table, a few candid printed photographs of ordinary family gatherings tucked into the pages, soft afternoon window light, realistic subtle wear and paper texture, warm natural colors, no readable text, no logos, landscape composition with the album centered.
 
-The generated asset is saved as `design/generated.png` beside the `.pen` file so the image fills can resolve when the canvas is reopened.
+### Icons
 
-The interface icons are editable vector paths from `lucide-static` 1.48.0 (ISC license), replacing font-backed icon nodes that failed to render in the headless Pendev preview. The app's copies are `res/drawable/ic_lucide_*.xml`, generated by `python3 tools/export_ui_icons.py <lucide-static>/icons` (`--check` verifies them); arrows and chevrons mirror under RTL.
+Every interface icon is a Material Symbol (Rounded, weight 400, grade 0, optical size 24, Apache 2.0) in `commons/.../res/drawable/ic_msym_*.xml`, written by `python3 tools/export_material_symbols.py` (`--check` verifies them against upstream). One copy only: commons holds them and the app depends on commons. Arrows and chevrons mirror under RTL. Icons use FILL 0 by default; filled variants (FILL 1, `ic_msym_*_fill`) are used for selected/active states as in Google Messages: selected bottom navigation destinations, pinned row signals, and starred messages. Unpin uses `keep_off`; the unstar action uses `StarFilled`. `ui/components/AfshIcon.kt` is the Compose entry point (`com.afsh.commons.R.drawable`): call sites request an icon by meaning (`AfshIcon.Search.painter()`), never a drawable id, and pass `filled = true` where applicable; XML-only surfaces (notifications, shortcuts, commons menus) use the same `ic_msym_*` drawables. To add an icon, add its symbol to the exporter, run it, and add the `AfshIcon` entry. `tests/check_material_symbols.py` fails on an entry without a shipped symbol, a shipped symbol no entry uses, any `ic_msym_*` under `app/res`, or a non-`ic_msym_` vector outside the documented exceptions (launcher foreground/monochrome and the notification message-bubble brand mark). `tests/check_ui_contract.py` fails on Lucide, material-icons `Icons.*`, inline `ImageVector.Builder`, or `painterResource(R.drawable…)` outside `AfshIcon`. The design file still draws the earlier icon paths until it is redrawn.
 
-The app bundles the design's fonts in `app/src/main/res/font/`, copied unmodified from [google/fonts](https://github.com/google/fonts) under the SIL Open Font License 1.1: Funnel Sans (variable), Atkinson Hyperlegible Regular and Bold, and Vazirmatn (variable). The Library nav icon `ic_library_vector.xml` is Lucide `layers` (ISC).
+### Fonts
+
+The app bundles the design's fonts in `app/src/main/res/font/`, copied unmodified from [google/fonts](https://github.com/google/fonts) under the SIL Open Font License 1.1: Funnel Sans (variable), Atkinson Hyperlegible Regular and Bold, and Vazirmatn (variable). All four font files include OpenType tabular numerals (`tnum`).
+
+`ui/AfshTheme.kt` is the single owner of font families and typography roles, and `ui/components/ContentText.kt` is the single owner of script-aware text composables. Never reference `FontFamily` (including `FontFamily.Monospace` or `FontFamily.Default`) anywhere outside `ui/AfshTheme.kt`, and never pair `Text` with `.withContentFonts()` or `.forLabel()` by hand — Funnel Sans, Atkinson Hyperlegible, and system monospace have no Arabic/Persian glyphs, so any Persian character without a Vazirmatn span or RTL typography slot falls back to Android's system Arabic font instead of Vazirmatn.
+
+| Surface | API to use | Font behavior |
+| --- | --- | --- |
+| Static localized UI labels & headings | `Text(..., style = MaterialTheme.typography.*)` | All 15 Material 3 slots are configured in `AfshTheme.kt`: Funnel Sans (display/headline) + Atkinson (body/title/label) in LTR; Vazirmatn everywhere in RTL. |
+| Tabular numbers (percentages, counters) | `MaterialTheme.typography.*.tabular()` | Sets `fontFeatureSettings = "tnum"` on the active theme font (Vazirmatn in Persian, Atkinson in English) so localized digits and `٪` stay in the bundled font. |
+| User-authored or dynamic text (messages, names, titles, captions, queries, filenames, initials, detail values) | `ContentText(...)` in `ui/components/ContentText.kt` | Atkinson for Latin, Vazirmatn for Arabic script, `1.7em`/`1.45em` leading, and `ContentDirection` (`Text`, `Label`, `Inherit`) regardless of app language. |
+| Localized UI text that interpolates a contact/user name (dialog titles, composer hints, empty states) | `MixedLocaleText(...)` in `ui/components/ContentText.kt` | Preserves the base `TextStyle` font (e.g. Funnel Sans on English dialog titles) while applying Vazirmatn spans to Arabic-script runs. |
+| Editable or selectable text fields | `TextFieldSlab` (applies fonts automatically), or `BasicTextField` / `OutlinedTextField` with `forFieldContent(value)` (or `forUserText`) + `ContentFontVisualTransformation` | Keeps UI locale style while empty (matching placeholder and cursor height), then renders Latin in Atkinson and Persian in Vazirmatn as typed or selected. |
+| Regex / spam patterns | `PatternText(...)` for display; `forPattern(value)` + `PatternFontVisualTransformation` for inputs | Keeps ASCII regex syntax monospace LTR while rendering Persian words inside the pattern in Vazirmatn. |
+
+`tests/check_ui_contract.py` fails on any `FontFamily` outside `ui/AfshTheme.kt`, any direct `.withContentFonts()` / `.withPatternFonts()` / `.forLabel()` outside `AfshTheme.kt` and `ContentText.kt`, and any `BasicTextField` / `OutlinedTextField` without `visualTransformation`. `tests/check_import_progress.py` rejects `FontFamily.Monospace` on the import percent indicator and requires `.tabular()`.
 
 
 ## Commons resources
 
-Every screen is Compose and the app has no XML layouts. Fossify Commons still draws the app-lock dialog, widgets and system surfaces from these resources. Android resources are the source of truth; this document does not keep a second palette or sizing table.
+Every screen is Compose. The app and Commons have no XML layouts. Commons still provides XML theme definitions, drawables, and other resources. Android resources are the source of truth; this document does not keep a second palette or sizing table.
 
 Android resources are the source of truth. This document describes how to use them; it does not maintain a second palette or a second sizing table.
 
@@ -74,35 +96,104 @@ Android resources are the source of truth. This document describes how to use th
 
 | Definition | Source |
 | --- | --- |
-| Brand palette, surface colors, semantic action colors and Commons defaults | `app/src/main/res/values/colors.xml` |
-| Light and dark widget themes, shared component styles | `app/src/main/res/values/styles.xml` |
-| Component spacing, sizes and corner radii | `app/src/main/res/values/dimens.xml` |
-| Shared opacity and user-font-size multipliers | `app/src/main/res/values/design_values.xml` |
-| Runtime theme selection and API-compatible float resource access | `app/src/main/kotlin/com/afsh/messages/helpers/Design.kt` |
+| GM3 palette values (`m3_*` light and `m3_*_dark`) | `commons/src/main/res/values/colors.xml` |
+| Color roles (Material slots and `Afsh.colors`) | `afshColorScheme` and `AfshTheme` in `app/src/main/kotlin/com/afsh/messages/ui/AfshTheme.kt` |
+| Typography, font families, tabular/pattern styles, and field visual transformations | `app/src/main/kotlin/com/afsh/messages/ui/AfshTheme.kt` (`typography`, `tabular()`, `forPattern()`, `forFieldContent()`, `ContentFontVisualTransformation`, `PatternFontVisualTransformation`) |
+| Script-aware content, pattern, and mixed-locale text composables | `app/src/main/kotlin/com/afsh/messages/ui/components/ContentText.kt` (`ContentText`, `PatternText`, `MixedLocaleText`) |
+| Light and dark XML themes for Commons screens, mirroring the roles | `app/src/main/res/values/styles.xml` |
+| Component spacing | `AfshSpacing` in `app/src/main/kotlin/com/afsh/messages/ui/AfshTheme.kt` (`Afsh.spacing`) |
+| Component sizes | `app/src/main/res/values/dimens.xml` (notification icon, keyboard height) |
+| Corner radii (Material shape scale and named component corners) | `AfshShapes` and `AfshCorners` in `app/src/main/kotlin/com/afsh/messages/ui/AfshTheme.kt` |
+| Shared opacity and font scale | `app/src/main/res/values/design_values.xml` (`opacity_surface_tint`); font scale via `afshTextScale()` in `ui/AfshTheme.kt` |
+| XML theme selection, the primary role for Commons and notifications, and API-compatible float resource access | `app/src/main/kotlin/com/afsh/messages/helpers/Design.kt` |
 | Launcher shape | `app/src/main/res/drawable/ic_launcher_foreground.xml` |
+| Screen and tab motion (durations, parallax, tab shift) | `app/src/main/res/values/motion.xml` |
+| Screen and tab motion easing | `app/src/main/res/interpolator/emphasized_decelerate.xml` and `EmphasizedDecelerate` in `ui/components/Motion.kt` |
+| Activity screen transitions | `AfshWindowAnimation` in `app/src/main/res/values/styles.xml` → `res/anim/screen_*.xml` (and `res/anim-ldrtl/` for RTL); exit/enter anims use `fillAfter`/`fillBefore` so the old window never snaps back for a frame |
+| Opaque window chrome | `android:windowBackground` = surface role on `AppTheme.Afsh.Light` / `Dark` (incoming window solid before Compose draws) |
+| Task-root (inbox) theme | `AppTheme.Afsh.Root.Light` / `Root.Dark` (`windowAnimationStyle` null) via `afshXmlTheme(root = true)` |
+| Compose screen and tab transitions | `ScreenStack` and `TabSwitch` in `ui/components/Motion.kt` |
+
+### Motion
+
+Screen and tab navigation share one motion language: fast, directional, and without alpha crossfade (Telegram / Google Messages style). Dialogs and bottom sheets keep Material 3 motion and are out of scope here.
+
+Inbox, Library, and Settings are three tabs of `MainActivity` (`TabSwitch` + `SettingsController`). Pushed screens (conversation, Library pages, filter rules, …) remain Activities and use the theme window animations. Leaving a pushed screen for a top-level tab uses `MainActivity.topLevelIntent` (`CLEAR_TOP` / `SINGLE_TOP`), which is a screen close — not a tab switch — and then shows the chosen tab.
+
+| Motion | Behaviour | Duration | Easing |
+| --- | --- | --- | --- |
+| Open screen (Activity theme or in-Activity `ScreenStack`) | New screen slides in from the end edge; the screen underneath shifts toward the start by `motion_parallax` (25% of width) | `motion_open_ms` (220ms) | Emphasized decelerate |
+| Close screen (Back, up, predictive back) | Exact reverse of open | `motion_close_ms` (220ms) | Emphasized decelerate |
+| Switch bottom-nav / rail tabs (`TabSwitch`) | Opaque incoming pane slides in by `motion_tab_shift` (30% of width) over the outgoing pane, which stays put until covered and dropped; saveable state is kept per tab | `motion_tab_ms` (120ms) | Emphasized decelerate |
+
+RTL mirrors start/end automatically: Compose uses `SlideDirection.Start`/`End`, and Activity XML ships mirrored sets under `anim-ldrtl/`. Predictive back on Android 14+ drives the same close motion for Activities (theme `windowAnimationStyle`) and for in-Activity stacks (`SeekableTransitionState` in `ScreenStack`).
+
+Do not invent per-screen transition specs, `Crossfade`, or `fadeIn`/`fadeOut` for navigation, and do not call `overridePendingTransition` / `overrideActivityTransition`. Change tokens in `motion.xml`, the shared specs in `Motion.kt` / `res/anim`, and `AfshWindowAnimation` only. `tests/check_motion.py` fails on navigation fades, ad-hoc screen transition specs outside `Motion.kt`, alpha in `screen_*.xml`, a revived `ScreenMotion` / `SettingsActivity`, or missing theme window animations.
 
 ### Color
 
-Cobalt is the default accent. The launcher and light theme use `brand_cobalt`; the dark theme uses `brand_cobalt_dark` for readable accent text and controls. Both themes use neutral backgrounds. Destructive actions use `design_error`, archive uses cobalt, and mute uses a neutral slate. White icon paths are tint masks, not independent palette choices.
+The theme is the one color source. `commons/.../colors.xml` holds the Material 3 static baseline (`m3_*` light and `m3_*_dark`); screens never invent new names. `afshColorScheme(dark)` in `ui/AfshTheme.kt` maps them to every Material slot, and everything else reads roles or the same `m3_*` names:
 
-Kotlin screens obtain the current accent, foreground and background through Commons' `getProperPrimaryColor()`, `getProperTextColor()` and `getProperBackgroundColor()`. These respect customization. Use `getContrastColor()` for content on a user-selected fill. Static action colors come from the semantic resources in `colors.xml`. Do not add hex colors or RGB calls to activities, adapters, layouts or drawables.
+- Compose screens read Material slots through `MaterialTheme.colorScheme` and the AFSH job roles through `Afsh.colors`.
+- XML widgets and Commons screens (the app-lock dialog and screen) use `AppTheme.Afsh.Light` and `AppTheme.Afsh.Dark` in `styles.xml`, whose items mirror the same roles. `SimpleActivity.setTheme()` and Commons' `getThemeId()` (through `App.themeId`) always pick one of them by `afshDark()`.
+- Notifications and Commons' stored accent use `primaryRoleColor()`. `Config.applyThemeDefaults()` defaults Appearance to System and points the stored accent at the primary role on every start; Settings calls `syncAccentWithTheme()` after the light or dark choice changes. Commons' `isDynamicTheme()` is always false, so the wallpaper never recolors the app.
 
-`SimpleActivity.setTheme()` selects our cobalt theme when the configured accent is cobalt. This keeps XML controls consistent with runtime colors and avoids Commons' green fallback for custom colors. Explicit custom palettes and Material You continue to use Commons' theme selection.
+| Role | Light | Dark | Used for |
+| --- | --- | --- | --- |
+| `primary` / `onPrimary` | `#0B57D0` / `#FFFFFF` | `#A8C7FA` / `#062E6F` | Actions, FAB/send accent, notification, Commons accent |
+| `primaryContainer` / `onPrimaryContainer` | `#D3E3FD` / `#0842A0` | `#0842A0` / `#D3E3FD` | Sent bubbles, swipe archive panel |
+| `secondary` / `secondaryContainer` | `#00639B` / `#C2E7FF` | `#7FCFFF` / `#004A77` | Less-emphasis controls; selected chips |
+| `tertiary` / `tertiaryContainer` | `#146C2E` / `#C4EED0` | `#6DD58C` / `#0F5223` | Accent balance; avatar fills |
+| `surface` / `onSurface` | `#FFFFFF` / `#1F1F1F` | `#131314` / `#E3E3E3` | Pages, conversation list, top bars (`Afsh.colors.header`) |
+| `surfaceContainer*` | GM3 lowest→highest | GM3 lowest→highest | Cards, sheets, nav; received bubbles use `surfaceContainerHighest` |
+| `outline` / `outlineVariant` | `#747775` / `#C4C7C5` | `#8E918F` / `#444746` | Borders, dividers |
+| `error` family | `#B3261E` … | `#F2B8B5` … | Destructive actions and failures |
+| `inverseSurface` / `inversePrimary` | `#303030` / `#A8C7FA` | `#E3E3E3` / `#0B57D0` | Snackbar |
+| `Afsh.colors.accent` / `onAccent` | primary / onPrimary | primary / onPrimary | Send, FAB, primary buttons |
+| `Afsh.colors.badge` | primary / onPrimary | primary / onPrimary | Unread count |
+| `Afsh.colors.avatars` | secondary/tertiary/primary containers | same roles | Letter avatars |
 
-`Config.applyCobaltDefaults()` runs once at application startup. It replaces the old default green, opts implicit system-theme defaults into cobalt, and retains explicit custom color or system-theme selections. Later settings changes are not reset on startup.
+**No dynamic color.** `afshColorScheme` has a single static path. `ColorSourceTest` locks the GM3 primary / onPrimary accent pair.
+
+Light or dark: `afshDark()` follows system night mode when Appearance is System, otherwise the stored light/dark background. `tests/check_design_tokens.py` rejects hardcoded colors outside `colors.xml` / `AfshTheme.kt`, and `tests/check_ui_contract.py` rejects `primaryContainer` outside the theme. `DesignChecks` asserts that the XML themes, Commons' accent and the Commons screens' theme match these roles. White icon paths are tint masks, not palette choices.
+
+### Spacing
+
+One scale for gaps and padding, read through the theme as `Afsh.spacing.<step>` (defined in `ui/AfshTheme.kt`, like `Afsh.colors`). The steps are the values the screens already used; the one off-scale gap left (6dp between a row's pin, mute and unread signals) became `xs`. Every `padding`, `spacedBy` and `PaddingValues` in the app takes a step (`0.dp` is allowed), and `tests/check_ui_contract.py` fails on a literal dp in one anywhere outside `ui/AfshTheme.kt`. A padding shared at file level is a `@Composable get()` property, since the steps are read through the theme. A geometry value off the scale inside a drawn miniature (such as the theme swatch) is a named size, not spacing. Sizes (icons, touch targets, avatars) and corner radii are not spacing.
+
+| Step | Value | Use |
+| --- | --- | --- |
+| `xxs` | 2dp | Hairline offsets, such as a badge nudge or a line gap inside one text block |
+| `xs` | 4dp | Tight gaps between an icon and its label or between stacked text lines |
+| `sm` | 8dp | Gaps between related controls and the inner padding of compact chips |
+| `md` | 12dp | Standard gap between items in a row or list, and inner padding of small cards |
+| `lg` | 16dp | Page side padding, default card padding, and gaps between groups |
+| `xl` | 20dp | Roomy row padding and gaps between sections |
+| `xxl` | 24dp | Gaps between major blocks |
+| `xxxl` | 32dp | Empty-state and onboarding breathing room |
 
 ### Components
 
-Keep surface-colored app bars, one filled icon family, letter avatars for individual contacts, and group icons for groups. Reserve accent for actions, unread indicators, selected filters and sent messages. Attachment actions share a neutral tinted background.
+App bars use the header color role (`Afsh.colors.header`: surface / onSurface). Every interface icon comes from Material Symbols Rounded (weight 400, grade 0, optical size 24). Primary accents the primary action button, send button, new message FAB, selected schedule chip, and new activity signals. Badges use `Afsh.colors.badge` (primary / onPrimary); selected items use `secondaryContainer`; sent message bubbles use `primaryContainer`. Attachment action tiles use `secondaryContainer`. Letter avatars identify individual contacts; group icons mark groups.
 
-Use the named bubble and tail radii in `dimens.xml`, the shared minimum touch target for composer actions, and the shared attachment action dimensions. Component-local constraint geometry can remain in its layout; reusable sizes belong in resources.
+Corners come from the theme's shape scale, never a literal `RoundedCornerShape` in UI code (`tests/check_ui_contract.py` fails on one). Use `MaterialTheme.shapes` (extraSmall 4dp, small 12dp, medium 16dp, large 22dp, extraLarge 28dp) for Material roles, and `AfshCorners` for corners without a slot: message bubbles (16dp, 4dp tail), every bottom sheet top (28dp) and the SIM badge. Use the shared minimum touch target for composer actions, and the shared attachment action dimensions. Component-local constraint geometry can remain in its layout; reusable sizes belong in resources.
 
-Keep system typography and the user's font-size choice. List primary, secondary and metadata text use the multipliers in `design_values.xml`. Read and unread rows share their geometry; unread emphasis changes weight and opacity.
+Every shared component in `ui/components/` is stock Material 3 or a thin wrapper over it, and draws no surface of its own (`tests/check_material_components.py` fails on `BasicTextField`, `.background(` or `.border(` there). Destination card is a `Card` holding a `ListItem`; info panel, empty state, attention notice, import notice and identity card are `Card`s; action tiles are clickable `Card`s; search field and text field are the outlined `OutlinedTextField` with `afshFieldColors` (a `secondaryContainer` stroke at rest, the `focusRing` role while focused, the error colour when invalid); count badges are `Badge`; the date pill is a round `Surface`; the unread line is two `HorizontalDivider`s; snackbars are `Snackbar`. The first-run import notice (`ImportNotice`) is one continuous card for the whole setup after the app becomes the default SMS app: a fixed label (`import_progress_title`), one progress bar, and a tabular `import_progress_percent` sized for `100%` on the same row. Conversation reconcile and message/search indexing share that single weighted percent (it only rises); the card never shows an X-of-Y count, never clears between stages, and disappears once at 100% when the inbox is ready (`tests/check_import_progress.py`). The few without a stock equivalent, each for one reason:
+
+- `SelectionCheck`: Material 3's `Checkbox` is square and the design's selection check is round.
+- `DetailRow`: `ListItem`'s trailing slot cannot let a long value wrap at the row's end.
+- `LabeledField`: its caption and value line up with the identity card's text inset, which `ListItem`'s 16dp inset breaks.
+- `DisabledComposer`: a switched-off copy of the composer's own `Surface`s; Material 3 has no disabled composer.
+- `SwipeableRow`, `SelectableBubbleRow`, `PageScaffold`, `Motion` (`ScreenStack`, `TabSwitch`): layout, gesture and navigation-motion wiring around stock `SwipeToDismissBox`, `Scaffold` and Compose animation, not surfaces.
+
+Message bubbles and the composer are built from stock Material 3 components (`tests/check_material_components.py` fails on a hand-drawn one). Every bubble, in the conversation, Spam and message details, is `MessageBubble`: a `Surface` whose color role comes from `BubbleTone` (received, sent, failed, selected; selection wins) and whose shape comes from `AfshCorners.bubble`. Only `MessageBubble.kt` reads the sent-bubble role. The composer band is a `Surface`; the field is the same outlined `OutlinedTextField`, the attach and SIM controls are `IconButton`s, send is a `FilledIconButton`, the length pill, tiles and remove dot are `Surface`s; the attach sheet is the shared `AfshSheet`. Compose tests find composer controls by their label and role, as TalkBack does.
+
+Keep system typography and the user's font-size choice via `afshTextScale()`. Read and unread rows share their geometry; unread emphasis changes weight and opacity. The inbox can show an optional unread count badge on the navigation tab (controlled by `show_inbox_unread_count` in config; `NavBadges` and `NavCounts` in `Navigation.kt`).
 
 ### Icon exports and checks
 
-The monochrome launcher icon aliases the foreground vector. `python3 tools/export_icon.py` regenerates the SVG, WebP, store PNGs and `ic_message_bubble.xml` from that vector and `colors.xml`. The notification and new-conversation icons use this bubble without the launcher's adaptive-icon padding. Run the exporter with system Python containing PyGObject/Rsvg and Pillow. Exported assets are generated copies, not editable design sources.
+The adaptive foreground vector (`ic_launcher_foreground.xml`) is the only hand-edited logo shape. The adaptive monochrome layer references that same drawable. `python3 tools/export_icon.py` regenerates `graphics/icon.svg`, the WebP/store PNGs, `graphics/icon.stamp` and `ic_message_bubble.xml` from that vector and `commons/.../colors.xml`. `--check` (stdlib only) diffs the text outputs and compares the stamp's input hash so stale rasters are caught without pixel-diffing or Rsvg. The notification small icon is the same mark without adaptive-icon padding. Writing rasters needs system Python with PyGObject/Rsvg and Pillow. Exported assets are generated copies, not editable design sources.
 
-`python3 tests/check_design_tokens.py` rejects inline colors and opacity values. Android `DesignChecks` verifies readable light/dark accents, matching XML/runtime colors, migration and preserved customization. The existing `InboxChecks` covers layout and message behavior.
+`python3 tests/check_design_tokens.py` rejects inline colors and opacity values. `python3 tests/check_spacing_tokens.py` verifies that every spacing step in `AfshSpacing` is documented and used. `python3 tests/check_import_progress.py` keeps the first-run import notice as one rising percent with a fixed label. Android `DesignChecks` asserts only on theme roles: the XML themes and Commons' accent match the Compose roles in light and dark, an older stored accent moves to the primary role, and primary stays readable on the surface. No check names a palette value.
 
-Conversation day dividers, the temporary sticky date and in-card metadata follow [the thread date behavior](docs/thread-dates.md).
+Conversation day dividers, the temporary sticky date and in-card metadata follow the thread date behavior in the conversation UI (day headers between messages, a sticky date while scrolling, and time · SIM lines on message details).

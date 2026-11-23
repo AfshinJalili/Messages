@@ -19,19 +19,20 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import com.afsh.messages.R
+import com.afsh.messages.ui.Afsh
 import com.afsh.messages.ui.components.InfoPanel
 import com.afsh.messages.ui.components.AfshButton
 import com.afsh.messages.ui.components.PageContentPadding
 import com.afsh.messages.ui.components.PageNavigation
 import com.afsh.messages.ui.components.PageScaffold
 
-/** 51 · Spam / move rule list: export this device's rules, or merge a file into them. */
+/** 51 · Filter rules export/import: includes always-spam, phrases and the never-spam allowlist. */
 @Composable
 fun MoveRulesScreen(
     numbers: Int,
     phrases: Int,
+    allowed: Int,
     navigation: PageNavigation,
     snackbarHostState: SnackbarHostState,
     onBack: () -> Unit,
@@ -41,9 +42,8 @@ fun MoveRulesScreen(
 ) {
     val colors = MaterialTheme.colorScheme
     PageScaffold(
-        title = stringResource(R.string.move_block_rules),
+        title = stringResource(R.string.move_filter_rules),
         modifier = modifier,
-        subtitle = stringResource(R.string.move_block_rules_subtitle),
         onBack = onBack,
         navigation = navigation,
         snackbarHostState = snackbarHostState,
@@ -52,15 +52,15 @@ fun MoveRulesScreen(
             Modifier
                 .verticalScroll(rememberScrollState())
                 .padding(PageContentPadding),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(Afsh.spacing.md),
         ) {
             Column(
                 Modifier
                     .fillMaxWidth()
                     .clip(MaterialTheme.shapes.medium)
                     .background(colors.surfaceContainer)
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                    .padding(Afsh.spacing.lg),
+                verticalArrangement = Arrangement.spacedBy(Afsh.spacing.sm),
             ) {
                 Text(
                     stringResource(R.string.what_will_be_exported),
@@ -72,6 +72,7 @@ fun MoveRulesScreen(
                         R.string.rules_summary,
                         pluralStringResource(R.plurals.blocked_number_count, numbers, numbers),
                         pluralStringResource(R.plurals.blocked_phrase_count, phrases, phrases),
+                        pluralStringResource(R.plurals.never_spam_sender_count, allowed, allowed),
                     ),
                     style = MaterialTheme.typography.bodyMedium,
                     color = colors.onSurfaceVariant,
@@ -83,19 +84,19 @@ fun MoveRulesScreen(
                 color = colors.onSurfaceVariant,
             )
             AfshButton(
-                stringResource(R.string.export_block_list),
+                stringResource(R.string.export_filter_rules),
                 onClick = onExport,
                 modifier = Modifier.fillMaxWidth(),
-                enabled = numbers + phrases > 0,
+                enabled = numbers + phrases + allowed > 0,
             )
             InfoPanel(
-                title = stringResource(R.string.have_a_block_list),
-                body = stringResource(R.string.have_a_block_list_text),
+                title = stringResource(R.string.have_filter_rules),
+                body = stringResource(R.string.have_filter_rules_text),
                 modifier = Modifier
                     .clip(MaterialTheme.shapes.medium)
                     .clickable(role = Role.Button, onClick = onImport),
                 prominent = true,
-                contentPadding = PaddingValues(16.dp),
+                contentPadding = PaddingValues(Afsh.spacing.lg),
             )
         }
     }
