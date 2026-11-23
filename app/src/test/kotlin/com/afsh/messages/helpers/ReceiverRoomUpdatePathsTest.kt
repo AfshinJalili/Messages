@@ -20,7 +20,7 @@ class ReceiverRoomUpdatePathsTest {
     @Test
     fun `sms receive writes conversation and message then publishes IncomingMessage`() {
         val text = source("SmsReceiver.kt")
-        assertTrue(text.contains("insertOrUpdateConversation"))
+        assertTrue(text.contains("conversations.insertOrUpdate("))
         assertTrue(text.contains("messagesDB.insertOrUpdate"))
         assertTrue(text.contains("MessagingEvent.IncomingMessage"))
         assertFalse(text.contains("showMessageNotification"))
@@ -29,7 +29,7 @@ class ReceiverRoomUpdatePathsTest {
     @Test
     fun `mms receive writes conversation then publishes IncomingMessage`() {
         val text = source("MmsReceiver.kt")
-        assertTrue(text.contains("insertOrUpdateConversation"))
+        assertTrue(text.contains("conversations.insertOrUpdate("))
         assertTrue(text.contains("refreshUnreadCounts"))
         assertTrue(text.contains("MessagingEvent.IncomingMessage"))
         assertFalse(text.contains("showMessageNotification"))
@@ -38,7 +38,7 @@ class ReceiverRoomUpdatePathsTest {
     @Test
     fun `mark as read writes read state without full reconcile`() {
         val text = source("MarkAsReadReceiver.kt")
-        assertTrue(text.contains("markThreadMessagesRead"))
+        assertTrue(text.contains("markThreadRead"))
         assertFalse(text.contains("refreshInbox"))
     }
 
@@ -63,15 +63,15 @@ class ReceiverRoomUpdatePathsTest {
     @Test
     fun `delete updates last conversation message then publishes MessageDeleted`() {
         val text = source("DeleteSmsReceiver.kt")
-        assertTrue(text.contains("updateLastConversationMessage"))
+        assertTrue(text.contains("refreshFromTelephony"))
         assertTrue(text.contains("MessagingEvent.MessageDeleted"))
     }
 
     @Test
-    fun `conversation sync helper still writes through insertOrUpdateConversation`() {
+    fun `conversation sync helper still writes through ConversationRepository`() {
         val text = File("src/main/kotlin/com/afsh/messages/helpers/ConversationSync.kt").readText()
         assertTrue(text.contains("fun syncThread"))
-        assertTrue(text.contains("insertOrUpdateConversation"))
-        assertTrue(text.contains("getConversations"))
+        assertTrue(text.contains("conversations.insertOrUpdate("))
+        assertTrue(text.contains("conversations.conversation(threadId)"))
     }
 }

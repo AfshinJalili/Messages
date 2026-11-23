@@ -11,9 +11,11 @@ import com.afsh.commons.extensions.showErrorToast
 import com.afsh.commons.helpers.SimpleContactsHelper
 import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.messages.extensions.*
+import com.afsh.messages.helpers.ConversationRepository
 import com.afsh.messages.helpers.MessagingEvent
 import com.afsh.messages.helpers.MessagingEvents
 import com.afsh.messages.helpers.REPLY
+import com.afsh.messages.helpers.TelephonyReader
 import com.afsh.messages.helpers.THREAD_ID
 import com.afsh.messages.helpers.THREAD_NUMBER
 import com.afsh.messages.messaging.sendMessageCompat
@@ -25,7 +27,7 @@ class DirectReplyReceiver : BroadcastReceiver() {
         val threadId = intent.getLongExtra(THREAD_ID, 0L)
         var body = RemoteInput.getResultsFromIntent(intent)?.getCharSequence(REPLY)?.toString() ?: return
 
-        body = context.removeDiacriticsIfNeeded(body)
+        body = body.removeDiacriticsIfNeeded(context.config.useSimpleCharacters)
 
         if (address != null) {
             var subscriptionId: Int? = null
@@ -42,14 +44,14 @@ class DirectReplyReceiver : BroadcastReceiver() {
                 var messageId = 0L
                 try {
                     context.sendMessageCompat(body, listOf(address), subscriptionId, emptyList())
-                    val message = context.getMessages(
+                    val message = TelephonyReader(context).getMessages(
                         threadId = threadId, includeScheduledMessages = false, limit = 1
                     ).lastOrNull()
                     if (message != null) {
                         context.messagesDB.insertOrUpdate(message)
                         messageId = message.id
 
-                        context.updateLastConversationMessage(threadId)
+                        ConversationRepository.from(context).refreshFromTelephony(listOf(threadId))
                     }
                 } catch (e: Exception) {
                     context.showErrorToast(e)
@@ -67,9 +69,8 @@ class DirectReplyReceiver : BroadcastReceiver() {
                     )
                 }
 
-                // markThreadMessagesRead also publishes MessagingEvent.ReadStateChanged.
-                context.markThreadMessagesRead(threadId)
-                context.conversationsDB.markRead(threadId)
+                // markThreadRead also publishes MessagingEvent.ReadStateChanged.
+                ConversationRepository.from(context).markThreadRead(threadId)
                 if (messageId != 0L) {
                     MessagingEvents.publish(MessagingEvent.MessageSent(threadId = threadId, messageId = messageId, isMms = false))
                 }

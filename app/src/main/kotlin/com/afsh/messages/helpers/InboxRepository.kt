@@ -1,14 +1,9 @@
 package com.afsh.messages.helpers
 
-import com.afsh.messages.extensions.getMessagesDB
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import com.afsh.commons.helpers.ensureBackgroundThread
-import com.afsh.messages.extensions.conversationsDB
-import com.afsh.messages.extensions.getConversations
-import com.afsh.messages.extensions.getUnreadCountsByThread
-import com.afsh.messages.extensions.telephonyThreadDigest
 
 /**
  * Room is the inbox source of truth. This schedules provider reconciliation and applies
@@ -52,7 +47,7 @@ object InboxRepository {
     }
 
     /**
-     * @param force when false, a cheap thread-count / latest-date check can skip [getConversations].
+     * @param force when false, a cheap thread-count / latest-date check can skip [ConversationRepository.conversations].
      * Launch and resume use force=false so a warm Room DB paints without a full Telephony pass.
      * Explicit repairs (retry, spam backfill) pass force=true.
      */
@@ -83,38 +78,12 @@ object InboxRepository {
 
     fun refreshUnreadCounts(context: Context? = null, threadIds: Collection<Long> = emptyList()) {
         val app = resolveContext(context) ?: return
-        ensureBackgroundThread {
-            val counts = app.getUnreadCountsByThread()
-            val stored = app.conversationsDB.getUnreadCounts()
-            val wanted = threadIds.toHashSet()
-            // Only counts that changed, in one transaction: every UPDATE fires Room's invalidation
-            // even with the same value, and each one re-ran the inbox query and rebuilt the list.
-            val changed = stored.filter { (wanted.isEmpty() || it.threadId in wanted) && (counts[it.threadId] ?: 0) != it.unreadCount }
-            if (changed.isEmpty()) return@ensureBackgroundThread
-            app.getMessagesDB().runInTransaction {
-                changed.forEach { app.conversationsDB.updateUnreadCount(it.threadId, counts[it.threadId] ?: 0) }
-            }
-        }
+        ensureBackgroundThread { ConversationRepository.from(app).syncUnreadCounts(threadIds) }
     }
 
     fun bumpAfterOutgoing(context: Context, threadId: Long, snippet: String) {
         val app = resolveContext(context) ?: return
-        ensureBackgroundThread {
-            val now = (System.currentTimeMillis() / 1000).toInt()
-            val existing = app.conversationsDB.getConversationWithThreadId(threadId)
-            val row = existing ?: app.getConversations(threadId).firstOrNull()
-            if (row != null) {
-                app.conversationsDB.insertOrUpdate(
-                    row.copy(
-                        snippet = snippet,
-                        date = now,
-                        read = true,
-                        unreadCount = 0,
-                    )
-                )
-                ConversationPreview.refresh(app, threadId)
-            }
-        }
+        ensureBackgroundThread { ConversationRepository.from(app).bumpAfterOutgoing(threadId, snippet) }
     }
 
     private fun runProviderReconcile(context: Context, force: Boolean) {
@@ -162,14 +131,8 @@ object InboxRepository {
     }
 
     /** True when Room has no rows (first import) or Telephony count/latest-date disagree with Room. */
-    internal fun needsFullReconcile(context: Context): Boolean {
-        val roomCount = context.conversationsDB.getCount()
-        if (roomCount == 0) return true
-        val roomLatest = context.conversationsDB.getLatestDate()
-        val (telephonyCount, telephonyLatest) = context.telephonyThreadDigest()
-        if (telephonyCount < 0) return true
-        return telephonyCount != roomCount || telephonyLatest != roomLatest
-    }
+    internal fun needsFullReconcile(context: Context): Boolean =
+        ConversationRepository.from(context).needsFullReconcile()
 
     private fun resolveContext(context: Context?): Context? {
         return (context ?: appContext)?.applicationContext?.also { appContext = it }

@@ -5,8 +5,7 @@ import android.content.Context
 import android.content.Intent
 import com.afsh.commons.extensions.notificationManager
 import com.afsh.commons.helpers.ensureBackgroundThread
-import com.afsh.messages.extensions.conversationsDB
-import com.afsh.messages.extensions.markThreadMessagesRead
+import com.afsh.messages.helpers.ConversationRepository
 import com.afsh.messages.helpers.MARK_AS_READ
 import com.afsh.messages.helpers.THREAD_ID
 
@@ -18,8 +17,7 @@ class MarkAsReadReceiver : BroadcastReceiver() {
                 context.notificationManager.cancel(threadId.hashCode())
                 ensureBackgroundThread {
                     // Publishes MessagingEvent.ReadStateChanged without a full reconcile.
-                    context.markThreadMessagesRead(threadId)
-                    context.conversationsDB.markRead(threadId)
+                    ConversationRepository.from(context).markThreadRead(threadId)
                 }
             }
         }

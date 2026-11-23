@@ -1,4 +1,4 @@
-package com.afsh.messages.extensions
+package com.afsh.messages.helpers
 
 import com.afsh.messages.models.Conversation
 import org.junit.Assert.assertEquals

@@ -11,7 +11,6 @@ import com.klinker.android.send_message.Utils
 import com.afsh.commons.extensions.getLongValue
 import com.afsh.commons.extensions.queryCursor
 import com.afsh.commons.helpers.isRPlus
-import com.afsh.messages.extensions.updateLastConversationMessage
 import com.afsh.messages.models.MmsAddress
 import com.afsh.messages.models.MmsBackup
 import com.afsh.messages.models.MmsPart
@@ -189,6 +188,6 @@ class MessagesWriter(private val context: Context) {
         // conversation date to the current time rather than the time of the message that was
         // inserted. Source code reference:
         // https://android.googlesource.com/platform/packages/providers/TelephonyProvider/+/android14-release/src/com/android/providers/telephony/MmsSmsDatabaseHelper.java#134
-        context.updateLastConversationMessage(modifiedThreadIds)
+        ConversationRepository.from(context).refreshFromTelephony(modifiedThreadIds)
     }
 }

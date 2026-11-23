@@ -13,7 +13,6 @@ import com.afsh.commons.extensions.getStringValueOrNull
 import com.afsh.commons.extensions.queryCursor
 import com.afsh.commons.helpers.isQPlus
 import com.afsh.commons.helpers.isRPlus
-import com.afsh.messages.extensions.getConversationIds
 import com.afsh.messages.models.MessagesBackup
 import com.afsh.messages.models.MmsAddress
 import com.afsh.messages.models.MmsBackup
@@ -27,7 +26,7 @@ class MessagesReader(private val context: Context) {
     fun getMessagesToExport(
         getSms: Boolean, getMms: Boolean, callback: (messages: List<MessagesBackup>) -> Unit
     ) {
-        val conversationIds = context.getConversationIds()
+        val conversationIds = TelephonyReader(context).threadIds()
         var smsMessages = listOf<SmsBackup>()
         var mmsMessages = listOf<MmsBackup>()
 

@@ -12,9 +12,8 @@ import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.messages.R
 import com.afsh.messages.extensions.config
 import com.afsh.messages.extensions.conversationsDB
-import com.afsh.messages.extensions.deleteConversation
 import com.afsh.commons.extensions.notificationManager
-import com.afsh.messages.extensions.updateConversationArchivedStatus
+import com.afsh.messages.helpers.ConversationRepository
 import com.afsh.messages.helpers.MessagingEvent
 import com.afsh.messages.helpers.MessagingEvents
 import com.afsh.messages.helpers.THREAD_ID
@@ -37,6 +36,7 @@ class ArchivedConversationsActivity : ComposePageActivity() {
     private var state by mutableStateOf(ArchiveUiState())
     private var archived: List<Conversation> = emptyList()
     private val unarchiving = mutableSetOf<Long>()
+    private val conversationRepository by lazy { ConversationRepository.from(this) }
     private var confirm by mutableStateOf<DeleteRequest?>(null)
 
     /** A deletion waiting for its confirmation dialog. */
@@ -143,7 +143,7 @@ class ArchivedConversationsActivity : ComposePageActivity() {
             },
             onTimeout = {
                 ensureBackgroundThread {
-                    ids.forEach { updateConversationArchivedStatus(it, false) }
+                    ids.forEach { conversationRepository.setArchived(it, false) }
                     runOnUiThread {
                         unarchiving -= ids
                         reload()
@@ -157,7 +157,7 @@ class ArchivedConversationsActivity : ComposePageActivity() {
     private fun delete(conversations: List<Conversation>) {
         state = state.copy(selected = emptySet())
         deleteConversationsWithUndo(conversations.map { it.threadId }) { threadId ->
-            deleteConversation(threadId)
+            conversationRepository.delete(threadId)
             notificationManager.cancel(threadId.hashCode())
         }
     }

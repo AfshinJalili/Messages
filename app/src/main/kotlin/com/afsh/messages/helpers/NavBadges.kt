@@ -3,7 +3,6 @@ package com.afsh.messages.helpers
 import android.content.Context
 import com.afsh.messages.extensions.config
 import com.afsh.messages.extensions.conversationsDB
-import com.afsh.messages.extensions.getUnreadSpamCounts
 import com.afsh.messages.models.Conversation
 import com.afsh.messages.ui.components.NavCounts
 import com.afsh.messages.ui.components.navCounts
@@ -30,7 +29,7 @@ object NavBadges {
         ensureBackgroundThread {
             runCatching {
                 navCounts(
-                    unreadSpam = app.getUnreadSpamCounts().values.sum(),
+                    unreadSpam = ConversationRepository.from(app).unreadSpamCounts().values.sum(),
                     unreadMessages = app.conversationsDB.getNonArchived().unreadMessageCount(),
                     inboxCountShown = app.config.showInboxUnreadCount,
                 )

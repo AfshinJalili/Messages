@@ -16,11 +16,13 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.afsh.messages.activities.MainActivity
 import com.afsh.messages.activities.ThreadActivity
 import com.afsh.messages.extensions.*
+import com.afsh.messages.helpers.ConversationRepository
 import com.afsh.messages.helpers.THREAD_ID
 import com.afsh.messages.helpers.THREAD_NUMBER
 import com.afsh.messages.helpers.THREAD_TITLE
 import com.afsh.messages.helpers.MessagingEvent
 import com.afsh.messages.helpers.MessagingEvents
+import com.afsh.messages.helpers.TelephonyReader
 import com.afsh.messages.models.Message
 import com.afsh.messages.models.ThreadItem.ThreadUnreadSeparator
 import com.afsh.messages.ui.thread.THREAD_JUMP_TAG
@@ -72,9 +74,9 @@ class RuntimeUxTicketChecks {
         val threadId = context.getThreadId(phone)
         try {
             check(sms(phone, threadId, true, 0) > 0)
-            val fixture = checkNotNull(context.getConversations(threadId).firstOrNull())
+            val fixture = checkNotNull(ConversationRepository.from(context).conversation(threadId))
             check(fixture.read && fixture.unreadCount == 0)
-            context.insertOrUpdateConversation(fixture)
+            ConversationRepository.from(context).insertOrUpdate(fixture)
             ActivityScenario.launch<MainActivity>(Intent(context, MainActivity::class.java)).use { scenario ->
                 awaitCondition("Read fixture appears") {
                     scenario.read { activity -> activity.inboxRows.any { it.threadId == threadId && it.conversation.read } }
@@ -84,7 +86,7 @@ class RuntimeUxTicketChecks {
                     MessagingEvents.publish(MessagingEvent.ConversationsChanged(reconcile = true))
                     var detail = ""
                     awaitCondition("Inbound count ${index + 1} reaches visible inbox", {
-                        "$detail; provider=${context.getUnreadCountsByThread()[threadId]}; cached=${context.conversationsDB.getConversationWithThreadId(threadId)?.unreadCount}"
+                        "$detail; provider=${ConversationRepository.from(context).unreadCountsByThread()[threadId]}; cached=${context.conversationsDB.getConversationWithThreadId(threadId)?.unreadCount}"
                     }) {
                         val row = scenario.read { activity -> activity.inboxRows.singleOrNull { it.threadId == threadId }?.conversation }
                         detail = "row=${row?.read}/${row?.unreadCount}"
@@ -101,7 +103,7 @@ class RuntimeUxTicketChecks {
         try {
             repeat(35) { sms(phone, threadId, true, it) }
             repeat(12) { sms(phone, threadId, false, 35 + it) }
-            context.getConversations(threadId).firstOrNull()?.let { context.insertOrUpdateConversation(it) }
+            ConversationRepository.from(context).conversation(threadId)?.let { ConversationRepository.from(context).insertOrUpdate(it) }
             val intent = Intent(context, ThreadActivity::class.java)
                 .putExtra(THREAD_ID, threadId).putExtra(THREAD_NUMBER, phone).putExtra(THREAD_TITLE, "Scroll fixture")
             ActivityScenario.launch<ThreadActivity>(intent).use { scenario ->
@@ -109,13 +111,13 @@ class RuntimeUxTicketChecks {
                 awaitCondition("Many unreads open at first unread, not bottom") {
                     scenario.read { it.timelineItems.isNotEmpty() && !it.timelineSettledAtBottom }
                 }
-                assertEquals(12, context.getUnreadCountsByThread()[threadId])
+                assertEquals(12, ConversationRepository.from(context).unreadCountsByThread()[threadId])
                 val size = scenario.read { it.timelineItems.size }
                 // The timeline is newest-first, so the oldest rows are at the far end.
                 compose.onNodeWithTag(THREAD_LIST_TAG).performScrollToIndex(size - 4)
                 instrumentation.waitForIdleSync()
             }
-            val remainingAfterMidScrollLeave = context.getUnreadCountsByThread()[threadId] ?: 0
+            val remainingAfterMidScrollLeave = ConversationRepository.from(context).unreadCountsByThread()[threadId] ?: 0
             assertEquals("Leaving mid-thread preserves all unreads", 12, remainingAfterMidScrollLeave)
 
             ActivityScenario.launch<ThreadActivity>(intent).use { scenario ->
@@ -123,7 +125,7 @@ class RuntimeUxTicketChecks {
                 awaitCondition("Opens at the first unread, away from the bottom") { scenario.read { !it.timelineSettledAtBottom } }
                 compose.onNodeWithTag(THREAD_JUMP_TAG).performClick()
                 awaitCondition("Jump to latest marks the whole thread read") {
-                    scenario.read { it.timelineSettledAtBottom } && (context.getUnreadCountsByThread()[threadId] ?: 0) == 0
+                    scenario.read { it.timelineSettledAtBottom } && (ConversationRepository.from(context).unreadCountsByThread()[threadId] ?: 0) == 0
                 }
             }
             assertEquals(0, context.conversationsDB.getConversationWithThreadId(threadId)?.unreadCount)
@@ -177,7 +179,7 @@ class RuntimeUxTicketChecks {
                 compose.onNodeWithTag(THREAD_JUMP_TAG).performClick()
                 awaitCondition("A single tap reaches bottom, reads the visible message and removes the divider") {
                     val reached = scenario.read { it.timelineSettledAtBottom && !it.timelineItems.contains(ThreadUnreadSeparator) }
-                    reached && (context.getUnreadCountsByThread()[threadId] ?: 0) == 0 &&
+                    reached && (ConversationRepository.from(context).unreadCountsByThread()[threadId] ?: 0) == 0 &&
                         compose.onAllNodes(hasContentDescription(context.getString(R.string.scroll_to_unread_messages, 1))).fetchSemanticsNodes().isEmpty()
                 }
                 assertTrue(manager.activeNotifications.none { it.id == threadId.hashCode() })
@@ -208,16 +210,16 @@ class RuntimeUxTicketChecks {
                 put(Telephony.Mms.CONTENT_TYPE, "application/vnd.wap.multipart.related")
             }))
             rows.add(mmsUri)
-            val smsMessages = context.getMessages(threadId).filterNot { it.isMMS }
+            val smsMessages = TelephonyReader(context).getMessages(threadId).filterNot { it.isMMS }
             val visible = smsMessages.single { it.id == visibleId }
             val unseen = smsMessages.single { it.id == unseenId }
             context.messagesDB.insertMessages(visible, unseen)
-            context.getConversations(threadId).firstOrNull()?.let { context.insertOrUpdateConversation(it) }
+            ConversationRepository.from(context).conversation(threadId)?.let { ConversationRepository.from(context).insertOrUpdate(it) }
             val mms = visible.copy(id = ContentUris.parseId(mmsUri), isMMS = true)
-            context.markVisibleMessagesRead(threadId, listOf(visible, mms))
-            assertEquals(1, context.getUnreadCountsByThread()[threadId])
+            ConversationRepository.from(context).markVisibleMessagesRead(threadId, listOf(visible, mms))
+            assertEquals(1, ConversationRepository.from(context).unreadCountsByThread()[threadId])
             assertEquals(1, context.conversationsDB.getConversationWithThreadId(threadId)?.unreadCount)
-            assertFalse(context.getMessages(threadId).single { it.id == unseenId && !it.isMMS }.read)
+            assertFalse(TelephonyReader(context).getMessages(threadId).single { it.id == unseenId && !it.isMMS }.read)
             assertFalse(context.messagesDB.getThreadMessages(threadId).single { it.id == unseenId }.read)
             assertFalse("SMS/MMS IDs must not alias in the adapter", Message.areItemsTheSame(visible, visible.copy(isMMS = true)))
         } finally { cleanup(threadId) }

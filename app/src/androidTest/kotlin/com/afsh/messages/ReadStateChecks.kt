@@ -9,7 +9,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.afsh.messages.activities.MainActivity
 import com.afsh.messages.activities.ThreadActivity
 import com.afsh.messages.extensions.conversationsDB
-import com.afsh.messages.extensions.markThreadMessagesRead
+import com.afsh.messages.helpers.ConversationRepository
 import com.afsh.messages.helpers.THREAD_ID
 import com.afsh.messages.helpers.THREAD_NUMBER
 import com.afsh.messages.helpers.THREAD_TITLE
@@ -33,7 +33,7 @@ class ReadStateChecks {
         try {
             ActivityScenario.launch<MainActivity>(Intent(context, MainActivity::class.java)).use { scenario ->
                 room.insert()
-                context.markThreadMessagesRead(fixture.threadId)
+                ConversationRepository.from(context).markThreadRead(fixture.threadId)
                 check(context.conversationsDB.getConversationWithThreadId(fixture.threadId)?.read == true)
                 scenario.awaitUntil("Read completed in Room, but the inbox still shows the thread as unread", READ_TIMEOUT_MS) { activity ->
                     val row = activity.inboxRows.singleOrNull { it.threadId == fixture.threadId }?.conversation
