@@ -25,6 +25,7 @@ private class FakeSendPlatform : MessageSendCoordinator.Platform {
     var defaultSms = 9
     var exactAlarms = true
     var transmitError: Throwable? = null
+    var alarmError: Exception? = null
     val transmits = ArrayList<Transmit>()
     var provider = listOf<Message>()
     val alarms = ArrayList<Message>()
@@ -43,7 +44,10 @@ private class FakeSendPlatform : MessageSendCoordinator.Platform {
     }
     override fun latestMessages(threadId: Long, limit: Int) = provider.take(limit)
     override fun canScheduleExactAlarms() = exactAlarms
-    override fun setAlarm(message: Message) { alarms += message }
+    override fun setAlarm(message: Message) {
+        alarmError?.let { throw it }
+        alarms += message
+    }
     override fun dropScheduled(messageId: Long) { dropped += messageId }
     override fun createScheduledConversation(message: Message, threadId: Long, cached: Conversation?) { temporaryThreads += threadId }
     override fun bumpAfterScheduling(threadId: Long, snippet: String) { snippetBumps += threadId to snippet }
@@ -285,6 +289,37 @@ class MessageSendCoordinatorTest {
         )
         assertEquals(MessageSendCoordinator.SaveRequest.Folder, sender.saveAttachments(listOf(photo, photo)))
         assertNull(sender.saveAttachments(emptyList()))
+    }
+
+    @Test
+    fun `scheduling reports an alarm the worker cannot set instead of crashing`() {
+        platform.alarmError = SecurityException("exact alarms revoked")
+
+        onWorker.send("later", emptyList(), 3, NOW + 60_000)
+        runWorker()
+
+        assertEquals(listOf<Any?>("exact alarms revoked"), host.failures)
+        assertFalse("scheduled" in host.events)
+    }
+
+    @Test
+    fun `an edited schedule reports an alarm the worker cannot set instead of crashing`() {
+        platform.alarmError = SecurityException("exact alarms revoked")
+        val old = provider(4, threadId = 5).copy(body = "old", isScheduled = true)
+
+        onWorker.updateScheduled(old, "new", NOW + 120_000)
+        runWorker()
+
+        assertEquals(listOf<Any?>("exact alarms revoked"), host.failures)
+        assertTrue(platform.snippetReplacements.isEmpty())
+    }
+
+    /** Work handed to the background runs later, on the worker, as on the phone: its exceptions don't reach the caller. */
+    private val worker = ArrayList<() -> Unit>()
+    private val onWorker = MessageSendCoordinator(platform, people, host, clock = { NOW }, newId = { 77L }, background = { worker += it })
+
+    private fun runWorker() {
+        while (worker.isNotEmpty()) worker.removeAt(0)()
     }
 
     private fun failuresAre(failure: Any?, type: Class<*>) = type.isInstance(failure)

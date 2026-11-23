@@ -98,8 +98,9 @@ class MessageSendCoordinator(
         fun askForExactAlarms()
         /** Background thread. */
         fun attachmentsSaved()
+        /** Any thread. */
         fun failed(error: Exception)
-        /** [message] is null when the error has none. */
+        /** Any thread. [message] is null when the error has none. */
         fun failed(message: String?)
     }
 
@@ -166,8 +167,8 @@ class MessageSendCoordinator(
         }
 
         refreshedSinceSent = false
-        try {
-            background {
+        background {
+            try {
                 val messageId = newId()
                 val isFirst = host.loaded().isEmpty()
                 val message = scheduledMessage(text, selections, subscriptionId, messageId, millis, isFirst)
@@ -180,9 +181,9 @@ class MessageSendCoordinator(
                 platform.setAlarm(message)
                 store(message)
                 host.scheduled()
+            } catch (e: Exception) {
+                host.failed(e.localizedMessage)
             }
-        } catch (e: Exception) {
-            host.failed(e.localizedMessage)
         }
     }
 
@@ -193,15 +194,19 @@ class MessageSendCoordinator(
             return
         }
         background {
-            val updated = message.copy(
-                body = text,
-                date = (millis / 1000).toInt(),
-                attachment = message.attachment?.copy(text = text),
-            )
-            // The alarm is keyed by the message id, so this replaces the old one.
-            platform.setAlarm(updated)
-            store(updated)
-            platform.replaceSnippet(host.threadId, old = message.body, new = text)
+            try {
+                val updated = message.copy(
+                    body = text,
+                    date = (millis / 1000).toInt(),
+                    attachment = message.attachment?.copy(text = text),
+                )
+                // The alarm is keyed by the message id, so this replaces the old one.
+                platform.setAlarm(updated)
+                store(updated)
+                platform.replaceSnippet(host.threadId, old = message.body, new = text)
+            } catch (e: Exception) {
+                host.failed(e.localizedMessage)
+            }
         }
     }
 
