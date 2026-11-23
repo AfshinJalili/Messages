@@ -134,8 +134,6 @@ dependencies {
     implementation(project(":commons"))
     implementation(libs.mmslib)
     implementation(libs.androidx.biometric.ktx)
-    implementation(libs.androidx.swiperefreshlayout)
-    implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.documentfile)
     implementation(libs.androidx.lifecycle.process)
     implementation(libs.androidx.profileinstaller)
@@ -158,6 +156,6 @@ dependencies {
     testImplementation(libs.sqlite.jdbc)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.ext.junit)
-    androidTestImplementation("androidx.test.uiautomator:uiautomator:2.3.0")
+    androidTestImplementation(libs.androidx.test.uiautomator)
     detektPlugins(libs.compose.detekt)
 }
