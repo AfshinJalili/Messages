@@ -3,7 +3,9 @@ package com.afsh.messages.ui.components
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.core.VectorConverter
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -18,6 +20,7 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -32,6 +35,7 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.onLongClick
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
@@ -70,6 +74,7 @@ fun SelectableBubbleRow(
     val align = if (incoming) Alignment.Start else Alignment.End
     val boxAlign = if (incoming) Alignment.CenterStart else Alignment.CenterEnd
     // Skip animation, AnimatedVisibility, and tap-intercept machinery for rows that never entered selection.
+    val selectingAtCreation = remember { selecting }
     var everSelected by remember { mutableStateOf(selecting) }
     if (selecting) everSelected = true
     if (!everSelected) {
@@ -81,14 +86,20 @@ fun SelectableBubbleRow(
         }
         return
     }
-    // A layout offset, not a narrower slot: the bubble moves as one piece.
-    val shift by animateDpAsState(
-        if (selecting && incoming) CheckSlot else 0.dp,
-        tween(if (selecting) SELECTION_ENTER_MS else SELECTION_EXIT_MS, easing = if (selecting) FastOutSlowInEasing else FastOutLinearInEasing),
-        label = "selection shift",
-    )
+    // A layout offset, not a narrower slot: the bubble moves as one piece. Animatable, not
+    // animateDpAsState: this branch first composes at the moment of the long press, and an
+    // animateDpAsState that enters composition starts at its target and would snap. A row created
+    // while already selecting (scrolled into view) starts at the target on purpose.
+    val shift = remember { Animatable(if (selectingAtCreation && incoming) CheckSlot else 0.dp, Dp.VectorConverter) }
+    val shiftTarget = if (selecting && incoming) CheckSlot else 0.dp
+    LaunchedEffect(shiftTarget) {
+        shift.animateTo(
+            shiftTarget,
+            tween(if (selecting) SELECTION_ENTER_MS else SELECTION_EXIT_MS, easing = if (selecting) FastOutSlowInEasing else FastOutLinearInEasing),
+        )
+    }
     val toggle by rememberUpdatedState(onToggle)
-    val shiftModifier = Modifier.offset { IntOffset(shift.roundToPx(), 0) }
+    val shiftModifier = Modifier.offset { IntOffset(shift.value.roundToPx(), 0) }
     Column(modifier.fillMaxWidth(), horizontalAlignment = align) {
         above?.invoke(shiftModifier)
         Box(
@@ -102,7 +113,7 @@ fun SelectableBubbleRow(
                 horizontalAlignment = align,
                 content = bubble,
             )
-            RowCheck(selecting, checked, Modifier.align(Alignment.CenterStart))
+            RowCheck(selecting, selectingAtCreation, checked, Modifier.align(Alignment.CenterStart))
         }
     }
 }
@@ -120,9 +131,12 @@ private fun Modifier.bubbleSlotWidth(): Modifier = layout { measurable, constrai
 
 /** The selection check at the start of a row; outside any Column or Row scope so it gets the plain AnimatedVisibility. */
 @Composable
-private fun RowCheck(visible: Boolean, checked: Boolean, modifier: Modifier = Modifier) {
+private fun RowCheck(visible: Boolean, visibleAtCreation: Boolean, checked: Boolean, modifier: Modifier = Modifier) {
+    // Starts hidden unless the row was created selecting, so the first long press plays the enter transition.
+    val state = remember { MutableTransitionState(visibleAtCreation) }
+    state.targetState = visible
     AnimatedVisibility(
-        visible,
+        state,
         modifier,
         enter = fadeIn(tween(SELECTION_ENTER_MS, easing = FastOutSlowInEasing)) +
             scaleIn(tween(SELECTION_ENTER_MS, easing = FastOutSlowInEasing), initialScale = CHECK_START_SCALE),
