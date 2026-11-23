@@ -21,7 +21,7 @@ composer_files = [
     root / 'ui/components/MessageBubble.kt',
 ]
 bubble_screens = [
-    root / 'ui/thread/ThreadScreen.kt',
+    root / 'ui/thread/MessageBubble.kt',
     root / 'ui/spam/SpamScreen.kt',
     root / 'ui/message/MessagePages.kt',
 ]
@@ -36,7 +36,7 @@ for path in bubble_screens:
     if 'MessageBubble(' not in text:
         violations.append(f'{path.relative_to(root)}: draws a bubble without MessageBubble')
 for path in root.rglob('*.kt'):
-    if path.name in ('MessageBubble.kt', 'AfshTheme.kt'):
+    if path.relative_to(root).as_posix() in ('ui/components/MessageBubble.kt', 'ui/AfshTheme.kt'):
         continue
     for number, line in enumerate(path.read_text().splitlines(), 1):
         if 'sentBubble' in line:

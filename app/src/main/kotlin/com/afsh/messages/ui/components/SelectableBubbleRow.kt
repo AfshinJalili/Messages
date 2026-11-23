@@ -37,7 +37,7 @@ import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
 
 /*
- * Bubble selection, one source for every bubble list: the conversation (ThreadScreen) and Spam (SpamScreen).
+ * Bubble selection, one source for every bubble list: the conversation (MessageBubble in ui/thread) and Spam (SpamScreen).
  * Both lay out their rows with SelectableBubbleRow and select with longPressToSelect, so selecting a
  * message looks and behaves the same everywhere. Change it here, never in a screen.
  */
