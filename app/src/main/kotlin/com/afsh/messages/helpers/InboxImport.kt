@@ -3,7 +3,6 @@ package com.afsh.messages.helpers
 import android.content.Context
 import com.afsh.messages.extensions.config
 import com.afsh.messages.extensions.conversationsDB
-import com.afsh.messages.extensions.getMessages
 import com.afsh.messages.extensions.getMessagesDB
 import com.afsh.messages.extensions.messagesDB
 import com.afsh.messages.models.Message
@@ -174,7 +173,7 @@ object InboxImport {
                     val fetched = ArrayList<Message>()
                     ids.forEach { threadId ->
                         try {
-                            val messages = app.getMessages(threadId, includeScheduledMessages = false)
+                            val messages = TelephonyReader(app).getMessages(threadId, includeScheduledMessages = false)
                             fetched += messages
                             failures = ImportFailureLedger.clearFailure(failures, threadId)
                             handled = handled + threadId

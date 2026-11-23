@@ -55,8 +55,7 @@ import com.afsh.messages.extensions.deleteScheduledMessage
 import com.afsh.messages.extensions.dialNumber
 import com.afsh.messages.extensions.filterNotInByKey
 import com.afsh.messages.extensions.getAddresses
-import com.afsh.messages.extensions.getFileSizeFromUri
-import com.afsh.messages.extensions.getMessages
+import com.afsh.messages.extensions.fileSize
 import com.afsh.messages.extensions.getThreadId
 import com.afsh.messages.extensions.getThreadParticipants
 import com.afsh.messages.extensions.getThreadTitle
@@ -103,6 +102,7 @@ import com.afsh.messages.helpers.PICK_SAVE_FILE_INTENT
 import com.afsh.messages.helpers.PICK_VIDEO_INTENT
 import com.afsh.messages.helpers.SEARCHED_MESSAGE_ID
 import com.afsh.messages.helpers.SEARCHED_MESSAGE_IS_MMS
+import com.afsh.messages.helpers.TelephonyReader
 import com.afsh.messages.helpers.THREAD_ATTACHMENT_URI
 import com.afsh.messages.helpers.THREAD_ATTACHMENT_URIS
 import com.afsh.messages.helpers.THREAD_ID
@@ -174,7 +174,6 @@ import com.afsh.commons.extensions.getMyFileUri
 import com.afsh.commons.extensions.hasPermission
 import com.afsh.commons.extensions.hideKeyboard
 import com.afsh.commons.extensions.launchActivityIntent
-import com.afsh.commons.extensions.normalizeString
 import com.afsh.commons.extensions.notificationManager
 import com.afsh.commons.extensions.openRequestExactAlarmSettings
 import com.afsh.commons.extensions.shareTextIntent
@@ -215,6 +214,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
     private val imageCompressor by lazy { ImageCompressor(this) }
     private val drafts by lazy { DraftsRepository.from(this) }
     private val recycleBin by lazy { RecycleBinRepository.from(this) }
+    private val telephony by lazy { TelephonyReader(this) }
 
     private var darkTheme by mutableStateOf(false)
     private var textScale by mutableFloatStateOf(1f)
@@ -295,7 +295,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
 
         override fun smsLength(text: String): Pair<Int, Int>? {
             if (!config.showCharacterCounter) return null
-            val length = SmsMessage.calculateLength(if (config.useSimpleCharacters) text.normalizeString() else text, false)
+            val length = SmsMessage.calculateLength(text.removeDiacriticsIfNeeded(config.useSimpleCharacters), false)
             return length[0] to length[2]
         }
     }
@@ -798,7 +798,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
 
             val cachedMessagesCode = ArrayList(data.list).hashCode()
             if (!isRecycleBin) {
-                var messages = getMessages(threadId, includeAllUnread = true)
+                var messages = telephony.getMessages(threadId, includeAllUnread = true)
                 if (config.useRecycleBin) {
                     val recycledMessages = messagesDB.getThreadMessagesFromRecycleBin(threadId)
                     messages = messages.filterNotInByKey(recycledMessages) { it.getStableId() }
@@ -972,7 +972,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
     }
 
     private fun fetchOlderMessages(cutoff: Int): List<Message> =
-        data.prependOlder(getMessages(threadId, cutoff).filterNotInByKey(data.list) { it.getStableId() })
+        data.prependOlder(telephony.getMessages(threadId, cutoff).filterNotInByKey(data.list) { it.getStableId() })
 
     /**
      * Read state stays blocked until the jump has scrolled ([ThreadEvent.JumpSettled]), and timeline
@@ -1080,7 +1080,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         val current = data.list
         val lastMaxId = current.filterNot { it.isScheduled }.maxByOrNull { it.id }?.id ?: 0L
         val newThreadId = getThreadId(participants.getAddresses().toSet())
-        val newMessages = getMessages(newThreadId, includeScheduledMessages = false,
+        val newMessages = telephony.getMessages(newThreadId, includeScheduledMessages = false,
             includeAllUnread = true, oldestLoadedDate = current.firstOrNull { !it.isScheduled }?.date)
         if (current.isNotEmpty() && current.all { it.isScheduled } && newMessages.isNotEmpty()) {
             // update scheduled messages with real thread id
@@ -1660,7 +1660,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         val mmsFileSizeLimit = config.mmsFileSizeLimit
         if (isGif || !isImage) {
             // is it assumed that images will always be compressed below the max MMS size limit
-            val fileSize = getFileSizeFromUri(uri)
+            val fileSize = contentResolver.fileSize(uri)
             if (mmsFileSizeLimit != FILE_SIZE_NONE && fileSize > mmsFileSizeLimit) {
                 toast(R.string.attachment_sized_exceeds_max_limit, length = Toast.LENGTH_LONG)
                 return
@@ -1831,7 +1831,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         if (!holder.composer.hasContent(holder.text)) return
         holder.scrollToBottom()
 
-        val text = removeDiacriticsIfNeeded(holder.text)
+        val text = holder.text.removeDiacriticsIfNeeded(config.useSimpleCharacters)
         val subscriptionId = holder.sendSubscriptionId ?: SmsManager.getDefaultSmsSubscriptionId()
 
         val scheduledMillis = holder.scheduledMillis
@@ -1893,7 +1893,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
             refreshedSinceSent = false
             sendMessageCompat(text, addresses, subscriptionId, attachments)
             ensureBackgroundThread {
-                val messages = getMessages(threadId, limit = maxOf(1, attachments.size))
+                val messages = telephony.getMessages(threadId, limit = maxOf(1, attachments.size))
                     .filterNotInByKey(data.list) { it.getStableId() }
                 for (message in messages) {
                     insertOrUpdateMessage(message)

@@ -4,7 +4,6 @@ import android.content.Context
 import android.provider.Telephony.Sms
 import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.messages.extensions.config
-import com.afsh.messages.extensions.getMessages
 import com.afsh.messages.extensions.getMessagesDB
 import com.afsh.messages.extensions.getThreadId
 import com.afsh.messages.extensions.insertNewSMS
@@ -94,7 +93,7 @@ object SpamBackfill {
     /** The Telephony message a legacy copy was made from: same thread and body, received within a minute. */
     internal fun Context.findStoredMessage(threadId: Long, body: String, date: Long): Message? {
         val before = ((date + MATCH_WINDOW_MS) / 1000).toInt() + 1
-        return getMessages(threadId, dateFrom = before, includeScheduledMessages = false)
+        return TelephonyReader(this).getMessages(threadId, dateFrom = before, includeScheduledMessages = false)
             .firstOrNull { it.body == body && abs(it.millis() - date) < MATCH_WINDOW_MS }
     }
 }

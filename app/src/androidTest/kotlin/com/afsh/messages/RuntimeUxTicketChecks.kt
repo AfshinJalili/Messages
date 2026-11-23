@@ -21,6 +21,7 @@ import com.afsh.messages.helpers.THREAD_NUMBER
 import com.afsh.messages.helpers.THREAD_TITLE
 import com.afsh.messages.helpers.MessagingEvent
 import com.afsh.messages.helpers.MessagingEvents
+import com.afsh.messages.helpers.TelephonyReader
 import com.afsh.messages.models.Message
 import com.afsh.messages.models.ThreadItem.ThreadUnreadSeparator
 import com.afsh.messages.ui.thread.THREAD_JUMP_TAG
@@ -208,7 +209,7 @@ class RuntimeUxTicketChecks {
                 put(Telephony.Mms.CONTENT_TYPE, "application/vnd.wap.multipart.related")
             }))
             rows.add(mmsUri)
-            val smsMessages = context.getMessages(threadId).filterNot { it.isMMS }
+            val smsMessages = TelephonyReader(context).getMessages(threadId).filterNot { it.isMMS }
             val visible = smsMessages.single { it.id == visibleId }
             val unseen = smsMessages.single { it.id == unseenId }
             context.messagesDB.insertMessages(visible, unseen)
@@ -217,7 +218,7 @@ class RuntimeUxTicketChecks {
             context.markVisibleMessagesRead(threadId, listOf(visible, mms))
             assertEquals(1, context.getUnreadCountsByThread()[threadId])
             assertEquals(1, context.conversationsDB.getConversationWithThreadId(threadId)?.unreadCount)
-            assertFalse(context.getMessages(threadId).single { it.id == unseenId && !it.isMMS }.read)
+            assertFalse(TelephonyReader(context).getMessages(threadId).single { it.id == unseenId && !it.isMMS }.read)
             assertFalse(context.messagesDB.getThreadMessages(threadId).single { it.id == unseenId }.read)
             assertFalse("SMS/MMS IDs must not alias in the adapter", Message.areItemsTheSame(visible, visible.copy(isMMS = true)))
         } finally { cleanup(threadId) }

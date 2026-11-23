@@ -1,5 +1,11 @@
 package com.afsh.messages.extensions
 
+import com.afsh.commons.extensions.normalizeString
+
+/** Strips accents and other combining marks when the "use simple characters" setting is on. */
+fun String.removeDiacriticsIfNeeded(useSimpleCharacters: Boolean): String =
+    if (useSimpleCharacters) normalizeString() else this
+
 fun String.getExtensionFromMimeType(): String {
     return when (lowercase()) {
         "image/png" -> ".png"

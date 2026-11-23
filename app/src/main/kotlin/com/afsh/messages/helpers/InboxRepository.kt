@@ -8,7 +8,6 @@ import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.messages.extensions.conversationsDB
 import com.afsh.messages.extensions.getConversations
 import com.afsh.messages.extensions.getUnreadCountsByThread
-import com.afsh.messages.extensions.telephonyThreadDigest
 
 /**
  * Room is the inbox source of truth. This schedules provider reconciliation and applies
@@ -166,7 +165,7 @@ object InboxRepository {
         val roomCount = context.conversationsDB.getCount()
         if (roomCount == 0) return true
         val roomLatest = context.conversationsDB.getLatestDate()
-        val (telephonyCount, telephonyLatest) = context.telephonyThreadDigest()
+        val (telephonyCount, telephonyLatest) = TelephonyReader(context).threadDigest()
         if (telephonyCount < 0) return true
         return telephonyCount != roomCount || telephonyLatest != roomLatest
     }

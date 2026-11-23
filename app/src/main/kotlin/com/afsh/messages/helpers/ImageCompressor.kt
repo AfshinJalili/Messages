@@ -11,7 +11,7 @@ import com.afsh.commons.extensions.getMyFileUri
 import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.messages.extensions.extension
 import com.afsh.messages.extensions.getExtensionFromMimeType
-import com.afsh.messages.extensions.getFileSizeFromUri
+import com.afsh.messages.extensions.fileSize
 import com.afsh.messages.extensions.isImageMimeType
 import java.io.File
 import java.io.FileOutputStream
@@ -36,7 +36,7 @@ class ImageCompressor(private val context: Context) {
     fun compressImage(uri: Uri, compressSize: Long, lossy: Boolean = compressSize < FILE_SIZE_1_MB, callback: (compressedFileUri: Uri?) -> Unit) {
         ensureBackgroundThread {
             try {
-                val fileSize = context.getFileSizeFromUri(uri)
+                val fileSize = context.contentResolver.fileSize(uri)
                 if (fileSize > compressSize) {
                     val mimeType = contentResolver.getType(uri)!!
                     if (mimeType.isImageMimeType()) {
