@@ -7,6 +7,7 @@ import com.afsh.messages.interfaces.MessagesDao
 import com.afsh.messages.models.Conversation
 import com.afsh.messages.models.Draft
 import com.afsh.messages.models.Message
+import com.afsh.messages.models.MessagePreview
 import com.afsh.messages.models.SpamMessage
 import com.afsh.messages.models.ThreadUnreadCount
 import org.junit.Assert.assertEquals
@@ -40,6 +41,8 @@ class ConversationRepositoryTest {
         override fun deleteThreadId(threadId: Long) {
             rows.remove(threadId)
         }
+        override fun updatePreview(threadId: Long, snippet: String?, date: Int?, allSpam: Boolean) =
+            update(threadId) { it.copy(previewSnippet = snippet, previewDate = date, allSpam = allSpam) }
 
         private fun update(threadId: Long, change: (Conversation) -> Conversation) {
             rows[threadId]?.let { rows[threadId] = change(it) }
@@ -75,6 +78,10 @@ class ConversationRepositoryTest {
         }
         override fun getScheduledThreadMessages(threadId: Long): List<Message> =
             messages.values.filter { it.threadId == threadId && it.isScheduled }
+        override fun getThreadSpamCount(threadId: Long): Int = spam.values.count { it.threadId == threadId }
+        override fun getLatestVisiblePreview(threadId: Long): MessagePreview? =
+            messages.values.filter { it.threadId == threadId && !(!it.isMMS && it.id in spam) }
+                .maxByOrNull { it.date }?.let { MessagePreview(it.body, it.date) }
     }
 
     private class FakeDraftsDao : DraftsDao by unsupported() {
@@ -630,6 +637,49 @@ class ConversationRepositoryTest {
 
         assertEquals(setOf(5L), messages.messages.keys)
         assertEquals(setOf(77L), conversations.rows.keys)
+    }
+
+    // endregion
+
+    // region Preview
+
+    @Test
+    fun `the preview shows the latest message that is not spam, dated only when the thread has spam`() {
+        conversations.insertOrUpdate(conversation(8).copy(messageCount = 3))
+        message(1, threadId = 8, date = 10, body = "hello")
+        message(2, threadId = 8, date = 20, body = "buy now")
+        spam(2, threadId = 8)
+
+        repository.refreshPreview(8)
+
+        val row = conversations.rows.getValue(8)
+        assertEquals("hello", row.previewSnippet)
+        assertEquals(10, row.previewDate)
+        assertFalse(row.allSpam)
+    }
+
+    @Test
+    fun `a thread of only spam is all spam, and one without spam keeps its own date`() {
+        conversations.insertOrUpdate(conversation(8).copy(messageCount = 1))
+        message(1, threadId = 8, date = 10, body = "buy now")
+        spam(1, threadId = 8)
+        conversations.insertOrUpdate(conversation(9).copy(messageCount = 1))
+        message(3, threadId = 9, date = 30, body = "hi")
+
+        repository.refreshPreview(8)
+        repository.refreshPreview(9)
+
+        assertTrue(conversations.rows.getValue(8).allSpam)
+        assertNull(conversations.rows.getValue(8).previewSnippet)
+        assertEquals("hi", conversations.rows.getValue(9).previewSnippet)
+        assertNull(conversations.rows.getValue(9).previewDate)
+    }
+
+    @Test
+    fun `no preview is written for a thread Room lacks`() {
+        message(1, threadId = 8, date = 10, body = "hello")
+        repository.refreshPreview(8)
+        assertTrue(conversations.rows.isEmpty())
     }
 
     // endregion
