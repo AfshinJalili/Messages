@@ -102,7 +102,7 @@ class SettingsPageChecks {
         check(
             events == listOf(
                 SettingsEvent.Open(SettingsPage.APPEARANCE),
-                SettingsEvent.OpenBlockRules,
+                SettingsEvent.Open(SettingsPage.FILTER_RULES),
                 SettingsEvent.Open(SettingsPage.BACKUP),
             ),
         ) { "Events $events" }

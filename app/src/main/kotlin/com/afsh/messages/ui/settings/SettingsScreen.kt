@@ -80,6 +80,8 @@ fun SettingsScreen(
                 SettingsPage.EXPORT -> ExportPage(state, onEvent)
                 SettingsPage.IMPORT_REVIEW -> ImportReviewPage(state, onEvent)
                 SettingsPage.ABOUT -> AboutPage(state, onEvent)
+                SettingsPage.FILTER_RULES, SettingsPage.BLOCK_PHRASES ->
+                    error("${page.name} is hosted by SettingsController")
             }
         }
     }
@@ -117,7 +119,7 @@ private fun ColumnScope.Overview(onEvent: (SettingsEvent) -> Unit) {
     SectionHeading(stringResource(R.string.settings_control))
     NavigationSetting(
         stringResource(R.string.filter_rules),
-        onClick = { onEvent(SettingsEvent.OpenBlockRules) },
+        onClick = { open(SettingsPage.FILTER_RULES) },
         icon = AfshIcon.SpamShield,
         value = stringResource(R.string.settings_filter_rules_summary),
     )

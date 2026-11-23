@@ -2,6 +2,7 @@ package com.afsh.messages.ui.spam
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -51,15 +52,18 @@ sealed interface BlockRulesEvent {
 @Composable
 fun BlockRulesScreen(
     state: BlockRulesUiState,
-    navigation: PageNavigation,
+    navigation: PageNavigation?,
     onEvent: (BlockRulesEvent) -> Unit,
     modifier: Modifier = Modifier,
+    /** True inside the Settings stack, where the outer scaffold owns navigation and insets. */
+    embedded: Boolean = false,
 ) {
     PageScaffold(
         title = stringResource(R.string.filter_rules),
         modifier = modifier,
         onBack = { onEvent(BlockRulesEvent.Back) },
-        navigation = navigation,
+        navigation = navigation.takeUnless { embedded },
+        contentWindowInsets = if (embedded) WindowInsets(0) else null,
         actions = {
             PageAppBarAction(AfshIcon.Share, stringResource(R.string.move_filter_rules), onClick = {
                 onEvent(BlockRulesEvent.MoveRules)

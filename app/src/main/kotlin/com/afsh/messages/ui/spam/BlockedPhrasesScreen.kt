@@ -4,6 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
@@ -50,7 +51,7 @@ private val PhraseRowHeight = 50.dp
 @Composable
 fun BlockedPhrasesScreen(
     phrases: List<String>,
-    navigation: PageNavigation,
+    navigation: PageNavigation?,
     onBack: () -> Unit,
     onAdd: (String) -> Unit,
     onEdit: (String) -> Unit,
@@ -58,6 +59,8 @@ fun BlockedPhrasesScreen(
     modifier: Modifier = Modifier,
     error: Int? = null,
     onDraftChange: () -> Unit = {},
+    /** True inside the Settings stack, where the outer scaffold owns navigation and insets. */
+    embedded: Boolean = false,
 ) {
     var draft by rememberSaveable { mutableStateOf("") }
     var seen by rememberSaveable { mutableIntStateOf(phrases.size) }
@@ -73,7 +76,8 @@ fun BlockedPhrasesScreen(
         title = stringResource(R.string.blocked_phrases),
         modifier = modifier,
         onBack = onBack,
-        navigation = navigation,
+        navigation = navigation.takeUnless { embedded },
+        contentWindowInsets = if (embedded) WindowInsets(0) else null,
     ) {
         LazyColumn(
             modifier = Modifier.imePadding(),
