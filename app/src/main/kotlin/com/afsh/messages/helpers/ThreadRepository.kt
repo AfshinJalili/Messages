@@ -102,6 +102,11 @@ class ThreadRepository(
         isHidden = { platform.isHidden(this.threadId, it) },
     )
 
+    /** The conversation moved to [threadId], as a first scheduled message makes a temporary thread. */
+    fun moveTo(threadId: Long) {
+        this.threadId = threadId
+    }
+
     /** A thread-read write is in flight. Main thread. */
     private var markReadInProgress = false
 
@@ -371,7 +376,7 @@ class ThreadRepository(
             platform = AndroidPlatform(activity.applicationContext),
             threadId = threadId,
             isRecycleBin = isRecycleBin,
-            main = activity::runOnUiThread,
+            main = { activity.runOnUiThread(it) },
             isClosing = activity::isFinishing,
         )
     }
