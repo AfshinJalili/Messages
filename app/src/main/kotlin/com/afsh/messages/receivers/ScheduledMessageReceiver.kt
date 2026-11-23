@@ -8,10 +8,10 @@ import android.os.Looper
 import android.os.PowerManager
 import com.afsh.commons.extensions.showErrorToast
 import com.afsh.commons.helpers.ensureBackgroundThread
-import com.afsh.messages.extensions.conversationsDB
 import com.afsh.messages.extensions.deleteScheduledMessage
 import com.afsh.messages.extensions.getAddresses
 import com.afsh.messages.extensions.messagesDB
+import com.afsh.messages.helpers.ConversationRepository
 import com.afsh.messages.helpers.MessagingEvent
 import com.afsh.messages.helpers.MessagingEvents
 import com.afsh.messages.helpers.SCHEDULED_MESSAGE_ID
@@ -64,7 +64,7 @@ class ScheduledMessageReceiver : BroadcastReceiver() {
 
             // delete temporary conversation and message as it's already persisted to the telephony db now
             context.deleteScheduledMessage(messageId)
-            context.conversationsDB.deleteThreadId(messageId)
+            ConversationRepository.from(context).removeFromCache(messageId)
             // Temporary scheduled thread was deleted; ScheduledMessageSent triggers a reconcile so the real Telephony thread appears.
             MessagingEvents.publish(MessagingEvent.ScheduledMessageSent(threadId = threadId, messageId = messageId))
         } catch (e: Exception) {

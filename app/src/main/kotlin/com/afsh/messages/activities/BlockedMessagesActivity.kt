@@ -1,6 +1,5 @@
 package com.afsh.messages.activities
 
-import com.afsh.messages.extensions.markMessageRead
 import android.content.Intent
 import android.os.Bundle
 import androidx.compose.runtime.Composable
@@ -11,8 +10,8 @@ import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.messages.R
 import com.afsh.messages.extensions.config
 import com.afsh.messages.extensions.deleteMessage
-import com.afsh.messages.extensions.getSpamMessages
 import com.afsh.messages.extensions.messagesDB
+import com.afsh.messages.helpers.ConversationRepository
 import com.afsh.messages.helpers.InboxRepository
 import com.afsh.messages.helpers.affectsSpam
 import com.afsh.messages.helpers.containsNumber
@@ -37,6 +36,7 @@ class BlockedMessagesActivity : ComposePageActivity() {
     private var freshVisit = true
     // Threads whose Not spam is waiting out its Undo; their markers are still in place.
     private val restoring = HashSet<Long>()
+    private val conversationRepository by lazy { ConversationRepository.from(this) }
 
     @Composable
     override fun Page() {
@@ -62,7 +62,7 @@ class BlockedMessagesActivity : ComposePageActivity() {
     override fun reload() {
         val skip = restoring.toSet()
         ensureBackgroundThread {
-            val messages = runCatching { getSpamMessages() }.getOrDefault(emptyList())
+            val messages = runCatching { conversationRepository.spamMessages() }.getOrDefault(emptyList())
                 .filter { it.id !in UndoDeletion.spam && it.threadId !in skip }
                 .map { it.copy(why = spamWhy(it.reason, it.address, it.body)) }
             runOnUiThread {
@@ -82,7 +82,7 @@ class BlockedMessagesActivity : ComposePageActivity() {
     private fun markSeen(ids: Set<Long>) {
         state = state.copy(messages = state.messages.map { if (it.id in ids) it.copy(read = true) else it })
         // Telephony is what the Spam badge counts, so this is what clears it.
-        ensureBackgroundThread { ids.forEach { markMessageRead(it, isMMS = false) } }
+        ensureBackgroundThread { ids.forEach { conversationRepository.markMessageRead(it, isMms = false) } }
     }
 
     private fun onEvent(event: SpamEvent) {

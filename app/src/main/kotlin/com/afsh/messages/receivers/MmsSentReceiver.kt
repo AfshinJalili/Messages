@@ -12,7 +12,7 @@ import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.messages.R
 import com.afsh.messages.extensions.conversationsDB
 import com.afsh.messages.extensions.deleteMessage
-import com.afsh.messages.extensions.getConversations
+import com.afsh.messages.helpers.ConversationRepository
 import com.afsh.messages.helpers.ConversationSync
 import com.afsh.messages.helpers.MessagingEvent
 import com.afsh.messages.helpers.MessagingEvents
@@ -68,7 +68,7 @@ class MmsSentReceiver : SendStatusReceiver() {
             } else {
                 val recipientName = context.conversationsDB.getConversationWithThreadId(threadId)?.title
                     ?.ifEmpty { null }
-                    ?: context.getConversations(threadId).firstOrNull()?.title
+                    ?: ConversationRepository.from(context).conversation(threadId)?.title
                     ?: ""
                 val reason = context.getString(R.string.unknown_error_occurred_sending_message, receiverResultCode)
                 MessagingEvents.publish(

@@ -28,6 +28,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import androidx.compose.ui.platform.ComposeView
+import com.afsh.messages.helpers.ConversationRepository
 import com.afsh.messages.helpers.SearchRepository
 import com.afsh.messages.ui.search.SearchUiState
 import com.afsh.messages.ui.search.SearchFilter
@@ -72,16 +73,10 @@ import com.afsh.messages.ui.components.showRenameDialog
 import com.afsh.messages.extensions.clearAllMessagesIfNeeded
 import com.afsh.messages.extensions.config
 import com.afsh.messages.extensions.conversationsDB
-import com.afsh.messages.extensions.deleteConversation
 import com.afsh.messages.extensions.dialNumber
-import com.afsh.messages.extensions.getUnreadSpamCounts
 import com.afsh.messages.helpers.NavBadges
 import com.afsh.messages.helpers.unreadMessageCount
 import com.afsh.messages.extensions.launchConversationDetails
-import com.afsh.messages.extensions.markThreadMessagesRead
-import com.afsh.messages.extensions.markThreadMessagesUnread
-import com.afsh.messages.extensions.renameConversation
-import com.afsh.messages.extensions.updateConversationArchivedStatus
 import com.afsh.messages.helpers.INBOX_FILTER
 import com.afsh.messages.helpers.InboxFilter
 import com.afsh.messages.helpers.ImportProgress
@@ -127,6 +122,7 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
     private var search by mutableStateOf(SearchUiState())
     private var searchJob: Job? = null
     private val searchRepository by lazy { SearchRepository(this) }
+    private val conversationRepository by lazy { ConversationRepository.from(this) }
     private var inboxConversations = listOf<Conversation>()
     private var roomSnapshotReceived = false
     private var splashReady = false
@@ -641,7 +637,7 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
         notificationManager.cancel(threadId.hashCode())
         ensureBackgroundThread {
             if (pending.action == SwipeAction.ARCHIVE) {
-                updateConversationArchivedStatus(threadId, true)
+                conversationRepository.setArchived(threadId, true)
             }
         }
     }
@@ -666,7 +662,7 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
             },
             commit = {
                 ids.forEach {
-                    deleteConversation(it)
+                    conversationRepository.delete(it)
                     notificationManager.cancel(it.hashCode())
                 }
             },
@@ -689,8 +685,8 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
 
             InboxAction.DELETE -> confirmDelete(selected)
 
-            InboxAction.MARK_READ -> updateInBackground { selected.filter { !it.read }.forEach { markThreadMessagesRead(it.threadId) } }
-            InboxAction.MARK_UNREAD -> updateInBackground { selected.filter { it.read }.forEach { markThreadMessagesUnread(it.threadId) } }
+            InboxAction.MARK_READ -> updateInBackground { selected.filter { !it.read }.forEach { conversationRepository.markThreadRead(it.threadId) } }
+            InboxAction.MARK_UNREAD -> updateInBackground { selected.filter { it.read }.forEach { conversationRepository.markThreadUnread(it.threadId) } }
             InboxAction.MUTE, InboxAction.UNMUTE -> {
                 val muted = action == InboxAction.MUTE
                 setMuted(selected, muted = muted)
@@ -718,7 +714,7 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
             }
 
             InboxAction.RENAME -> showRenameDialog(first) { title ->
-                updateInBackground { renameConversation(first, newTitle = title) }
+                updateInBackground { conversationRepository.rename(first, newTitle = title) }
             }
 
             InboxAction.DETAILS -> launchConversationDetails(first.threadId)
@@ -793,7 +789,7 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
 
     private fun archive(conversations: List<Conversation>) = updateInBackground {
         conversations.forEach {
-            updateConversationArchivedStatus(it.threadId, true)
+            conversationRepository.setArchived(it.threadId, true)
             notificationManager.cancel(it.threadId.hashCode())
         }
     }
@@ -942,7 +938,7 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
 
     private fun refreshSpamBadge() {
         ensureBackgroundThread {
-            val unread = getUnreadSpamCounts().values.sum()
+            val unread = conversationRepository.unreadSpamCounts().values.sum()
             runOnUiThread {
                 inbox = inbox.copy(unreadSpam = unread)
                 NavBadges.publish(inbox.navCounts)

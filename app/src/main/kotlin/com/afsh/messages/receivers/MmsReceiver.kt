@@ -11,11 +11,9 @@ import com.afsh.commons.helpers.ContactLookupResult
 import com.afsh.commons.helpers.SimpleContactsHelper
 import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.messages.R
-import com.afsh.messages.extensions.getConversations
 import com.afsh.messages.extensions.getNameFromAddress
-import com.afsh.messages.extensions.insertOrUpdateConversation
 import com.afsh.messages.extensions.shouldUnarchive
-import com.afsh.messages.extensions.updateConversationArchivedStatus
+import com.afsh.messages.helpers.ConversationRepository
 import com.afsh.messages.helpers.InboxRepository
 import com.afsh.messages.helpers.IncomingSpamClassifier
 import com.afsh.messages.helpers.MessagingEvent
@@ -66,11 +64,12 @@ class MmsReceiver : MmsReceivedReceiver() {
         val firstAttachment = mms.attachment?.attachments?.firstOrNull()
         val attachmentUri = firstAttachment?.getUri()?.toString()
 
-        val conversation = context.getConversations(mms.threadId).firstOrNull()
+        val conversations = ConversationRepository.from(context)
+        val conversation = conversations.conversation(mms.threadId)
         if (conversation != null) {
-            runCatching { context.insertOrUpdateConversation(conversation) }
+            runCatching { conversations.insertOrUpdate(conversation) }
             if (context.shouldUnarchive()) {
-                context.updateConversationArchivedStatus(mms.threadId, false)
+                conversations.setArchived(mms.threadId, false)
             }
             InboxRepository.refreshUnreadCounts(context, listOf(mms.threadId))
         }

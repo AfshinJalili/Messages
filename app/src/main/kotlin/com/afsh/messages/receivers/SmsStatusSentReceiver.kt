@@ -1,5 +1,6 @@
 package com.afsh.messages.receivers
 
+import com.afsh.messages.helpers.ConversationRepository
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
@@ -7,14 +8,13 @@ import android.net.Uri
 import android.provider.Telephony.Sms
 import com.afsh.commons.extensions.getMyContactsCursor
 import com.afsh.commons.helpers.ensureBackgroundThread
-import com.afsh.messages.extensions.getMessageRecipientAddress
 import com.afsh.messages.extensions.getNameFromAddress
-import com.afsh.messages.extensions.getSmsThreadId
 import com.afsh.messages.extensions.getThreadId
 import com.afsh.messages.extensions.messagesDB
 import com.afsh.messages.extensions.messagingUtils
 import com.afsh.messages.helpers.MessagingEvent
 import com.afsh.messages.helpers.MessagingEvents
+import com.afsh.messages.helpers.TelephonyReader
 
 /** Handles updating databases and publishing send outcomes when an SMS message is sent or fails. */
 class SmsStatusSentReceiver : SendStatusReceiver() {
@@ -39,8 +39,8 @@ class SmsStatusSentReceiver : SendStatusReceiver() {
             val type = if (succeeded) Sms.MESSAGE_TYPE_SENT else Sms.MESSAGE_TYPE_FAILED
             context.messagesDB.updateType(messageId, type)
 
-            val address = context.getMessageRecipientAddress(messageId)
-            val threadId = context.getSmsThreadId(messageId) ?: context.getThreadId(address)
+            val address = TelephonyReader(context).getSmsAddress(messageId)
+            val threadId = ConversationRepository.from(context).smsThreadId(messageId) ?: context.getThreadId(address)
 
             if (succeeded) {
                 MessagingEvents.publish(

@@ -6,13 +6,9 @@ import com.afsh.commons.extensions.getMyContactsCursor
 import com.afsh.commons.extensions.showErrorToast
 import com.afsh.commons.helpers.MyContactsContentProvider
 import com.afsh.commons.helpers.ensureBackgroundThread
-import com.afsh.messages.extensions.clearExpiredScheduledMessages
 import com.afsh.messages.extensions.config
 import com.afsh.messages.extensions.conversationsDB
-import com.afsh.messages.extensions.getConversations
-import com.afsh.messages.extensions.insertOrUpdateConversation
 import com.afsh.messages.extensions.messagesDB
-import com.afsh.messages.extensions.removeOrphanSpamMarkers
 import com.afsh.messages.models.Conversation
 
 /**
@@ -29,6 +25,7 @@ object InboxReconciler {
         ensureBackgroundThread {
             try {
                 val app = context.applicationContext
+                val repository = ConversationRepository.from(app)
                 // Raw rows, including threads the inbox hides as spam. Otherwise hidden threads would be
                 // re-inserted on every run and never removed when Telephony drops them.
                 val allCached = try {
@@ -43,7 +40,7 @@ object InboxReconciler {
                 }
                 // An empty cache means the first import: the inbox shows how far it has got.
                 val firstImport = allCached.isEmpty()
-                val conversations = app.getConversations(
+                val conversations = repository.conversations(
                     privateContacts = privateContacts,
                     failOnError = true,
                     onProgress = if (firstImport) InboxImport::reportConversations else null,
@@ -59,7 +56,7 @@ object InboxReconciler {
                 app.getMessagesDB().runInTransaction {
                     conversations.forEach { clonedConversation ->
                         if (cachedIds.add(clonedConversation.threadId)) {
-                            app.insertOrUpdateConversation(clonedConversation, cachedConv = null)
+                            repository.insertOrUpdate(clonedConversation, cached = null)
                             if (!clonedConversation.isArchived) {
                                 cachedConversations.add(clonedConversation)
                             }
@@ -71,16 +68,16 @@ object InboxReconciler {
                         val isTemporaryThread = cachedConversation.isScheduled
                         val isConversationDeleted = !conversationsById.containsKey(threadId)
                         if (isConversationDeleted && !isTemporaryThread) {
-                            app.conversationsDB.deleteThreadId(threadId)
+                            repository.removeFromCache(threadId)
                         }
 
                         val newConversation = conversationsByNumber[cachedConversation.phoneNumber]
                         if (isTemporaryThread && newConversation != null) {
-                            app.conversationsDB.deleteThreadId(threadId)
+                            repository.removeFromCache(threadId)
                             app.messagesDB.getScheduledThreadMessages(threadId).forEach { message ->
                                 app.messagesDB.insertOrUpdate(message.copy(threadId = newConversation.threadId))
                             }
-                            app.insertOrUpdateConversation(newConversation, cachedConversation)
+                            repository.insertOrUpdate(newConversation, cachedConversation)
                         }
                     }
 
@@ -89,19 +86,19 @@ object InboxReconciler {
                             !Conversation.areContentsTheSame(old = cachedConv, new = it)
                         }
                         if (conv != null) {
-                            app.insertOrUpdateConversation(conv, cachedConv)
+                            repository.insertOrUpdate(conv, cachedConv)
                         }
                     }
 
                     // Only temporary scheduled threads can expire; querying every inbox row
                     // on each reconcile was a free CPU tax after every resume and SMS.
                     allCached.filter { it.isScheduled }.forEach { conversation ->
-                        app.clearExpiredScheduledMessages(conversation.threadId)
+                        repository.clearExpiredScheduledMessages(conversation.threadId)
                     }
                 }
 
                 try {
-                    app.removeOrphanSpamMarkers()
+                    repository.removeOrphanSpamMarkers()
                 } catch (_: Exception) {
                     // Retried on the next reconcile, so it must not fail the rest of it.
                 }

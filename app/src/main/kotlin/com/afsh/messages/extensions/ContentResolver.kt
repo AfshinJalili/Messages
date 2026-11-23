@@ -1,6 +1,7 @@
 package com.afsh.messages.extensions
 
 import android.content.ContentResolver
+import android.database.Cursor
 import android.net.Uri
 import android.provider.OpenableColumns
 import com.afsh.messages.helpers.FILE_SIZE_NONE
@@ -42,5 +43,28 @@ fun ContentResolver.fileSize(uri: Uri): Long {
             } ?: FILE_SIZE_NONE
     } else {
         return FILE_SIZE_NONE
+    }
+}
+
+/**
+ * Runs [callback] on each row of the query. Unlike `queryCursor`, a failed query throws: a missing
+ * cursor or a provider error must not look like an empty table.
+ */
+internal fun ContentResolver.queryCursorUnsafe(
+    uri: Uri,
+    projection: Array<String>,
+    selection: String? = null,
+    selectionArgs: Array<String>? = null,
+    sortOrder: String? = null,
+    callback: (cursor: Cursor) -> Unit,
+) {
+    val cursor = query(uri, projection, selection, selectionArgs, sortOrder)
+        ?: throw IllegalStateException("Conversation provider returned no cursor")
+    cursor.use {
+        if (cursor.moveToFirst()) {
+            do {
+                callback(cursor)
+            } while (cursor.moveToNext())
+        }
     }
 }
