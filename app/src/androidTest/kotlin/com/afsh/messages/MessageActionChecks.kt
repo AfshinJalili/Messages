@@ -25,6 +25,7 @@ import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.uiautomator.UiDevice
 import com.afsh.messages.ui.AfshTheme
 import com.afsh.messages.ui.thread.MessageAction
 import com.afsh.messages.ui.thread.ThreadEvent
@@ -56,11 +57,11 @@ class MessageActionChecks {
         address = "", senderName = "Fixture", scheduled = scheduled,
     )
 
-    private fun show(state: ThreadUiState, textScale: Float = 1f, onEvent: (ThreadEvent) -> Unit) = compose.setContent {
+    private fun show(state: ThreadUiState, textScale: Float = 1f, onDim: (Float) -> Unit = {}, onEvent: (ThreadEvent) -> Unit) = compose.setContent {
         AfshTheme(dark = false, textScale = textScale) {
             // The selection bar lives under the timeline, in the composer's frame, as in ThreadActivity.
             Column(Modifier.size(360.dp, 640.dp)) {
-                ThreadTimeline(state, SnackbarHostState(), onEvent, Modifier.weight(1f))
+                ThreadTimeline(state, SnackbarHostState(), onEvent, Modifier.weight(1f), onDim = onDim)
                 ThreadSelectionBar(state, overComposer = false, onEvent)
             }
         }
@@ -137,6 +138,28 @@ class MessageActionChecks {
         } catch (failure: AssertionError) {
             throw AssertionError("Scroll request left its target undisplayed. $diagnostics", failure)
         }
+    }
+
+    // #308: the lifted bubble (and its shadow and fade) heads home as the sheet starts to slide away, not after the
+    // sheet's dismissal settles, when it used to hold at the sheet's resting top over an empty screen. onDim follows
+    // the lift, so it must fall well before the sheet leaves the tree.
+    @Test fun liftedBubbleLeavesWithTheSheet() {
+        var dim = 0f
+        val tall = (1..60).joinToString(" ") { "line $it of a tall message" }
+        show(ThreadUiState(items = listOf(message(987654323, tall))), onDim = { dim = it }) {}
+        compose.onNode(hasContentDescription(context.getString(R.string.message_delivered), substring = true)).performClick()
+        val sheetShown = { compose.onAllNodes(isAnySheet()).fetchSemanticsNodes().isNotEmpty() }
+        compose.waitUntil(5_000) { dim == 1f && sheetShown() }
+        compose.mainClock.autoAdvance = false
+        UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).pressBack()
+        var frames = 0
+        while (dim > 0.5f) {
+            assertTrue("The sheet settled while the lifted bubble still held at its resting top", sheetShown())
+            assertTrue("The lifted bubble never left", ++frames < 120)
+            compose.mainClock.advanceTimeByFrame()
+        }
+        compose.mainClock.autoAdvance = true
+        compose.waitUntil(5_000) { dim == 0f && !sheetShown() }
     }
 
     @Test fun largeTextMenuKeepsLastActionReachable() {

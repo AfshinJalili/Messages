@@ -93,13 +93,18 @@ fun ThreadTimeline(
     val strings = rememberBubbleStrings()
     TimelineEffects(state, newestFirst, listState, stableOnEvent)
     var lifted by remember { mutableStateOf<LiftedBubble?>(null) }
-    var sheetOpen by remember { mutableStateOf(false) }
+    // The sheet's own message: the lift can land and clear before the sheet's dismissal settles, and the sheet
+    // must stay composed until then or a dismissThen action (Delete, Forward) is cancelled with its scope.
+    var sheetFor by remember { mutableStateOf<Message?>(null) }
+    // Set when the sheet starts to slide away, well before onDismiss, so the bubble leaves with it (#308).
+    var sheetLeaving by remember { mutableStateOf(false) }
     var sheetTop by remember { mutableFloatStateOf(Float.NaN) }
     val openSheet = remember {
         { message: Message, groupedBelow: Boolean, coordinates: LayoutCoordinates ->
             lifted = LiftedBubble(message, groupedBelow, Rect(coordinates.positionOnScreen(), coordinates.size.toSize()))
             sheetTop = Float.NaN
-            sheetOpen = true
+            sheetLeaving = false
+            sheetFor = message
         }
     }
     val liftedId = lifted?.message?.getStableId()
@@ -155,7 +160,7 @@ fun ThreadTimeline(
                 val liftMsg = lift.message
                 LiftOverlay(
                     lift = lift,
-                    up = sheetOpen,
+                    up = sheetFor != null && !sheetLeaving,
                     sheetTop = sheetTop,
                     selecting = state.selecting,
                     selected = liftMsg.getStableId() in state.selected,
@@ -171,9 +176,14 @@ fun ThreadTimeline(
             }
         }
     }
-    val lift = lifted
-    if (sheetOpen && lift != null) {
-        MessageSheet(lift.message, state, onRestingTop = { sheetTop = it }, onEvent = stableOnEvent, onDismiss = { sheetOpen = false })
+    sheetFor?.let { message ->
+        MessageSheet(
+            message, state,
+            onRestingTop = { sheetTop = it },
+            onLeavingChange = { sheetLeaving = it },
+            onEvent = stableOnEvent,
+            onDismiss = { sheetFor = null },
+        )
     }
 }
 

@@ -69,6 +69,8 @@ private val NoOpThreadEvent: (ThreadEvent) -> Unit = {}
  * It moves only as far as it must to clear the sheet's resting top by 12 dp, and it glides there on its own spring:
  * it never follows the sheet's edge while the sheet slides in or out. The sheet's own scrim is off; onDim lets the
  * host dim the header views outside this one. A bubble taller than the free space shows its top, fading out at the bottom.
+ * [up] turns false as soon as the sheet heads for hidden, not when its dismissal settles, so the bubble and its
+ * shadow and fade leave with the sheet instead of holding at its resting top after it has gone (#308).
  */
 @Composable
 internal fun LiftOverlay(
@@ -118,12 +120,17 @@ internal fun LiftOverlay(
         val top = slot + (target - slot) * progress.value
         val clipped = height < full - 1f
         val incoming = lift.message.isReceivedMessage()
-        val fade = with(density) { LiftFade.toPx() }
+        // The fade shrinks with the hidden part, so it is gone by the time the bubble is whole instead of
+        // switching off in one frame when the clip ends (#308).
+        val fade = minOf(with(density) { LiftFade.toPx() }, full - height)
         val mask = Afsh.colors.mask
         val clear = Afsh.colors.transparent
         Box(
             Modifier
                 .absoluteOffset { IntOffset((lift.bounds.left - at.x).roundToInt(), top.roundToInt()) }
+                // A bubble taller than the overlay must keep its own height: clamped to the overlay, the shown part's
+                // bottom edge rode up off screen as the bubble went home, then the whole bubble popped back (#308).
+                .wrapContentHeight(Alignment.Top, unbounded = true)
                 .size(with(density) { lift.bounds.width.toDp() }, with(density) { height.toDp() })
                 .then(
                     if (clipped) {
@@ -166,7 +173,14 @@ internal fun LiftOverlay(
 
 /** R6-48 (screens 97, 98): date · time · SIM, then the actions, Delete in the error colour. */
 @Composable
-internal fun MessageSheet(message: Message, state: ThreadUiState, onRestingTop: (Float) -> Unit, onEvent: (ThreadEvent) -> Unit, onDismiss: () -> Unit) {
+internal fun MessageSheet(
+    message: Message,
+    state: ThreadUiState,
+    onRestingTop: (Float) -> Unit,
+    onLeavingChange: (Boolean) -> Unit,
+    onEvent: (ThreadEvent) -> Unit,
+    onDismiss: () -> Unit,
+) {
     val colors = MaterialTheme.colorScheme
     val context = LocalContext.current
     val sim = state.simLabels[message.subscriptionId]?.let { stringResource(R.string.message_sim_label, it) }
@@ -185,6 +199,7 @@ internal fun MessageSheet(message: Message, state: ThreadUiState, onRestingTop: 
         showTitle = false,
         // The lifted bubble dims the page itself.
         dimBehind = false,
+        onLeavingChange = onLeavingChange,
         // The sheet rests against the bottom of its full-window dialog, so its resting top is known from the first
         // frame, while it is still sliding in. The lifted bubble aims there instead of chasing the moving edge.
         modifier = Modifier.onGloballyPositioned {
