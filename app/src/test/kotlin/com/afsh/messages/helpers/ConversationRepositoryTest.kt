@@ -444,6 +444,33 @@ class ConversationRepositoryTest {
         assertEquals("sent", conversations.rows.getValue(10).snippet)
     }
 
+    @Test
+    fun `a scheduled message bumps the row's snippet and date, not its read state`() {
+        conversations.insertOrUpdate(conversation(10, read = false, unread = 2, date = 5))
+
+        repository.bumpAfterScheduling(10, "later")
+        repository.bumpAfterScheduling(11, "nowhere")
+
+        val row = conversations.rows.getValue(10)
+        assertEquals("later", row.snippet)
+        assertEquals((now / 1000).toInt(), row.date)
+        assertFalse(row.read)
+        assertEquals(2, row.unreadCount)
+        assertNull(conversations.rows[11])
+    }
+
+    @Test
+    fun `an edited scheduled message replaces only the snippet it set`() {
+        conversations.insertOrUpdate(conversation(10).copy(snippet = "old"))
+        conversations.insertOrUpdate(conversation(11).copy(snippet = "newer"))
+
+        repository.replaceSnippet(10, old = "old", new = "new")
+        repository.replaceSnippet(11, old = "old", new = "new")
+
+        assertEquals("new", conversations.rows.getValue(10).snippet)
+        assertEquals("newer", conversations.rows.getValue(11).snippet)
+    }
+
     // endregion
 
     // region Read state

@@ -29,8 +29,9 @@ private class FakeSendPlatform : MessageSendCoordinator.Platform {
     var provider = listOf<Message>()
     val alarms = ArrayList<Message>()
     val dropped = ArrayList<Long>()
-    val conversations = HashMap<Long, Conversation>()
     val temporaryThreads = ArrayList<Long>()
+    val snippetBumps = ArrayList<Pair<Long, String>>()
+    val snippetReplacements = ArrayList<Triple<Long, String, String>>()
     val persisted = ArrayList<Message>()
     val written = ArrayList<List<Attachment>>()
 
@@ -44,12 +45,9 @@ private class FakeSendPlatform : MessageSendCoordinator.Platform {
     override fun canScheduleExactAlarms() = exactAlarms
     override fun setAlarm(message: Message) { alarms += message }
     override fun dropScheduled(messageId: Long) { dropped += messageId }
-    override fun conversation(threadId: Long) = conversations[threadId]
-    override fun saveConversation(conversation: Conversation) { conversations[conversation.threadId] = conversation }
-    override fun createTemporaryThread(message: Message, threadId: Long, cached: Conversation?) {
-        temporaryThreads += threadId
-        conversations[threadId] = conversation(threadId, snippet = message.body, date = message.date)
-    }
+    override fun createScheduledConversation(message: Message, threadId: Long, cached: Conversation?) { temporaryThreads += threadId }
+    override fun bumpAfterScheduling(threadId: Long, snippet: String) { snippetBumps += threadId to snippet }
+    override fun replaceSnippet(threadId: Long, old: String, new: String) { snippetReplacements += Triple(threadId, old, new) }
     override fun persist(message: Message) { persisted += message }
     override fun writeAttachments(attachments: List<Attachment>, destination: Uri): Boolean {
         written += attachments
@@ -82,9 +80,6 @@ private class FakeSendHost : MessageSendCoordinator.Host {
     override fun failed(error: Exception) { failures += error }
     override fun failed(message: String?) { failures += message }
 }
-
-private fun conversation(threadId: Long, snippet: String = "old", date: Int = 0) =
-    Conversation(threadId, snippet, date, true, "", "", false, "111")
 
 private fun provider(id: Long, threadId: Long = 1) = Message(
     id = id, body = "m$id", type = SENT, status = -1, participants = ArrayList(), date = id.toInt(), read = true, threadId = threadId,
@@ -178,7 +173,7 @@ class MessageSendCoordinatorTest {
         assertEquals(3, message.subscriptionId)
         assertEquals(listOf("111"), message.participants.flatMap { p -> p.phoneNumbers.map { it.value } })
         assertEquals(listOf(77L), platform.temporaryThreads)
-        assertEquals((NOW / 1000).toInt(), platform.conversations.getValue(77).date)
+        assertEquals(listOf(77L to "later"), platform.snippetBumps)
         assertEquals(listOf(message), host.shown)
         assertEquals(listOf(message), platform.persisted)
         assertEquals(listOf("moved 77", "scheduled"), host.events)
@@ -189,12 +184,11 @@ class MessageSendCoordinatorTest {
     fun `scheduling in a thread with messages keeps the thread and bumps its snippet`() {
         host.loaded = listOf(provider(1))
         host.threadId = 5
-        platform.conversations[5] = conversation(5)
 
         sender.send("later", emptyList(), 3, NOW + 60_000)
 
         assertEquals(5L, platform.alarms.single().threadId)
-        assertEquals("later", platform.conversations.getValue(5).snippet)
+        assertEquals(listOf(5L to "later"), platform.snippetBumps)
         assertTrue(platform.temporaryThreads.isEmpty())
     }
 
@@ -202,7 +196,6 @@ class MessageSendCoordinatorTest {
     fun `an edited schedule replaces the alarm and the snippet it set`() {
         val old = provider(4, threadId = 5).copy(body = "old", isScheduled = true)
         host.threadId = 5
-        platform.conversations[5] = conversation(5, snippet = "old")
 
         sender.updateScheduled(old, "new", NOW + 120_000)
 
@@ -210,21 +203,19 @@ class MessageSendCoordinatorTest {
         assertEquals("new", updated.body)
         assertEquals(((NOW + 120_000) / 1000).toInt(), updated.date)
         assertEquals(listOf(updated), platform.persisted)
-        assertEquals("new", platform.conversations.getValue(5).snippet)
+        assertEquals(listOf(Triple(5L, "old", "new")), platform.snippetReplacements)
     }
 
     @Test
-    fun `an edited schedule leaves a newer snippet alone and refuses the past`() {
+    fun `an edited schedule refuses the past`() {
         val old = provider(4, threadId = 5).copy(body = "old", isScheduled = true)
         host.threadId = 5
-        platform.conversations[5] = conversation(5, snippet = "newer")
 
         sender.updateScheduled(old, "new", NOW)
+
         assertEquals(listOf("past null"), host.events)
         assertTrue(platform.alarms.isEmpty())
-
-        sender.updateScheduled(old, "new", NOW + 1)
-        assertEquals("newer", platform.conversations.getValue(5).snippet)
+        assertTrue(platform.snippetReplacements.isEmpty())
     }
 
     @Test

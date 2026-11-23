@@ -12,7 +12,6 @@ import com.afsh.commons.extensions.getFilenameFromPath
 import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.commons.helpers.isSPlus
 import com.afsh.messages.extensions.config
-import com.afsh.messages.extensions.conversationsDB
 import com.afsh.messages.extensions.copy
 import com.afsh.messages.extensions.deleteScheduledMessage
 import com.afsh.messages.extensions.filterNotInByKey
@@ -63,9 +62,12 @@ class MessageSendCoordinator(
         fun setAlarm(message: Message)
         /** Deletes a scheduled message and cancels its alarm. */
         fun dropScheduled(messageId: Long)
-        fun conversation(threadId: Long): Conversation?
-        fun saveConversation(conversation: Conversation)
-        fun createTemporaryThread(message: Message, threadId: Long, cached: Conversation?)
+        /** Stores temporary conversation [threadId] for the first scheduled [message] (see [ConversationRepository.createScheduledConversation]). */
+        fun createScheduledConversation(message: Message, threadId: Long, cached: Conversation?)
+        /** Shows a just-scheduled [snippet] on [threadId], dated now (see [ConversationRepository.bumpAfterScheduling]). */
+        fun bumpAfterScheduling(threadId: Long, snippet: String)
+        /** [threadId] shows [new] when it still shows [old] (see [ConversationRepository.replaceSnippet]). */
+        fun replaceSnippet(threadId: Long, old: String, new: String)
         /** Stores [message] in Room and updates the inbox: preview, outgoing bump, unarchive and the change event. */
         fun persist(message: Message)
         /** Copies [attachments] into the file or folder at [destination]. False when the folder cannot be opened. */
@@ -172,12 +174,9 @@ class MessageSendCoordinator(
                 if (isFirst) {
                     // A temporary thread until a real message is sent.
                     host.moveToThread(message.threadId)
-                    platform.createTemporaryThread(message, message.threadId, host.conversation)
+                    platform.createScheduledConversation(message, message.threadId, host.conversation)
                 }
-                platform.conversation(host.threadId)?.let { conversation ->
-                    val nowSeconds = (clock() / 1000).toInt()
-                    platform.saveConversation(conversation.copy(date = nowSeconds, snippet = message.body))
-                }
+                platform.bumpAfterScheduling(host.threadId, message.body)
                 platform.setAlarm(message)
                 store(message)
                 host.scheduled()
@@ -202,9 +201,7 @@ class MessageSendCoordinator(
             // The alarm is keyed by the message id, so this replaces the old one.
             platform.setAlarm(updated)
             store(updated)
-            platform.conversation(host.threadId)?.let { current ->
-                if (current.snippet == message.body) platform.saveConversation(current.copy(snippet = text))
-            }
+            platform.replaceSnippet(host.threadId, old = message.body, new = text)
         }
     }
 
@@ -331,14 +328,14 @@ class MessageSendCoordinator(
             app.cancelScheduleSendPendingIntent(messageId)
         }
 
-        override fun conversation(threadId: Long) = app.conversationsDB.getConversationWithThreadId(threadId)
-
-        override fun saveConversation(conversation: Conversation) {
-            app.conversationsDB.insertOrUpdate(conversation)
-        }
-
-        override fun createTemporaryThread(message: Message, threadId: Long, cached: Conversation?) =
+        override fun createScheduledConversation(message: Message, threadId: Long, cached: Conversation?) =
             conversations.createScheduledConversation(message, threadId, cached)
+
+        override fun bumpAfterScheduling(threadId: Long, snippet: String) =
+            conversations.bumpAfterScheduling(threadId, snippet)
+
+        override fun replaceSnippet(threadId: Long, old: String, new: String) =
+            conversations.replaceSnippet(threadId, old, new)
 
         override fun persist(message: Message) {
             app.messagesDB.insertOrUpdate(message)

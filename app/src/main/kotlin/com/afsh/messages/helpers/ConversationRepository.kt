@@ -237,6 +237,18 @@ class ConversationRepository(
         effects.refreshPreview(listOf(threadId))
     }
 
+    /** Shows a just-scheduled [snippet] on [threadId], dated now. Nothing when Room has no row. */
+    fun bumpAfterScheduling(threadId: Long, snippet: String) {
+        val row = conversations.getConversationWithThreadId(threadId) ?: return
+        conversations.insertOrUpdate(row.copy(date = (clock() / 1000).toInt(), snippet = snippet))
+    }
+
+    /** An edited scheduled message: [threadId]'s snippet becomes [new] only while it still shows [old]. */
+    fun replaceSnippet(threadId: Long, old: String, new: String) {
+        val row = conversations.getConversationWithThreadId(threadId) ?: return
+        if (row.snippet == old) conversations.insertOrUpdate(row.copy(snippet = new))
+    }
+
     /**
      * Copies Telephony's unread counts into Room ([threadIds] only, when given). Only counts that
      * changed are written, in one transaction: every UPDATE fires Room's invalidation even with the
