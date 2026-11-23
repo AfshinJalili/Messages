@@ -101,6 +101,8 @@ class ConversationRepositoryTest {
         var digest = 0 to 0
         var lastUnreadCounts: Map<Long, Int>? = null
         var lastDraftDates: Map<Long, Long>? = null
+        /** Reading these threads fails: an error with failOnError, otherwise no rows, as the provider does. */
+        val unreadable = HashSet<Long>()
 
         override fun unreadSms() = rows.filter { !it.isMms && !it.read && it.incoming }.map { it.id to it.threadId }
         override fun unreadMmsThreadIds() = rows.filter { it.isMms && !it.read && it.incoming }.map { it.threadId }
@@ -114,6 +116,9 @@ class ConversationRepositoryTest {
         ): ArrayList<Conversation> {
             lastUnreadCounts = unreadCounts
             lastDraftDates = draftDates
+            if (threadId in unreadable) {
+                if (failOnError) throw IllegalStateException("provider") else return ArrayList()
+            }
             return ArrayList(threads.values.filter { threadId == null || it.threadId == threadId })
         }
         override fun threadDigest() = digest
@@ -420,12 +425,36 @@ class ConversationRepositoryTest {
     }
 
     @Test
-    fun `refreshing stops quietly at a thread Telephony no longer has`() {
+    fun `refreshing drops the row of a thread Telephony no longer has and goes on`() {
+        conversations.insertOrUpdate(conversation(10))
+        telephony.threads[20] = conversation(20).copy(snippet = "fresh")
+
+        repository.refreshFromTelephony(listOf(10L, 20L))
+
+        assertEquals(listOf(20L), conversations.rows.keys.toList())
+        assertEquals("fresh", conversations.rows.getValue(20).snippet)
+    }
+
+    @Test
+    fun `refreshing keeps a temporary scheduled thread Telephony does not have`() {
+        conversations.insertOrUpdate(conversation(10).copy(isScheduled = true))
+
+        repository.refreshFromTelephony(listOf(10L))
+
+        assertTrue(10L in conversations.rows)
+    }
+
+    @Test
+    fun `refreshing keeps the row of a thread it cannot read and goes on`() {
+        conversations.insertOrUpdate(conversation(10).copy(snippet = "old"))
+        telephony.threads[10] = conversation(10).copy(snippet = "new")
+        telephony.unreadable += 10L
         telephony.threads[20] = conversation(20)
 
         repository.refreshFromTelephony(listOf(10L, 20L))
 
-        assertTrue(conversations.rows.isEmpty())
+        assertEquals("old", conversations.rows.getValue(10).snippet)
+        assertTrue(20L in conversations.rows)
     }
 
     @Test

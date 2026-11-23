@@ -66,7 +66,9 @@ internal class ThreadComposerActions(private val visit: ThreadVisit) {
     private val sender get() = visit.sender
     private val imageCompressor by lazy { ImageCompressor(activity) }
     private val drafts by lazy { DraftsRepository.from(activity) }
-    private var capturedImageUri: Uri? = null
+
+    /** Where the camera writes the photo being taken. The activity keeps it across a recreation. */
+    var capturedImageUri: Uri? = null
 
     // region Draft
 

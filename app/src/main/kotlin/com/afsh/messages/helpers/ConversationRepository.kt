@@ -216,16 +216,24 @@ class ConversationRepository(
     }
 
     /**
-     * Makes Telephony recompute thread dates and snippets, then stores each of [threadIds] afresh.
-     * Stops at the first thread Telephony no longer has. Failures are ignored.
+     * Makes Telephony recompute thread dates and snippets, then stores each of [threadIds] afresh. A thread
+     * Telephony no longer has loses its Room row, unless it is a temporary scheduled one. A thread that
+     * can't be read keeps its row; the others are still refreshed.
      */
     fun refreshFromTelephony(threadIds: Iterable<Long>) {
         try {
             telephony.touchThreads()
-            for (threadId in threadIds) {
-                insertOrUpdate(conversations(threadId)[0])
-            }
         } catch (_: Exception) {
+        }
+        for (threadId in threadIds) {
+            try {
+                val fresh = conversations(threadId, failOnError = true).firstOrNull()
+                when {
+                    fresh != null -> insertOrUpdate(fresh)
+                    conversations.getConversationWithThreadId(threadId)?.isScheduled != true -> removeFromCache(threadId)
+                }
+            } catch (_: Exception) {
+            }
         }
     }
 

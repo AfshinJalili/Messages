@@ -72,6 +72,8 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         visit.data.newOnOpen = savedInstanceState?.getLongArray(SAVED_NEW_ON_OPEN)?.toSet()
+        // The camera may outlive this process; its result comes back to the recreated screen.
+        savedInstanceState?.getString(SAVED_CAPTURED_IMAGE)?.let { visit.composer.capturedImageUri = it.toUri() }
         setContentView(root)
         onBackPressedDispatcher.addCallback(this, backCallback)
         refreshAfshTheme()
@@ -156,6 +158,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         // Compressed copies live in the cache; the originals are re-added and compressed again.
         outState.putStringArrayList(SAVED_COMPOSER_ATTACHMENTS, ArrayList(holder.attachments.map { it.id }))
         visit.data.newOnOpen?.let { outState.putLongArray(SAVED_NEW_ON_OPEN, it.toLongArray()) }
+        visit.composer.capturedImageUri?.let { outState.putString(SAVED_CAPTURED_IMAGE, it.toString()) }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, resultData: Intent?) {
@@ -176,5 +179,6 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         const val SAVED_COMPOSER_TEXT = "composer_text"
         const val SAVED_NEW_ON_OPEN = "new_on_open"
         const val SAVED_COMPOSER_ATTACHMENTS = "composer_attachments"
+        const val SAVED_CAPTURED_IMAGE = "captured_image"
     }
 }
