@@ -63,7 +63,7 @@ class ThreadRepository(
 
         /**
          * Telephony's newest page of [threadId], older than [before] when not -1; with [includeAllUnread] it reaches
-         * back to the oldest unread, and with [oldestLoadedDate] to that date.
+         * back to the oldest unread that is not spam, and with [oldestLoadedDate] to that date.
          */
         fun providerMessages(
             threadId: Long,
@@ -423,6 +423,8 @@ class ThreadRepository(
             includeScheduledMessages = includeScheduled,
             includeAllUnread = includeAllUnread,
             oldestLoadedDate = oldestLoadedDate,
+            // Unread spam stays unread on purpose; it must not stretch the window on every open.
+            skipUnreadSmsIds = if (includeAllUnread) room.getThreadSpamIds(threadId) else emptyList(),
         )
 
         override fun threadIdFor(addresses: Set<String>) = app.getThreadId(addresses)

@@ -45,7 +45,8 @@ class TelephonyReader(context: Context) {
      * The newest [limit] messages of [threadId] (SMS, MMS and, when [includeScheduledMessages],
      * scheduled ones), oldest first. [dateFrom] (seconds) pages backwards: only messages older than
      * it. With [includeAllUnread] the window grows to reach the oldest unread incoming message,
-     * or [oldestLoadedDate] if that is older.
+     * or [oldestLoadedDate] if that is older. SMS in [skipUnreadSmsIds] (spam, kept unread on purpose)
+     * don't count as unread for that window.
      */
     fun getMessages(
         threadId: Long,
@@ -54,8 +55,10 @@ class TelephonyReader(context: Context) {
         limit: Int = MESSAGES_LIMIT,
         includeAllUnread: Boolean = false,
         oldestLoadedDate: Int? = null,
-    ): ArrayList<Message> =
-        context.getMessages(threadId, dateFrom, includeScheduledMessages, limit, includeAllUnread, oldestLoadedDate)
+        skipUnreadSmsIds: Collection<Long> = emptyList(),
+    ): ArrayList<Message> = context.getMessages(
+        threadId, dateFrom, includeScheduledMessages, limit, includeAllUnread, oldestLoadedDate, skipUnreadSmsIds,
+    )
 
     /** MMS of [threadId] (all threads when null), in [sortOrder]; [dateFrom] keeps older ones only. */
     fun getMms(threadId: Long? = null, sortOrder: String? = null, dateFrom: Int = -1): ArrayList<Message> =
@@ -101,15 +104,17 @@ class TelephonyReader(context: Context) {
 }
 
 // Load through the oldest unread message, including read messages between unread bubbles.
-private fun Context.getUnreadWindowSize(threadId: Long, oldestLoadedDate: Int?): Int {
+private fun Context.getUnreadWindowSize(threadId: Long, oldestLoadedDate: Int?, skipSmsIds: Collection<Long>): Int {
     fun aggregate(uri: Uri, expression: String, selection: String, args: Array<String>): Long =
         contentResolver.query(uri, arrayOf(expression), selection, args, null)?.use {
             if (it.moveToFirst() && !it.isNull(0)) it.getLong(0) else 0L
         } ?: 0L
     val sources = listOf(Sms.CONTENT_URI to 1L, Mms.CONTENT_URI to 1000L)
     val oldest = sources.mapNotNull { (uri, scale) ->
-        val box = if (uri == Sms.CONTENT_URI) Sms.TYPE else Mms.MESSAGE_BOX
-        aggregate(uri, "MIN(date)", "thread_id=? AND read=0 AND $box=1", arrayOf(threadId.toString()))
+        val isSms = uri == Sms.CONTENT_URI
+        val box = if (isSms) Sms.TYPE else Mms.MESSAGE_BOX
+        val skip = if (isSms && skipSmsIds.isNotEmpty()) " AND ${Sms._ID} NOT IN (${skipSmsIds.joinToString()})" else ""
+        aggregate(uri, "MIN(date)", "thread_id=? AND read=0 AND $box=1$skip", arrayOf(threadId.toString()))
             .takeIf { it > 0 }?.times(scale)
     }.plus(listOfNotNull(oldestLoadedDate?.toLong()?.times(1000))).minOrNull() ?: return 0
     return sources.sumOf { (uri, scale) ->
@@ -124,8 +129,10 @@ private fun Context.getMessages(
     limit: Int = MESSAGES_LIMIT,
     includeAllUnread: Boolean = false,
     oldestLoadedDate: Int? = null,
+    skipUnreadSmsIds: Collection<Long> = emptyList(),
 ): ArrayList<Message> {
-    val displayLimit = if (includeAllUnread) maxOf(limit, getUnreadWindowSize(threadId, oldestLoadedDate)) else limit
+    val displayLimit =
+        if (includeAllUnread) maxOf(limit, getUnreadWindowSize(threadId, oldestLoadedDate, skipUnreadSmsIds)) else limit
     val uri = Sms.CONTENT_URI
     val projection = arrayOf(
         Sms._ID,
