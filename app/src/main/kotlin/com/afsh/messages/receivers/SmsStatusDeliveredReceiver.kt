@@ -7,11 +7,13 @@ import android.content.Intent
 import android.net.Uri
 import android.provider.Telephony.Sms
 import com.afsh.commons.helpers.ensureBackgroundThread
+import com.afsh.messages.extensions.getSmsThreadId
 import com.afsh.messages.extensions.messagesDB
 import com.afsh.messages.extensions.messagingUtils
-import com.afsh.messages.helpers.refreshMessages
+import com.afsh.messages.helpers.MessagingEvent
+import com.afsh.messages.helpers.MessagingEvents
 
-/** Handles updating databases and states when a sent SMS message is delivered. */
+/** Handles updating databases and publishing delivery updates when a sent SMS message is delivered. */
 class SmsStatusDeliveredReceiver : SendStatusReceiver() {
 
     private var status: Int = Sms.Sent.STATUS_NONE
@@ -88,12 +90,13 @@ class SmsStatusDeliveredReceiver : SendStatusReceiver() {
     override fun updateAppDatabase(context: Context, intent: Intent, receiverResultCode: Int) {
         val messageUri: Uri? = intent.data
         if (messageUri != null) {
-            val messageId = messageUri.lastPathSegment?.toLong() ?: 0L
+            val messageId = messageUri.lastPathSegment?.toLongOrNull() ?: 0L
             ensureBackgroundThread {
                 if (status != Sms.Sent.STATUS_NONE) {
                     context.messagesDB.updateStatus(messageId, status)
                 }
-                refreshMessages()
+                val threadId = context.getSmsThreadId(messageId)
+                MessagingEvents.publish(MessagingEvent.DeliveryUpdated(threadId = threadId, messageId = messageId))
             }
         }
     }

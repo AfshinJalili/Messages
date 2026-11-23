@@ -97,7 +97,8 @@ import com.afsh.messages.helpers.testUndoDurationMs
 import com.afsh.messages.helpers.THREAD_TITLE
 import com.afsh.messages.helpers.UndoDeletion
 import com.afsh.messages.helpers.blockNumbersOnPhone
-import com.afsh.messages.helpers.refreshConversations
+import com.afsh.messages.helpers.MessagingEvent
+import com.afsh.messages.helpers.MessagingEvents
 import com.afsh.messages.helpers.sortedForInbox
 import com.afsh.messages.helpers.swipeAction
 import com.afsh.messages.models.Conversation
@@ -646,7 +647,7 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
         UndoDeletion.threads.addAll(ids)
         clearSelection()
         publish()
-        refreshConversations()
+        MessagingEvents.publish(MessagingEvent.ConversationsChanged(reconcile = true))
         UndoDeletion.offer(
             this,
             undo = {
@@ -661,7 +662,7 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
             },
             completed = {
                 UndoDeletion.threads.removeAll(ids)
-                refreshConversations()
+                MessagingEvents.publish(MessagingEvent.ConversationsChanged(reconcile = true))
             },
         )
     }
@@ -791,7 +792,7 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
         ensureBackgroundThread {
             work()
             runOnUiThread {
-                refreshConversations()
+                MessagingEvents.publish(MessagingEvent.ConversationsChanged(reconcile = true))
                 clearSelection()
             }
         }

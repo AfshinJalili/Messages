@@ -37,6 +37,30 @@ class NotificationHelper(private val context: Context) {
         .setName(context.getString(R.string.me))
         .build()
 
+    /**
+     * Appends the user's inline direct-reply text to the existing MessagingStyle notification
+     * shade silently without re-alerting. Distinct from incoming message alerts routed through
+     * [MessagingEvents].
+     */
+    @SuppressLint("NewApi")
+    fun appendDirectReplyNotification(
+        messageId: Long,
+        address: String,
+        body: String,
+        threadId: Long,
+        bitmap: Bitmap?,
+    ) {
+        showMessageNotification(
+            messageId = messageId,
+            address = address,
+            body = body,
+            threadId = threadId,
+            bitmap = bitmap,
+            sender = null,
+            alertOnlyOnce = true,
+        )
+    }
+
     @SuppressLint("NewApi")
     fun showMessageNotification(
         messageId: Long,

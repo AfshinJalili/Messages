@@ -17,8 +17,6 @@ androidx-documentfile = "1.1.0"
 androidx-profileinstaller = "1.4.1"
 # Also used by the commons module; declared because Compose pages use BackHandler.
 androidx-activity = "1.12.4"
-#Eventbus
-eventbus = "3.3.1"
 #Compose
 # Compose 1.12 needs compileSdk 37 or later.
 compose-bom = "2026.09.00"
@@ -118,8 +116,6 @@ reprint = { module = "com.github.tibbi:reprint", version.ref = "reprint" }
 gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
 joda-time = { module = "joda-time:joda-time", version.ref = "jodaTime" }
 mmslib = { module = "org.fossify:mmslib", version.ref = "mmslib" }
-#EventBus
-eventbus = { module = "org.greenrobot:eventbus", version.ref = "eventbus" }
 #Helpers
 ez-vcard = { module = "com.googlecode.ez-vcard:ez-vcard", version.ref = "ez-vcard" }
 #Kotlin

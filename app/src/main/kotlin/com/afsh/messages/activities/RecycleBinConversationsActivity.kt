@@ -6,26 +6,24 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.afsh.commons.extensions.notificationManager
 import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.messages.extensions.conversationsDB
 import com.afsh.messages.extensions.emptyMessagesRecycleBinForConversation
 import com.afsh.messages.extensions.messagesDB
-import com.afsh.commons.extensions.notificationManager
 import com.afsh.messages.extensions.restoreAllMessagesFromRecycleBinForConversation
 import com.afsh.messages.helpers.IS_RECYCLE_BIN
+import com.afsh.messages.helpers.MessagingEvent
+import com.afsh.messages.helpers.MessagingEvents
 import com.afsh.messages.helpers.THREAD_ID
 import com.afsh.messages.helpers.THREAD_TITLE
 import com.afsh.messages.helpers.UndoDeletion
-import com.afsh.messages.helpers.refreshConversations
+import com.afsh.messages.helpers.affectsConversationList
 import com.afsh.messages.models.Conversation
-import com.afsh.messages.models.Events
 import com.afsh.messages.ui.library.RecycleBinEvent
 import com.afsh.messages.ui.library.RecycleBinScreen
 import com.afsh.messages.ui.library.RecycleBinUiState
 import com.afsh.messages.ui.library.RecycledConversation
-import org.greenrobot.eventbus.EventBus
-import org.greenrobot.eventbus.Subscribe
-import org.greenrobot.eventbus.ThreadMode
 
 /**
  * 22 · Recycle bin. Restore is immediate. Delete forever and Empty recycle bin are confirmed on
@@ -41,17 +39,12 @@ class RecycleBinConversationsActivity : ComposePageActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        EventBus.getDefault().register(this)
+        reloadOnMessagingEvents { it.affectsConversationList() }
     }
 
     override fun onResume() {
         super.onResume()
         reload()
-    }
-
-    override fun onDestroy() {
-        EventBus.getDefault().unregister(this)
-        super.onDestroy()
     }
 
     override fun reload() {
@@ -88,7 +81,7 @@ class RecycleBinConversationsActivity : ComposePageActivity() {
             restoreAllMessagesFromRecycleBinForConversation(conversation.threadId)
             runOnUiThread {
                 reload()
-                refreshConversations()
+                MessagingEvents.publish(MessagingEvent.ConversationsChanged(reconcile = true))
             }
         }
     }
@@ -108,7 +101,4 @@ class RecycleBinConversationsActivity : ComposePageActivity() {
             startActivity(this)
         }
     }
-
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    fun onConversationsChanged(@Suppress("unused") event: Events.RefreshConversations) = reload()
 }

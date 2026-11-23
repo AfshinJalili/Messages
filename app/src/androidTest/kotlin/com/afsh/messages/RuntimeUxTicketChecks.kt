@@ -19,8 +19,8 @@ import com.afsh.messages.extensions.*
 import com.afsh.messages.helpers.THREAD_ID
 import com.afsh.messages.helpers.THREAD_NUMBER
 import com.afsh.messages.helpers.THREAD_TITLE
-import com.afsh.messages.helpers.refreshConversations
-import com.afsh.messages.helpers.refreshMessages
+import com.afsh.messages.helpers.MessagingEvent
+import com.afsh.messages.helpers.MessagingEvents
 import com.afsh.messages.models.Message
 import com.afsh.messages.models.ThreadItem.ThreadUnreadSeparator
 import com.afsh.messages.ui.thread.THREAD_JUMP_TAG
@@ -81,7 +81,7 @@ class RuntimeUxTicketChecks {
                 }
                 repeat(2) { index ->
                     sms(phone, threadId, false, index + 1)
-                    refreshConversations()
+                    MessagingEvents.publish(MessagingEvent.ConversationsChanged(reconcile = true))
                     var detail = ""
                     awaitCondition("Inbound count ${index + 1} reaches visible inbox", {
                         "$detail; provider=${context.getUnreadCountsByThread()[threadId]}; cached=${context.conversationsDB.getConversationWithThreadId(threadId)?.unreadCount}"
@@ -150,8 +150,18 @@ class RuntimeUxTicketChecks {
                 compose.onNodeWithTag(THREAD_JUMP_TAG).assertExists("History navigation arrow remains available")
                 compose.onNode(hasContentDescription(context.getString(R.string.scroll_to_latest_message)))
                     .assertExists("Read history has no unread counter")
-                sms(phone, threadId, false, 30)
-                refreshMessages()
+                val newId = sms(phone, threadId, false, 30)
+                MessagingEvents.publish(
+                    MessagingEvent.IncomingMessage(
+                        threadId = threadId,
+                        messageId = newId,
+                        isMms = false,
+                        isSpam = false,
+                        address = phone,
+                        senderName = "Unread scroll test",
+                        body = "msg 30",
+                    )
+                )
                 awaitCondition("One unread message shows a count") {
                     compose.onAllNodes(hasContentDescription(context.getString(R.string.scroll_to_unread_messages, 1)))
                         .fetchSemanticsNodes().isNotEmpty()

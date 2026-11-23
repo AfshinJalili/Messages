@@ -39,7 +39,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.ComposeView
 import androidx.core.net.toUri
 import androidx.documentfile.provider.DocumentFile
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.afsh.messages.BuildConfig
 import com.afsh.messages.R
 import com.afsh.messages.extensions.clearExpiredScheduledMessages
@@ -113,13 +115,14 @@ import com.afsh.messages.helpers.THREAD_NUMBER
 import com.afsh.messages.helpers.THREAD_TEXT
 import com.afsh.messages.helpers.THREAD_TITLE
 import com.afsh.messages.helpers.UndoDeletion
+import com.afsh.messages.helpers.MessagingEvent
+import com.afsh.messages.helpers.MessagingEvents
+import com.afsh.messages.helpers.affectsThread
 import com.afsh.messages.helpers.blockNumbersOnPhone
 import com.afsh.messages.helpers.containsNumber
 import com.afsh.messages.helpers.contactAsText
 import com.afsh.messages.helpers.generateRandomId
 import com.afsh.messages.helpers.insertBlock
-import com.afsh.messages.helpers.refreshConversations
-import com.afsh.messages.helpers.refreshMessages
 import com.afsh.messages.messaging.cancelScheduleSendPendingIntent
 import com.afsh.messages.messaging.isLongMmsMessage
 import com.afsh.messages.messaging.isShortCodeWithLetters
@@ -128,7 +131,6 @@ import com.afsh.messages.messaging.sendMessageCompat
 import com.afsh.messages.models.Attachment
 import com.afsh.messages.models.AttachmentSelection
 import com.afsh.messages.models.Conversation
-import com.afsh.messages.models.Events
 import com.afsh.messages.models.Message
 import com.afsh.messages.models.MessageAttachment
 import com.afsh.messages.models.SIMCard
@@ -193,9 +195,6 @@ import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.commons.helpers.isSPlus
 import com.afsh.commons.models.PhoneNumber
 import com.afsh.commons.models.SimpleContact
-import org.greenrobot.eventbus.EventBus
-import org.greenrobot.eventbus.Subscribe
-import org.greenrobot.eventbus.ThreadMode
 import org.joda.time.DateTime
 import java.io.File
 import kotlinx.coroutines.CompletableDeferred
@@ -207,6 +206,7 @@ import kotlinx.coroutines.CompletableDeferred
  */
 class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
     private var threadId = 0L
+    @Volatile
     private var isActivityVisible = false
     private var markReadInProgress = false
     private val updateScrollPosition = Runnable {
@@ -240,8 +240,8 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
     )
 
     private var refreshedSinceSent = false
+    private var refreshPendingWhileStopped = false
     private var threadItems = ArrayList<ThreadItem>()
-    private var bus: EventBus? = null
     private var conversation: Conversation? = null
     private var participants = ArrayList<SimpleContact>()
     private var privateContacts = ArrayList<SimpleContact>()
@@ -339,11 +339,17 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         isLaunchedFromShortcut = intent.getBooleanExtra(IS_LAUNCHED_FROM_SHORTCUT, false)
         openSpam = intent.getBooleanExtra(OPEN_SPAM, false)
 
-        bus = EventBus.getDefault()
-        bus!!.register(this)
-
+        observeMessagingEvents()
         loadConversation()
         refreshMenuItems()
+    }
+
+    override fun onStart() {
+        super.onStart()
+        if (refreshPendingWhileStopped) {
+            refreshPendingWhileStopped = false
+            ensureBackgroundThread { reloadMessages() }
+        }
     }
 
     override fun onResume() {
@@ -354,9 +360,10 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         publishItems()
 
         isActivityVisible = true
+        // Registering active presence also cancels any existing tray notification for this thread
+        // (unless locked or viewing Recycle Bin).
+        MessagingEvents.onConversationActive(this, threadId, isRecycleBin)
         root.post(updateScrollPosition)
-
-        notificationManager.cancel(threadId.hashCode())
 
         ensureBackgroundThread {
             val newConv = conversationsDB.getConversationWithThreadId(threadId)
@@ -381,8 +388,9 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         super.onPause()
         saveDraftMessage()
         flushThreadReadState()
-        bus?.post(Events.RefreshConversations())
+        MessagingEvents.publish(MessagingEvent.ConversationsChanged(threadId = threadId, reconcile = false))
         isActivityVisible = false
+        MessagingEvents.onConversationInactive(this)
         root.removeCallbacks(updateScrollPosition)
     }
 
@@ -397,7 +405,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
 
     override fun onDestroy() {
         super.onDestroy()
-        bus?.unregister(this)
+        MessagingEvents.onConversationInactive(this)
         // Clear any pending page load completion to prevent awaits that never resume
         data.pageLoadCompletion?.complete(Unit)
         data.pageLoadCompletion = null
@@ -1034,18 +1042,47 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         }
     }
 
-    @Subscribe(threadMode = ThreadMode.ASYNC)
-    fun refreshMessages(@Suppress("unused") event: Events.RefreshMessages) {
+    private fun observeMessagingEvents() {
+        lifecycleScope.launch {
+            MessagingEvents.events.collect { event ->
+                if (!event.affectsThread(threadId)) return@collect
+                // Our own markThreadReadIfAtBottom already updated local read state.
+                if (event is MessagingEvent.ReadStateChanged && isActivityVisible && event.read && !data.hasUnread()) {
+                    return@collect
+                }
+                if (lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
+                    ensureBackgroundThread { reloadMessages() }
+                } else {
+                    refreshPendingWhileStopped = true
+                }
+            }
+        }
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                MessagingEvents.inThreadFailures.collect { failure ->
+                    if (failure.threadId == threadId && failure.reason.isNotEmpty()) {
+                        snackbarHost.showSnackbar(failure.reason)
+                    }
+                }
+            }
+        }
+    }
+
+    private fun syncActiveConversationThread() {
+        runOnUiThread {
+            if (isActivityVisible && !isDestroyed) {
+                MessagingEvents.onConversationThreadUpdated(this, threadId, isRecycleBin)
+            }
+        }
+    }
+
+    private fun reloadMessages() {
         if (isRecycleBin) {
             return
         }
 
         refreshedSinceSent = true
         data.allFetched = false
-
-        if (isActivityVisible) {
-            notificationManager.cancel(threadId.hashCode())
-        }
 
         val current = data.list
         val lastMaxId = current.filterNot { it.isScheduled }.maxByOrNull { it.id }?.id ?: 0L
@@ -1055,6 +1092,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         if (current.isNotEmpty() && current.all { it.isScheduled } && newMessages.isNotEmpty()) {
             // update scheduled messages with real thread id
             threadId = newThreadId
+            syncActiveConversationThread()
             updateScheduledMessagesThreadId(
                 messages = current.filter { it.threadId != threadId },
                 newThreadId = threadId
@@ -1281,10 +1319,10 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
                 },
                 completed = {
                     UndoDeletion.threads.remove(deletedThread)
-                    refreshConversations()
+                    MessagingEvents.publish(MessagingEvent.ConversationsChanged(reconcile = true))
                     if (!isDestroyed) finish()
                 })
-            refreshConversations()
+            MessagingEvents.publish(MessagingEvent.ConversationsChanged(reconcile = true))
         }
     }
 
@@ -1297,7 +1335,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
             ensureBackgroundThread {
                 restoreAllMessagesFromRecycleBinForConversation(threadId)
                 runOnUiThread {
-                    refreshConversations()
+                    MessagingEvents.publish(MessagingEvent.ConversationsChanged(reconcile = true))
                     finish()
                 }
             }
@@ -1308,7 +1346,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         ensureBackgroundThread {
             updateConversationArchivedStatus(threadId, archived)
             runOnUiThread {
-                refreshConversations()
+                MessagingEvents.publish(MessagingEvent.ConversationsChanged(reconcile = true))
                 finish()
             }
         }
@@ -1332,7 +1370,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
             markThreadMessagesUnread(threadId)
             runOnUiThread {
                 finish()
-                bus?.post(Events.RefreshConversations())
+                MessagingEvents.publish(MessagingEvent.ConversationsChanged(threadId = threadId, reconcile = false))
             }
         }
     }
@@ -1782,7 +1820,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
         ensureBackgroundThread {
             deleteScheduledMessage(message.id)
             cancelScheduleSendPendingIntent(message.id)
-            refreshMessages()
+            reloadMessages()
         }
     }
 
@@ -1826,6 +1864,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
                 if (data.isEmpty) {
                     // create a temporary thread until a real message is sent
                     threadId = message.threadId
+                    syncActiveConversationThread()
                     createTemporaryThread(message, message.threadId, conversation)
                 }
                 val conversation = conversationsDB.getConversationWithThreadId(threadId)
@@ -1889,7 +1928,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
                 // Today's settings must not turn a failed MMS into an SMS, which could not replace its row.
                 forceMms = message.isMMS,
             )
-            refreshMessages()
+            ensureBackgroundThread { reloadMessages() }
         } catch (e: Exception) {
             holder.retryFailed(message)
             showErrorToast(e)
@@ -1908,7 +1947,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
             publishItems(newItems)
             holder.scrollToBottom()
             if (!refreshedSinceSent) {
-                refreshMessages()
+                ensureBackgroundThread { reloadMessages() }
             }
         }
         messagesDB.insertOrUpdate(message)
@@ -1921,7 +1960,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
             updateConversationArchivedStatus(message.threadId, false)
         }
         if (isOutgoing || shouldUnarchive()) {
-            refreshConversations()
+            MessagingEvents.publish(MessagingEvent.ConversationsChanged(threadId = message.threadId, reconcile = true))
         }
     }
 
@@ -2012,6 +2051,7 @@ class ThreadActivity : SimpleActivity(), UndoDeletion.UndoHost {
             createTemporaryThread(scheduledMessage, fakeThreadId, conversation)
             updateScheduledMessagesThreadId(messages, fakeThreadId)
             threadId = fakeThreadId
+            syncActiveConversationThread()
         }
     }
 

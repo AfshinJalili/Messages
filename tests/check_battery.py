@@ -32,7 +32,7 @@ RECEIVERS = APP_KT / "receivers"
 APP_FILE = APP_KT / "App.kt"
 IMPORT_FILE = APP_KT / "helpers/InboxImport.kt"
 RECONCILER_FILE = APP_KT / "helpers/InboxReconciler.kt"
-CONSTANTS_FILE = APP_KT / "helpers/Constants.kt"
+EVENTS_FILE = APP_KT / "helpers/MessagingEvents.kt"
 SYNC_FILE = APP_KT / "helpers/ConversationSync.kt"
 
 violations: list[str] = []
@@ -46,20 +46,24 @@ def kotlin_files(root: Path) -> list[Path]:
     return sorted(p for p in root.rglob("*.kt") if p.is_file())
 
 
-# --- refreshConversations API -------------------------------------------------
-constants = CONSTANTS_FILE.read_text()
-if not re.search(
-    r"fun refreshConversations\s*\(\s*reconcile\s*:\s*Boolean\s*=\s*true\s*\)",
-    constants,
-):
-    violations.append(
-        f"{rel(CONSTANTS_FILE)}: refreshConversations must take reconcile: Boolean = true "
-        "so receivers can skip the full provider pass"
-    )
-if "if (reconcile)" not in constants or "InboxRepository.refreshInbox()" not in constants:
-    violations.append(
-        f"{rel(CONSTANTS_FILE)}: refreshConversations must only call refreshInbox when reconcile is true"
-    )
+# --- MessagingEvents reconcile gating -----------------------------------------
+if not EVENTS_FILE.is_file():
+    violations.append(f"missing {rel(EVENTS_FILE)}: MessagingEvents owner is required")
+else:
+    events_text = EVENTS_FILE.read_text()
+    if not re.search(
+        r"data class ConversationsChanged\s*\([^)]*val reconcile\s*:\s*Boolean\s*=\s*true",
+        events_text,
+        re.S,
+    ):
+        violations.append(
+            f"{rel(EVENTS_FILE)}: ConversationsChanged must take reconcile: Boolean = true "
+            "so non-structural updates can skip the full provider pass"
+        )
+    if "event.reconcile" not in events_text or "host.refreshInbox()" not in events_text:
+        violations.append(
+            f"{rel(EVENTS_FILE)}: must only call host.refreshInbox() when reconcile is true or for ScheduledMessageSent"
+        )
 
 # Targeted single-thread sync helper used when reconcile is skipped.
 if not SYNC_FILE.is_file():
@@ -72,12 +76,12 @@ else:
         )
 
 # --- Receivers must not full-reconcile on every wake --------------------------
-REFRESH_BARE = re.compile(r"\brefreshConversations\s*\(\s*\)")
 HEAVY = re.compile(r"\b(scheduleProviderReconcile|InboxRepository\.refreshInbox)\s*\(")
+CONVERSATIONS_CHANGED = re.compile(r"MessagingEvent\.ConversationsChanged\s*\(([^)]*)\)")
 # Rare path that deletes a temporary scheduled thread and needs a full pass.
 ALLOW_RECONCILE = {"ScheduledMessageReceiver.kt"}
 
-# Each reconcile=false receiver must update Room itself. Patterns are the writes that keep
+# Each message-path receiver must update Room itself. Patterns are the writes that keep
 # inbox snippet/date/unread, notifications, and an open thread correct without a full pass.
 ROOM_WRITES = {
     "SmsReceiver.kt": (
@@ -93,36 +97,29 @@ ROOM_WRITES = {
 
 for path in kotlin_files(RECEIVERS):
     text = path.read_text()
-    for match in REFRESH_BARE.finditer(text):
-        line = text.count("\n", 0, match.start()) + 1
-        violations.append(
-            f"{rel(path)}:{line}: pass reconcile explicitly; message receivers use false so a "
-            "full Telephony reconcile does not run on every SMS/MMS wake"
-        )
     if path.name in ALLOW_RECONCILE:
         continue
-    if re.search(r"refreshConversations\s*\(\s*reconcile\s*=\s*true\s*\)", text):
-        line = (
-            text.count(
-                "\n",
-                0,
-                re.search(r"refreshConversations\s*\(\s*reconcile\s*=\s*true\s*\)", text).start(),
-            )
-            + 1
-        )
+    if "ScheduledMessageSent" in text:
         violations.append(
-            f"{rel(path)}:{line}: message-path receiver must use refreshConversations(reconcile = false)"
+            f"{rel(path)}: only ScheduledMessageReceiver may publish ScheduledMessageSent (triggers full reconcile)"
         )
+    for match in CONVERSATIONS_CHANGED.finditer(text):
+        args = match.group(1)
+        if "reconcile = false" not in args:
+            line = text.count("\n", 0, match.start()) + 1
+            violations.append(
+                f"{rel(path)}:{line}: message-path receiver must not trigger full reconcile via ConversationsChanged"
+            )
     for match in HEAVY.finditer(text):
         line = text.count("\n", 0, match.start()) + 1
         violations.append(
             f"{rel(path)}:{line}: receivers must not call {match.group(1)}; use a targeted Room write"
         )
-    if path.name in ROOM_WRITES and "refreshConversations(reconcile = false)" in text:
+    if path.name in ROOM_WRITES:
         needed = ROOM_WRITES[path.name]
         if not any(token in text for token in needed):
             violations.append(
-                f"{rel(path)}: reconcile=false requires a targeted Room write "
+                f"{rel(path)}: message-path receiver requires a targeted Room write "
                 f"({' / '.join(needed)}); otherwise inbox/thread stay stale"
             )
 

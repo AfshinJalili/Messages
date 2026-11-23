@@ -20,6 +20,7 @@ import com.afsh.messages.extensions.rescheduleAllScheduledMessages
 import com.afsh.messages.extensions.config
 import com.afsh.messages.extensions.notificationHelper
 import com.afsh.messages.helpers.InboxRepository
+import com.afsh.messages.helpers.MessagingEvents
 import com.afsh.messages.helpers.afshXmlTheme
 import com.afsh.messages.helpers.ListDetail
 import com.afsh.messages.helpers.MessagingCache
@@ -37,6 +38,7 @@ class App : AfshApp() {
     override fun onCreate() {
         super.onCreate()
         InboxRepository.init(this)
+        MessagingEvents.init(this)
         ListDetail.install(this)
         config.applyThemeDefaults()
         watchContacts()

@@ -57,6 +57,8 @@ import com.afsh.messages.helpers.FILE_SIZE_NONE
 import com.afsh.messages.helpers.MAX_MESSAGE_LENGTH
 import com.afsh.messages.helpers.MESSAGES_LIMIT
 import com.afsh.messages.helpers.MessagingCache
+import com.afsh.messages.helpers.MessagingEvent
+import com.afsh.messages.helpers.MessagingEvents
 import com.afsh.messages.helpers.NotificationHelper
 import com.afsh.messages.helpers.ShortcutHelper
 import com.afsh.messages.helpers.generateRandomId
@@ -73,8 +75,6 @@ import com.afsh.messages.models.Attachment
 import com.afsh.messages.models.BlockedMessagesThread
 import com.afsh.messages.models.SpamReviewMessage
 import com.afsh.messages.models.Conversation
-import com.afsh.messages.models.Events
-import org.greenrobot.eventbus.EventBus
 import com.afsh.messages.models.Draft
 import com.afsh.messages.models.Message
 import com.afsh.messages.models.SearchResult
@@ -811,6 +811,20 @@ fun Context.getThreadSnippet(threadId: Long): String {
     return snippet
 }
 
+fun Context.getSmsThreadId(messageId: Long): Long? {
+    if (messageId == 0L) return null
+    messagesDB.getThreadIdForMessage(messageId)?.takeIf { it != 0L }?.let { return it }
+    return contentResolver.query(
+        Sms.CONTENT_URI,
+        arrayOf(Sms.THREAD_ID),
+        "${Sms._ID} = ?",
+        arrayOf(messageId.toString()),
+        null,
+    )?.use { cursor ->
+        if (cursor.moveToFirst()) cursor.getLongValue(Sms.THREAD_ID).takeIf { it != 0L } else null
+    }
+}
+
 fun Context.getMessageRecipientAddress(messageId: Long): String {
     val uri = Sms.CONTENT_URI
     val projection = arrayOf(
@@ -1207,7 +1221,7 @@ fun Context.markVisibleMessagesRead(threadId: Long, visibleMessages: List<Messag
     }
     val count = getUnreadCountsByThread()[threadId] ?: 0
     conversationsDB.updateUnreadCount(threadId, count)
-    EventBus.getDefault().post(Events.ConversationReadStateChanged(threadId, count == 0, count))
+    MessagingEvents.publish(MessagingEvent.ReadStateChanged(threadId, count == 0, count))
     return completed
 }
 
@@ -1233,7 +1247,7 @@ fun Context.markThreadMessagesRead(threadId: Long) {
     messagesDB.markThreadRead(threadId)
     conversationsDB.markRead(threadId)
     config.clearManuallyUnread(threadId)
-    EventBus.getDefault().post(Events.ConversationReadStateChanged(threadId, true))
+    MessagingEvents.publish(MessagingEvent.ReadStateChanged(threadId, read = true, unreadCount = 0))
 }
 
 // Read state of spam belongs to the Spam screen, so thread-wide read and unread leave it alone.
@@ -1289,7 +1303,7 @@ fun Context.markThreadMessagesUnread(threadId: Long) {
     }
     val count = getUnreadCountsByThread()[threadId] ?: 0
     if (count > 0) conversationsDB.updateUnreadCount(threadId, count) else conversationsDB.markUnread(threadId)
-    EventBus.getDefault().post(Events.ConversationReadStateChanged(threadId, false, count.takeIf { it > 0 }))
+    MessagingEvents.publish(MessagingEvent.ReadStateChanged(threadId, read = false, unreadCount = count.takeIf { it > 0 }))
 }
 
 @SuppressLint("NewApi")
@@ -1307,26 +1321,6 @@ fun Context.getThreadId(addresses: Set<String>): Long {
         Threads.getOrCreateThreadId(this, addresses)
     } catch (_: Exception) {
         0L
-    }
-}
-
-fun Context.showReceivedMessageNotification(
-    messageId: Long,
-    address: String,
-    senderName: String,
-    body: String,
-    threadId: Long,
-    bitmap: Bitmap?,
-) {
-    Handler(Looper.getMainLooper()).post {
-        notificationHelper.showMessageNotification(
-            messageId = messageId,
-            address = address,
-            body = body,
-            threadId = threadId,
-            bitmap = bitmap,
-            sender = senderName
-        )
     }
 }
 
@@ -1502,41 +1496,55 @@ fun Context.subscriptionManagerCompat(): SubscriptionManager {
     return getSystemService(SubscriptionManager::class.java)
 }
 
+/**
+ * Merges a Telephony [incoming] conversation snapshot with the cached Room row while preserving
+ * app-owned metadata, optimistic local send bumps, and protection against stale reconcile reads.
+ *
+ * A stale provider snapshot (no newer date and no higher message count) must not undo a local
+ * mark-read, whereas a newly arrived message must immediately surface its unread state and count.
+ */
+internal fun mergeConversationWithCache(
+    incoming: Conversation,
+    cached: Conversation?,
+): Conversation {
+    if (cached == null) return incoming
+    var updated = incoming
+    if (cached.usesCustomTitle) {
+        updated = updated.copy(
+            title = cached.title,
+            usesCustomTitle = true,
+        )
+    }
+    if (cached.isScheduled) {
+        updated = updated.copy(
+            date = cached.date,
+            isScheduled = true,
+        )
+    }
+    // Keep a newer local preview (e.g. optimistic send bump) until Telephony catches up.
+    if (cached.date > updated.date) {
+        updated = updated.copy(
+            date = cached.date,
+            snippet = cached.snippet,
+        )
+    }
+    val hasNewerMessage = incoming.date > cached.date || incoming.messageCount > cached.messageCount
+    if (cached.read && cached.unreadCount == 0 && !updated.read && !hasNewerMessage) {
+        updated = updated.copy(read = true, unreadCount = 0)
+    }
+    // REPLACE would clear denormalized preview columns; keep them until refresh below.
+    return updated.copy(
+        previewSnippet = cached.previewSnippet,
+        previewDate = cached.previewDate,
+        allSpam = cached.allSpam,
+    )
+}
+
 fun Context.insertOrUpdateConversation(
     conversation: Conversation,
     cachedConv: Conversation? = conversationsDB.getConversationWithThreadId(conversation.threadId),
 ) {
-    var updatedConv = conversation
-    if (cachedConv != null) {
-        if (cachedConv.usesCustomTitle) {
-            updatedConv = updatedConv.copy(
-                title = cachedConv.title,
-                usesCustomTitle = true,
-            )
-        }
-        if (cachedConv.isScheduled) {
-            updatedConv = updatedConv.copy(
-                date = cachedConv.date,
-                isScheduled = true,
-            )
-        }
-        // Keep a newer local preview (e.g. optimistic send bump) until Telephony catches up.
-        if (cachedConv.date > updatedConv.date) {
-            updatedConv = updatedConv.copy(
-                date = cachedConv.date,
-                snippet = cachedConv.snippet,
-            )
-        }
-        if (cachedConv.read && cachedConv.unreadCount == 0 && !updatedConv.read) {
-            updatedConv = updatedConv.copy(read = true, unreadCount = 0)
-        }
-        // REPLACE would clear denormalized preview columns; keep them until refresh below.
-        updatedConv = updatedConv.copy(
-            previewSnippet = cachedConv.previewSnippet,
-            previewDate = cachedConv.previewDate,
-            allSpam = cachedConv.allSpam,
-        )
-    }
+    val updatedConv = mergeConversationWithCache(conversation, cachedConv)
     conversationsDB.insertOrUpdate(updatedConv)
     ConversationPreview.refresh(this, updatedConv.threadId)
 }

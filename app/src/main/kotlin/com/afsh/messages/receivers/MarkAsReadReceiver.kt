@@ -9,7 +9,6 @@ import com.afsh.messages.extensions.conversationsDB
 import com.afsh.messages.extensions.markThreadMessagesRead
 import com.afsh.messages.helpers.MARK_AS_READ
 import com.afsh.messages.helpers.THREAD_ID
-import com.afsh.messages.helpers.refreshConversations
 
 class MarkAsReadReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
@@ -18,9 +17,9 @@ class MarkAsReadReceiver : BroadcastReceiver() {
                 val threadId = intent.getLongExtra(THREAD_ID, 0L)
                 context.notificationManager.cancel(threadId.hashCode())
                 ensureBackgroundThread {
+                    // Publishes MessagingEvent.ReadStateChanged without a full reconcile.
                     context.markThreadMessagesRead(threadId)
                     context.conversationsDB.markRead(threadId)
-                    refreshConversations(reconcile = false)
                 }
             }
         }

@@ -15,21 +15,19 @@ import com.afsh.messages.extensions.conversationsDB
 import com.afsh.messages.extensions.deleteConversation
 import com.afsh.commons.extensions.notificationManager
 import com.afsh.messages.extensions.updateConversationArchivedStatus
+import com.afsh.messages.helpers.MessagingEvent
+import com.afsh.messages.helpers.MessagingEvents
 import com.afsh.messages.helpers.THREAD_ID
 import com.afsh.messages.helpers.THREAD_TITLE
 import com.afsh.messages.helpers.UndoDeletion
-import com.afsh.messages.helpers.refreshConversations
+import com.afsh.messages.helpers.affectsConversationList
 import com.afsh.messages.helpers.sortedForInbox
 import com.afsh.messages.models.Conversation
-import com.afsh.messages.models.Events
 import com.afsh.messages.ui.components.ConfirmationDialog
 import com.afsh.messages.ui.inbox.InboxRow
 import com.afsh.messages.ui.library.ArchiveEvent
 import com.afsh.messages.ui.library.ArchiveScreen
 import com.afsh.messages.ui.library.ArchiveUiState
-import org.greenrobot.eventbus.EventBus
-import org.greenrobot.eventbus.Subscribe
-import org.greenrobot.eventbus.ThreadMode
 
 /**
  * 19 · Archive. Unarchiving hides the rows at once and writes the provider only when its Undo
@@ -72,17 +70,12 @@ class ArchivedConversationsActivity : ComposePageActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        EventBus.getDefault().register(this)
+        reloadOnMessagingEvents { it.affectsConversationList() }
     }
 
     override fun onResume() {
         super.onResume()
         reload()
-    }
-
-    override fun onDestroy() {
-        EventBus.getDefault().unregister(this)
-        super.onDestroy()
     }
 
     override fun reload() {
@@ -154,7 +147,7 @@ class ArchivedConversationsActivity : ComposePageActivity() {
                     runOnUiThread {
                         unarchiving -= ids
                         reload()
-                        refreshConversations()
+                        MessagingEvents.publish(MessagingEvent.ConversationsChanged(reconcile = true))
                     }
                 }
             },
@@ -176,10 +169,4 @@ class ArchivedConversationsActivity : ComposePageActivity() {
             startActivity(this)
         }
     }
-
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    fun onReadStateChanged(@Suppress("unused") event: Events.ConversationReadStateChanged) = reload()
-
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    fun onConversationsChanged(@Suppress("unused") event: Events.RefreshConversations) = reload()
 }

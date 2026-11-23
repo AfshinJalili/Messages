@@ -12,10 +12,10 @@ import com.afsh.messages.extensions.conversationsDB
 import com.afsh.messages.extensions.deleteScheduledMessage
 import com.afsh.messages.extensions.getAddresses
 import com.afsh.messages.extensions.messagesDB
+import com.afsh.messages.helpers.MessagingEvent
+import com.afsh.messages.helpers.MessagingEvents
 import com.afsh.messages.helpers.SCHEDULED_MESSAGE_ID
 import com.afsh.messages.helpers.THREAD_ID
-import com.afsh.messages.helpers.refreshConversations
-import com.afsh.messages.helpers.refreshMessages
 import com.afsh.messages.messaging.sendMessageCompat
 import kotlin.time.Duration.Companion.minutes
 
@@ -65,9 +65,8 @@ class ScheduledMessageReceiver : BroadcastReceiver() {
             // delete temporary conversation and message as it's already persisted to the telephony db now
             context.deleteScheduledMessage(messageId)
             context.conversationsDB.deleteThreadId(messageId)
-            refreshMessages()
-            // Temporary scheduled thread was deleted; reconcile so the real Telephony thread appears.
-            refreshConversations(reconcile = true)
+            // Temporary scheduled thread was deleted; ScheduledMessageSent triggers a reconcile so the real Telephony thread appears.
+            MessagingEvents.publish(MessagingEvent.ScheduledMessageSent(threadId = threadId, messageId = messageId))
         } catch (e: Exception) {
             context.showErrorToast(e)
         } catch (e: Error) {

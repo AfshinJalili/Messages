@@ -9,12 +9,10 @@ import android.net.Uri
 import android.provider.Telephony.Sms
 import android.telephony.SmsManager
 import android.telephony.SmsMessage
-import android.widget.Toast
 import com.klinker.android.send_message.Message
 import com.klinker.android.send_message.Settings
 import com.klinker.android.send_message.Transaction
 import com.afsh.commons.extensions.showErrorToast
-import com.afsh.commons.extensions.toast
 import com.afsh.messages.R
 import com.afsh.messages.extensions.getThreadId
 import com.afsh.messages.extensions.isPlainTextMimeType
@@ -201,21 +199,18 @@ class MessagingUtils(val context: Context) {
         }
     }
 
-    fun maybeShowErrorToast(resultCode: Int, errorCode: Int) {
-        if (resultCode != Activity.RESULT_OK) {
-            val msg = if (errorCode != SendStatusReceiver.NO_ERROR_CODE) {
-                context.getString(R.string.carrier_send_error)
-            } else {
-                when (resultCode) {
-                    SmsManager.RESULT_ERROR_NO_SERVICE -> context.getString(R.string.error_service_is_unavailable)
-                    SmsManager.RESULT_ERROR_RADIO_OFF -> context.getString(R.string.error_radio_turned_off)
-                    SmsManager.RESULT_NO_DEFAULT_SMS_APP -> context.getString(R.string.sim_card_not_available)
-                    else -> context.getString(R.string.unknown_error_occurred_sending_message, resultCode)
-                }
-            }
-            context.toast(msg = msg, length = Toast.LENGTH_LONG)
+    /** Returns a short localized send-failure reason, or null when [resultCode] is [Activity.RESULT_OK]. */
+    fun sendErrorReason(resultCode: Int, errorCode: Int): String? {
+        if (resultCode == Activity.RESULT_OK) return null
+        return if (errorCode != SendStatusReceiver.NO_ERROR_CODE) {
+            context.getString(R.string.carrier_send_error)
         } else {
-            // no-op
+            when (resultCode) {
+                SmsManager.RESULT_ERROR_NO_SERVICE -> context.getString(R.string.error_service_is_unavailable)
+                SmsManager.RESULT_ERROR_RADIO_OFF -> context.getString(R.string.error_radio_turned_off)
+                SmsManager.RESULT_NO_DEFAULT_SMS_APP -> context.getString(R.string.sim_card_not_available)
+                else -> context.getString(R.string.unknown_error_occurred_sending_message, resultCode)
+            }
         }
     }
 

@@ -64,7 +64,7 @@ class MessagesImporter(private val context: Context) {
             }
         }
         writer.fixConversationDates()
-        refreshConversations()
+        MessagingEvents.publish(MessagingEvent.ConversationsChanged(reconcile = true))
         return tally.result()
     }
 
@@ -72,7 +72,7 @@ class MessagesImporter(private val context: Context) {
         val tally = Tally()
         val input = context.contentResolver.openInputStream(uri) ?: throw InvalidBackupException("Cannot open $uri")
         input.use { it.readSmsXml(tally) }
-        refreshConversations()
+        MessagingEvents.publish(MessagingEvent.ConversationsChanged(reconcile = true))
         return tally.result()
     }
 

@@ -2,6 +2,7 @@ package com.afsh.messages.activities
 
 import com.afsh.messages.extensions.markMessageRead
 import android.content.Intent
+import android.os.Bundle
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -13,6 +14,7 @@ import com.afsh.messages.extensions.deleteMessage
 import com.afsh.messages.extensions.getSpamMessages
 import com.afsh.messages.extensions.messagesDB
 import com.afsh.messages.helpers.InboxRepository
+import com.afsh.messages.helpers.affectsSpam
 import com.afsh.messages.helpers.containsNumber
 import com.afsh.messages.helpers.OPEN_SPAM
 import com.afsh.messages.helpers.THREAD_ID
@@ -39,6 +41,11 @@ class BlockedMessagesActivity : ComposePageActivity() {
     @Composable
     override fun Page() {
         SpamScreen(state, libraryNavigation(), snackbarHost, ::onEvent)
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        reloadOnMessagingEvents { it.affectsSpam() }
     }
 
     override fun onResume() {
