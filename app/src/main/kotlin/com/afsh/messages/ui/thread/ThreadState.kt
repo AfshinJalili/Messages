@@ -150,7 +150,7 @@ sealed interface ThreadEvent {
 
     data object JumpToLatest : ThreadEvent
     data object LoadOlder : ThreadEvent
-    data class Viewport(val atBottom: Boolean, val scrolling: Boolean) : ThreadEvent
+    data class Viewport(val atBottom: Boolean, val newestVisible: Boolean, val scrolling: Boolean) : ThreadEvent
     data object InitialScrollSettled : ThreadEvent
     data class JumpSettled(val nonce: Long) : ThreadEvent
 }

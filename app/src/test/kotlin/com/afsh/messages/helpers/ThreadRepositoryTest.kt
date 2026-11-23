@@ -346,7 +346,7 @@ class ThreadRepositoryTest {
     fun `reading at the bottom marks the thread read, here and in the provider`() {
         val repository = unreadThread()
         var marked = 0
-        repository.markReadIfAtBottom(atBottom = true) { marked++ }
+        repository.markReadIfSeen(seen = true) { marked++ }
         steps.run()
         assertEquals(listOf(1L), platform.readThreads)
         assertFalse(repository.messages.hasUnread())
@@ -356,15 +356,15 @@ class ThreadRepositoryTest {
     @Test
     fun `nothing is marked away from the bottom, before the provider loads, or in the recycle bin`() {
         val repository = unreadThread()
-        repository.markReadIfAtBottom(atBottom = false) { error("marked") }
+        repository.markReadIfSeen(seen = false) { error("marked") }
         repository.messages.providerReady = false
-        repository.markReadIfAtBottom(atBottom = true) { error("marked") }
+        repository.markReadIfSeen(seen = true) { error("marked") }
 
         val bin = repository(recycleBin = true)
         bin.messages.list = ArrayList(repository.messages.list)
         bin.messages.providerReady = true
-        bin.markReadIfAtBottom(atBottom = true) { error("marked") }
-        bin.flushReadState(atBottom = true)
+        bin.markReadIfSeen(seen = true) { error("marked") }
+        bin.flushReadState(seen = true)
 
         assertTrue(steps.pending.isEmpty())
         assertTrue(platform.readThreads.isEmpty())
@@ -373,18 +373,18 @@ class ThreadRepositoryTest {
     @Test
     fun `one thread-read write runs at a time, and a read thread writes nothing`() {
         val repository = unreadThread()
-        repository.markReadIfAtBottom(atBottom = true) {}
-        repository.markReadIfAtBottom(atBottom = true) {}
+        repository.markReadIfSeen(seen = true) {}
+        repository.markReadIfSeen(seen = true) {}
         assertEquals(1, steps.pending.size)
         steps.run()
-        repository.markReadIfAtBottom(atBottom = true) { error("marked") }
+        repository.markReadIfSeen(seen = true) { error("marked") }
         assertTrue(steps.pending.isEmpty())
     }
 
     @Test
     fun `leaving the thread flushes its read state without touching the loaded messages`() {
         val repository = unreadThread()
-        repository.flushReadState(atBottom = true)
+        repository.flushReadState(seen = true)
         steps.run()
         assertEquals(listOf(1L), platform.readThreads)
         assertTrue(repository.messages.hasUnread())

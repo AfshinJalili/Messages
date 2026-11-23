@@ -23,7 +23,7 @@ import kotlinx.coroutines.launch
 /**
  * Brings the visit's messages to the screen: the cached thread first, then the provider's, reloads when
  * messaging events say the thread changed, older pages, jumps and search, the landing position, and marking
- * the thread read once the reader settles at the bottom. [ThreadVisit.repository] does the I/O.
+ * the thread read once the reader settles with the newest message on screen. [ThreadVisit.repository] does the I/O.
  */
 internal class ThreadLoader(private val visit: ThreadVisit) {
     private val activity get() = visit.activity
@@ -35,7 +35,7 @@ internal class ThreadLoader(private val visit: ThreadVisit) {
     private var refreshPendingWhileStopped = false
 
     private val readCheck = Runnable {
-        if (visit.isVisible && !activity.isDestroyed) markReadIfAtBottom()
+        if (visit.isVisible && !activity.isDestroyed) markReadIfSeen()
     }
 
     // region Lifecycle
@@ -63,7 +63,7 @@ internal class ThreadLoader(private val visit: ThreadVisit) {
     }
 
     fun paused() {
-        repository.flushReadState(holder.readsAtBottom(includeScrolling = true))
+        repository.flushReadState(holder.newestSeen(includeScrolling = true))
         MessagingEvents.publish(MessagingEvent.ConversationsChanged(threadId = visit.threadId, reconcile = false))
         visit.isVisible = false
         MessagingEvents.onConversationInactive(activity)
@@ -227,7 +227,7 @@ internal class ThreadLoader(private val visit: ThreadVisit) {
         activity.lifecycleScope.launch {
             MessagingEvents.events.collect { event ->
                 if (!event.affectsThread(visit.threadId)) return@collect
-                // Our own markReadIfAtBottom already updated local read state.
+                // Our own markReadIfSeen already updated local read state.
                 if (event is MessagingEvent.ReadStateChanged && visit.isVisible && event.read && !data.hasUnread()) {
                     return@collect
                 }
@@ -308,7 +308,7 @@ internal class ThreadLoader(private val visit: ThreadVisit) {
         activity.root.post(readCheck)
     }
 
-    private fun markReadIfAtBottom() = repository.markReadIfAtBottom(holder.readsAtBottom()) {
+    private fun markReadIfSeen() = repository.markReadIfSeen(holder.newestSeen()) {
         if (!activity.isDestroyed) visit.refreshTimeline()
     }
 

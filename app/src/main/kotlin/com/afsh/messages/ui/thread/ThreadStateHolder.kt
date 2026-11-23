@@ -190,6 +190,9 @@ class ThreadStateHolder(private val host: Host) : ThreadScreenModel {
     // Viewport and landing.
     var listAtBottom = true
         private set
+    /** The newest message is on screen: nothing unread can be below the fold. */
+    var listNewestVisible = true
+        private set
     var listScrolling = false
         private set
     /** Until the landing position settles, "at the bottom" is only where the list happens to start. */
@@ -254,6 +257,7 @@ class ThreadStateHolder(private val host: Host) : ThreadScreenModel {
             ThreadEvent.LoadOlder -> if (!isJumping) host.onEvent(event)
             is ThreadEvent.Viewport -> {
                 listAtBottom = event.atBottom
+                listNewestVisible = event.newestVisible
                 listScrolling = event.scrolling
                 host.viewportChanged()
             }
@@ -424,9 +428,13 @@ class ThreadStateHolder(private val host: Host) : ThreadScreenModel {
         isJumping = false
     }
 
-    /** True when the reader is settled at the bottom, so unread messages count as seen. */
-    fun readsAtBottom(includeScrolling: Boolean = false) =
-        initialPositionSettled && listAtBottom && (includeScrolling || !listScrolling)
+    /**
+     * True when the newest message is on screen and the reader is settled, so unread messages count as seen. Not
+     * "at the last pixel": a reader a few pixels short of the bottom has still seen them; one far up in the
+     * history has not.
+     */
+    fun newestSeen(includeScrolling: Boolean = false) =
+        initialPositionSettled && listNewestVisible && (includeScrolling || !listScrolling)
 
     /** Marks [message] as being retried; false when a retry of it is already in flight. */
     fun startRetry(message: Message) = resending.add(message.getStableId())

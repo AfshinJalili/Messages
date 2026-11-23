@@ -147,17 +147,17 @@ class ThreadStateHolderTest {
         holder.land(ready = true) { asked++; null }
         assertEquals(1, asked)
         assertEquals(InitialScroll.FirstUnread, holder.ui.initialScroll)
-        assertFalse(holder.readsAtBottom())
+        assertFalse(holder.newestSeen())
 
         holder.onEvent(ThreadEvent.InitialScrollSettled)
         assertNull(holder.ui.initialScroll)
-        assertTrue(holder.readsAtBottom())
+        assertTrue(holder.newestSeen())
     }
 
     @Test
     fun `nothing to land on settles at once`() {
         holder.land(ready = true) { null }
-        assertTrue(holder.readsAtBottom())
+        assertTrue(holder.newestSeen())
     }
 
     @Test
@@ -176,7 +176,7 @@ class ThreadStateHolderTest {
         assertTrue(holder.isJumping)
         holder.onEvent(ThreadEvent.JumpSettled(second.nonce))
         assertFalse(holder.isJumping)
-        assertTrue(holder.readsAtBottom())
+        assertTrue(holder.newestSeen())
     }
 
     @Test
@@ -192,12 +192,22 @@ class ThreadStateHolderTest {
     @Test
     fun `scrolling away or still scrolling is not reading`() {
         holder.land(ready = true) { null }
-        holder.onEvent(ThreadEvent.Viewport(atBottom = true, scrolling = true))
-        assertFalse(holder.readsAtBottom())
-        assertTrue(holder.readsAtBottom(includeScrolling = true))
-        holder.onEvent(ThreadEvent.Viewport(atBottom = false, scrolling = false))
-        assertFalse(holder.readsAtBottom(includeScrolling = true))
+        holder.onEvent(ThreadEvent.Viewport(atBottom = true, newestVisible = true, scrolling = true))
+        assertFalse(holder.newestSeen())
+        assertTrue(holder.newestSeen(includeScrolling = true))
+        holder.onEvent(ThreadEvent.Viewport(atBottom = false, newestVisible = false, scrolling = false))
+        assertFalse(holder.newestSeen(includeScrolling = true))
         assertEquals(2, host.viewportChecks)
+    }
+
+    @Test
+    fun `a few pixels short of the bottom still counts as seen, far up does not`() {
+        holder.land(ready = true) { null }
+        holder.onEvent(ThreadEvent.Viewport(atBottom = false, newestVisible = true, scrolling = false))
+        assertTrue(holder.newestSeen())
+        holder.onEvent(ThreadEvent.Viewport(atBottom = false, newestVisible = false, scrolling = false))
+        assertFalse(holder.newestSeen())
+        assertFalse(holder.newestSeen(includeScrolling = true))
     }
 
     @Test

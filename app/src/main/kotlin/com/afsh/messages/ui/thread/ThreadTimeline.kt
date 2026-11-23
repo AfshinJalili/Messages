@@ -201,13 +201,13 @@ private fun TimelineEffects(state: ThreadUiState, newestFirst: List<ThreadItem>,
     // lands while the reader is up in the history leaves them there.
     var stickToBottom by remember { mutableStateOf(true) }
     LaunchedEffect(listState) {
-        snapshotFlow { listState.isScrollInProgress to !listState.canScrollBackward }
+        snapshotFlow { listState.viewport() }
             .distinctUntilChanged()
-            .collect { (scrolling, atBottom) ->
+            .collect { (scrolling, atBottom, newestVisible) ->
                 // Leaving the bottom unsticks at once, so a message arriving mid-fling does not yank
                 // the reader back; only coming to rest at the bottom sticks again.
                 if (!atBottom) stickToBottom = false else if (!scrolling) stickToBottom = true
-                onEvent(ThreadEvent.Viewport(atBottom = atBottom, scrolling = scrolling))
+                onEvent(ThreadEvent.Viewport(atBottom = atBottom, newestVisible = newestVisible, scrolling = scrolling))
             }
     }
     // Applied in this frame's measure pass, so a message that arrives while the reader is at the
@@ -223,7 +223,8 @@ private fun TimelineEffects(state: ThreadUiState, newestFirst: List<ThreadItem>,
     // Read state is decided in the activity from the viewport; re-evaluate once new items are laid out.
     LaunchedEffect(state.items) {
         awaitFrame()
-        onEvent(ThreadEvent.Viewport(atBottom = !listState.canScrollBackward, scrolling = listState.isScrollInProgress))
+        val (scrolling, atBottom, newestVisible) = listState.viewport()
+        onEvent(ThreadEvent.Viewport(atBottom = atBottom, newestVisible = newestVisible, scrolling = scrolling))
     }
     LaunchedEffect(listState, newestFirst.size) {
         snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0 }
@@ -274,6 +275,10 @@ private fun TimelineEffects(state: ThreadUiState, newestFirst: List<ThreadItem>,
 }
 
 private suspend fun awaitFrame() = withFrameNanos { }
+
+/** Scrolling, at the very bottom, and the newest message (index 0 of the reversed list) on screen. */
+private fun LazyListState.viewport(): Triple<Boolean, Boolean, Boolean> =
+    Triple(isScrollInProgress, !canScrollBackward, layoutInfo.visibleItemsInfo.firstOrNull()?.index == 0)
 
 // Offsets in a reversed list are measured from the bottom edge, so an item's top edge is at
 // viewportEndOffset - (offset + size) from the top.
