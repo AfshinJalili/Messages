@@ -18,7 +18,6 @@ import androidx.lifecycle.lifecycleScope
 import com.afsh.messages.BuildConfig
 import com.afsh.messages.R
 import com.afsh.messages.R as AppR
-import com.afsh.messages.activities.BlockRulesActivity
 import com.afsh.messages.activities.SimpleActivity
 import com.afsh.messages.extensions.config
 import com.afsh.messages.extensions.messagesDB
@@ -36,6 +35,10 @@ import androidx.compose.ui.graphics.toArgb
 import com.afsh.messages.ui.afshColorScheme
 import com.afsh.messages.ui.components.ScreenStack
 import com.afsh.messages.ui.components.inform
+import com.afsh.messages.ui.spam.BlockRulesController
+import com.afsh.messages.ui.spam.BlockRulesEvent
+import com.afsh.messages.ui.spam.BlockRulesScreen
+import com.afsh.messages.ui.spam.BlockedPhrasesScreen
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -60,6 +63,11 @@ class SettingsController(
 ) {
     private val pages = mutableStateListOf(SettingsPage.OVERVIEW)
     private var state by mutableStateOf(SettingsUiState())
+    private val rules = BlockRulesController(
+        activity,
+        openPhrases = { pages += SettingsPage.BLOCK_PHRASES },
+        back = { handleBack() },
+    )
     private var backup: BackupFile.Messages? = null
     private var showSecurityDialog by mutableStateOf(false)
     private var securityDialogTab by mutableStateOf(SHOW_ALL_TABS)
@@ -88,6 +96,7 @@ class SettingsController(
     fun onResume() = reload()
 
     fun reload() {
+        rules.reload()
         state = readSettings()
         activity.lifecycleScope.launch {
             val recycled = withContext(Dispatchers.IO) {
@@ -119,16 +128,36 @@ class SettingsController(
             previous = pages.getOrNull(pages.lastIndex - 1),
             onPop = { handleBack() },
         ) { page ->
-            SettingsScreen(
-                state = state,
-                page = page,
-                navigation = null,
-                snackbarHostState = null,
-                onBack = { handleBack() },
-                onEvent = ::onEvent,
-                embedded = true,
-            )
+            when (page) {
+                SettingsPage.FILTER_RULES -> BlockRulesScreen(
+                    rules.state,
+                    navigation = null,
+                    onEvent = rules::onEvent,
+                    embedded = true,
+                )
+                SettingsPage.BLOCK_PHRASES -> BlockedPhrasesScreen(
+                    rules.state.phrases,
+                    navigation = null,
+                    onBack = { handleBack() },
+                    onAdd = { rules.onEvent(BlockRulesEvent.AddPhrase(it)) },
+                    onEdit = { rules.onEvent(BlockRulesEvent.EditPhrase(it)) },
+                    onRemove = { rules.onEvent(BlockRulesEvent.RemovePhrase(it)) },
+                    error = rules.phraseError,
+                    onDraftChange = rules::clearPhraseError,
+                    embedded = true,
+                )
+                else -> SettingsScreen(
+                    state = state,
+                    page = page,
+                    navigation = null,
+                    snackbarHostState = null,
+                    onBack = { handleBack() },
+                    onEvent = ::onEvent,
+                    embedded = true,
+                )
+            }
         }
+        rules.Dialogs()
 
         if (showSecurityDialog) {
             com.afsh.messages.ui.applock.SecuritySetupDialog(
@@ -198,7 +227,6 @@ class SettingsController(
     private fun onEvent(event: SettingsEvent) {
         when (event) {
             is SettingsEvent.Open -> pages += event.page
-            SettingsEvent.OpenBlockRules -> activity.startActivity(Intent(activity, BlockRulesActivity::class.java))
             is SettingsEvent.SetTheme -> setTheme(event.theme)
             is SettingsEvent.SetFontSize -> update { activity.config.fontSize = event.size }.also { onThemeChanged() }
             SettingsEvent.ChangeLanguage -> if (isTiramisuPlus()) activity.launchChangeAppLanguageIntent()

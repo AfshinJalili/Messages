@@ -18,10 +18,15 @@ import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetState
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -35,6 +40,8 @@ import androidx.compose.ui.unit.dp
 import com.afsh.messages.ui.Afsh
 import com.afsh.messages.ui.AfshCorners
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.dropWhile
 import kotlinx.coroutines.launch
 
 private val ItemMinHeight = 48.dp
@@ -72,6 +79,10 @@ class AfshSheetScope internal constructor(
  * [title] names the pane for TalkBack and tests. It is shown as a titleLarge heading unless
  * [showTitle] is false (the message sheet, whose first line is its own date line).
  * [dimBehind] false drops the scrim, for a sheet whose caller dims the page itself.
+ * [onLeavingChange] reports true as soon as the sheet heads for hidden (Back, a scrim tap, a drag
+ * past its threshold, [AfshSheetScope.dismissThen]) and false if a drag brings it back. [onDismiss]
+ * comes only once the slide has fully settled, which is too late for anything that should leave
+ * with the sheet (the message sheet's lifted bubble).
  *
  * Rows are [AfshSheetItem]. Do not use `ModalBottomSheet` or `BottomSheetScaffold` directly:
  * `tests/check_sheets.py` fails on them outside this file.
@@ -84,11 +95,22 @@ fun AfshSheet(
     modifier: Modifier = Modifier,
     showTitle: Boolean = true,
     dimBehind: Boolean = true,
+    onLeavingChange: ((Boolean) -> Unit)? = null,
     content: @Composable AfshSheetScope.() -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
     val spacing = Afsh.spacing
     val state = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    if (onLeavingChange != null) {
+        val leavingChange by rememberUpdatedState(onLeavingChange)
+        LaunchedEffect(state) {
+            // The state starts hidden before it opens; only a hidden target after that means leaving.
+            snapshotFlow { state.targetValue == SheetValue.Hidden }
+                .dropWhile { it }
+                .distinctUntilChanged()
+                .collect { leavingChange(it) }
+        }
+    }
     val scope = rememberCoroutineScope()
     ModalBottomSheet(
         onDismissRequest = onDismiss,

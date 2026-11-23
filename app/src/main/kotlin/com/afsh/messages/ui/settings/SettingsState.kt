@@ -12,6 +12,9 @@ enum class SettingsPage(@StringRes val title: Int, @StringRes val subtitle: Int?
     WRITING(R.string.settings_writing, null),
     NOTIFICATIONS(com.afsh.commons.R.string.notifications, null),
     INTERACTIONS(R.string.settings_interactions, null),
+    // Hosted by SettingsController through BlockRulesController, not by SettingsScreen.
+    FILTER_RULES(R.string.filter_rules, null),
+    BLOCK_PHRASES(R.string.blocked_phrases, null),
     PRIVACY(R.string.settings_privacy, null),
     BACKUP(R.string.settings_backup, null),
     EXPORT(R.string.export_messages, R.string.export_subtitle),
@@ -78,7 +81,6 @@ data class SettingsUiState(
 /** Everything the Settings pages can ask their activity to do. */
 sealed interface SettingsEvent {
     data class Open(val page: SettingsPage) : SettingsEvent
-    data object OpenBlockRules : SettingsEvent
     data class SetTheme(val theme: ThemeChoice) : SettingsEvent
     data class SetFontSize(val size: Int) : SettingsEvent
     data object ChangeLanguage : SettingsEvent

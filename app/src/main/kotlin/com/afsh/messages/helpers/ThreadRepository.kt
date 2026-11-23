@@ -325,11 +325,12 @@ class ThreadRepository(
     // region Read state
 
     /**
-     * Marks the thread read once the reader is settled [atBottom] with unread messages loaded, then mirrors it
-     * here and calls [onMarked] while the thread is still the same. One write at a time. Main thread.
+     * Marks the thread read once the reader has [seen] the newest message (it is on screen; the list need not be
+     * at its last pixel) with unread messages loaded, then mirrors it here and calls [onMarked] while the thread
+     * is still the same. One write at a time. Main thread.
      */
-    fun markReadIfAtBottom(atBottom: Boolean, onMarked: () -> Unit) {
-        if (!messages.providerReady || isRecycleBin || markReadInProgress || !atBottom || !messages.hasUnread()) return
+    fun markReadIfSeen(seen: Boolean, onMarked: () -> Unit) {
+        if (!messages.providerReady || isRecycleBin || markReadInProgress || !seen || !messages.hasUnread()) return
         markReadInProgress = true
         val visibleThreadId = threadId
         background {
@@ -348,12 +349,12 @@ class ThreadRepository(
     }
 
     /**
-     * Leaving the thread: marks it read when the reader was at the bottom, even mid-scroll. Until the provider's
-     * messages are in, "at the bottom" is only where the list happens to start.
+     * Leaving the thread: marks it read when the reader had [seen] the newest message, even mid-scroll. Until the
+     * provider's messages are in, "seen" is only where the list happens to start.
      */
-    fun flushReadState(atBottom: Boolean) {
+    fun flushReadState(seen: Boolean) {
         if (isRecycleBin || !messages.providerReady) return
-        if (atBottom && messages.hasUnread()) {
+        if (seen && messages.hasUnread()) {
             val visibleThreadId = threadId
             background { platform.markThreadRead(visibleThreadId) }
         }
