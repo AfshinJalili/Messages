@@ -128,6 +128,9 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
     private var roomSnapshotReceived = false
     private var splashReady = false
     private var resumedBefore = false
+    // Set by initMessenger. Before it, a resume follows a system permission prompt or 32/33: a
+    // reconcile then would run without contact access and write bare numbers as titles.
+    private var messengerStarted = false
     // 73: the last provider refresh failed; cleared by the next one that succeeds.
     private var refreshFailed = false
     private var importProgress: ImportProgress? = null
@@ -251,7 +254,7 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
         checkShortcut()
         // The first resume follows onCreate, whose initMessenger already reconciles and then
         // refreshes the counts; a second full run right behind it only delayed the first screen.
-        if (resumedBefore) {
+        if (resumedBefore && messengerStarted) {
             // Debounced: give ThreadActivity read flushes time to reach Room before reconciling.
             InboxRepository.refreshInbox(this)
         }
@@ -324,10 +327,11 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
         super.onActivityResult(requestCode, resultCode, resultData)
         // Declining Android's prompt leaves 32 up, so the person can read why and try again.
         if (requestCode == MAKE_DEFAULT_APP_REQUEST && isDefaultSmsApp()) {
-            firstRun = FirstRunStep.PERMISSIONS
-            // DefaultSmsChangedReceiver records this too, but its broadcast can land after onResume's
+            // DefaultSmsChangedReceiver records this too, but its broadcast can land after a
             // reconcile has read the flag. The next reconcile from here runs forced.
             InboxRepository.requestForceReconcile(this)
+            val step = firstRunStep(isDefaultSmsApp = true, smsPermissionsHeld = hasSmsPermissions())
+            if (step == null) askPermissions() else firstRun = step
         }
     }
 
@@ -404,6 +408,7 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
     }
 
     private fun initMessenger() {
+        messengerStarted = true
         // Contacts permission may have just been granted; the inbox's contact cache needs its observer.
         (application as App).watchContacts()
         InboxRepository.setReconcileListener { status ->

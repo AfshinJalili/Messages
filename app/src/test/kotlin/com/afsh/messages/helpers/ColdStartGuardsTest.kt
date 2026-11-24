@@ -27,6 +27,15 @@ class ColdStartGuardsTest {
     }
 
     @Test
+    fun `a resume reconciles only after the messenger started`() {
+        val text = File(root, "activities/MainActivity.kt").readText()
+        // Before initMessenger, a resume follows a permission prompt: a reconcile then has no contacts.
+        val gated = Regex("""if \(resumedBefore && messengerStarted\) \{[^}]*InboxRepository\.refreshInbox\(this\)""")
+        assertTrue(gated.containsMatchIn(text))
+        assertTrue(Regex("""fun initMessenger\(\) \{\s*messengerStarted = true""").containsMatchIn(text))
+    }
+
+    @Test
     fun `inbox repository exposes dirty-check launch path`() {
         val text = File(root, "helpers/InboxRepository.kt").readText()
         assertTrue(text.contains("fun scheduleLaunchReconcile"))
