@@ -100,6 +100,10 @@ interface MessagesDao {
     )
     fun getLatestVisiblePreview(threadId: Long): MessagePreview?
 
+    /** The date of [threadId]'s newest cached message of any kind, spam and recycled included; null when none. */
+    @Query("SELECT MAX(date) FROM messages WHERE thread_id = :threadId")
+    fun getThreadLatestDate(threadId: Long): Int?
+
     @Query("SELECT messages.* FROM messages LEFT OUTER JOIN recycle_bin_messages ON messages.id = recycle_bin_messages.id WHERE recycle_bin_messages.id IS NULL AND body LIKE :text")
     fun getMessagesWithText(text: String): List<Message>
 

@@ -82,6 +82,8 @@ class ConversationRepositoryTest {
         override fun getLatestVisiblePreview(threadId: Long): MessagePreview? =
             messages.values.filter { it.threadId == threadId && !(!it.isMMS && it.id in spam) }
                 .maxByOrNull { it.date }?.let { MessagePreview(it.body, it.date) }
+        override fun getThreadLatestDate(threadId: Long): Int? =
+            messages.values.filter { it.threadId == threadId }.maxOfOrNull { it.date }
     }
 
     private class FakeDraftsDao : DraftsDao by unsupported() {
@@ -674,7 +676,7 @@ class ConversationRepositoryTest {
 
     @Test
     fun `the preview shows the latest message that is not spam, dated only when the thread has spam`() {
-        conversations.insertOrUpdate(conversation(8).copy(messageCount = 3))
+        conversations.insertOrUpdate(conversation(8, date = 20).copy(messageCount = 3))
         message(1, threadId = 8, date = 10, body = "hello")
         message(2, threadId = 8, date = 20, body = "buy now")
         spam(2, threadId = 8)
@@ -689,10 +691,10 @@ class ConversationRepositoryTest {
 
     @Test
     fun `a thread of only spam is all spam, and one without spam keeps its own date`() {
-        conversations.insertOrUpdate(conversation(8).copy(messageCount = 1))
+        conversations.insertOrUpdate(conversation(8, date = 10).copy(messageCount = 1))
         message(1, threadId = 8, date = 10, body = "buy now")
         spam(1, threadId = 8)
-        conversations.insertOrUpdate(conversation(9).copy(messageCount = 1))
+        conversations.insertOrUpdate(conversation(9, date = 30).copy(messageCount = 1))
         message(3, threadId = 9, date = 30, body = "hi")
 
         repository.refreshPreview(8)
@@ -702,6 +704,32 @@ class ConversationRepositoryTest {
         assertNull(conversations.rows.getValue(8).previewSnippet)
         assertEquals("hi", conversations.rows.getValue(9).previewSnippet)
         assertNull(conversations.rows.getValue(9).previewDate)
+    }
+
+    @Test
+    fun `a thread date newer than every cached message keeps the conversation's own snippet`() {
+        conversations.insertOrUpdate(conversation(8, date = 50).copy(messageCount = 3, previewSnippet = "old"))
+        message(1, threadId = 8, date = 10, body = "hello")
+        message(2, threadId = 8, date = 20, body = "buy now")
+        spam(2, threadId = 8)
+
+        repository.refreshPreview(8)
+
+        val row = conversations.rows.getValue(8)
+        assertNull(row.previewSnippet)
+        assertNull(row.previewDate)
+    }
+
+    @Test
+    fun `a newer cached spam message does not make Room look stale`() {
+        conversations.insertOrUpdate(conversation(8, date = 20).copy(messageCount = 2))
+        message(1, threadId = 8, date = 10, body = "hello")
+        message(2, threadId = 8, date = 20, body = "buy now")
+        spam(2, threadId = 8)
+
+        repository.refreshPreview(8)
+
+        assertEquals("hello", conversations.rows.getValue(8).previewSnippet)
     }
 
     @Test

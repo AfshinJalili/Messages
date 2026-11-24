@@ -260,11 +260,16 @@ class ConversationRepository(
     /**
      * Recomputes [threadId]'s denormalized inbox preview from Room: the latest message that is neither
      * spam nor in the recycle bin, its date only when the thread has spam, and whether it is all spam.
-     * Nothing when Room has no row.
+     * Nothing when Room has no row. When Telephony's thread date is newer than every message Room
+     * holds, Room has not cached the newest message yet, so no override is written and the
+     * conversation's own snippet and date show. The comparison uses Room's newest message of any
+     * kind: against the newest visible one, a newer spam message would look uncached and its text
+     * would reach the inbox.
      */
     fun refreshPreview(threadId: Long) {
         val conversation = conversations.getConversationWithThreadId(threadId) ?: return
-        val latest = messages.getLatestVisiblePreview(threadId)
+        val roomIsStale = conversation.date > (messages.getThreadLatestDate(threadId) ?: 0)
+        val latest = if (roomIsStale) null else messages.getLatestVisiblePreview(threadId)
         val spamCount = messages.getThreadSpamCount(threadId)
         conversations.updatePreview(
             threadId = threadId,

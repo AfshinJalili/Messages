@@ -10,6 +10,7 @@ import com.afsh.commons.extensions.toast
 import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.messages.R
 import com.afsh.messages.extensions.conversationsDB
+import com.afsh.messages.helpers.ConversationPreview
 import com.afsh.messages.helpers.MessagingEvent
 import com.afsh.messages.helpers.MessagingEvents
 import com.afsh.messages.helpers.THREAD_NUMBER
@@ -141,6 +142,7 @@ internal class ThreadLoader(private val visit: ThreadVisit) {
             }
 
             repository.cacheLoaded()
+            ConversationPreview.refresh(activity, visit.threadId)
             data.providerReady = true
             showLoaded()
             activity.runOnUiThread {
