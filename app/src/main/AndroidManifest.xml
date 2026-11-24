@@ -302,6 +302,16 @@
             </intent-filter>
         </receiver>
 
+        <!-- Exported so Telephony can deliver it; the action is a protected broadcast, and the
+             receiver only records a forced reconcile for the next launch. -->
+        <receiver
+            android:name=".receivers.DefaultSmsChangedReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.provider.action.DEFAULT_SMS_PACKAGE_CHANGED" />
+            </intent-filter>
+        </receiver>
+
         <receiver
             android:name=".receivers.ScheduledMessageReceiver"
             android:exported="false" />

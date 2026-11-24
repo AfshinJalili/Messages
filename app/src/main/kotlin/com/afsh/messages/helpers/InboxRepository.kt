@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import com.afsh.commons.helpers.ensureBackgroundThread
+import com.afsh.messages.extensions.config
 
 /**
  * Room is the inbox source of truth. This schedules provider reconciliation and applies
@@ -33,6 +34,16 @@ object InboxRepository {
         reconcileListener = listener
     }
 
+    /**
+     * This app just became the default SMS app. Messages sent or received meanwhile are in Telephony
+     * but not Room, and the dirty-check misses new messages in threads Room already has, so the next
+     * reconcile (launch or resume) runs forced. Schedules nothing: the caller may be a receiver.
+     */
+    fun requestForceReconcile(context: Context) {
+        val app = resolveContext(context) ?: return
+        app.config.forceReconcilePending = true
+    }
+
     /** 73's Retry: reconcile with the provider now rather than after the debounce. */
     fun retry(context: Context) = scheduleProviderReconcile(context, immediate = true, force = true)
 
@@ -49,7 +60,8 @@ object InboxRepository {
     /**
      * @param force when false, a cheap thread-count / latest-date check can skip [ConversationRepository.conversations].
      * Launch and resume use force=false so a warm Room DB paints without a full Telephony pass.
-     * Explicit repairs (retry, spam backfill) pass force=true.
+     * Explicit repairs (retry, spam backfill) pass force=true. A [requestForceReconcile] forces the
+     * next run whatever this says.
      */
     fun scheduleProviderReconcile(
         context: Context? = null,
@@ -94,7 +106,9 @@ object InboxRepository {
         }
         reconciling = true
         ensureBackgroundThread {
-            val needsFull = force || needsFullReconcile(context)
+            // Cleared only after a successful pass, so a failed or killed run leaves it for the next one.
+            val requested = context.config.forceReconcilePending
+            val needsFull = force || requested || needsFullReconcile(context)
             handler.post {
                 if (!needsFull) {
                     reconciling = false
@@ -106,6 +120,7 @@ object InboxRepository {
                 InboxReconciler.reconcile(
                     context = context,
                     onFinished = {
+                        if (requested) context.config.forceReconcilePending = false
                         refreshUnreadCounts(context)
                         InboxImport.importMessagesIfNeeded(context)
                         reconciling = false

@@ -322,7 +322,12 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
     override fun onActivityResult(requestCode: Int, resultCode: Int, resultData: Intent?) {
         super.onActivityResult(requestCode, resultCode, resultData)
         // Declining Android's prompt leaves 32 up, so the person can read why and try again.
-        if (requestCode == MAKE_DEFAULT_APP_REQUEST && isDefaultSmsApp()) firstRun = FirstRunStep.PERMISSIONS
+        if (requestCode == MAKE_DEFAULT_APP_REQUEST && isDefaultSmsApp()) {
+            firstRun = FirstRunStep.PERMISSIONS
+            // DefaultSmsChangedReceiver records this too, but its broadcast can land after onResume's
+            // reconcile has read the flag. The next reconcile from here runs forced.
+            InboxRepository.requestForceReconcile(this)
+        }
     }
 
     /** 32 until the app is the SMS app; 33 while SMS access is missing; otherwise straight to the inbox. */
