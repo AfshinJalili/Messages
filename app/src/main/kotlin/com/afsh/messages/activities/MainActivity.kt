@@ -108,6 +108,7 @@ import com.afsh.messages.ui.inbox.InboxRow
 import com.afsh.messages.ui.firstrun.FirstRunEvent
 import com.afsh.messages.ui.firstrun.FirstRunScreen
 import com.afsh.messages.ui.firstrun.FirstRunStep
+import com.afsh.messages.ui.firstrun.firstRunStep
 import com.afsh.messages.ui.inbox.InboxScreen
 import com.afsh.messages.ui.inbox.InboxUiState
 import com.afsh.messages.ui.components.TopDestination
@@ -337,14 +338,12 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
             finish()
             return
         }
-        firstRun = when {
-            !isDefaultSmsApp() -> FirstRunStep.DEFAULT_APP
-            !hasPermission(PERMISSION_READ_SMS) || !hasPermission(PERMISSION_SEND_SMS) -> FirstRunStep.PERMISSIONS
-            else -> null
-        }
+        firstRun = firstRunStep(isDefaultSmsApp(), hasSmsPermissions())
         if (firstRun != null) splashReady = true
         if (firstRun == null) askPermissions()
     }
+
+    private fun hasSmsPermissions(): Boolean = hasPermission(PERMISSION_READ_SMS) && hasPermission(PERMISSION_SEND_SMS)
 
     private fun isDefaultSmsApp(): Boolean = if (isQPlus()) {
         getSystemService(RoleManager::class.java)?.isRoleHeld(RoleManager.ROLE_SMS) == true
