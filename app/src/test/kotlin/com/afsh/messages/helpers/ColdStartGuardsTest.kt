@@ -56,6 +56,20 @@ class ColdStartGuardsTest {
     }
 
     @Test
+    fun `backup cannot restore a stale cache or import flag`() {
+        val manifest = File("src/main/AndroidManifest.xml").readText()
+        assertTrue(manifest.contains("android:allowBackup=\"false\""))
+        assertTrue(manifest.contains("android:dataExtractionRules=\"@xml/data_extraction_rules\""))
+        val rules = File("src/main/res/xml/data_extraction_rules.xml").readText()
+        listOf("cloud-backup", "device-transfer").forEach { section ->
+            val body = Regex("<$section>(.*?)</$section>", RegexOption.DOT_MATCHES_ALL).find(rules)!!.groupValues[1]
+            listOf("root", "file", "database", "sharedpref", "external").forEach { domain ->
+                assertTrue("$section keeps $domain", body.contains("<exclude domain=\"$domain\" path=\".\" />"))
+            }
+        }
+    }
+
+    @Test
     fun `splash activity is gone`() {
         assertFalse(File(root, "activities/SplashActivity.kt").exists())
     }
