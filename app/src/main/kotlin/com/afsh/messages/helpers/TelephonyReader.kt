@@ -2,6 +2,7 @@ package com.afsh.messages.helpers
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.database.Cursor
 import android.net.Uri
 import android.provider.Telephony.Mms
 import android.provider.Telephony.Sms
@@ -134,17 +135,6 @@ private fun Context.getMessages(
     val displayLimit =
         if (includeAllUnread) maxOf(limit, getUnreadWindowSize(threadId, oldestLoadedDate, skipUnreadSmsIds)) else limit
     val uri = Sms.CONTENT_URI
-    val projection = arrayOf(
-        Sms._ID,
-        Sms.BODY,
-        Sms.TYPE,
-        Sms.ADDRESS,
-        Sms.DATE,
-        Sms.READ,
-        Sms.THREAD_ID,
-        Sms.SUBSCRIPTION_ID,
-        Sms.STATUS
-    )
 
     val rangeQuery = if (dateFrom == -1) "" else "AND ${Sms.DATE} < ${dateFrom.toLong() * 1000}"
     val selection = "${Sms.THREAD_ID} = ? $rangeQuery"
@@ -154,60 +144,14 @@ private fun Context.getMessages(
     val blockStatus = HashMap<String, Boolean>()
     val blockedNumbers = getBlockedNumbers()
     var messages = ArrayList<Message>()
-    queryCursor(uri, projection, selection, selectionArgs, sortOrder, showErrors = true) { cursor ->
+    queryCursor(uri, SMS_PROJECTION, selection, selectionArgs, sortOrder, showErrors = true) { cursor ->
         val senderNumber = cursor.getStringValue(Sms.ADDRESS) ?: return@queryCursor
         val isNumberBlocked = blockStatus.getOrPut(senderNumber) { isNumberBlocked(senderNumber, blockedNumbers) }
         if (isNumberBlocked) {
             return@queryCursor
         }
 
-        val id = cursor.getLongValue(Sms._ID)
-        val body = cursor.getStringValue(Sms.BODY)
-        val type = cursor.getIntValue(Sms.TYPE)
-        val namePhoto = getNameAndPhotoFromPhoneNumber(senderNumber)
-        val senderName = namePhoto.name
-        val photoUri = namePhoto.photoUri ?: ""
-        val date = (cursor.getLongValue(Sms.DATE) / 1000).toInt()
-        val read = cursor.getIntValue(Sms.READ) == 1
-        val thread = cursor.getLongValue(Sms.THREAD_ID)
-        val subscriptionId = cursor.getIntValueOr(
-            key = Sms.SUBSCRIPTION_ID,
-            defaultValue = SubscriptionManager.INVALID_SUBSCRIPTION_ID
-        )
-
-        val status = cursor.getIntValue(Sms.STATUS)
-        val participants = senderNumber.split(ADDRESS_SEPARATOR).map { number ->
-            val phoneNumber = PhoneNumber(number, 0, "", number)
-            val participantPhoto = getNameAndPhotoFromPhoneNumber(number)
-            SimpleContact(
-                rawId = 0,
-                contactId = 0,
-                name = participantPhoto.name,
-                photoUri = photoUri,
-                phoneNumbers = arrayListOf(phoneNumber),
-                birthdays = ArrayList(),
-                anniversaries = ArrayList()
-            )
-        }
-        val isMMS = false
-        val message =
-            Message(
-                id = id,
-                body = body,
-                type = type,
-                status = status,
-                participants = ArrayList(participants),
-                date = date,
-                read = read,
-                threadId = thread,
-                isMMS = isMMS,
-                attachment = null,
-                senderPhoneNumber = senderNumber,
-                senderName = senderName,
-                senderPhotoUri = photoUri,
-                subscriptionId = subscriptionId
-            )
-        messages.add(message)
+        messages.add(smsMessage(cursor, senderNumber))
     }
 
     messages.addAll(getMMS(threadId, sortOrder, dateFrom))
@@ -229,6 +173,66 @@ private fun Context.getMessages(
         .toMutableList() as ArrayList<Message>
 
     return messages
+}
+
+private val SMS_PROJECTION = arrayOf(
+    Sms._ID,
+    Sms.BODY,
+    Sms.TYPE,
+    Sms.ADDRESS,
+    Sms.DATE,
+    Sms.READ,
+    Sms.THREAD_ID,
+    Sms.SUBSCRIPTION_ID,
+    Sms.STATUS
+)
+
+/** One [SMS_PROJECTION] row as a [Message], with sender name and photos from the participant cache. */
+private fun Context.smsMessage(cursor: Cursor, senderNumber: String): Message {
+    val id = cursor.getLongValue(Sms._ID)
+    val body = cursor.getStringValue(Sms.BODY)
+    val type = cursor.getIntValue(Sms.TYPE)
+    val namePhoto = getNameAndPhotoFromPhoneNumber(senderNumber)
+    val senderName = namePhoto.name
+    val photoUri = namePhoto.photoUri ?: ""
+    val date = (cursor.getLongValue(Sms.DATE) / 1000).toInt()
+    val read = cursor.getIntValue(Sms.READ) == 1
+    val thread = cursor.getLongValue(Sms.THREAD_ID)
+    val subscriptionId = cursor.getIntValueOr(
+        key = Sms.SUBSCRIPTION_ID,
+        defaultValue = SubscriptionManager.INVALID_SUBSCRIPTION_ID
+    )
+
+    val status = cursor.getIntValue(Sms.STATUS)
+    val participants = senderNumber.split(ADDRESS_SEPARATOR).map { number ->
+        val phoneNumber = PhoneNumber(number, 0, "", number)
+        val participantPhoto = getNameAndPhotoFromPhoneNumber(number)
+        SimpleContact(
+            rawId = 0,
+            contactId = 0,
+            name = participantPhoto.name,
+            photoUri = photoUri,
+            phoneNumbers = arrayListOf(phoneNumber),
+            birthdays = ArrayList(),
+            anniversaries = ArrayList()
+        )
+    }
+    return Message(
+        id = id,
+        body = body,
+        type = type,
+        status = status,
+        participants = ArrayList(participants),
+        date = date,
+        read = read,
+        threadId = thread,
+        isMMS = false,
+        attachment = null,
+        senderPhoneNumber = senderNumber,
+        senderName = senderName,
+        senderPhotoUri = photoUri,
+        subscriptionId = subscriptionId
+    )
 }
 
 // as soon as a message contains multiple recipients it counts as an MMS instead of SMS
