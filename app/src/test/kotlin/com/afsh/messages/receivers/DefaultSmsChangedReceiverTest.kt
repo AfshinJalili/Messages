@@ -86,8 +86,8 @@ class DefaultSmsChangedReceiverTest {
         assertFalse(receiver.contains("scheduleProviderReconcile"))
         assertFalse(receiver.contains("refreshInbox"))
         val repository = File("src/main/kotlin/com/afsh/messages/helpers/InboxRepository.kt").readText()
-        // The dirty-check is skipped while a request is pending, and cleared only after success.
-        assertTrue(Regex("""needsFull = force \|\| requested \|\| needsFullReconcile""").containsMatchIn(repository))
+        // A pending request picks the full pass (see InboxRepositoryTest), and is cleared only after success.
+        assertTrue(Regex("""providerReconcilePass\(force, requested\)""").containsMatchIn(repository))
         assertTrue(Regex("""onFinished = \{\s*if \(requested\) context\.config\.forceReconcilePending = false""").containsMatchIn(repository))
         val manifest = File("src/main/AndroidManifest.xml").readText()
         assertTrue(manifest.contains("android.provider.action.DEFAULT_SMS_PACKAGE_CHANGED"))

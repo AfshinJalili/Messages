@@ -58,7 +58,8 @@ object InboxRepository {
     }
 
     /**
-     * @param force when false, a cheap thread-count / latest-date check can skip [ConversationRepository.conversations].
+     * @param force when false, a cheap thread-count / latest-date check can replace the full
+     * [ConversationRepository.conversations] pass with [InboxReconciler.syncRecentWindow].
      * Launch and resume use force=false so a warm Room DB paints without a full Telephony pass.
      * Explicit repairs (retry, spam backfill) pass force=true. A [requestForceReconcile] forces the
      * next run whatever this says.
@@ -79,8 +80,8 @@ object InboxRepository {
     }
 
     /**
-     * Cold-start path: refresh unread badges, then reconcile only when Room is empty or the
-     * Telephony digest disagrees with Room.
+     * Cold-start path: refresh unread badges, then reconcile fully only when Room is empty or the
+     * Telephony digest disagrees with Room; otherwise re-read only the newest threads.
      */
     fun scheduleLaunchReconcile(context: Context) {
         val app = resolveContext(context) ?: return
@@ -108,14 +109,22 @@ object InboxRepository {
         ensureBackgroundThread {
             // Cleared only after a successful pass, so a failed or killed run leaves it for the next one.
             val requested = context.config.forceReconcilePending
-            val needsFull = force || requested || needsFullReconcile(context)
-            handler.post {
-                if (!needsFull) {
-                    reconciling = false
-                    reconcileListener?.invoke(ReconcileStatus.DONE)
-                    drainPending(context)
-                    return@post
+            val pass = providerReconcilePass(force, requested) { needsFullReconcile(context) }
+            if (pass == ProviderReconcilePass.RECENT_WINDOW) {
+                val synced = try {
+                    InboxReconciler.syncRecentWindow(context)
+                    true
+                } catch (_: Exception) {
+                    false
                 }
+                handler.post {
+                    reconciling = false
+                    reconcileListener?.invoke(if (synced) ReconcileStatus.DONE else ReconcileStatus.FAILED)
+                    drainPending(context)
+                }
+                return@ensureBackgroundThread
+            }
+            handler.post {
                 reconcileListener?.invoke(ReconcileStatus.RUNNING)
                 InboxReconciler.reconcile(
                     context = context,
@@ -155,6 +164,22 @@ object InboxRepository {
 
     private const val RECONCILE_DEBOUNCE_MS = 400L
 }
+
+/** How much of Telephony a provider reconcile reads. */
+internal enum class ProviderReconcilePass {
+    /** Room's thread count and newest date match Telephony: only the newest threads are re-read. */
+    RECENT_WINDOW,
+
+    /** Every thread: inserts, updates and removals. */
+    FULL,
+}
+
+/**
+ * A forced or requested run, or a Room that [dirty] finds drifted from Telephony, needs the
+ * [ProviderReconcilePass.FULL] pass. The dirty-check walks every thread, so a forced run skips it.
+ */
+internal fun providerReconcilePass(force: Boolean, requested: Boolean, dirty: () -> Boolean): ProviderReconcilePass =
+    if (force || requested || dirty()) ProviderReconcilePass.FULL else ProviderReconcilePass.RECENT_WINDOW
 
 /** Where a provider reconcile is; the inbox shows 73's notice after FAILED until a later DONE. */
 enum class ReconcileStatus { RUNNING, DONE, FAILED }

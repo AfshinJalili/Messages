@@ -34,6 +34,7 @@ class ColdStartGuardsTest {
         val repository = File(root, "helpers/ConversationRepository.kt").readText()
         assertTrue(repository.contains("fun needsFullReconcile"))
         assertTrue(repository.contains("telephony.threadDigest()"))
+        assertTrue(text.contains("InboxReconciler.syncRecentWindow"))
         assertTrue(text.contains("force"))
     }
 

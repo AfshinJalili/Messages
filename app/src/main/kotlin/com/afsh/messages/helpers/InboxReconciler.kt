@@ -112,5 +112,17 @@ object InboxReconciler {
         }
     }
 
+    /**
+     * The warm-resume pass when Room's thread count and newest date already match Telephony: reads
+     * only the newest [limit] threads, so a thread read, deleted from or updated elsewhere refreshes
+     * without walking every thread. Blocks; throws when Telephony can't be read. Returns the number
+     * of rows written.
+     */
+    fun syncRecentWindow(context: Context, limit: Int = RECENT_WINDOW): Int =
+        ConversationRepository.from(appContext(context)).syncRecentConversations(limit)
+
     private fun appContext(context: Context) = context.applicationContext
+
+    /** Threads the warm-resume pass reads: more than one screen of the inbox. */
+    private const val RECENT_WINDOW = 20
 }

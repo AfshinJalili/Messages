@@ -9,6 +9,7 @@ Fails on:
 - ensureBackgroundThread spawning an unbounded Thread instead of a bounded executor
 - SplashActivity still present as a launcher hop
 - Loading gate that waits on provider reconcile while Room is empty
+- InboxRepository dropping the recent-window sync that runs when the dirty-check is clean
 - baseline-prof.txt method rules that omit a (...) descriptor (breaks
   :app:expandReleaseArtProfileWildcards / profgen)
 
@@ -70,6 +71,11 @@ conversation_repo = (REPO.parent / "ConversationRepository.kt").read_text()
 if "needsFullReconcile" not in repo or "fun needsFullReconcile" not in conversation_repo \
         or "telephony.threadDigest()" not in conversation_repo:
     violations.append(f"{rel(REPO)}: launch reconcile must dirty-check via ConversationRepository.needsFullReconcile")
+if "InboxReconciler.syncRecentWindow" not in repo:
+    violations.append(
+        f"{rel(REPO)}: a clean dirty-check must still sync the recent Telephony window "
+        "(InboxReconciler.syncRecentWindow), or threads changed elsewhere stay stale on resume"
+    )
 if "force: Boolean = true" not in repo and "force: Boolean =" not in repo:
     violations.append(f"{rel(REPO)}: scheduleProviderReconcile needs a force flag for dirty-check launches")
 

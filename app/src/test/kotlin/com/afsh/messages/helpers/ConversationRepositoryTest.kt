@@ -103,6 +103,10 @@ class ConversationRepositoryTest {
         var digest = 0 to 0
         var lastUnreadCounts: Map<Long, Int>? = null
         var lastDraftDates: Map<Long, Long>? = null
+        var lastLimit: Int? = null
+        var lastFailOnError: Boolean? = null
+        /** Every read of the threads table fails: an error with failOnError, otherwise no rows. */
+        var unreadableThreads = false
         /** Reading these threads fails: an error with failOnError, otherwise no rows, as the provider does. */
         val unreadable = HashSet<Long>()
 
@@ -115,13 +119,17 @@ class ConversationRepositoryTest {
             draftDates: Map<Long, Long>,
             failOnError: Boolean,
             onProgress: ((done: Int, total: Int) -> Unit)?,
+            limit: Int?,
         ): ArrayList<Conversation> {
             lastUnreadCounts = unreadCounts
             lastDraftDates = draftDates
-            if (threadId in unreadable) {
+            lastLimit = limit
+            lastFailOnError = failOnError
+            if (unreadableThreads || threadId in unreadable) {
                 if (failOnError) throw IllegalStateException("provider") else return ArrayList()
             }
-            return ArrayList(threads.values.filter { threadId == null || it.threadId == threadId })
+            val newestFirst = threads.values.filter { threadId == null || it.threadId == threadId }.sortedByDescending { it.date }
+            return ArrayList(if (limit == null) newestFirst else newestFirst.take(limit))
         }
         override fun threadDigest() = digest
         override fun smsRows(ids: Collection<Long>) = rows.filter { !it.isMms && it.id in ids }
@@ -336,6 +344,90 @@ class ConversationRepositoryTest {
         telephony.digest = -1 to -1
         assertTrue(repository.needsFullReconcile())
     }
+
+    // region Recent window
+
+    @Test
+    fun `conversations pass their limit to Telephony`() {
+        telephony.threads[10] = conversation(10, date = 300)
+        telephony.threads[11] = conversation(11, date = 200)
+        telephony.threads[12] = conversation(12, date = 100)
+
+        assertEquals(listOf(10L, 11L), repository.conversations(limit = 2).map { it.threadId })
+        assertEquals(2, telephony.lastLimit)
+
+        repository.conversations()
+        assertNull(telephony.lastLimit)
+    }
+
+    @Test
+    fun `the recent window reads only the newest threads and writes what drifted, in one transaction`() {
+        conversations.insertOrUpdate(conversation(10, date = 300).copy(snippet = "old"))
+        conversations.insertOrUpdate(conversation(11, date = 200))
+        conversations.insertOrUpdate(conversation(12, date = 150, read = true, unread = 0))
+        conversations.insertOrUpdate(conversation(13, date = 50))
+        telephony.threads[10] = conversation(10, date = 300).copy(snippet = "new")
+        telephony.threads[11] = conversation(11, date = 200)
+        telephony.threads[12] = conversation(12, date = 160, read = false, unread = 2)
+        telephony.threads[14] = conversation(14, date = 120)
+        // Outside the window: a drifted old thread is left for the full reconcile.
+        telephony.threads[13] = conversation(13, date = 50).copy(snippet = "drifted")
+
+        val written = repository.syncRecentConversations(limit = 4)
+
+        assertEquals(3, written)
+        assertEquals(4, telephony.lastLimit)
+        assertEquals(true, telephony.lastFailOnError)
+        assertEquals(1, effects.transactions)
+        assertEquals("new", conversations.rows.getValue(10).snippet)
+        assertEquals(160, conversations.rows.getValue(12).date)
+        assertEquals(2, conversations.rows.getValue(12).unreadCount)
+        assertFalse(conversations.rows.getValue(12).read)
+        assertEquals(conversation(14, date = 120), conversations.rows.getValue(14))
+        assertEquals("s", conversations.rows.getValue(13).snippet)
+        assertEquals(listOf(10L, 12L, 14L), effects.refreshed.sorted())
+    }
+
+    @Test
+    fun `the recent window writes nothing when Room already matches`() {
+        // Room's preview columns are app-owned and absent from Telephony's row; they are no drift.
+        conversations.insertOrUpdate(conversation(10).copy(previewSnippet = "visible", previewDate = 90))
+        telephony.threads[10] = conversation(10)
+
+        assertEquals(0, repository.syncRecentConversations(limit = 20))
+        assertEquals(0, effects.transactions)
+        assertTrue(effects.refreshed.isEmpty())
+        assertEquals("visible", conversations.rows.getValue(10).previewSnippet)
+    }
+
+    @Test
+    fun `the recent window keeps app-owned metadata of the rows it updates`() {
+        conversations.insertOrUpdate(conversation(10, title = "Mom").copy(usesCustomTitle = true, snippet = "old"))
+        telephony.threads[10] = conversation(10).copy(snippet = "new")
+
+        assertEquals(1, repository.syncRecentConversations(limit = 20))
+        val row = conversations.rows.getValue(10)
+        assertEquals("new", row.snippet)
+        assertEquals("Mom", row.title)
+        assertTrue(row.usesCustomTitle)
+    }
+
+    @Test
+    fun `the recent window leaves archived rows alone, as the full reconcile does`() {
+        conversations.insertOrUpdate(conversation(10).copy(isArchived = true, snippet = "old"))
+        telephony.threads[10] = conversation(10).copy(snippet = "new")
+
+        assertEquals(0, repository.syncRecentConversations(limit = 20))
+        assertEquals("old", conversations.rows.getValue(10).snippet)
+    }
+
+    @Test(expected = IllegalStateException::class)
+    fun `a recent window that cannot read Telephony fails`() {
+        telephony.unreadableThreads = true
+        repository.syncRecentConversations(limit = 20)
+    }
+
+    // endregion
 
     @Test
     fun `an SMS thread id comes from Room first, then Telephony`() {

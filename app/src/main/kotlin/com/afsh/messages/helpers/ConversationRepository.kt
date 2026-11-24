@@ -64,12 +64,16 @@ class ConversationRepository(
 
     // region Reads
 
-    /** Telephony's conversations ([threadId] only, when given), with unread counts and draft dates. */
+    /**
+     * Telephony's conversations ([threadId] only, when given; the newest [limit] only, when given),
+     * with unread counts and draft dates.
+     */
     fun conversations(
         threadId: Long? = null,
         privateContacts: List<SimpleContact> = emptyList(),
         failOnError: Boolean = false,
         onProgress: ((done: Int, total: Int) -> Unit)? = null,
+        limit: Int? = null,
     ): ArrayList<Conversation> = telephony.conversations(
         threadId = threadId,
         privateContacts = privateContacts,
@@ -77,6 +81,7 @@ class ConversationRepository(
         draftDates = drafts.getAll().associate { it.threadId to it.date },
         failOnError = failOnError,
         onProgress = onProgress,
+        limit = limit,
     )
 
     /** Telephony's row for [threadId], or null when the thread is gone or blocked. */
@@ -293,6 +298,31 @@ class ConversationRepository(
         effects.runInTransaction {
             changed.forEach { conversations.updateUnreadCount(it.threadId, counts[it.threadId] ?: 0) }
         }
+    }
+
+    /**
+     * Copies the newest [limit] Telephony threads into Room: missing rows are inserted, and rows that
+     * the merge with Room (see [mergeConversationWithCache]) would change are rewritten, in one
+     * transaction. Rows that match are not written, since every write re-runs the inbox query.
+     * Archived rows are left alone, as the full reconcile leaves them. Threads outside the window, and
+     * deleted threads, are the full reconcile's. Throws when Telephony can't be read. Returns the
+     * number of rows written.
+     */
+    fun syncRecentConversations(limit: Int): Int {
+        val drifted = conversations(failOnError = true, limit = limit).mapNotNull { incoming ->
+            val cached = conversations.getConversationWithThreadId(incoming.threadId)
+            when {
+                cached == null -> incoming to null
+                cached.isArchived -> null
+                Conversation.areContentsTheSame(old = cached, new = mergeConversationWithCache(incoming, cached)) -> null
+                else -> incoming to cached
+            }
+        }
+        if (drifted.isEmpty()) return 0
+        effects.runInTransaction {
+            drifted.forEach { (incoming, cached) -> insertOrUpdate(incoming, cached) }
+        }
+        return drifted.size
     }
 
     // endregion
