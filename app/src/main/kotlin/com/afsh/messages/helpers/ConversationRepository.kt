@@ -124,6 +124,23 @@ class ConversationRepository(
         return telephonyCount < 0 || telephonyCount != roomCount
     }
 
+    /**
+     * True when Room has cached the newest message of [conversation], a Telephony-dated row. Room is
+     * behind when the thread date is newer than every message it holds, or when another message
+     * landed in the same second as Room's newest: then Room has none the thread snippet names. A Room
+     * message newer than the thread date (deleted by another app) counts as cached. Scheduled messages
+     * are not Telephony's and never count. Spam and recycled messages do: against visible ones only,
+     * a newer spam message would look uncached.
+     */
+    fun holdsNewestMessage(conversation: Conversation): Boolean {
+        val latest = messages.getThreadLatestDate(conversation.threadId) ?: return false
+        return when {
+            conversation.date > latest -> false
+            conversation.date < latest -> true
+            else -> messages.hasMessageForSnippet(conversation.threadId, latest, conversation.snippet)
+        }
+    }
+
     /** The thread of SMS [messageId]: Room's when it knows, otherwise Telephony's. Null for 0 or unknown. */
     fun smsThreadId(messageId: Long): Long? {
         if (messageId == 0L) return null
@@ -183,13 +200,14 @@ class ConversationRepository(
 
     /**
      * Stores a Telephony snapshot of a conversation, merged with the [cached] row (see
-     * [mergeConversationWithCache]), and refreshes its preview.
+     * [mergeConversationWithCache], which [trustTelephony] goes to), and refreshes its preview.
      */
     fun insertOrUpdate(
         conversation: Conversation,
         cached: Conversation? = conversations.getConversationWithThreadId(conversation.threadId),
+        trustTelephony: Boolean = false,
     ) {
-        val updated = mergeConversationWithCache(conversation, cached)
+        val updated = mergeConversationWithCache(conversation, cached, trustTelephony)
         conversations.insertOrUpdate(updated)
         effects.refreshPreview(listOf(updated.threadId))
     }
@@ -273,16 +291,12 @@ class ConversationRepository(
     /**
      * Recomputes [threadId]'s denormalized inbox preview from Room: the latest message that is neither
      * spam nor in the recycle bin, its date only when the thread has spam, and whether it is all spam.
-     * Nothing when Room has no row. When Telephony's thread date is newer than every message Room
-     * holds, Room has not cached the newest message yet, so no override is written and the
-     * conversation's own snippet and date show. The comparison uses Room's newest message of any
-     * kind: against the newest visible one, a newer spam message would look uncached and its text
-     * would reach the inbox.
+     * Nothing when Room has no row. When Room has not cached the newest message yet (see
+     * [holdsNewestMessage]), no override is written and the conversation's own snippet and date show.
      */
     fun refreshPreview(threadId: Long) {
         val conversation = conversations.getConversationWithThreadId(threadId) ?: return
-        val roomIsStale = conversation.date > (messages.getThreadLatestDate(threadId) ?: 0)
-        val latest = if (roomIsStale) null else messages.getLatestVisiblePreview(threadId)
+        val latest = if (holdsNewestMessage(conversation)) messages.getLatestVisiblePreview(threadId) else null
         val spamCount = messages.getThreadSpamCount(threadId)
         conversations.updatePreview(
             threadId = threadId,
@@ -461,10 +475,16 @@ class ConversationRepository(
  *
  * A stale provider snapshot (no newer date and no higher message count) must not undo a local
  * mark-read, whereas a newly arrived message must immediately surface its unread state and count.
+ *
+ * [trustTelephony] is for the forced pass after this app becomes the default SMS app again. Another
+ * app may have marked a thread unread or deleted its newest message meanwhile, and Room may hold a
+ * stale preview, so Telephony's date, snippet and read state win. Custom titles, scheduled dates and
+ * the preview columns are still kept: Telephony has no say over them.
  */
 internal fun mergeConversationWithCache(
     incoming: Conversation,
     cached: Conversation?,
+    trustTelephony: Boolean = false,
 ): Conversation {
     if (cached == null) return incoming
     var updated = incoming
@@ -481,14 +501,14 @@ internal fun mergeConversationWithCache(
         )
     }
     // Keep a newer local preview (e.g. optimistic send bump) until Telephony catches up.
-    if (cached.date > updated.date) {
+    if (!trustTelephony && cached.date > updated.date) {
         updated = updated.copy(
             date = cached.date,
             snippet = cached.snippet,
         )
     }
     val hasNewerMessage = incoming.date > cached.date || incoming.messageCount > cached.messageCount
-    if (cached.read && cached.unreadCount == 0 && !updated.read && !hasNewerMessage) {
+    if (!trustTelephony && cached.read && cached.unreadCount == 0 && !updated.read && !hasNewerMessage) {
         updated = updated.copy(read = true, unreadCount = 0)
     }
     // REPLACE would clear denormalized preview columns; keep them until refresh below.

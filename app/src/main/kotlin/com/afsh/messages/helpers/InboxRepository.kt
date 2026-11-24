@@ -37,11 +37,13 @@ object InboxRepository {
     /**
      * This app just became the default SMS app. Messages sent or received meanwhile are in Telephony
      * but not Room, and the dirty-check misses new messages in threads Room already has, so the next
-     * reconcile (launch or resume) runs forced. Schedules nothing: the caller may be a receiver.
+     * reconcile (launch or resume) runs forced, and the message import runs again for threads whose
+     * newest message Room lacks. Schedules nothing: the caller may be a receiver.
      */
     fun requestForceReconcile(context: Context) {
         val app = resolveContext(context) ?: return
         app.config.forceReconcilePending = true
+        InboxImport.reopen(app)
     }
 
     /** 73's Retry: reconcile with the provider now rather than after the debounce. */
@@ -118,6 +120,8 @@ object InboxRepository {
                     false
                 }
                 handler.post {
+                    // An import stopped mid-way (killed, or reopened) resumes without a full pass.
+                    if (synced) InboxImport.importMessagesIfNeeded(context)
                     reconciling = false
                     reconcileListener?.invoke(if (synced) ReconcileStatus.DONE else ReconcileStatus.FAILED)
                     drainPending(context)
@@ -128,6 +132,7 @@ object InboxRepository {
                 reconcileListener?.invoke(ReconcileStatus.RUNNING)
                 InboxReconciler.reconcile(
                     context = context,
+                    forced = requested,
                     onFinished = {
                         if (requested) context.config.forceReconcilePending = false
                         refreshUnreadCounts(context)

@@ -67,10 +67,24 @@ class DefaultSmsChangedReceiverTest {
     }
 
     @Test
+    fun `becoming the default SMS app reopens the message import`() {
+        val context = PreferencesContext()
+        context.config.messagesImported = true
+        context.config.importHandledThreads = setOf("4")
+        context.config.importThreadFailures = setOf("5:3")
+        DefaultSmsChangedReceiver().onReceive(context, defaultSmsChanged(isDefault = true))
+        assertFalse(context.config.messagesImported)
+        assertTrue(context.config.importHandledThreads.isEmpty())
+        assertTrue(context.config.importThreadFailures.isEmpty())
+    }
+
+    @Test
     fun `losing the default SMS app records nothing`() {
         val context = PreferencesContext()
+        context.config.messagesImported = true
         DefaultSmsChangedReceiver().onReceive(context, defaultSmsChanged(isDefault = false))
         assertFalse(context.config.forceReconcilePending)
+        assertTrue(context.config.messagesImported)
     }
 
     @Test

@@ -17,8 +17,15 @@ import com.afsh.messages.models.Conversation
  */
 object InboxReconciler {
 
+    /**
+     * @param forced the pass [InboxRepository.requestForceReconcile] asked for after this app became
+     * the default SMS app again: Telephony's date, snippet and read state win over Room's (see
+     * [mergeConversationWithCache]), and the inbox shows progress as on the first import, since the
+     * message import that follows may copy many threads.
+     */
     fun reconcile(
         context: Context,
+        forced: Boolean = false,
         onFinished: () -> Unit = {},
         onFailed: () -> Unit = {},
     ) {
@@ -39,14 +46,14 @@ object InboxReconciler {
                     MyContactsContentProvider.getSimpleContacts(app, cursor)
                 }
                 // An empty cache means the first import: the inbox shows how far it has got.
-                val firstImport = allCached.isEmpty()
+                val showProgress = forced || allCached.isEmpty()
                 val conversations = repository.conversations(
                     privateContacts = privateContacts,
                     failOnError = true,
-                    onProgress = if (firstImport) InboxImport::reportConversations else null,
+                    onProgress = if (showProgress) InboxImport::reportConversations else null,
                 )
                 // Hold the bar through Room writes; message indexing continues the same percent.
-                if (firstImport) InboxImport.conversationsDone()
+                if (showProgress) InboxImport.conversationsDone()
                 val cachedIds = allCached.mapTo(HashSet()) { it.threadId }
                 val conversationsById = conversations.associateBy { it.threadId }
                 val conversationsByNumber = conversations.asReversed().associateBy { it.phoneNumber }
@@ -86,7 +93,7 @@ object InboxReconciler {
                             !Conversation.areContentsTheSame(old = cachedConv, new = it)
                         }
                         if (conv != null) {
-                            repository.insertOrUpdate(conv, cachedConv)
+                            repository.insertOrUpdate(conv, cachedConv, trustTelephony = forced)
                         }
                     }
 

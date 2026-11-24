@@ -21,8 +21,13 @@ class SpamChecks {
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private val context: Context = instrumentation.targetContext
 
-    private fun conversation(threadId: Long, messageCount: Int, archived: Boolean = false) = fixtureConversation(
-        threadId, "Spam fixture", snippet = "provider snippet", date = 500, read = false, phone = "5550100777",
+    private fun conversation(
+        threadId: Long,
+        messageCount: Int,
+        archived: Boolean = false,
+        snippet: String = "provider snippet",
+    ) = fixtureConversation(
+        threadId, "Spam fixture", snippet = snippet, date = 500, read = false, phone = "5550100777",
         archived = archived, messageCount = messageCount,
     )
 
@@ -82,7 +87,8 @@ class SpamChecks {
         val realId = Long.MAX_VALUE - 3021
         val spamId = Long.MAX_VALUE - 3022
         withThread(threadId) {
-            ConversationRepository.from(context).insertOrUpdate(conversation(threadId, messageCount = 2))
+            // Telephony's snippet names its newest message, the spam one.
+            ConversationRepository.from(context).insertOrUpdate(conversation(threadId, messageCount = 2, snippet = "spam"))
             context.messagesDB.insertOrUpdate(message(realId, threadId, "real", 100))
             context.messagesDB.insertOrUpdate(message(spamId, threadId, "spam", 500))
             markSpam(spamId, threadId)

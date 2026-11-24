@@ -114,4 +114,44 @@ class ConversationCacheMergeTest {
         assertFalse(merged.read)
         assertEquals(2, merged.unreadCount)
     }
+    @Test
+    fun `a forced pass keeps an unread mark made in another SMS app`() {
+        val cached = conversation(date = 1_000, read = true, unreadCount = 0, messageCount = 5)
+        val markedUnreadElsewhere = conversation(date = 1_000, read = false, unreadCount = 1, messageCount = 5)
+
+        val merged = mergeConversationWithCache(markedUnreadElsewhere, cached, trustTelephony = true)
+
+        assertFalse(merged.read)
+        assertEquals(1, merged.unreadCount)
+    }
+
+    @Test
+    fun `a forced pass replaces a cached preview newer than Telephony`() {
+        val cached = conversation(date = 2_000, snippet = "Deleted elsewhere", messageCount = 6)
+        val telephony = conversation(date = 1_500, snippet = "Still there", messageCount = 5)
+
+        val merged = mergeConversationWithCache(telephony, cached, trustTelephony = true)
+
+        assertEquals(1_500, merged.date)
+        assertEquals("Still there", merged.snippet)
+    }
+
+    @Test
+    fun `a forced pass still keeps app-owned metadata and a scheduled date`() {
+        val cached = conversation(
+            date = 3_000,
+            title = "Team Chat",
+            usesCustomTitle = true,
+            isScheduled = true,
+            previewSnippet = "Cached preview",
+        )
+        val telephony = conversation(date = 1_000, title = "+15550100")
+
+        val merged = mergeConversationWithCache(telephony, cached, trustTelephony = true)
+
+        assertEquals("Team Chat", merged.title)
+        assertTrue(merged.isScheduled)
+        assertEquals(3_000, merged.date)
+        assertEquals("Cached preview", merged.previewSnippet)
+    }
 }
