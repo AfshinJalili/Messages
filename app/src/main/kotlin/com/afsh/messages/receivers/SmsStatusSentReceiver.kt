@@ -42,11 +42,14 @@ class SmsStatusSentReceiver : SendStatusReceiver() {
             // SMS sent outside the chat (call-reject replies from HeadlessSmsSendService) never reached
             // Room, so updateType changes no row: copy the row from Telephony instead. Then sync the
             // thread so the inbox snippet, date and unread count don't wait for a full reconcile.
-            if (context.messagesDB.updateType(messageId, type) == 0) {
-                telephony.getSms(messageId)?.let { context.messagesDB.insertOrUpdate(it.copy(type = type)) }
+            val copied = if (context.messagesDB.updateType(messageId, type) == 0) {
+                telephony.getSms(messageId)?.also { context.messagesDB.insertOrUpdate(it.copy(type = type)) }
+            } else {
+                null
             }
 
-            val address = telephony.getSmsAddress(messageId)
+            // Read only when the thread id or the failure notice needs it; a copied row already has it.
+            val address by lazy { copied?.senderPhoneNumber ?: telephony.getSmsAddress(messageId) }
             val threadId = ConversationRepository.from(context).smsThreadId(messageId) ?: context.getThreadId(address)
             ConversationSync.syncThread(context, threadId)
 

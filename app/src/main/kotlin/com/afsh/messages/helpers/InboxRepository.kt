@@ -58,7 +58,7 @@ object InboxRepository {
     }
 
     /**
-     * @param force when false, a cheap thread-count / latest-date check can replace the full
+     * @param force when false, a cheap thread-count check can replace the full
      * [ConversationRepository.conversations] pass with [InboxReconciler.syncRecentWindow].
      * Launch and resume use force=false so a warm Room DB paints without a full Telephony pass.
      * Explicit repairs (retry, spam backfill) pass force=true. A [requestForceReconcile] forces the
@@ -80,8 +80,8 @@ object InboxRepository {
     }
 
     /**
-     * Cold-start path: refresh unread badges, then reconcile fully only when Room is empty or the
-     * Telephony digest disagrees with Room; otherwise re-read only the newest threads.
+     * Cold-start path: refresh unread badges, then reconcile fully only when Room is empty or its
+     * thread count disagrees with Telephony; otherwise re-read only the newest threads.
      */
     fun scheduleLaunchReconcile(context: Context) {
         val app = resolveContext(context) ?: return
@@ -154,7 +154,7 @@ object InboxRepository {
         scheduleProviderReconcile(context, immediate = true, force = force)
     }
 
-    /** True when Room has no rows (first import) or Telephony count/latest-date disagree with Room. */
+    /** True when Room has no rows (first import) or its thread count disagrees with Telephony. */
     internal fun needsFullReconcile(context: Context): Boolean =
         ConversationRepository.from(context).needsFullReconcile()
 
@@ -167,7 +167,7 @@ object InboxRepository {
 
 /** How much of Telephony a provider reconcile reads. */
 internal enum class ProviderReconcilePass {
-    /** Room's thread count and newest date match Telephony: only the newest threads are re-read. */
+    /** Room's thread count matches Telephony: only the newest threads are re-read. */
     RECENT_WINDOW,
 
     /** Every thread: inserts, updates and removals. */

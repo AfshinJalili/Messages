@@ -87,6 +87,9 @@ class ConversationRepository(
     /** Telephony's row for [threadId], or null when the thread is gone or blocked. */
     fun conversation(threadId: Long): Conversation? = conversations(threadId).firstOrNull()
 
+    /** Room's row for [threadId], or null when Room has none. */
+    fun cachedConversation(threadId: Long): Conversation? = conversations.getConversationWithThreadId(threadId)
+
     /** Unread incoming messages per thread, spam left out. */
     fun unreadCountsByThread(): Map<Long, Int> {
         val result = HashMap<Long, Int>(128)
@@ -109,14 +112,16 @@ class ConversationRepository(
         return result
     }
 
-    /** True when Room has no rows (first import) or its count or latest date disagree with Telephony. */
+    /**
+     * True when Room has no rows (first import), Telephony can't be counted, or the thread counts
+     * disagree. A newer message in a thread Room already has is not drift: the recent-window pass
+     * ([InboxReconciler.syncRecentWindow]) picks it up without walking every thread.
+     */
     fun needsFullReconcile(): Boolean {
         val roomCount = conversations.getCount()
         if (roomCount == 0) return true
-        val roomLatest = conversations.getLatestDate()
-        val (telephonyCount, telephonyLatest) = telephony.threadDigest()
-        if (telephonyCount < 0) return true
-        return telephonyCount != roomCount || telephonyLatest != roomLatest
+        val (telephonyCount, _) = telephony.threadDigest()
+        return telephonyCount < 0 || telephonyCount != roomCount
     }
 
     /** The thread of SMS [messageId]: Room's when it knows, otherwise Telephony's. Null for 0 or unknown. */
@@ -188,6 +193,9 @@ class ConversationRepository(
         conversations.insertOrUpdate(updated)
         effects.refreshPreview(listOf(updated.threadId))
     }
+
+    /** Runs [block]'s writes in one transaction, so the inbox re-queries once for all of them. */
+    fun runInTransaction(block: () -> Unit) = effects.runInTransaction(block)
 
     /** Gives [conversation] a custom title. Returns the renamed row. */
     fun rename(conversation: Conversation, newTitle: String): Conversation {
@@ -298,31 +306,6 @@ class ConversationRepository(
         effects.runInTransaction {
             changed.forEach { conversations.updateUnreadCount(it.threadId, counts[it.threadId] ?: 0) }
         }
-    }
-
-    /**
-     * Copies the newest [limit] Telephony threads into Room: missing rows are inserted, and rows that
-     * the merge with Room (see [mergeConversationWithCache]) would change are rewritten, in one
-     * transaction. Rows that match are not written, since every write re-runs the inbox query.
-     * Archived rows are left alone, as the full reconcile leaves them. Threads outside the window, and
-     * deleted threads, are the full reconcile's. Throws when Telephony can't be read. Returns the
-     * number of rows written.
-     */
-    fun syncRecentConversations(limit: Int): Int {
-        val drifted = conversations(failOnError = true, limit = limit).mapNotNull { incoming ->
-            val cached = conversations.getConversationWithThreadId(incoming.threadId)
-            when {
-                cached == null -> incoming to null
-                cached.isArchived -> null
-                Conversation.areContentsTheSame(old = cached, new = mergeConversationWithCache(incoming, cached)) -> null
-                else -> incoming to cached
-            }
-        }
-        if (drifted.isEmpty()) return 0
-        effects.runInTransaction {
-            drifted.forEach { (incoming, cached) -> insertOrUpdate(incoming, cached) }
-        }
-        return drifted.size
     }
 
     // endregion

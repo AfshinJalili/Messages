@@ -28,7 +28,6 @@ class ConversationRepositoryTest {
         }
         override fun getAll(): List<Conversation> = rows.values.toList()
         override fun getCount(): Int = rows.size
-        override fun getLatestDate(): Int = rows.values.maxOfOrNull { it.date } ?: 0
         override fun getConversationWithThreadId(threadId: Long): Conversation? = rows[threadId]
         override fun markRead(threadId: Long) = update(threadId) { it.copy(read = true, unreadCount = 0) }
         override fun markUnread(threadId: Long) = update(threadId) { it.copy(read = false) }
@@ -331,21 +330,25 @@ class ConversationRepositoryTest {
     }
 
     @Test
-    fun `a full reconcile is needed when Room is empty or drifted from Telephony`() {
+    fun `a full reconcile is needed when Room is empty or its thread count drifted from Telephony`() {
         assertTrue(repository.needsFullReconcile())
 
         conversations.insertOrUpdate(conversation(10, date = 100))
         telephony.digest = 1 to 100
         assertFalse(repository.needsFullReconcile())
 
+        // A newer message in a thread Room has is the recent window's, not a full reconcile's.
         telephony.digest = 1 to 101
+        assertFalse(repository.needsFullReconcile())
+
+        telephony.digest = 2 to 101
         assertTrue(repository.needsFullReconcile())
 
         telephony.digest = -1 to -1
         assertTrue(repository.needsFullReconcile())
     }
 
-    // region Recent window
+    // region Recent window (InboxReconciler's policy, run against this file's fakes)
 
     @Test
     fun `conversations pass their limit to Telephony`() {
@@ -373,7 +376,7 @@ class ConversationRepositoryTest {
         // Outside the window: a drifted old thread is left for the full reconcile.
         telephony.threads[13] = conversation(13, date = 50).copy(snippet = "drifted")
 
-        val written = repository.syncRecentConversations(limit = 4)
+        val written = InboxReconciler.syncRecentWindow(repository, limit = 4)
 
         assertEquals(3, written)
         assertEquals(4, telephony.lastLimit)
@@ -394,7 +397,7 @@ class ConversationRepositoryTest {
         conversations.insertOrUpdate(conversation(10).copy(previewSnippet = "visible", previewDate = 90))
         telephony.threads[10] = conversation(10)
 
-        assertEquals(0, repository.syncRecentConversations(limit = 20))
+        assertEquals(0, InboxReconciler.syncRecentWindow(repository, limit = 20))
         assertEquals(0, effects.transactions)
         assertTrue(effects.refreshed.isEmpty())
         assertEquals("visible", conversations.rows.getValue(10).previewSnippet)
@@ -405,7 +408,7 @@ class ConversationRepositoryTest {
         conversations.insertOrUpdate(conversation(10, title = "Mom").copy(usesCustomTitle = true, snippet = "old"))
         telephony.threads[10] = conversation(10).copy(snippet = "new")
 
-        assertEquals(1, repository.syncRecentConversations(limit = 20))
+        assertEquals(1, InboxReconciler.syncRecentWindow(repository, limit = 20))
         val row = conversations.rows.getValue(10)
         assertEquals("new", row.snippet)
         assertEquals("Mom", row.title)
@@ -417,14 +420,14 @@ class ConversationRepositoryTest {
         conversations.insertOrUpdate(conversation(10).copy(isArchived = true, snippet = "old"))
         telephony.threads[10] = conversation(10).copy(snippet = "new")
 
-        assertEquals(0, repository.syncRecentConversations(limit = 20))
+        assertEquals(0, InboxReconciler.syncRecentWindow(repository, limit = 20))
         assertEquals("old", conversations.rows.getValue(10).snippet)
     }
 
     @Test(expected = IllegalStateException::class)
     fun `a recent window that cannot read Telephony fails`() {
         telephony.unreadableThreads = true
-        repository.syncRecentConversations(limit = 20)
+        InboxReconciler.syncRecentWindow(repository, limit = 20)
     }
 
     // endregion

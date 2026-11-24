@@ -113,13 +113,33 @@ object InboxReconciler {
     }
 
     /**
-     * The warm-resume pass when Room's thread count and newest date already match Telephony: reads
-     * only the newest [limit] threads, so a thread read, deleted from or updated elsewhere refreshes
-     * without walking every thread. Blocks; throws when Telephony can't be read. Returns the number
-     * of rows written.
+     * The warm-resume pass when Room's thread count already matches Telephony: reads only the newest
+     * [limit] threads, so a new message, a read or a delete made elsewhere refreshes without walking
+     * every thread. Missing rows are inserted; rows the merge with Room (see
+     * [mergeConversationWithCache]) would change are rewritten, in one transaction. Rows that match
+     * are not written, since every write re-runs the inbox query. Archived rows are left alone, as
+     * [reconcile] leaves them. Threads outside the window, and deleted threads, are [reconcile]'s.
+     * Blocks; throws when Telephony can't be read. Returns the number of rows written.
      */
     fun syncRecentWindow(context: Context, limit: Int = RECENT_WINDOW): Int =
-        ConversationRepository.from(appContext(context)).syncRecentConversations(limit)
+        syncRecentWindow(ConversationRepository.from(appContext(context)), limit)
+
+    internal fun syncRecentWindow(repository: ConversationRepository, limit: Int): Int {
+        val drifted = repository.conversations(failOnError = true, limit = limit).mapNotNull { incoming ->
+            val cached = repository.cachedConversation(incoming.threadId)
+            when {
+                cached == null -> incoming to null
+                cached.isArchived -> null
+                Conversation.areContentsTheSame(old = cached, new = mergeConversationWithCache(incoming, cached)) -> null
+                else -> incoming to cached
+            }
+        }
+        if (drifted.isEmpty()) return 0
+        repository.runInTransaction {
+            drifted.forEach { (incoming, cached) -> repository.insertOrUpdate(incoming, cached) }
+        }
+        return drifted.size
+    }
 
     private fun appContext(context: Context) = context.applicationContext
 
