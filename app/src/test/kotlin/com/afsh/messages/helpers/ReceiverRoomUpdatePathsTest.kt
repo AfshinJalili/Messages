@@ -43,9 +43,11 @@ class ReceiverRoomUpdatePathsTest {
     }
 
     @Test
-    fun `sms sent status updates message type then publishes MessageSent or SendFailed`() {
+    fun `sms sent status writes the message, syncs the thread, then publishes MessageSent or SendFailed`() {
         val text = source("SmsStatusSentReceiver.kt")
         assertTrue(text.contains("updateType"))
+        assertTrue(text.contains("messagesDB.insertOrUpdate"))
+        assertTrue(text.contains("ConversationSync.syncThread("))
         assertTrue(text.contains("MessagingEvent.MessageSent"))
         assertTrue(text.contains("MessagingEvent.SendFailed"))
         assertFalse(text.contains("ProcessLifecycleOwner"))

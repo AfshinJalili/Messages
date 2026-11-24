@@ -89,6 +89,19 @@ class TelephonyReader(context: Context) {
         return ids
     }
 
+    /**
+     * SMS [messageId] as a [Message], or null when it is missing or can't be read. Unlike
+     * [getMessages] it does not drop blocked senders: callers ask for one known row.
+     */
+    fun getSms(messageId: Long): Message? {
+        var message: Message? = null
+        context.queryCursor(Sms.CONTENT_URI, SMS_PROJECTION, "${Sms._ID} = ?", arrayOf(messageId.toString())) { cursor ->
+            val senderNumber = cursor.getStringValue(Sms.ADDRESS) ?: return@queryCursor
+            message = context.smsMessage(cursor, senderNumber)
+        }
+        return message
+    }
+
     /** The address of SMS [messageId], or "" when it can't be read. */
     fun getSmsAddress(messageId: Long): String {
         try {
