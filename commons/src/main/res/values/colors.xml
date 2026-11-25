@@ -105,4 +105,13 @@
     <color name="m3_surface_tint_dark">#D1E1FF</color>
     <color name="m3_scrim_dim_dark">#B3000000</color>
     <color name="m3_transparent">#00000000</color>
+
+    <!--
+      Launcher backgrounds for the non-official build types, so debug, nightly and release
+      can sit side by side on one phone and still be told apart. Only the adaptive icons in
+      app/src/debug and app/src/nightly read these; release keeps m3_primary. The white
+      m3_surface mark stays readable on both.
+    -->
+    <color name="launcher_dev_background">#1E5AA8</color>
+    <color name="launcher_nightly_background">#2A2466</color>
 </resources>

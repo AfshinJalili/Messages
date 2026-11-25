@@ -1,0 +1,102 @@
+name: Release
+
+# Official release of com.afsh.messages, published as the Latest GitHub Release.
+# - Push a semver tag vX.Y.Z at the commit to ship; the tag sets the version name.
+# - Or run this workflow by hand: `source: nightly` ships the commit of the newest
+#   nightly pre-release, `source: head` ships the head of the selected branch. Both
+#   tag the commit as v<VERSION_NAME from gradle.properties at that commit>.
+# Nightly and preview tags (v1.2.3-nightly.*, v1.2.3-preview.*) do not match the filter.
+
+on:
+  push:
+    tags: ['v[0-9]+.[0-9]+.[0-9]+']
+  workflow_dispatch:
+    inputs:
+      source:
+        description: Commit to release
+        type: choice
+        options: [nightly, head]
+        default: nightly
+
+# Stable releases queue in their own group, so a nightly never blocks or cancels one.
+concurrency:
+  group: release-stable
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      SOURCE: ${{ inputs.source }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Choose the commit and tag
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = push ]; then
+            tag=$GITHUB_REF_NAME
+            sha=$GITHUB_SHA
+          else
+            if [ "$SOURCE" = nightly ]; then
+              nightly=$(gh release list --limit 100 --json tagName,isDraft,isPrerelease,createdAt \
+                --jq '[.[] | select((.isDraft | not) and .isPrerelease and (.tagName | test("-nightly\\.")))] | sort_by(.createdAt) | last | .tagName // empty')
+              [ -n "$nightly" ] || { echo "::error::No nightly pre-release to promote."; exit 1; }
+              sha=$(git rev-list -n 1 "$nightly")
+              echo "Promoting $nightly ($sha)"
+            else
+              sha=$GITHUB_SHA
+            fi
+            if ! git merge-base --is-ancestor "$sha" origin/main; then
+              echo "::error::Refusing to release $sha because it is not on main."
+              exit 1
+            fi
+            tag="v$(git show "$sha:gradle.properties" | sed -n 's/^VERSION_NAME=//p')"
+          fi
+          if gh release view "$tag" > /dev/null 2>&1; then
+            echo "::error::Release $tag already exists. Bump VERSION_NAME or push a new tag."
+            exit 1
+          fi
+          { echo "TAG=$tag"; echo "SHA=$sha"; } >> "$GITHUB_ENV"
+
+      # Runs from the checked-out workflow commit, before switching to an older target.
+      - uses: ./.github/actions/release-setup
+        with:
+          ref: ${{ env.SHA }}
+          keystore-base64: ${{ secrets.AFSH_KEYSTORE_BASE64 }}
+          store-password: ${{ secrets.AFSH_STORE_PASSWORD }}
+          key-alias: ${{ secrets.AFSH_KEY_ALIAS }}
+          key-password: ${{ secrets.AFSH_KEY_PASSWORD }}
+          debug-keystore-base64: ${{ secrets.DEBUG_KEYSTORE_BASE64 }}
+
+      # The tag, not gradle.properties, names a tag-push release.
+      - name: Build release APK
+        run: |
+          git checkout --quiet "$SHA"
+          NAME=${TAG#v}
+          echo "NAME=$NAME" >> "$GITHUB_ENV"
+          ./gradlew :app:assembleRelease -PVERSION_NAME="$NAME" -PVERSION_CODE="$CODE" --stacktrace
+
+      - name: Publish release
+        run: |
+          mkdir -p dist
+          apk="dist/messages-$NAME-$CODE.apk"
+          cp app/build/outputs/apk/release/*.apk "$apk"
+          flags=(--generate-notes)
+          previous=$(gh release list --exclude-pre-releases --limit 1 --json tagName --jq '.[0].tagName // empty')
+          [ -n "$previous" ] && flags+=(--notes-start-tag "$previous")
+          if [ "$SIGNED_WITH" = debug ]; then
+            flags+=(--prerelease --latest=false
+              --notes "Signed with a debug key: later builds signed with the release key will not install over it.")
+          else
+            flags+=(--latest)
+          fi
+          gh release create "$TAG" "$apk" --target "$SHA" --title "Messages $NAME" "${flags[@]}"

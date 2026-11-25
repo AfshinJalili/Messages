@@ -97,6 +97,7 @@ Android resources are the source of truth. This document describes how to use th
 | Definition | Source |
 | --- | --- |
 | GM3 palette values (`m3_*` light and `m3_*_dark`) | `commons/src/main/res/values/colors.xml` |
+| Launcher backgrounds of the `debug` and `nightly` build types (`launcher_dev_background`, `launcher_nightly_background`; read only by `app/src/<type>/res/mipmap-anydpi-v26/ic_launcher.xml`) | `commons/src/main/res/values/colors.xml` |
 | Color roles (Material slots and `Afsh.colors`) | `afshColorScheme` and `AfshTheme` in `app/src/main/kotlin/com/afsh/messages/ui/AfshTheme.kt` |
 | Typography, font families, tabular/pattern styles, and field visual transformations | `app/src/main/kotlin/com/afsh/messages/ui/AfshTheme.kt` (`typography`, `tabular()`, `forPattern()`, `forFieldContent()`, `ContentFontVisualTransformation`, `PatternFontVisualTransformation`) |
 | Script-aware content, pattern, and mixed-locale text composables | `app/src/main/kotlin/com/afsh/messages/ui/components/ContentText.kt` (`ContentText`, `PatternText`, `MixedLocaleText`) |

@@ -1,0 +1,80 @@
+name: Release setup
+description: >
+  Java, Gradle, release signing and version code for a signed release-type build
+  (nightly or stable). Run after actions/checkout with fetch-depth 0. Reads the version from
+  `ref` through git, so a caller can build an older commit by checking it out afterwards
+  (this action must stay in the working tree while it runs).
+  Exports AFSH_* signing (or AFSH_SIGN_WITH_DEBUG_KEY), SIGNED_WITH (release|debug),
+  NAME (VERSION_NAME from gradle.properties at ref) and CODE to the job environment.
+
+inputs:
+  ref:
+    description: Commit the build is for
+    required: false
+    default: HEAD
+  keystore-base64:
+    description: AFSH_KEYSTORE_BASE64 secret
+    required: false
+  store-password:
+    description: AFSH_STORE_PASSWORD secret
+    required: false
+  key-alias:
+    description: AFSH_KEY_ALIAS secret
+    required: false
+  key-password:
+    description: AFSH_KEY_PASSWORD secret
+    required: false
+  debug-keystore-base64:
+    description: DEBUG_KEYSTORE_BASE64 secret, used only when the release key is missing
+    required: false
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-java@v6
+      with:
+        distribution: temurin
+        java-version: 17
+
+    # Default cache mode: writes on main (nightly), reads elsewhere (tag releases).
+    - uses: gradle/actions/setup-gradle@v6
+
+    - name: Set up signing
+      shell: bash
+      env:
+        AFSH_KEYSTORE_BASE64: ${{ inputs.keystore-base64 }}
+        STORE_PASSWORD: ${{ inputs.store-password }}
+        KEY_ALIAS: ${{ inputs.key-alias }}
+        KEY_PASSWORD: ${{ inputs.key-password }}
+        DEBUG_KEYSTORE_BASE64: ${{ inputs.debug-keystore-base64 }}
+      run: |
+        if [ -n "$AFSH_KEYSTORE_BASE64" ] && [ -n "$STORE_PASSWORD" ] && [ -n "$KEY_ALIAS" ] && [ -n "$KEY_PASSWORD" ]; then
+          echo "$AFSH_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/afsh.jks"
+          {
+            echo "AFSH_STORE_FILE=$RUNNER_TEMP/afsh.jks"
+            echo "AFSH_STORE_PASSWORD=$STORE_PASSWORD"
+            echo "AFSH_KEY_ALIAS=$KEY_ALIAS"
+            echo "AFSH_KEY_PASSWORD=$KEY_PASSWORD"
+            echo "SIGNED_WITH=release"
+          } >> "$GITHUB_ENV"
+        else
+          echo "::warning::No AFSH_* signing secrets. The APK is signed with the debug key."
+          if [ -n "$DEBUG_KEYSTORE_BASE64" ]; then
+            mkdir -p ~/.android && echo "$DEBUG_KEYSTORE_BASE64" | base64 -d > ~/.android/debug.keystore
+          fi
+          { echo "AFSH_SIGN_WITH_DEBUG_KEY=true"; echo "SIGNED_WITH=debug"; } >> "$GITHUB_ENV"
+        fi
+
+    # Version code = VERSION_CODE + commits reachable from ref. It only grows along main,
+    # is the same for a nightly and a stable release of one commit, and stays above the
+    # run-number codes of the old main releases (v1.8.0-414 = 434).
+    - name: Version
+      shell: bash
+      env:
+        REF: ${{ inputs.ref }}
+      run: |
+        props=$(git show "$REF:gradle.properties")
+        base=$(sed -n 's/^VERSION_CODE=//p' <<< "$props")
+        name=$(sed -n 's/^VERSION_NAME=//p' <<< "$props")
+        commits=$(git rev-list --count "$REF")
+        { echo "CODE=$((base + commits))"; echo "NAME=$name"; } >> "$GITHUB_ENV"

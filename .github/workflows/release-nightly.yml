@@ -1,0 +1,60 @@
+name: Release nightly
+
+# Every push to main publishes a nightly pre-release: the `nightly` build type
+# (com.afsh.messages.nightly, "Messages Nightly"), R8 and release signing like `release`,
+# installable next to the official app. Set the repository variable PAUSE_NIGHTLY=true
+# to stop publishing without editing this file. Official releases live in release.yml.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Nightlies queue behind each other and never touch the release-stable group.
+concurrency:
+  group: release-nightly
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  nightly:
+    if: github.event_name != 'push' || vars.PAUSE_NIGHTLY != 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: ./.github/actions/release-setup
+        with:
+          keystore-base64: ${{ secrets.AFSH_KEYSTORE_BASE64 }}
+          store-password: ${{ secrets.AFSH_STORE_PASSWORD }}
+          key-alias: ${{ secrets.AFSH_KEY_ALIAS }}
+          key-password: ${{ secrets.AFSH_KEY_PASSWORD }}
+          debug-keystore-base64: ${{ secrets.DEBUG_KEYSTORE_BASE64 }}
+
+      - name: Nightly stamp
+        run: echo "DATE=$(date -u +%Y%m%d)" >> "$GITHUB_ENV"
+
+      - name: Build nightly APK
+        run: ./gradlew :app:assembleNightly -PVERSION_CODE="$CODE" -PNIGHTLY_SUFFIX=".$DATE.$GITHUB_RUN_NUMBER" --stacktrace
+
+      - name: Publish nightly pre-release
+        run: |
+          mkdir -p dist
+          apk="dist/messages-nightly-$NAME-$DATE-$CODE.apk"
+          cp app/build/outputs/apk/nightly/*.apk "$apk"
+          tag="v$NAME-nightly.$DATE.$GITHUB_RUN_NUMBER"
+          notes="Nightly build of ${GITHUB_SHA::7} from main, version $NAME-nightly.$DATE.$GITHUB_RUN_NUMBER ($CODE). Installs as Messages Nightly (com.afsh.messages.nightly), next to the official app."
+          if [ "$SIGNED_WITH" = debug ]; then
+            notes="$notes Signed with a debug key: later builds signed with the release key will not install over it."
+          fi
+          gh release create "$tag" "$apk" --target "$GITHUB_SHA" --prerelease --latest=false \
+            --title "Messages Nightly $NAME ($DATE.$GITHUB_RUN_NUMBER)" --notes "$notes"
