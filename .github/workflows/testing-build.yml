@@ -67,7 +67,7 @@ jobs:
 
       - name: Cache spam corpora
         if: needs.changes.outputs.code == 'true'
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cache/afsh-messages/spam-corpora
           key: spam-corpora-${{ hashFiles('app/src/test/kotlin/com/afsh/messages/helpers/SpamCorpusDownloader.kt') }}
@@ -101,7 +101,7 @@ jobs:
           sudo udevadm trigger --name-match=kvm
 
       - name: AVD cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         id: avd-cache
         with:
           path: |
