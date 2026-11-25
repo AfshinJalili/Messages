@@ -101,12 +101,23 @@ class ContentFontsTest {
     @Test
     fun forFieldContentPreservesBaseStyleWhenEmptyAndNeverShrinksLeading() {
         val rtlBase = TextStyle(fontSize = 18.sp, lineHeight = 1.7.em)
-        assertEquals(rtlBase, rtlBase.forFieldContent(""))
+        assertEquals(rtlBase.copy(textDirection = TextDirection.Content), rtlBase.forFieldContent(""))
         assertEquals(1.7.em, rtlBase.forFieldContent("English in Persian UI").lineHeight)
 
         val ltrBase = TextStyle(fontSize = 18.sp, lineHeight = 1.45.em)
-        assertEquals(ltrBase, ltrBase.forFieldContent(""))
+        assertEquals(ltrBase.copy(textDirection = TextDirection.Content), ltrBase.forFieldContent(""))
         assertEquals(1.7.em, ltrBase.forFieldContent("سلام").lineHeight)
+    }
+
+    @Test
+    fun forFieldContentStartsOnTheInterfaceSideThenFollowsWhatIsTyped() {
+        val base = TextStyle(fontSize = 18.sp, lineHeight = 1.7.em)
+        // Empty, the cursor sits on the interface's start side.
+        assertEquals(TextDirection.Content, base.forFieldContent("").textDirection)
+        // Typed, "BING-POT!!" keeps its "!!" at the end in the Persian interface, and digits alone read left to right.
+        assertEquals(TextDirection.ContentOrLtr, base.forFieldContent("BING-POT!!").textDirection)
+        assertEquals(TextDirection.ContentOrLtr, base.forFieldContent("+989904528570").textDirection)
+        assertEquals(TextDirection.ContentOrLtr, base.forFieldContent("سلام").textDirection)
     }
 
     @Test

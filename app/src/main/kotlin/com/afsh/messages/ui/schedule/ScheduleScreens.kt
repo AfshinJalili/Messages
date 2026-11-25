@@ -4,7 +4,6 @@ import com.afsh.messages.ui.Afsh
 import com.afsh.messages.ui.components.AfshIcon
 import com.afsh.messages.ui.components.ContentDirection
 import com.afsh.messages.ui.components.ContentText
-import androidx.compose.ui.text.style.TextDirection
 import android.text.format.DateFormat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -379,9 +378,7 @@ fun ScheduledMessageScreen(
                 onValueChange = { text = it },
                 label = stringResource(R.string.message_label),
                 singleLine = false,
-                textStyle = MaterialTheme.typography.bodyLarge.copy(
-                    textDirection = if (text.isEmpty()) TextDirection.Content else TextDirection.ContentOrLtr,
-                ),
+                textStyle = MaterialTheme.typography.bodyLarge,
             )
             AfshButton(
                 stringResource(R.string.save_changes),

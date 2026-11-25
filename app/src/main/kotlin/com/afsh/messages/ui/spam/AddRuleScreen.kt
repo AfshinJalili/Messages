@@ -36,6 +36,7 @@ import com.afsh.messages.ui.components.PageContentPadding
 import com.afsh.messages.ui.components.PageNavigation
 import com.afsh.messages.ui.components.PageScaffold
 import com.afsh.messages.ui.components.TextFieldSlab
+import com.afsh.messages.ui.isolate
 
 /** What 50 adds: a phrase, or a number (the same page pattern). */
 enum class RuleKind { PHRASE, NUMBER }
@@ -150,7 +151,7 @@ private fun ExampleMatch(example: String?) {
                 style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
                 color = colors.onSecondaryContainer,
             )
-            val text = example?.let { stringResource(R.string.quoted, it) } ?: stringResource(R.string.no_current_match)
+            val text = example?.let { stringResource(R.string.quoted, isolate(it)) } ?: stringResource(R.string.no_current_match)
             ContentText(
                 text,
                 style = MaterialTheme.typography.bodyMedium,

@@ -9,6 +9,7 @@ import com.afsh.messages.extensions.isVideoMimeType
 import com.afsh.messages.models.Attachment
 import com.afsh.messages.models.Message
 import com.afsh.messages.ui.components.dayLabel
+import com.afsh.messages.ui.isolate
 import com.afsh.messages.ui.ltr
 import com.afsh.messages.ui.media.MediaItem
 import com.afsh.messages.ui.message.DeliveryMark
@@ -20,20 +21,20 @@ import org.joda.time.DateTime
 /** "Mina Farahani · 12:41" or "You · 12:41": who wrote [message], and when. */
 fun Context.senderLine(message: Message): String {
     val who = if (message.isReceivedMessage()) message.senderName.ifEmpty { message.senderPhoneNumber } else getString(R.string.you)
-    return getString(R.string.detail_pair, who, message.millis().formatTime(this))
+    return getString(R.string.detail_pair, isolate(who), message.millis().formatTime(this))
 }
 
 /** "Shared by Mina · Today" under a contact card. */
 fun Context.cardSource(message: Message): String {
     val by = if (message.isReceivedMessage()) message.senderName.ifEmpty { message.senderPhoneNumber } else getString(R.string.you)
-    return getString(R.string.detail_pair, getString(R.string.shared_by, by), dayLabel(this, message.millis()))
+    return getString(R.string.detail_pair, getString(R.string.shared_by, isolate(by)), dayLabel(this, message.millis()))
 }
 
 /** 13's facts: type, from, to, when, and how far it got. [simLabels] are by subscription id. */
 fun Context.messageFacts(message: Message, simLabels: Map<Int, String>): MessageFacts {
     val received = message.isReceivedMessage()
     val sim = simLabels[message.subscriptionId]?.let { getString(R.string.message_sim_label, it) }
-    fun person(name: String, number: String) = if (name.isEmpty() || name == number) ltr(number) else getString(R.string.detail_pair, name, ltr(number))
+    fun person(name: String, number: String) = if (name.isEmpty() || name == number) ltr(number) else getString(R.string.detail_pair, isolate(name), ltr(number))
     val others = message.participants.joinToString(", ") { person(it.name, it.phoneNumbers.firstOrNull()?.value.orEmpty()) }
     val you = listOfNotNull(getString(R.string.you), sim).joinToString(" · ")
     val time = DateTime(message.millis()).toString("${config.dateFormat} ${getTimeFormatWithSeconds()}")

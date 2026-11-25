@@ -1,6 +1,7 @@
 package com.afsh.messages.ui.spam
 
 import com.afsh.messages.ui.components.UnreadDivider
+import com.afsh.messages.ui.isolate
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.distinctUntilChanged
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -296,7 +297,7 @@ fun SpamScreen(
         val senders = remember(messages) { messages.map { it.sender }.distinct().joinToString(", ") }
         ConfirmationDialog(
             title = if (senderCount == 1) {
-                pluralStringResource(R.plurals.always_spam_title, 1, senders)
+                pluralStringResource(R.plurals.always_spam_title, 1, isolate(senders))
             } else {
                 pluralStringResource(R.plurals.always_spam_title, senderCount, senderCount)
             },
@@ -437,7 +438,7 @@ private fun Bubble(message: SpamReviewMessage, selected: Boolean, modifier: Modi
         ContentText(
             remember(message.body, ranges, highlight) { highlighted(message.body, ranges, highlight) },
             style = MaterialTheme.typography.bodyLarge,
-            direction = ContentDirection.Inherit,
+            direction = ContentDirection.Text,
         )
         val meta = if (selected) Afsh.colors.onSecondaryContainerVariant else colors.onSurfaceVariant
         message.why?.let { WhyLine(message.body, it, meta) }
@@ -459,7 +460,7 @@ private fun WhyLine(body: String, why: SpamWhy, color: Color) {
     val text = when {
         why.stale -> stringResource(R.string.spam_why_stale, rule)
         words.isEmpty() -> stringResource(R.string.spam_why, rule)
-        else -> stringResource(R.string.spam_why_words, rule, words.joinToString(stringResource(R.string.spam_why_separator)) { "«$it»" })
+        else -> stringResource(R.string.spam_why_words, rule, words.joinToString(stringResource(R.string.spam_why_separator)) { "«${isolate(it)}»" })
     }
     ContentText(
         text,

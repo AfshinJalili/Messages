@@ -50,6 +50,7 @@ import com.afsh.messages.helpers.insertBlock
 import com.afsh.messages.models.Attachment
 import com.afsh.messages.models.AttachmentSelection
 import com.afsh.messages.models.Message
+import com.afsh.messages.ui.isolate
 import com.afsh.messages.ui.schedule.ScheduleTarget
 import com.afsh.messages.ui.thread.AttachOption
 import org.joda.time.DateTime
@@ -311,7 +312,7 @@ internal class ThreadComposerActions(private val visit: ThreadVisit) {
     /** "To Mina Farahani", with "· SIM 1" when the phone has two SIMs. */
     private fun scheduleRecipient(subscriptionId: Int): String {
         val people = visit.people
-        val to = activity.getString(R.string.scheduled_to, people.scheduleName(visit.conversation?.title))
+        val to = activity.getString(R.string.scheduled_to, isolate(people.scheduleName(visit.conversation?.title)))
         return people.simLabels[subscriptionId]
             ?.let { activity.getString(R.string.detail_pair, to, activity.getString(R.string.message_sim_label, it)) }
             ?: to

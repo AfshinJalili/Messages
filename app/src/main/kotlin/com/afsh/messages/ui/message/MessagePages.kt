@@ -1,6 +1,5 @@
 package com.afsh.messages.ui.message
 
-import androidx.compose.ui.text.style.TextDirection
 import com.afsh.messages.ui.ContentFontVisualTransformation
 import com.afsh.messages.ui.forUserText
 import android.os.Bundle
@@ -163,7 +162,7 @@ fun SelectTextScreen(sender: String, body: String, onBack: () -> Unit, onCopy: (
             ) {
                 ContentText(
                     sender,
-                    style = MaterialTheme.typography.labelMedium.copy(textDirection = TextDirection.Content),
+                    style = MaterialTheme.typography.labelMedium,
                     color = colors.onSurfaceVariant,
                 )
                 CompositionLocalProvider(

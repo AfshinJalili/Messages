@@ -25,6 +25,7 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import com.afsh.messages.ui.isolate
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import androidx.compose.ui.platform.ComposeView
@@ -729,7 +730,7 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
             InboxAction.ALWAYS_SPAM -> {
                 val count = selected.size.coerceAtLeast(1)
                 val title = if (count == 1) {
-                    resources.getQuantityString(R.plurals.always_spam_title, 1, selected.first().title)
+                    resources.getQuantityString(R.plurals.always_spam_title, 1, isolate(selected.first().title))
                 } else {
                     resources.getQuantityString(R.plurals.always_spam_title, count, count)
                 }
@@ -746,7 +747,7 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
             InboxAction.NEVER_SPAM -> {
                 val count = selected.size.coerceAtLeast(1)
                 val title = if (count == 1) {
-                    resources.getQuantityString(R.plurals.never_spam_title, 1, selected.first().title)
+                    resources.getQuantityString(R.plurals.never_spam_title, 1, isolate(selected.first().title))
                 } else {
                     resources.getQuantityString(R.plurals.never_spam_title, count, count)
                 }
@@ -763,7 +764,7 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
             InboxAction.BLOCK_ON_PHONE -> {
                 val count = selected.size.coerceAtLeast(1)
                 val title = if (count == 1) {
-                    resources.getQuantityString(R.plurals.block_on_phone_title, 1, selected.first().title)
+                    resources.getQuantityString(R.plurals.block_on_phone_title, 1, isolate(selected.first().title))
                 } else {
                     resources.getQuantityString(R.plurals.block_on_phone_title, count, count)
                 }

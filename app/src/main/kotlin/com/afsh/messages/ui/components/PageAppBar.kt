@@ -18,13 +18,14 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.afsh.messages.ui.Afsh
-import com.afsh.messages.ui.withNumberOrder
+import com.afsh.messages.ui.withLabelDirection
 
 /** The leading control of [PageAppBar]: back on a sub-page, ✕ to leave selection (R1-01). */
 enum class UpAction(val icon: AfshIcon, @StringRes val label: Int) {
@@ -57,7 +58,7 @@ fun PageAppBar(
             Column {
                 Text(
                     title,
-                    style = MaterialTheme.typography.headlineMedium.withNumberOrder(title),
+                    style = MaterialTheme.typography.headlineMedium.withLabelDirection(title, LocalLayoutDirection.current),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.semantics { heading() },

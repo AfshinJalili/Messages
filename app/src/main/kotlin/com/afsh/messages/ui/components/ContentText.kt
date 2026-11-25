@@ -6,15 +6,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.LayoutDirection
 import com.afsh.messages.ui.contentAnnotatedOrNull
 import com.afsh.messages.ui.forContent
 import com.afsh.messages.ui.forLabel
 import com.afsh.messages.ui.forPattern
 import com.afsh.messages.ui.forUserText
+import com.afsh.messages.ui.fromInterfaceEdge
 import com.afsh.messages.ui.persianSafeOrNull
 import com.afsh.messages.ui.withContentFonts
 import com.afsh.messages.ui.withPatternFonts
@@ -22,19 +25,32 @@ import com.afsh.messages.ui.withPatternFonts
 /**
  * Reading-direction policy for [ContentText]:
  * - [Text]: message bodies, captions, previews, and drafts (`TextDirection.ContentOrLtr`, so
- *   English text in a Persian interface keeps its punctuation on the right).
- * - [Label]: names, titles, senders, and phone numbers (`withNumberOrder`, so letter-free numbers
- *   like `+1 555…` never reverse in Persian).
- * - [Inherit]: keeps the caller's [TextStyle.textDirection].
+ *   English text in a Persian interface keeps its punctuation on the right, and lines align with
+ *   the text's own direction).
+ * - [Label]: names, titles, senders, phrases, and phone numbers ([com.afsh.messages.ui.withLabelDirection]:
+ *   the first letter decides, letter-free numbers like `+1 555…` stay left to right, and the line starts at
+ *   the interface's start edge).
+ * - [Inherit]: keeps the caller's [TextStyle.textDirection], for interface sentences that
+ *   interpolate a value (isolate the value with [com.afsh.messages.ui.isolate]).
+ *
+ * A `textAlign` passed to [ContentText] measures Start and End from the interface's edges, so a
+ * preview in a row (`TextAlign.Start`) lines up with the row whatever its own direction.
  */
 enum class ContentDirection { Text, Label, Inherit }
 
-private fun TextStyle.resolveContentStyle(text: CharSequence, direction: ContentDirection): TextStyle =
-    when (direction) {
-        ContentDirection.Text -> forUserText(text)
-        ContentDirection.Label -> forLabel(text)
-        ContentDirection.Inherit -> forContent(text)
+private fun TextStyle.resolveContentStyle(
+    text: CharSequence,
+    direction: ContentDirection,
+    textAlign: TextAlign?,
+    layout: LayoutDirection,
+): TextStyle {
+    val aligned = if (textAlign != null) copy(textAlign = textAlign.fromInterfaceEdge(layout)) else this
+    return when (direction) {
+        ContentDirection.Text -> aligned.forUserText(text)
+        ContentDirection.Label -> aligned.forLabel(text, layout)
+        ContentDirection.Inherit -> aligned.forContent(text)
     }
+}
 
 /**
  * Single owner for displaying user-authored or dynamic text (messages, contact names, captions,
@@ -57,14 +73,14 @@ fun ContentText(
     minLines: Int = 1,
     direction: ContentDirection = ContentDirection.Label,
 ) {
-    val resolvedStyle = remember(text, style, direction) { style.resolveContentStyle(text, direction) }
+    val layout = LocalLayoutDirection.current
+    val resolvedStyle = remember(text, style, direction, textAlign, layout) { style.resolveContentStyle(text, direction, textAlign, layout) }
     val annotated = remember(text) { contentAnnotatedOrNull(text) }
     if (annotated != null) {
         Text(
             text = annotated,
             modifier = modifier,
             color = color,
-            textAlign = textAlign,
             overflow = overflow,
             softWrap = softWrap,
             maxLines = maxLines,
@@ -76,7 +92,6 @@ fun ContentText(
             text = text,
             modifier = modifier,
             color = color,
-            textAlign = textAlign,
             overflow = overflow,
             softWrap = softWrap,
             maxLines = maxLines,
@@ -106,14 +121,14 @@ fun ContentText(
     leadingSource: CharSequence = text,
 ) {
     val styled = remember(text) { text.withContentFonts() }
-    val resolvedStyle = remember(leadingSource, style, direction) {
-        style.resolveContentStyle(leadingSource, direction)
+    val layout = LocalLayoutDirection.current
+    val resolvedStyle = remember(leadingSource, style, direction, textAlign, layout) {
+        style.resolveContentStyle(leadingSource, direction, textAlign, layout)
     }
     Text(
         text = styled,
         modifier = modifier,
         color = color,
-        textAlign = textAlign,
         overflow = overflow,
         softWrap = softWrap,
         maxLines = maxLines,

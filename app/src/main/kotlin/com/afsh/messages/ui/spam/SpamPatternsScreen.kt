@@ -277,7 +277,7 @@ private fun TryMessage(patterns: SpamPatterns) {
                         },
                         style = MaterialTheme.typography.bodyLarge,
                         color = colors.onSurface,
-                        direction = ContentDirection.Inherit,
+                        direction = ContentDirection.Text,
                     )
                 }
             }

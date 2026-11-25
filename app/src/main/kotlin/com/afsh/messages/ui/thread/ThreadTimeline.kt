@@ -61,6 +61,7 @@ import com.afsh.messages.ui.components.AfshSnackbarHost
 import com.afsh.messages.ui.components.FloatingButton
 import com.afsh.messages.ui.components.MixedLocaleText
 import com.afsh.messages.ui.components.UnreadDivider
+import com.afsh.messages.ui.isolate
 import kotlinx.coroutines.flow.distinctUntilChanged
 
 // Same limits the View timeline used.
@@ -200,7 +201,7 @@ private fun EmptyConversation(firstName: String) {
         Icon(AfshIcon.Chat.painter(), contentDescription = null, tint = colors.primary, modifier = Modifier.size(32.dp))
         Text(stringResource(R.string.thread_empty_title), style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
         if (firstName.isNotEmpty()) {
-            MixedLocaleText(stringResource(R.string.thread_empty_text, firstName), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+            MixedLocaleText(stringResource(R.string.thread_empty_text, isolate(firstName)), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
         }
     }
 }

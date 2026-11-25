@@ -35,7 +35,6 @@ import androidx.compose.ui.unit.dp
 import com.afsh.messages.R
 import com.afsh.messages.ui.Afsh
 import com.afsh.messages.ui.components.AfshIcon
-import com.afsh.messages.ui.components.ContentDirection
 import com.afsh.messages.ui.components.ContentText
 import com.afsh.messages.ui.components.EmptyState
 import com.afsh.messages.ui.components.PageContentPadding
@@ -166,7 +165,6 @@ private fun PhraseRow(phrase: String, onEdit: () -> Unit, onRemove: () -> Unit) 
             style = MaterialTheme.typography.bodyMedium,
             color = colors.onSurface,
             modifier = Modifier.weight(1f),
-            direction = ContentDirection.Inherit,
         )
         IconButton(onClick = onRemove) {
             Icon(

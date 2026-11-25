@@ -19,6 +19,7 @@ import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.afsh.messages.models.AttachmentSelection
+import com.afsh.messages.ui.isolate
 import com.afsh.messages.ui.thread.ComposerEvent
 import com.afsh.messages.ui.thread.ComposerState
 import com.afsh.messages.ui.thread.ThreadComposer
@@ -48,7 +49,7 @@ class ComposerChecks {
     @Test
     fun emptyFieldOffersDictationAndTextOffersSend() {
         show()
-        compose.onNodeWithText(text(R.string.composer_hint_name, "Mina"), useUnmergedTree = true).assertIsDisplayed()
+        compose.onNodeWithText(text(R.string.composer_hint_name, isolate("Mina")), useUnmergedTree = true).assertIsDisplayed()
         compose.onNodeWithContentDescription(text(R.string.speak_message)).assert(isButton).assertIsEnabled().performClick()
         compose.onNode(hasSetTextAction()).performTextReplacement("Hello")
         compose.onNodeWithContentDescription(text(R.string.send_message)).assert(isButton).assertIsEnabled().performClick()

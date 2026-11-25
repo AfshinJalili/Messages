@@ -39,13 +39,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.afsh.messages.R
 import com.afsh.messages.ui.Afsh
 import com.afsh.messages.ui.Avatar
 import com.afsh.messages.ui.inbox.InboxRow
-import com.afsh.messages.ui.withNumberOrder
+import com.afsh.messages.ui.withLabelDirection
 
 private const val TWO_LINE_TITLE_SCALE = 1.3f
 private const val INLINE_METADATA_SCALE = 1.5f
@@ -103,7 +102,6 @@ fun ConversationRow(
                     maxLines = titleMaxLines,
                     softWrap = titleMaxLines > 1,
                     overflow = TextOverflow.Ellipsis,
-                    direction = ContentDirection.Inherit,
                 )
             }
         },
@@ -160,9 +158,6 @@ private fun rememberRowTime(seconds: Int): String {
 @Composable
 internal fun SnippetText(row: InboxRow, unread: Boolean) {
     val colors = MaterialTheme.colorScheme
-    // What people wrote keeps its own direction (an English full stop stays at the end in the
-    // Persian interface), while the line still starts at the row's start edge.
-    val rowStart = if (LocalLayoutDirection.current == LayoutDirection.Rtl) TextAlign.Right else TextAlign.Left
     val draft = row.draft
     val conversation = row.conversation
     when {
@@ -179,7 +174,9 @@ internal fun SnippetText(row: InboxRow, unread: Boolean) {
                 draftText,
                 style = MaterialTheme.typography.bodyMedium,
                 color = colors.onSurfaceVariant,
-                textAlign = rowStart,
+                // What people wrote keeps its own direction (an English full stop stays at the end in the
+                // Persian interface), while the line still starts at the row's start edge.
+                textAlign = TextAlign.Start,
                 maxLines = 1,
                 softWrap = false,
                 overflow = TextOverflow.Ellipsis,
@@ -216,7 +213,7 @@ internal fun SnippetText(row: InboxRow, unread: Boolean) {
                 conversation.snippet,
                 style = MaterialTheme.typography.bodyMedium,
                 color = if (unread) colors.onSurface else colors.onSurfaceVariant,
-                textAlign = rowStart,
+                textAlign = TextAlign.Start,
                 maxLines = 1,
                 softWrap = false,
                 overflow = TextOverflow.Ellipsis,
@@ -239,7 +236,7 @@ private fun RowMetadata(row: InboxRow, time: String, inline: Boolean = false) {
     }
     val timeText: @Composable () -> Unit = {
         // Numeric prior-year dates stay LTR so slashes do not scramble in Persian.
-        Text(time, style = MaterialTheme.typography.bodySmall.withNumberOrder(time), color = colors.onSurfaceVariant, maxLines = 1)
+        Text(time, style = MaterialTheme.typography.bodySmall.withLabelDirection(time, LocalLayoutDirection.current), color = colors.onSurfaceVariant, maxLines = 1)
     }
     if (inline) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.sm)) {

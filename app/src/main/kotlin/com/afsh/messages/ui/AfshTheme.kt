@@ -1,5 +1,6 @@
 package com.afsh.messages.ui
 
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDirection
 import android.content.Context
 import android.content.res.Configuration
@@ -334,10 +335,12 @@ internal fun TextStyle.forContentScript(persianLeading: Boolean): TextStyle =
  * Script-aware style for text fields: keeps the UI locale's style while empty (so cursor and
  * placeholder share one line box), switches to content script fonts once typed, and never shrinks
  * leading below the base style (English typed in a Persian UI keeps 1.7em so the field never jumps).
+ * Empty, the cursor starts on the interface's side; typed, each paragraph follows its first letter and digits alone
+ * read left to right, as the sent text will ("BING-POT!!" typed in the Persian interface keeps "!!" at its end).
  */
 internal fun TextStyle.forFieldContent(text: CharSequence): TextStyle {
-    if (text.isEmpty()) return this
-    val content = forContent(text)
+    if (text.isEmpty()) return copy(textDirection = TextDirection.Content)
+    val content = forContent(text).copy(textDirection = TextDirection.ContentOrLtr)
     return if (content.lineHeightSp().value < lineHeightSp().value) {
         content.copy(lineHeight = lineHeight)
     } else {
@@ -364,14 +367,37 @@ internal fun TextStyle.forUserText(text: CharSequence): TextStyle = forContent(t
 /** A phone number or address isolated left to right, so "555 0142" never reads "0142 555" in Persian. */
 fun ltr(text: String): String = if (text.isEmpty()) text else "\u2066$text\u2069"
 
+/**
+ * A name, query or other value put inside an interface sentence, isolated in its own first-strong direction: "Say
+ * hello to %s." with "BING-POT!!" in Persian keeps the "!!" after the name. A letter-free number reads left to right.
+ */
+fun isolate(text: String): String = if (text.isEmpty()) text else "\u2068$text\u2069"
+
 /** A label with no letters is a number, so "+1555…" must not put the + at the other end in Persian. */
 fun CharSequence.isNumberLabel(): Boolean = none { it.isLetter() } && any { it.isDigit() }
 
-fun TextStyle.forLabel(text: CharSequence): TextStyle = forContent(text).withNumberOrder(text)
+fun TextStyle.forLabel(text: CharSequence, layout: LayoutDirection): TextStyle = forContent(text).withLabelDirection(text, layout)
 
-/** A letter-free label such as "+1555…" stays left to right, so the + does not jump to the end in Persian. */
-fun TextStyle.withNumberOrder(text: CharSequence): TextStyle =
-    if (text.isNumberLabel()) copy(textDirection = TextDirection.Ltr) else this
+/**
+ * A label (a name, a title, a date, a number) reads in its own order but lines up with the interface around it.
+ * Compose lays out an unspecified direction strictly in the interface's direction, so "BING-POT!!" in the Persian
+ * interface drew "!!BING-POT"; its first letter decides instead, and a letter-free label such as "+1 555…" stays
+ * left to right. Start and End are the interface's edges, so the English name still starts where Persian ones do.
+ */
+fun TextStyle.withLabelDirection(text: CharSequence, layout: LayoutDirection): TextStyle = copy(
+    textDirection = if (text.isNumberLabel()) TextDirection.Ltr else TextDirection.Content,
+    textAlign = textAlign.fromInterfaceEdge(layout),
+)
+
+/** Start and End measured from the interface's edges rather than from the text's own direction. */
+internal fun TextAlign.fromInterfaceEdge(layout: LayoutDirection): TextAlign {
+    val rtl = layout == LayoutDirection.Rtl
+    return when (this) {
+        TextAlign.Unspecified, TextAlign.Start -> if (rtl) TextAlign.Right else TextAlign.Left
+        TextAlign.End -> if (rtl) TextAlign.Left else TextAlign.Right
+        else -> this
+    }
+}
 
 private fun typography(rtl: Boolean): Typography {
     val displayFamily = if (rtl) persian else display

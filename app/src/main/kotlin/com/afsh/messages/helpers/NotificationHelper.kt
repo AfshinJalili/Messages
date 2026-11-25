@@ -28,6 +28,7 @@ import com.afsh.messages.receivers.DirectReplyReceiver
 import com.afsh.messages.receivers.DeleteSmsReceiver
 import com.afsh.messages.receivers.MarkAsReadReceiver
 import com.afsh.messages.ui.components.AfshIcon
+import com.afsh.messages.ui.isolate
 
 class NotificationHelper(private val context: Context) {
 
@@ -255,7 +256,7 @@ class NotificationHelper(private val context: Context) {
         )
 
         val summaryText =
-            String.format(context.getString(R.string.message_sending_error), recipientName)
+            String.format(context.getString(R.string.message_sending_error), isolate(recipientName))
         val largeIcon = SimpleContactsHelper(context).getContactLetterIcon(recipientName)
         val builder = NotificationCompat.Builder(context, notificationChannelId)
             .setContentTitle(context.getString(R.string.message_not_sent_short))

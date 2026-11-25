@@ -56,12 +56,12 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.dp
 import com.afsh.commons.extensions.normalizeString
 import com.afsh.messages.R
 import com.afsh.messages.ui.Afsh
 import com.afsh.messages.ui.Avatar
+import com.afsh.messages.ui.isolate
 import com.afsh.messages.ui.ltr
 import com.afsh.messages.ui.components.AfshIcon
 import com.afsh.messages.ui.components.AttentionNotice
@@ -456,7 +456,7 @@ private fun PersonRow(person: Person, onClick: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     val detail = when (person.phones.size) {
         0 -> ""
-        1 -> person.phones.first().let { if (it.label.isEmpty()) ltr(it.number) else stringResource(R.string.detail_pair, it.label, ltr(it.number)) }
+        1 -> person.phones.first().let { if (it.label.isEmpty()) ltr(it.number) else stringResource(R.string.detail_pair, isolate(it.label), ltr(it.number)) }
         else -> pluralStringResource(R.plurals.phone_numbers_count, person.phones.size, person.phones.size)
     }
     Row(
@@ -470,7 +470,7 @@ private fun PersonRow(person: Person, onClick: () -> Unit) {
     ) {
         Avatar(person.name, person.photoUri, isGroup = false, size = RowAvatarSize)
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Afsh.spacing.xs)) {
-            ContentText(person.name, style = MaterialTheme.typography.titleMedium.copy(textDirection = TextDirection.Content), color = colors.onSurface)
+            ContentText(person.name, style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
             if (detail.isNotEmpty()) Text(detail, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
         }
     }

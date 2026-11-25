@@ -20,13 +20,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.afsh.messages.ui.Afsh
-import com.afsh.messages.ui.withNumberOrder
+import com.afsh.messages.ui.withLabelDirection
 
 private val RowMinHeight = 48.dp
 private val SettingIconSize = 24.dp
@@ -72,7 +73,7 @@ fun SettingItem(
         modifier = (if (bleed) Modifier.bleed(SettingRowBleed) else Modifier)
             .then(modifier)
             .heightIn(min = RowMinHeight),
-        supportingContent = value?.let { { Text(it, style = MaterialTheme.typography.bodySmall.withNumberOrder(it)) } },
+        supportingContent = value?.let { { Text(it, style = MaterialTheme.typography.bodySmall.withLabelDirection(it, LocalLayoutDirection.current)) } },
         leadingContent = icon?.let {
             { Icon(it.painter(), contentDescription = null, modifier = Modifier.size(SettingIconSize)) }
         },

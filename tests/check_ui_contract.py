@@ -11,7 +11,9 @@ Fails on, anywhere in the app's Kotlin outside ui/AfshTheme.kt:
   outside AfshIcon.kt (request AfshIcon instead),
 - FontFamily outside ui/AfshTheme.kt (use MaterialTheme.typography, ContentText, PatternText, tabular(), or forPattern()),
 - direct .withContentFonts(), .withPatternFonts(), or .forLabel() calls outside ui/AfshTheme.kt and ui/components/ContentText.kt,
-- BasicTextField or OutlinedTextField without visualTransformation (pass ContentFontVisualTransformation or PatternFontVisualTransformation, or use TextFieldSlab);
+- BasicTextField or OutlinedTextField without visualTransformation (pass ContentFontVisualTransformation or PatternFontVisualTransformation, or use TextFieldSlab),
+- TextDirection.Content, ContentOrLtr, ContentOrRtl or Unspecified outside ui/AfshTheme.kt and ui/components/ContentText.kt
+  (use ContentText's ContentDirection, withLabelDirection(), forFieldContent() or forUserText(); Ltr stays allowed);
 and any Lucide drawable, reference or tool in the app, its resources, Gradle files or tools/.
 Also scans commons Kotlin for Icons.* and ImageVector.Builder.
 
@@ -43,6 +45,7 @@ PAINTER_DRAWABLE = re.compile(r'\bpainterResource\s*\(\s*(?:R|com\.afsh\.commons
 FONT_FAMILY = re.compile(r'\bFontFamily\b')
 CONTENT_FONT_HELPER = re.compile(r'\.(?:withContentFonts|withPatternFonts|forLabel)\s*\(')
 TEXT_FIELD_CALL = re.compile(r'\b(?:BasicTextField|OutlinedTextField)\(')
+CONTENT_DIRECTION = re.compile(r'\bTextDirection\.(?:Content|ContentOrLtr|ContentOrRtl|Unspecified)\b')
 
 RULES = {
     'lucide': 'references Lucide; request an AfshIcon (Material Symbols) instead',
@@ -56,6 +59,7 @@ RULES = {
     'fontFamily': 'references FontFamily outside ui/AfshTheme.kt; use MaterialTheme.typography, ContentText, PatternText, tabular() or forPattern()',
     'contentFontHelper': 'calls script-font helpers directly; use ContentText, PatternText or ContentFontVisualTransformation',
     'textFieldFonts': 'omits visualTransformation on a text field; pass ContentFontVisualTransformation or PatternFontVisualTransformation (or use TextFieldSlab)',
+    'textDirection': 'sets a content text direction by hand; use ContentText (ContentDirection), withLabelDirection(), forFieldContent() or forUserText()',
 }
 
 
@@ -100,6 +104,8 @@ def kotlin_problems(text, compose=True, allow_painter=False, allow_content_font_
             found.append((number, 'fontFamily'))
         if not allow_content_font_helpers and CONTENT_FONT_HELPER.search(line):
             found.append((number, 'contentFontHelper'))
+        if not allow_content_font_helpers and CONTENT_DIRECTION.search(line):
+            found.append((number, 'textDirection'))
     return found
 
 
