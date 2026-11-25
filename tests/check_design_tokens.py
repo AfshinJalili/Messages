@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Reject hardcoded colors outside the single GM3 token file.
 
-The only color token file is commons/src/main/res/values/colors.xml (m3_* hex).
+The only color token file is commons/src/main/res/values/colors.xml (m3_* hex, plus the
+build-type launcher backgrounds launcher_*_background).
 No other module may define <color> names. No @android:color/* except transparent.
 Compose/Kotlin must not use Color(0x…), brand Color.Red/…, or parseColor("#…").
 
@@ -28,7 +29,7 @@ COLOR_NAME = re.compile(r'<color\s+name="(\w+)"')
 
 # --- Exactly one definition per color name; only the token file may hold hex colors. ---
 defs = defaultdict(list)
-for path in root.rglob('**/src/main/res/**/colors.xml'):
+for path in root.rglob('**/src/*/res/**/colors.xml'):
     if 'build' in path.parts:
         continue
     text = path.read_text()
@@ -47,8 +48,11 @@ for name, places in sorted(defs.items()):
     if len(places) > 1:
         violations.append(f'color name "{name}" defined in multiple places: {", ".join(places)}')
 
-# Non-colors.xml XML under app + commons: no hex; no framework colors except transparent.
-for main in (app_main, commons_main):
+# Non-colors.xml XML under app + commons (every source set, so build-type launcher icons
+# in app/src/debug and app/src/nightly are held to tokens too): no hex; no framework colors
+# except transparent.
+source_sets = sorted({p for p in (root / 'app/src').iterdir() if p.is_dir()} | {commons_main})
+for main in source_sets:
     res = main / 'res'
     if not res.exists():
         continue

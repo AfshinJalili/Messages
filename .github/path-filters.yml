@@ -1,0 +1,11 @@
+# dorny/paths-filter definitions shared by apk.yml and testing-build.yml
+# (predicate-quantifier: every, so a file is "code" only when it matches every line).
+# A change set with no "code" file is docs-only and skips Gradle and the emulator.
+# Host checks (tests/check_*.py) read DESIGN.md, so testing-build.yml runs them on every PR.
+code:
+  - '**'
+  - '!**/*.md'
+  - '!docs/**'
+  - '!.agents/**'
+  - '!.github/ISSUE_TEMPLATE/**'
+  - '!LICENSE'

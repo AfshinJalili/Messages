@@ -55,6 +55,9 @@ android {
         buildConfig = true
     }
 
+    // Three build types install side by side: debug (".debug", "Messages Dev"), nightly
+    // (".nightly", "Messages Nightly", published from main) and release (official). Each has
+    // its own launcher name and icon background under app/src/<type>/res. See AGENTS.md.
     buildTypes {
         debug {
             applicationIdSuffix = ".debug"
@@ -72,6 +75,14 @@ android {
                 // CI fallback when no release key is set, so the APK still installs.
                 signingConfig = signingConfigs.getByName("debug")
             }
+        }
+        // Same R8, shrinking and signing as release; a different app id, so a nightly never
+        // replaces the official app. CI passes -PNIGHTLY_SUFFIX=.<date>.<run> to stamp the build.
+        register("nightly") {
+            initWith(getByName("release"))
+            applicationIdSuffix = ".nightly"
+            versionNameSuffix = "-nightly" + providers.gradleProperty("NIGHTLY_SUFFIX").getOrElse("")
+            matchingFallbacks += "release"
         }
     }
 
