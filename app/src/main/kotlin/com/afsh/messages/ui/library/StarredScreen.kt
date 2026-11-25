@@ -1,5 +1,6 @@
 package com.afsh.messages.ui.library
 
+import androidx.compose.ui.text.style.TextAlign
 import com.afsh.messages.ui.Afsh
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -117,7 +118,9 @@ private fun StarredCard(message: StarredMessage, onClick: () -> Unit) {
                 color = colors.onSurface,
                 maxLines = PREVIEW_LINES,
                 overflow = TextOverflow.Ellipsis,
-                direction = ContentDirection.Inherit,
+                // The card's start edge, like the sender and date around it.
+                textAlign = TextAlign.Start,
+                direction = ContentDirection.Text,
             )
             Text(stamp, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
         }

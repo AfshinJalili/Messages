@@ -2,14 +2,23 @@ package com.afsh.messages
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.PixelMap
+import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
 import androidx.activity.ComponentActivity
+import androidx.compose.ui.test.captureToImage
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onChild
 import androidx.compose.ui.test.onNodeWithTag
@@ -18,7 +27,11 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.afsh.messages.ui.AfshTheme
+import com.afsh.messages.ui.components.ContentText
+import com.afsh.messages.ui.components.PageAppBar
+import com.afsh.messages.ui.components.SettingItem
 import com.afsh.messages.ui.components.SnippetText
+import com.afsh.messages.ui.ltr
 import com.afsh.messages.ui.thread.MessageText
 import com.afsh.messages.ui.thread.linkify
 import org.junit.Assert.assertEquals
@@ -27,6 +40,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import kotlin.math.abs
 
 /** #65: a grouped number keeps its groups in order next to Persian letters. Renders only; no provider access. */
 @RunWith(AndroidJUnit4::class)
@@ -105,6 +119,55 @@ class NumberOrderChecks {
             val annotation = link.item as LinkAnnotation.Clickable
             annotation.linkInteractionListener!!.onClick(annotation)
             assertEquals(listOf(number), copied)
+        }
+    }
+
+    /**
+     * A Latin name in the Persian interface keeps its "!!" after its last letter wherever the app shows it. Compares
+     * drawn pixels with the same component given left-to-right isolates of the right and the wrong order: the
+     * semantics text layout of a plain string skips the layout-direction resolution that drawing applies, so glyph
+     * positions read from it miss this bug.
+     */
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Test
+    fun latinNameKeepsTrailingPunctuationInPersian() {
+        val name = "BING-POT!!"
+        // The subject, then how it must look, then how the bug drew it.
+        val shown = listOf(name, ltr(name), ltr("!!BING-POT"))
+        val places: Map<String, @Composable (String) -> Unit> = mapOf(
+            "bar" to { PageAppBar(title = it) },
+            "row" to { SettingItem("عنوان گفتگو", value = it) },
+            "content" to { ContentText(it, Modifier.fillMaxWidth()) },
+        )
+        compose.setContent {
+            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                AfshTheme(dark = false) {
+                    Column(Modifier.width(360.dp)) {
+                        places.forEach { (place, content) ->
+                            shown.forEachIndexed { i, text -> Box(Modifier.testTag("$place-$i")) { content(text) } }
+                        }
+                    }
+                }
+            }
+        }
+        for (place in places.keys) {
+            val (subject, right, wrong) = shown.indices.map { i ->
+                compose.onNode(hasText(shown[i]) and hasAnyAncestor(hasTestTag("$place-$i")), useUnmergedTree = true).captureToImage().toPixelMap()
+            }
+            val toRight = subject.distanceTo(right)
+            val toWrong = subject.distanceTo(wrong)
+            assertTrue("$place: \"$name\" drawn out of order ($toRight from right, $toWrong from wrong)", toRight * 3 < toWrong)
+        }
+    }
+
+    /** Summed brightness difference at the best horizontal shift of up to 2px, which absorbs sub-pixel placement. */
+    private fun PixelMap.distanceTo(other: PixelMap): Float {
+        fun PixelMap.brightness(x: Int, y: Int): Float =
+            if (x in 0 until width && y in 0 until height) this[x, y].let { it.red + it.green + it.blue } else this[0, 0].let { it.red + it.green + it.blue }
+        return (-2..2).minOf { dx ->
+            var sum = 0f
+            for (x in 0 until width) for (y in 0 until height) sum += abs(brightness(x, y) - other.brightness(x + dx, y))
+            sum
         }
     }
 

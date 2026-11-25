@@ -1,5 +1,7 @@
 package com.afsh.messages.ui.search
 
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.text.style.TextAlign
 import com.afsh.messages.ui.components.AfshIcon
 import com.afsh.messages.ui.components.EmptyState
 import com.afsh.messages.ui.components.fadingScrollEdges
@@ -54,11 +56,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.afsh.messages.R
 import com.afsh.messages.models.SearchResult
+import com.afsh.messages.ui.components.ContentDirection
 import com.afsh.messages.ui.components.ContentText
 import com.afsh.messages.ui.components.ImportNotice
 import com.afsh.messages.ui.components.SearchField
 import com.afsh.messages.ui.AfshTheme
-import com.afsh.messages.ui.withNumberOrder
+import com.afsh.messages.ui.withLabelDirection
 
 private val ControlHeight = 56.dp
 private val TouchTarget = 48.dp
@@ -251,7 +254,7 @@ private fun SearchResultRow(result: SearchResult, query: String, onOpen: (Search
             HighlightedText(result.title, query, Modifier.weight(1f), title = true)
             Text(
                 result.date,
-                style = MaterialTheme.typography.bodySmall.withNumberOrder(result.date),
+                style = MaterialTheme.typography.bodySmall.withLabelDirection(result.date, LocalLayoutDirection.current),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 softWrap = false,
@@ -299,6 +302,9 @@ private fun HighlightedText(
         color = colors.onSurface,
         maxLines = if (title) 1 else EXCERPT_LINES,
         overflow = TextOverflow.Ellipsis,
+        // The excerpt is what someone wrote; the title is a name. Both start at the row's start edge.
+        textAlign = TextAlign.Start,
+        direction = if (title) ContentDirection.Label else ContentDirection.Text,
     )
 }
 

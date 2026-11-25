@@ -1,6 +1,5 @@
 package com.afsh.messages.ui.components
 
-import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -56,7 +55,6 @@ fun IdentityCard(
             style = MaterialTheme.typography.titleLarge.copy(
                 fontSize = MaterialTheme.typography.headlineSmall.fontSize,
                 fontWeight = FontWeight.ExtraBold,
-                textDirection = TextDirection.Content,
             ),
             modifier = Modifier.semantics { heading() },
         )
@@ -111,7 +109,7 @@ fun DetailRow(label: String, value: String, modifier: Modifier = Modifier) {
         ContentText(
             value,
             // Names and numbers keep their own order; the column still ends at the row's end.
-            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold, textDirection = TextDirection.Content),
+            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
             color = colors.onSurface,
             textAlign = TextAlign.End,
             modifier = Modifier.weight(1f),
@@ -136,6 +134,6 @@ fun LabeledField(label: String, value: String, modifier: Modifier = Modifier, on
         verticalArrangement = Arrangement.spacedBy(Afsh.spacing.xs),
     ) {
         Text(label.uppercase(), style = MaterialTheme.typography.labelMedium, color = colors.onSurfaceVariant)
-        ContentText(value, style = MaterialTheme.typography.titleMedium.copy(textDirection = TextDirection.Content), color = colors.onSurface)
+        ContentText(value, style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
     }
 }

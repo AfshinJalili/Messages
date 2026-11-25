@@ -437,7 +437,7 @@ private fun Bubble(message: SpamReviewMessage, selected: Boolean, modifier: Modi
         ContentText(
             remember(message.body, ranges, highlight) { highlighted(message.body, ranges, highlight) },
             style = MaterialTheme.typography.bodyLarge,
-            direction = ContentDirection.Inherit,
+            direction = ContentDirection.Text,
         )
         val meta = if (selected) Afsh.colors.onSecondaryContainerVariant else colors.onSurfaceVariant
         message.why?.let { WhyLine(message.body, it, meta) }

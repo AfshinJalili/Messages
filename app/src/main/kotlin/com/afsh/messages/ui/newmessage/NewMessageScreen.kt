@@ -56,7 +56,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.dp
 import com.afsh.commons.extensions.normalizeString
 import com.afsh.messages.R
@@ -470,7 +469,7 @@ private fun PersonRow(person: Person, onClick: () -> Unit) {
     ) {
         Avatar(person.name, person.photoUri, isGroup = false, size = RowAvatarSize)
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Afsh.spacing.xs)) {
-            ContentText(person.name, style = MaterialTheme.typography.titleMedium.copy(textDirection = TextDirection.Content), color = colors.onSurface)
+            ContentText(person.name, style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
             if (detail.isNotEmpty()) Text(detail, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
         }
     }
