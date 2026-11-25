@@ -145,6 +145,12 @@ jobs:
         with:
           cache-read-only: false
 
+      - name: Cache spam corpora
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/afsh-messages/spam-corpora
+          key: spam-corpora-${{ hashFiles('app/src/test/kotlin/com/afsh/messages/helpers/SpamCorpusDownloader.kt') }}
+
       - name: Seed Gradle cache
         run: ./gradlew :app:assembleDebug :app:assembleRelease :app:assembleDebugAndroidTest :app:testDebugUnitTest --stacktrace
 

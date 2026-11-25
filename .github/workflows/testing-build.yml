@@ -65,6 +65,13 @@ jobs:
         with:
           cache-read-only: false
 
+      - name: Cache spam corpora
+        if: needs.changes.outputs.code == 'true'
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/afsh-messages/spam-corpora
+          key: spam-corpora-${{ hashFiles('app/src/test/kotlin/com/afsh/messages/helpers/SpamCorpusDownloader.kt') }}
+
       - name: Unit tests
         if: needs.changes.outputs.code == 'true'
         run: ./gradlew :app:testDebugUnitTest --stacktrace
