@@ -2,6 +2,7 @@ package com.afsh.messages.ui.search
 
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.style.TextAlign
+import com.afsh.messages.ui.isolate
 import com.afsh.messages.ui.components.AfshIcon
 import com.afsh.messages.ui.components.EmptyState
 import com.afsh.messages.ui.components.fadingScrollEdges
@@ -232,7 +233,7 @@ private fun SearchEmpty(query: String) {
         val title = if (query.isBlank()) {
             stringResource(R.string.search_nothing_yet)
         } else {
-            stringResource(R.string.search_nothing_for, query)
+            stringResource(R.string.search_nothing_for, isolate(query))
         }
         EmptyState(
             title = title,

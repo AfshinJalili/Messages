@@ -37,6 +37,7 @@ import com.afsh.messages.ui.details.ConversationDetailsUiState
 import com.afsh.messages.ui.details.DetailsEvent
 import com.afsh.messages.ui.details.Member
 import com.afsh.messages.ui.details.SimChoice
+import com.afsh.messages.ui.isolate
 
 /** 09 · Conversation / details. */
 class ConversationDetailsActivity : ComposePageActivity() {
@@ -68,7 +69,7 @@ class ConversationDetailsActivity : ComposePageActivity() {
         val sims = subscriptionManagerCompat().activeSubscriptionInfoList.orEmpty()
             .map { info ->
                 val slot = getString(R.string.message_sim_label, "%d".format(info.simSlotIndex + 1))
-                SimChoice(info.subscriptionId, getString(R.string.detail_pair, slot, info.displayName))
+                SimChoice(info.subscriptionId, getString(R.string.detail_pair, slot, isolate(info.displayName?.toString().orEmpty())))
             }
         runOnUiThread {
             this.conversation = conversation

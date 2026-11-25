@@ -61,6 +61,7 @@ import com.afsh.commons.extensions.normalizeString
 import com.afsh.messages.R
 import com.afsh.messages.ui.Afsh
 import com.afsh.messages.ui.Avatar
+import com.afsh.messages.ui.isolate
 import com.afsh.messages.ui.ltr
 import com.afsh.messages.ui.components.AfshIcon
 import com.afsh.messages.ui.components.AttentionNotice
@@ -455,7 +456,7 @@ private fun PersonRow(person: Person, onClick: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     val detail = when (person.phones.size) {
         0 -> ""
-        1 -> person.phones.first().let { if (it.label.isEmpty()) ltr(it.number) else stringResource(R.string.detail_pair, it.label, ltr(it.number)) }
+        1 -> person.phones.first().let { if (it.label.isEmpty()) ltr(it.number) else stringResource(R.string.detail_pair, isolate(it.label), ltr(it.number)) }
         else -> pluralStringResource(R.plurals.phone_numbers_count, person.phones.size, person.phones.size)
     }
     Row(

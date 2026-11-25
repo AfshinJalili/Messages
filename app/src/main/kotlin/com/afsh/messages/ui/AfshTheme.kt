@@ -367,6 +367,11 @@ internal fun TextStyle.forUserText(text: CharSequence): TextStyle = forContent(t
 /** A phone number or address isolated left to right, so "555 0142" never reads "0142 555" in Persian. */
 fun ltr(text: String): String = if (text.isEmpty()) text else "\u2066$text\u2069"
 
+/**
+ * A name, query or other value put inside an interface sentence, isolated in its own first-strong direction: "Say
+ * hello to %s." with "BING-POT!!" in Persian keeps the "!!" after the name. A letter-free number reads left to right.
+ */
+fun isolate(text: String): String = if (text.isEmpty()) text else "\u2068$text\u2069"
 
 /** A label with no letters is a number, so "+1555…" must not put the + at the other end in Persian. */
 fun CharSequence.isNumberLabel(): Boolean = none { it.isLetter() } && any { it.isDigit() }

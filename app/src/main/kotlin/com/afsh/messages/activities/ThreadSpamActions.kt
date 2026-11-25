@@ -13,6 +13,7 @@ import com.afsh.messages.ui.components.AfshSheet
 import com.afsh.messages.ui.components.AfshSheetItem
 import com.afsh.messages.ui.components.confirm
 import com.afsh.messages.ui.components.showAfshDialog
+import com.afsh.messages.ui.isolate
 
 /** Spam in the conversation: not spam, always or never spam for the sender, and blocking on the phone. */
 internal class ThreadSpamActions(private val visit: ThreadVisit) {
@@ -21,7 +22,7 @@ internal class ThreadSpamActions(private val visit: ThreadVisit) {
     private val people get() = visit.people
 
     /** The names the confirmations show. */
-    private fun names(numbers: List<String>) = visit.conversation?.title ?: TextUtils.join(", ", numbers)
+    private fun names(numbers: List<String>) = isolate(visit.conversation?.title ?: TextUtils.join(", ", numbers))
 
     fun askNotSpam(selected: List<Message>) {
         activity.showAfshDialog { dismiss ->

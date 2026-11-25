@@ -31,7 +31,7 @@ import com.afsh.messages.ui.withPatternFonts
  *   the first letter decides, letter-free numbers like `+1 555…` stay left to right, and the line starts at
  *   the interface's start edge).
  * - [Inherit]: keeps the caller's [TextStyle.textDirection], for interface sentences that
- *   interpolate a value.
+ *   interpolate a value (isolate the value with [com.afsh.messages.ui.isolate]).
  *
  * A `textAlign` passed to [ContentText] measures Start and End from the interface's edges, so a
  * preview in a row (`TextAlign.Start`) lines up with the row whatever its own direction.

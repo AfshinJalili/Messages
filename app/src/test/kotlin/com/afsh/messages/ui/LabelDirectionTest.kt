@@ -34,6 +34,14 @@ class LabelDirectionTest {
     }
 
     @Test
+    fun aValueInsideASentenceIsIsolatedSoItsPunctuationStaysWithIt() {
+        // "به BING-POT!! سلام کنید." drew the "!!" before the name; first-strong isolates keep it after.
+        assertEquals("\u2068BING-POT!!\u2069", isolate("BING-POT!!"))
+        assertEquals("\u2068سارا\u2069", isolate("سارا"))
+        assertEquals("", isolate(""))
+    }
+
+    @Test
     fun endMeansTheInterfaceEndAndCenterStaysCentered() {
         assertEquals(TextAlign.Left, base.copy(textAlign = TextAlign.End).withLabelDirection("Dan", LayoutDirection.Rtl).textAlign)
         assertEquals(TextAlign.Right, base.copy(textAlign = TextAlign.End).withLabelDirection("دان", LayoutDirection.Ltr).textAlign)
