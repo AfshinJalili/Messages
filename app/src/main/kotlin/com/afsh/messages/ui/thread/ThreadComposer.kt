@@ -242,11 +242,7 @@ private fun EntryField(
                 enter
             }
             .testTag(COMPOSER_FIELD_TAG),
-        // Empty, the cursor starts on the app language's side; with text, each paragraph follows its first letter and
-        // digits alone read left to right, as the sent bubble will.
-        textStyle = fieldStyle.copy(
-            textDirection = if (text.text.isEmpty()) TextDirection.Content else TextDirection.ContentOrLtr,
-        ),
+        textStyle = fieldStyle,
         // The placeholder belongs to the edit box's own node, and TalkBack reads it only while empty.
         placeholder = { MixedLocaleText(hint, style = bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis) },
         visualTransformation = ContentFontVisualTransformation,

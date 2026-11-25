@@ -335,10 +335,12 @@ internal fun TextStyle.forContentScript(persianLeading: Boolean): TextStyle =
  * Script-aware style for text fields: keeps the UI locale's style while empty (so cursor and
  * placeholder share one line box), switches to content script fonts once typed, and never shrinks
  * leading below the base style (English typed in a Persian UI keeps 1.7em so the field never jumps).
+ * Empty, the cursor starts on the interface's side; typed, each paragraph follows its first letter and digits alone
+ * read left to right, as the sent text will ("BING-POT!!" typed in the Persian interface keeps "!!" at its end).
  */
 internal fun TextStyle.forFieldContent(text: CharSequence): TextStyle {
-    if (text.isEmpty()) return this
-    val content = forContent(text)
+    if (text.isEmpty()) return copy(textDirection = TextDirection.Content)
+    val content = forContent(text).copy(textDirection = TextDirection.ContentOrLtr)
     return if (content.lineHeightSp().value < lineHeightSp().value) {
         content.copy(lineHeight = lineHeight)
     } else {
