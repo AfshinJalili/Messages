@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>پیام‌ها — پیامک بدون تبلیغ برای اندروید</title>
+  <meta name="description" content="برنامهٔ پیامک اندروید که پیامک‌های تبلیغاتی را خودش به هرزنامه می‌فرستد. بدون حساب کاربری و بدون دسترسی به اینترنت. رایگان و متن‌باز.">
+  <meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#131314" media="(prefers-color-scheme: dark)">
+  <meta property="og:title" content="پیام‌ها — پیامک بدون تبلیغ برای اندروید">
+  <meta property="og:description" content="پیامک تبلیغاتی؟ دیگه نمی‌بینیش. تبلیغ‌ها بی‌سروصدا به هرزنامه می‌روند و صندوق برای پیام آدم‌ها می‌ماند.">
+  <meta property="og:locale" content="fa_IR">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="assets/fonts/vazirmatn.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+  <a class="skip" href="#main">رفتن به محتوا</a>
+
+  <header class="topbar">
+    <div class="wrap">
+      <a class="brand" href="./"><img src="favicon.svg" alt="" width="40" height="40">پیام‌ها</a>
+      <nav aria-label="اصلی">
+        <a class="hide-sm" href="#spam">هرزنامه</a>
+        <a class="hide-sm" href="#questions">پرسش‌ها</a>
+        <a class="btn btn-tonal" href="download.html">دریافت</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="wrap">
+        <div class="hero-copy">
+          <h1 id="hero-title">پیامک تبلیغاتی؟ <em>دیگه نمی‌بینیش.</em></h1>
+          <p class="lede">پیامک‌های تبلیغاتی، فارسی یا انگلیسی، بی‌سروصدا به پوشهٔ هرزنامه می‌روند و صندوق فقط برای پیام آدم‌ها و کدهای لازم می‌ماند. نه ثبت‌نام می‌خواهد، نه اینترنت.</p>
+          <div class="hero-actions">
+            <a class="btn btn-filled btn-large" href="download.html">
+              <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-download"/></svg>
+              <span>دریافت برنامه</span>
+              <span class="btn-meta" data-when-loaded="stable" hidden>نسخهٔ <bdi data-release="stable.version"></bdi></span>
+            </a>
+          </div>
+          <ul class="facts">
+            <li><svg class="icon sm" aria-hidden="true"><use href="assets/icons.svg#i-gpp_bad"/></svg>فیلتر هرزنامهٔ فارسی</li>
+            <li><svg class="icon sm" aria-hidden="true"><use href="assets/icons.svg#i-cloud_off"/></svg>بدون اینترنت</li>
+            <li><svg class="icon sm" aria-hidden="true"><use href="assets/icons.svg#i-volunteer_activism"/></svg>رایگان و متن‌باز</li>
+            <li><svg class="icon sm" aria-hidden="true"><use href="assets/icons.svg#i-info"/></svg>اندروید ۸ به بالا</li>
+          </ul>
+        </div>
+
+        <div>
+          <figure class="phone" aria-label="نمونهٔ صندوق برنامه">
+            <div class="screen" data-demo>
+              <div class="statusbar"></div>
+              <div class="screen-body">
+                <div class="band-title">پیام‌ها</div>
+                <div class="band-status">۲ پیام تازه</div>
+                <div class="search"><svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-search"/></svg>جست‌وجوی پیام‌ها</div>
+                <div class="chips" role="toolbar" aria-label="دسته‌ها">
+                  <button class="chip" type="button" data-filter="all" aria-pressed="true">همه</button>
+                  <button class="chip" type="button" data-filter="unread" aria-pressed="false">خوانده‌نشده</button>
+                  <button class="chip" type="button" data-filter="personal" aria-pressed="false">افراد</button>
+                  <button class="chip" type="button" data-filter="business" aria-pressed="false">خدمات</button>
+                  <button class="chip" type="button" data-filter="unknown" aria-pressed="false">ناشناس</button>
+                </div>
+                <ul class="rows" data-rows>
+                  <li class="section-label">سنجاق‌شده</li>
+                  <li class="row unread" data-cat="personal unread">
+                    <span class="avatar">م</span>
+                    <span class="row-text"><span class="name">مامان</span><span class="snippet">شام ساعت هشت آماده‌ست، دیر نکنی</span></span>
+                    <span class="row-meta"><span class="time">۲۱:۰۴</span><span class="signals"><svg class="icon xs" aria-hidden="true"><use href="assets/icons.svg#i-keep_fill"/></svg><span class="dot"></span></span></span>
+                  </li>
+                  <li class="section-label">امروز</li>
+                  <li class="row unread" data-cat="personal unread">
+                    <span class="avatar a2">سر</span>
+                    <span class="row-text"><span class="name">سارا رحیمی</span><span class="snippet">عکس‌های تولد رو دیدی؟</span></span>
+                    <span class="row-meta"><span class="time">۲۰:۳۲</span><span class="signals"><span class="dot"></span></span></span>
+                  </li>
+                  <li class="row" data-cat="business">
+                    <span class="avatar a3">ب</span>
+                    <span class="row-text"><span class="name">بانک</span><span class="snippet">رمز یکبار مصرف: ۴۸۲۱۹۰</span></span>
+                    <span class="row-meta"><span class="time">۱۹:۱۰</span><span class="signals"></span></span>
+                  </li>
+                  <li class="row" data-cat="personal">
+                    <span class="avatar a2"><svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-group"/></svg></span>
+                    <span class="row-text"><span class="name">خانواده</span><span class="snippet">علی: فردا ساعت ۱۰ پارک؟</span></span>
+                    <span class="row-meta"><span class="time">۱۸:۴۷</span><span class="signals"></span></span>
+                  </li>
+                  <li class="row" data-cat="business">
+                    <span class="avatar">پ</span>
+                    <span class="row-text"><span class="name">پست</span><span class="snippet">مرسولهٔ شما تحویل مأمور توزیع شد.</span></span>
+                    <span class="row-meta"><span class="time">۱۶:۲۰</span><span class="signals"></span></span>
+                  </li>
+                  <li class="section-label">دیروز</li>
+                  <li class="row" data-cat="unknown">
+                    <span class="avatar a3"><svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-person"/></svg></span>
+                    <span class="row-text"><span class="name"><bdi>۰۹۱۲ ۳۴۵ ۶۷۸۹</bdi></span><span class="snippet">سلام، شما آقای کریمی هستید؟</span></span>
+                    <span class="row-meta"><span class="time">دیروز</span><span class="signals"></span></span>
+                  </li>
+                </ul>
+                <p class="empty-note" data-empty hidden>گفت‌وگویی در این دسته نیست.</p>
+                <span class="fab" aria-hidden="true"><svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-chat"/></svg>پیام تازه</span>
+              </div>
+              <div class="navbar" aria-hidden="true">
+                <span class="nav-item on"><span class="pill"><svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-forum_fill"/></svg></span>صندوق</span>
+                <span class="nav-item"><span class="pill"><svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-layers"/></svg><span class="nav-badge" data-spam-badge>۲</span></span>کتابخانه</span>
+                <span class="nav-item"><span class="pill"><svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-settings"/></svg></span>تنظیمات</span>
+              </div>
+            </div>
+          </figure>
+          <p class="demo-note">نام‌ها و پیام‌ها نمونه‌اند. روی دسته‌ها بزنید.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section spam" id="spam" aria-labelledby="spam-title">
+      <div class="wrap">
+        <div>
+          <div class="section-head">
+            <h2 id="spam-title">هرزنامه سر جای خودش</h2>
+            <p>تبلیغ‌ها اعلان نمی‌دهند و در صندوق نمی‌مانند. در کتابخانه جمع می‌شوند تا هر وقت خواستید نگاهی بیندازید.</p>
+          </div>
+          <ul class="ways">
+            <li class="way">
+              <span class="way-icon"><svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-gpp_bad"/></svg></span>
+              <div>
+                <h3>خودش تبلیغ را می‌شناسد</h3>
+                <p>الگوهای هرزنامه پیامک‌های تبلیغاتی رایج فارسی و انگلیسی را تشخیص می‌دهند. لازم نیست کاری بکنید.</p>
+              </div>
+            </li>
+            <li class="way">
+              <span class="way-icon"><svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-block"/></svg></span>
+              <div>
+                <h3>هر فرستنده یا عبارتی که نخواهید</h3>
+                <p>شماره‌ها و کلمه‌هایی را که نمی‌خواهید ببینید اضافه کنید. پیام‌هایی که آن‌ها را دارند به هرزنامه می‌روند.</p>
+              </div>
+            </li>
+            <li class="way">
+              <span class="way-icon"><svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-person"/></svg></span>
+              <div>
+                <h3>شماره‌های ناشناس، اگر بخواهید</h3>
+                <p>با یک کلید، پیام شماره‌هایی که در مخاطبانتان نیستند هم به هرزنامه می‌رود.</p>
+              </div>
+            </li>
+            <li class="way">
+              <span class="way-icon"><svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-rotate_left"/></svg></span>
+              <div>
+                <h3>چیزی گم نمی‌شود</h3>
+                <p>پیامی اشتباهی به هرزنامه رفت؟ با یک لمس به صندوق برش گردانید.</p>
+              </div>
+            </li>
+          </ul>
+        </div>
+
+        <figure class="phone" aria-label="صفحهٔ هرزنامه و مسدودسازی در برنامه">
+          <div class="screen">
+            <div class="statusbar"></div>
+            <div class="screen-body">
+              <div class="appbar">
+                <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-arrow_forward"/></svg>
+                <h4>هرزنامه و مسدودسازی</h4>
+              </div>
+              <p class="info-panel">پیام‌های تبلیغاتی، فرستنده‌های مسدود و عبارت‌هایی که انتخاب می‌کنید در هرزنامه می‌مانند، نه در صندوق.</p>
+              <div class="setting"><div><span class="title">فیلتر هرزنامه‌های آشکار</span></div><span class="switch on"></span></div>
+              <div class="setting"><div><span class="title">شماره‌های ناشناس</span><span class="sub">پیام شماره‌هایی که در مخاطبان نیستند به هرزنامه می‌رود.</span></div><span class="switch"></span></div>
+              <div class="setting"><div><span class="title">فرستنده‌ها</span></div><svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-chevron_left"/></svg></div>
+              <div class="setting"><div><span class="title">عبارت‌های مسدود</span></div><svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-chevron_left"/></svg></div>
+              <div class="setting"><div><span class="title">الگوهای هرزنامه</span><span class="sub">دیدن، آزمودن و ویرایش الگوهای قوانین</span></div><svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-chevron_left"/></svg></div>
+            </div>
+            <div class="navbar" aria-hidden="true">
+              <span class="nav-item"><span class="pill"><svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-forum_fill"/></svg></span>صندوق</span>
+              <span class="nav-item"><span class="pill"><svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-layers"/></svg></span>کتابخانه</span>
+              <span class="nav-item on"><span class="pill"><svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-settings"/></svg></span>تنظیمات</span>
+            </div>
+          </div>
+        </figure>
+      </div>
+    </section>
+
+    <section class="section" id="questions" aria-labelledby="questions-title">
+      <div class="wrap">
+        <div class="section-head">
+          <h2 id="questions-title">چیزهایی که معمولاً می‌پرسند</h2>
+          <p>جواب‌ها کوتاه‌اند، چون برنامه کار پیچیده‌ای از شما نمی‌خواهد.</p>
+        </div>
+
+        <div class="thread">
+          <span class="day">امروز</span>
+
+          <p class="bubble in">برای استفاده باید ثبت‌نام کنم؟</p>
+          <p class="bubble out">نه. نه حساب کاربری، نه ایمیل، نه کد تأیید. نصب کنید و همان پیامک‌های همیشگی‌تان را ببینید.</p>
+
+          <p class="bubble in">پیام‌هایم جایی فرستاده می‌شود؟</p>
+          <p class="bubble out"><strong>نه.</strong> این برنامه اصلاً اجازهٔ دسترسی به اینترنت ندارد. پیام‌ها روی گوشی شما می‌مانند و جای دیگری نمی‌روند. کدش هم باز است و هر کسی می‌تواند بررسی‌اش کند.</p>
+
+          <p class="bubble in">اگر اشتباهی چیزی را پاک کنم چه؟</p>
+          <div class="bubble out">
+            <p>بلافاصله دکمهٔ «برگرداندن» می‌آید. بعد از آن هم گفت‌وگوهای حذف‌شده ۳۰ روز در سطل بازیافت می‌مانند.</p>
+            <div class="snackbar" aria-hidden="true"><span>گفت‌وگو حذف شد</span><b>برگرداندن</b></div>
+          </div>
+
+          <p class="bubble in">کسی گوشی‌ام را بردارد، پیام‌ها را می‌بیند؟</p>
+          <p class="bubble out">می‌توانید قفل برنامه را روشن کنید تا فقط با رمز یا اثر انگشت باز شود.</p>
+
+          <p class="bubble in">گوشی را عوض کنم، پیام‌ها چه می‌شوند؟</p>
+          <p class="bubble out">از همهٔ گفت‌وگوها یک فایل پشتیبان روی خود گوشی بسازید و در گوشی تازه بازش کنید. هیچ فضای ابری‌ای در کار نیست.</p>
+
+          <p class="bubble in">پولی است؟ تبلیغ دارد؟</p>
+          <p class="bubble out">نه و نه. رایگان و متن‌باز است، با مجوز GPL-3.0.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap closing" aria-labelledby="get-title">
+      <div class="band">
+        <h2 id="get-title">صندوقی که فقط پیام آدم‌ها را دارد.</h2>
+        <p>فایل را بگیرید، نصب کنید و پیام‌ها را برنامهٔ پیامک گوشی کنید. پیامک‌های قبلی‌تان همه سر جایشان می‌مانند.</p>
+        <a class="btn btn-large" href="download.html">
+          <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-download"/></svg>
+          <span>دریافت و راهنمای نصب</span>
+        </a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap">
+      <span>پیام‌ها، متن‌باز با مجوز <a href="https://github.com/AfshinJalili/Messages/blob/main/LICENSE">GPL-3.0</a></span>
+      <a href="https://github.com/AfshinJalili/Messages">کد در گیت‌هاب</a>
+      <a href="https://github.com/AfshinJalili/Messages/issues">گزارش مشکل</a>
+    </div>
+  </footer>
+
+  <script src="assets/release.js" defer></script>
+  <script src="assets/inbox.js" defer></script>
+</body>
+</html>
