@@ -12,6 +12,7 @@ import com.afsh.messages.extensions.getNameFromAddress
 import com.afsh.messages.extensions.getThreadId
 import com.afsh.messages.extensions.messagesDB
 import com.afsh.messages.extensions.messagingUtils
+import com.afsh.messages.helpers.ConversationSync
 import com.afsh.messages.helpers.MessagingEvent
 import com.afsh.messages.helpers.MessagingEvents
 import com.afsh.messages.helpers.TelephonyReader
@@ -37,10 +38,20 @@ class SmsStatusSentReceiver : SendStatusReceiver() {
         ensureBackgroundThread {
             val succeeded = receiverResultCode == Activity.RESULT_OK
             val type = if (succeeded) Sms.MESSAGE_TYPE_SENT else Sms.MESSAGE_TYPE_FAILED
-            context.messagesDB.updateType(messageId, type)
+            val telephony = TelephonyReader(context)
+            // SMS sent outside the chat (call-reject replies from HeadlessSmsSendService) never reached
+            // Room, so updateType changes no row: copy the row from Telephony instead. Then sync the
+            // thread so the inbox snippet, date and unread count don't wait for a full reconcile.
+            val copied = if (context.messagesDB.updateType(messageId, type) == 0) {
+                telephony.getSms(messageId)?.also { context.messagesDB.insertOrUpdate(it.copy(type = type)) }
+            } else {
+                null
+            }
 
-            val address = TelephonyReader(context).getSmsAddress(messageId)
+            // Read only when the thread id or the failure notice needs it; a copied row already has it.
+            val address by lazy { copied?.senderPhoneNumber ?: telephony.getSmsAddress(messageId) }
             val threadId = ConversationRepository.from(context).smsThreadId(messageId) ?: context.getThreadId(address)
+            ConversationSync.syncThread(context, threadId)
 
             if (succeeded) {
                 MessagingEvents.publish(

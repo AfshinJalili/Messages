@@ -81,8 +81,9 @@ CONVERSATIONS_CHANGED = re.compile(r"MessagingEvent\.ConversationsChanged\s*\(([
 # Rare path that deletes a temporary scheduled thread and needs a full pass.
 ALLOW_RECONCILE = {"ScheduledMessageReceiver.kt"}
 
-# Each message-path receiver must update Room itself. Patterns are the writes that keep
-# inbox snippet/date/unread, notifications, and an open thread correct without a full pass.
+# Each message-path receiver must update Room itself. Every listed pattern must appear: they are
+# the writes that keep inbox snippet/date/unread, notifications, and an open thread correct
+# without a full pass.
 ROOM_WRITES = {
     "SmsReceiver.kt": (
         "conversations.insertOrUpdate(",
@@ -90,7 +91,7 @@ ROOM_WRITES = {
     ),
     "MmsReceiver.kt": ("conversations.insertOrUpdate(",),
     "MarkAsReadReceiver.kt": ("markThreadRead",),
-    "SmsStatusSentReceiver.kt": ("updateType",),
+    "SmsStatusSentReceiver.kt": ("updateType", "ConversationSync"),
     "MmsSentReceiver.kt": ("ConversationSync", "syncThread"),
     "DeleteSmsReceiver.kt": ("refreshFromTelephony", "deleteMessage"),
 }
@@ -117,10 +118,11 @@ for path in kotlin_files(RECEIVERS):
         )
     if path.name in ROOM_WRITES:
         needed = ROOM_WRITES[path.name]
-        if not any(token in text for token in needed):
+        missing = [token for token in needed if token not in text]
+        if missing:
             violations.append(
                 f"{rel(path)}: message-path receiver requires a targeted Room write "
-                f"({' / '.join(needed)}); otherwise inbox/thread stay stale"
+                f"({' + '.join(missing)}); otherwise inbox/thread stay stale"
             )
 
 # --- InboxImport: bounded per-thread failures ---------------------------------

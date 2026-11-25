@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import com.afsh.commons.helpers.ensureBackgroundThread
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * How far the first-run setup has got, as one 0–100 percent.
@@ -45,7 +46,9 @@ internal object ImportProgressMath {
 }
 
 /**
- * Tracks message-import progress per thread across reconciles.
+ * Tracks message-import progress per thread across reconciles. A thread is cached once Room holds
+ * its newest message ([ConversationRepository.holdsNewestMessage]), so a thread Room knows only
+ * older messages of is imported again.
  *
  * - [failures]: how many times [getMessages] threw (`"threadId:attempts"` prefs). After
  *   [MAX_ATTEMPTS] the thread is abandoned so it cannot restart the whole import forever.
@@ -82,38 +85,43 @@ internal object ImportFailureLedger {
     fun isAbandoned(failures: Map<Long, Int>, threadId: Long): Boolean =
         (failures[threadId] ?: 0) >= MAX_ATTEMPTS
 
-    /** Threads still missing Room messages, not abandoned, and not already read successfully. */
+    /** Threads not cached, not abandoned, and not already read successfully. */
     fun pending(
         threadIds: Collection<Long>,
-        hasMessages: (Long) -> Boolean,
+        cached: (Long) -> Boolean,
         failures: Map<Long, Int>,
         handled: Set<Long>,
     ): List<Long> = threadIds.filter {
-        !hasMessages(it) && !isAbandoned(failures, it) && it !in handled
+        !cached(it) && !isAbandoned(failures, it) && it !in handled
     }
 
-    /** True when every thread has messages, was read successfully, or was abandoned. */
+    /** True when every thread is cached, was read successfully, or was abandoned. */
     fun finished(
         threadIds: Collection<Long>,
-        hasMessages: (Long) -> Boolean,
+        cached: (Long) -> Boolean,
         failures: Map<Long, Int>,
         handled: Set<Long>,
     ): Boolean = threadIds.all {
-        hasMessages(it) || isAbandoned(failures, it) || it in handled
+        cached(it) || isAbandoned(failures, it) || it in handled
     }
 }
 
 /**
- * The first import of the phone's messages. Conversations come from the reconcile; this then copies
- * each thread's recent messages into Room, because search reads only Room. Both stages publish into
+ * The import of the phone's messages. Conversations come from the reconcile; this then copies each
+ * stale thread's recent messages into Room, because search reads only Room. Both stages publish into
  * one [ImportProgress] so the inbox shows a single card until setup finishes. It runs until it has
- * finished once, and resumes where it stopped, since threads already in Room are skipped.
+ * finished once, and resumes where it stopped, since cached threads are skipped. Becoming the
+ * default SMS app again [reopen]s it for the messages another app saw meanwhile.
  */
 object InboxImport {
     private val state = MutableStateFlow<ImportProgress?>(null)
     val progress: StateFlow<ImportProgress?> = state.asStateFlow()
 
     private val running = AtomicBoolean(false)
+    // Bumped by [reopen]; a run started before it must not write its ledger over the fresh one.
+    // [ledgerLock] makes that check and the ledger writes one step against [reopen].
+    private val generation = AtomicInteger(0)
+    private val ledgerLock = Any()
     private var peakPercent = 0
     private var conversationsShareDone = false
 
@@ -133,6 +141,26 @@ object InboxImport {
         publish(ImportProgressMath.CONVERSATIONS_SHARE)
     }
 
+    /**
+     * Another app was the default SMS app, so threads Room has may have newer messages. The next
+     * import after a reconcile visits every stale thread again, from a fresh ledger. Nothing happens
+     * when the ledger is already fresh, as on first run, where Android's broadcast can land while
+     * the first import runs: that run then keeps its ledger and its progress.
+     */
+    fun reopen(context: Context) {
+        val config = context.applicationContext.config
+        synchronized(ledgerLock) {
+            val fresh = !config.messagesImported &&
+                config.importThreadFailures.isEmpty() &&
+                config.importHandledThreads.isEmpty()
+            if (fresh) return
+            generation.incrementAndGet()
+            config.messagesImported = false
+            config.importThreadFailures = emptySet()
+            config.importHandledThreads = emptySet()
+        }
+    }
+
     /** Reconcile failed before message indexing; drop a held bar so it does not stick. */
     fun abort() {
         if (!running.get()) clear()
@@ -147,25 +175,37 @@ object InboxImport {
         }
         if (!running.compareAndSet(false, true)) return
         ensureBackgroundThread {
+            val startedIn = generation.get()
             try {
-                val threadIds = app.conversationsDB.getAll().filter { !it.isScheduled }.map { it.threadId }
+                val conversations = app.conversationsDB.getAll().filter { !it.isScheduled }.associateBy { it.threadId }
+                val threadIds = conversations.keys
+                val repository = ConversationRepository.from(app)
+                val cached = { threadId: Long -> repository.holdsNewestMessage(conversations.getValue(threadId)) }
                 val afterConversations = conversationsShareDone
                 if (threadIds.isEmpty()) {
-                    publish(100)
-                    app.config.messagesImported = true
-                    app.config.importThreadFailures = emptySet()
-                    app.config.importHandledThreads = emptySet()
+                    synchronized(ledgerLock) {
+                        if (generation.get() != startedIn) return@ensureBackgroundThread
+                        app.config.messagesImported = true
+                        app.config.importThreadFailures = emptySet()
+                        app.config.importHandledThreads = emptySet()
+                    }
+                    if (afterConversations) publish(100)
                     return@ensureBackgroundThread
                 }
                 var failures = ImportFailureLedger.parseFailures(app.config.importThreadFailures)
                 var handled = ImportFailureLedger.parseHandled(app.config.importHandledThreads)
                 val pending = ImportFailureLedger.pending(
                     threadIds = threadIds,
-                    hasMessages = { app.messagesDB.hasThreadMessages(it) },
+                    cached = cached,
                     failures = failures,
                     handled = handled,
                 )
-                publish(ImportProgressMath.messagesPercent(0, pending.size.coerceAtLeast(1), afterConversations))
+                // A held conversations bar continues; otherwise a bar shows only when there is
+                // something to copy, so a resume with nothing stale does not flash one.
+                val showProgress = afterConversations || pending.isNotEmpty()
+                if (showProgress) {
+                    publish(ImportProgressMath.messagesPercent(0, pending.size.coerceAtLeast(1), afterConversations))
+                }
                 // One bad thread must not abort the rest, and a permanently failing thread must
                 // not restart the whole import after every reconcile: only [pending] is visited,
                 // failures are counted, and abandoned threads are skipped forever.
@@ -196,21 +236,23 @@ object InboxImport {
                     val done = minOf((batch + 1) * BATCH_THREADS, pending.size)
                     publish(ImportProgressMath.messagesPercent(done, pending.size, afterConversations))
                 }
-                app.config.importThreadFailures = ImportFailureLedger.serializeFailures(failures)
-                app.config.importHandledThreads = ImportFailureLedger.serializeHandled(handled)
-                if (
-                    ImportFailureLedger.finished(
-                        threadIds = threadIds,
-                        hasMessages = { app.messagesDB.hasThreadMessages(it) },
-                        failures = failures,
-                        handled = handled,
-                    )
-                ) {
-                    app.config.messagesImported = true
-                    app.config.importThreadFailures = emptySet()
-                    app.config.importHandledThreads = emptySet()
-                    publish(100)
+                // Threads outside [pending] were cached, handled or abandoned when it was built, and
+                // nothing here undoes that, so only [pending] needs checking again.
+                val finished = ImportFailureLedger.finished(
+                    threadIds = pending,
+                    cached = cached,
+                    failures = failures,
+                    handled = handled,
+                )
+                synchronized(ledgerLock) {
+                    if (generation.get() != startedIn) return@ensureBackgroundThread
+                    app.config.messagesImported = finished
+                    app.config.importThreadFailures =
+                        if (finished) emptySet() else ImportFailureLedger.serializeFailures(failures)
+                    app.config.importHandledThreads =
+                        if (finished) emptySet() else ImportFailureLedger.serializeHandled(handled)
                 }
+                if (finished && showProgress) publish(100)
             } catch (_: Exception) {
                 // Listing threads failed; resume after the next successful reconcile.
             } finally {

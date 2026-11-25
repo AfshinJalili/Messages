@@ -50,9 +50,9 @@ interface ConversationTelephony {
     fun unreadMmsThreadIds(): List<Long>
 
     /**
-     * Every thread with messages ([threadId] only, when given), newest first. Threads with a blocked
-     * participant are left out. [unreadCounts] gives each row its unread count, and [draftDates]
-     * (milliseconds) replaces the date of a thread with a draft.
+     * Every thread with messages ([threadId] only, when given), newest first, or the newest [limit]
+     * of them. Threads with a blocked participant are left out. [unreadCounts] gives each row its
+     * unread count, and [draftDates] (milliseconds) replaces the date of a thread with a draft.
      */
     fun conversations(
         threadId: Long?,
@@ -61,6 +61,7 @@ interface ConversationTelephony {
         draftDates: Map<Long, Long>,
         failOnError: Boolean,
         onProgress: ((done: Int, total: Int) -> Unit)?,
+        limit: Int?,
     ): ArrayList<Conversation>
 
     /** Thread count and latest thread date (seconds); `-1 to -1` when the provider can't be read. */
@@ -133,6 +134,7 @@ class TelephonyConversations(context: Context) : ConversationTelephony {
         draftDates: Map<Long, Long>,
         failOnError: Boolean,
         onProgress: ((done: Int, total: Int) -> Unit)?,
+        limit: Int?,
     ): ArrayList<Conversation> {
         val config = context.config
         val archiveAvailable = config.isArchiveAvailable
@@ -158,13 +160,11 @@ class TelephonyConversations(context: Context) : ConversationTelephony {
             selectionArgs += threadId.toString()
         }
 
-        val sortOrder = "${Threads.DATE} DESC"
-
-        val conversations = ArrayList<Conversation>()
         val lookups = ThreadLookups(context, privateContacts, preload = threadId == null)
         val blockedNumbers = context.getBlockedNumbers()
         val telephony = TelephonyReader(context)
-        try {
+        fun read(sortOrder: String): ArrayList<Conversation> {
+            val conversations = ArrayList<Conversation>()
             resolver.queryCursorUnsafe(
                 uri,
                 projection.toTypedArray(),
@@ -172,6 +172,8 @@ class TelephonyConversations(context: Context) : ConversationTelephony {
                 selectionArgs,
                 sortOrder
             ) { cursor ->
+                // Rows past the window are skipped unbuilt when the provider ignored or rejected LIMIT.
+                if (limit != null && conversations.size >= limit) return@queryCursorUnsafe
                 onProgress?.invoke(cursor.position, cursor.count)
                 val id = cursor.getLongValue(Threads._ID)
                 var snippet = cursor.getStringValue(Threads.SNIPPET) ?: ""
@@ -221,20 +223,27 @@ class TelephonyConversations(context: Context) : ConversationTelephony {
                 )
                 conversations.add(conversation)
             }
+            return conversations
+        }
+
+        val conversations = try {
+            ArrayList(newestThreadsFirst(limit, ::read))
         } catch (sqliteException: SQLiteException) {
             if (
                 sqliteException.message?.contains("no such column: archived") == true
                 && archiveAvailable
             ) {
                 config.isArchiveAvailable = false
-                return conversations(threadId, privateContacts, unreadCounts, draftDates, failOnError, onProgress = null)
+                return conversations(threadId, privateContacts, unreadCounts, draftDates, failOnError, onProgress = null, limit = limit)
             } else {
                 if (failOnError) throw sqliteException
                 context.showErrorToast(sqliteException)
+                ArrayList()
             }
         } catch (e: Exception) {
             if (failOnError) throw e
             context.showErrorToast(e)
+            ArrayList()
         }
 
         conversations.sortByDescending { it.date }
@@ -440,4 +449,20 @@ private class ThreadLookups(
         // Some providers refuse an unfiltered query; fall back to one query per recipient.
         null
     }
+}
+
+/**
+ * Runs [query] over the threads table newest first, keeping at most [limit] rows when given. The
+ * provider has no limit argument, so LIMIT rides in the sort order; some OEM providers reject that,
+ * and then the threads are read unlimited and cut. A failed unlimited read stays a failure.
+ */
+internal fun <T> newestThreadsFirst(limit: Int?, query: (sortOrder: String) -> List<T>): List<T> {
+    val newestFirst = "${Threads.DATE} DESC"
+    if (limit == null) return query(newestFirst)
+    val rows = try {
+        query("$newestFirst LIMIT $limit")
+    } catch (_: Exception) {
+        query(newestFirst)
+    }
+    return rows.take(limit)
 }

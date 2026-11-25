@@ -26,13 +26,15 @@
 
     <application
         android:name=".App"
-        android:allowBackup="true"
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
         android:appCategory="productivity"
         android:enableOnBackInvokedCallback="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_launcher_name"
         android:roundIcon="@mipmap/ic_launcher"
-        android:theme="@style/AppTheme">
+        android:theme="@style/AppTheme"
+        tools:replace="android:allowBackup">
 
         <!-- 85: the inbox and a conversation side by side from 840 dp (helpers/ListDetail.kt). -->
         <property
@@ -299,6 +301,16 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="com.afsh.messages.action.delete" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Exported so Telephony can deliver it; the action is a protected broadcast, and the
+             receiver only records a forced reconcile for the next launch. -->
+        <receiver
+            android:name=".receivers.DefaultSmsChangedReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.provider.action.DEFAULT_SMS_PACKAGE_CHANGED" />
             </intent-filter>
         </receiver>
 

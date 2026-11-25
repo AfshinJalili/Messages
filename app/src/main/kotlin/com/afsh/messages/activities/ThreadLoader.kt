@@ -10,6 +10,7 @@ import com.afsh.commons.extensions.toast
 import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.messages.R
 import com.afsh.messages.extensions.conversationsDB
+import com.afsh.messages.helpers.ConversationSync
 import com.afsh.messages.helpers.MessagingEvent
 import com.afsh.messages.helpers.MessagingEvents
 import com.afsh.messages.helpers.THREAD_NUMBER
@@ -141,6 +142,9 @@ internal class ThreadLoader(private val visit: ThreadVisit) {
             }
 
             repository.cacheLoaded()
+            // The whole row, not only its preview: back in the inbox the thread shows its new date
+            // and unread count without waiting for a reconcile.
+            ConversationSync.syncThread(activity, visit.threadId)
             data.providerReady = true
             showLoaded()
             activity.runOnUiThread {

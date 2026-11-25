@@ -22,13 +22,13 @@ class ImportFailureLedgerTest {
     }
 
     @Test
-    fun `pending skips threads that have messages, were handled, or are abandoned`() {
+    fun `pending skips threads that are cached, were handled, or are abandoned`() {
         val failures = mapOf(2L to ImportFailureLedger.MAX_ATTEMPTS, 3L to 1)
-        val hasMessages = setOf(1L)
+        val cachedIds = setOf(1L)
         val handled = setOf(5L)
         val pending = ImportFailureLedger.pending(
             threadIds = listOf(1L, 2L, 3L, 4L, 5L),
-            hasMessages = { it in hasMessages },
+            cached = { it in cachedIds },
             failures = failures,
             handled = handled,
         )
@@ -36,12 +36,12 @@ class ImportFailureLedgerTest {
     }
 
     @Test
-    fun `finished when every thread has messages, was handled, or is abandoned`() {
+    fun `finished when every thread is cached, was handled, or is abandoned`() {
         val failures = mapOf(9L to ImportFailureLedger.MAX_ATTEMPTS)
         assertFalse(
             ImportFailureLedger.finished(
                 threadIds = listOf(8L, 9L),
-                hasMessages = { false },
+                cached = { false },
                 failures = failures,
                 handled = emptySet(),
             ),
@@ -49,7 +49,7 @@ class ImportFailureLedgerTest {
         assertTrue(
             ImportFailureLedger.finished(
                 threadIds = listOf(8L, 9L),
-                hasMessages = { it == 8L },
+                cached = { it == 8L },
                 failures = failures,
                 handled = emptySet(),
             ),
@@ -57,7 +57,7 @@ class ImportFailureLedgerTest {
         assertTrue(
             ImportFailureLedger.finished(
                 threadIds = listOf(8L, 9L),
-                hasMessages = { false },
+                cached = { false },
                 failures = failures,
                 handled = setOf(8L),
             ),
@@ -74,7 +74,7 @@ class ImportFailureLedgerTest {
         repeat(ImportFailureLedger.MAX_ATTEMPTS) {
             val pending = ImportFailureLedger.pending(
                 threadIds = listOf(good, bad),
-                hasMessages = { false },
+                cached = { false },
                 failures = failures,
                 handled = handled,
             )
@@ -85,7 +85,7 @@ class ImportFailureLedgerTest {
         assertTrue(
             ImportFailureLedger.pending(
                 threadIds = listOf(good, bad),
-                hasMessages = { false },
+                cached = { false },
                 failures = failures,
                 handled = handled,
             ).isEmpty(),
@@ -93,7 +93,7 @@ class ImportFailureLedgerTest {
         assertTrue(
             ImportFailureLedger.finished(
                 threadIds = listOf(good, bad),
-                hasMessages = { false },
+                cached = { false },
                 failures = failures,
                 handled = handled,
             ),
@@ -106,7 +106,7 @@ class ImportFailureLedgerTest {
         assertTrue(
             ImportFailureLedger.finished(
                 threadIds = listOf(1L, 2L),
-                hasMessages = { false },
+                cached = { false },
                 failures = emptyMap(),
                 handled = handled,
             ),
@@ -114,7 +114,7 @@ class ImportFailureLedgerTest {
         assertTrue(
             ImportFailureLedger.pending(
                 threadIds = listOf(1L, 2L),
-                hasMessages = { false },
+                cached = { false },
                 failures = emptyMap(),
                 handled = handled,
             ).isEmpty(),

@@ -48,9 +48,6 @@ interface ConversationsDao {
     @Query("SELECT COUNT(*) FROM conversations")
     fun getCount(): Int
 
-    @Query("SELECT COALESCE(MAX(date), 0) FROM conversations")
-    fun getLatestDate(): Int
-
     @Query("SELECT * FROM conversations WHERE thread_id = :threadId")
     fun getConversationWithThreadId(threadId: Long): Conversation?
 

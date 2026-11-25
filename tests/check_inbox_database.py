@@ -161,3 +161,25 @@ for count in (12, 3, 0):
     db.execute(count_query, {"threadId": 1, "count": count})
     assert db.execute("SELECT read, unread_count FROM conversations WHERE thread_id = 1").fetchone() == (int(count == 0), count)
 print("PASS: partial read updates preserve unseen rows and provider identity; counts reach zero")
+
+# Has Room cached Telephony's newest message? (ConversationRepository.holdsNewestMessage)
+latest_query = re.search(r'@Query\("([^"\n]+)"\)\s+fun getThreadLatestDate\(', dao)[1]
+snippet_query = re.search(r'@Query\("([^"\n]+)"\)\s+fun hasMessageForSnippet\(', dao)[1]
+thread = 990001
+db.execute(
+    "INSERT INTO messages (id, body, type, status, participants, date, read, thread_id, is_mms, attachment,"
+    " sender_phone_number, sender_name, sender_photo_uri, subscription_id, is_scheduled)"
+    " VALUES (990001, 'Win' || char(10) || 'now', 1, 0, '[]', 20, 1, ?, 0, NULL, '', '', '', 0, 0),"
+    " (990002, 'tomorrow', 1, 0, '[]', 900, 1, ?, 0, NULL, '', '', '', 0, 1)",
+    (thread, thread),
+)
+assert db.execute(latest_query, {"threadId": thread}).fetchone()[0] == 20, "a scheduled message counted as cached"
+def names(snippet, date=20):
+    return db.execute(snippet_query, {"threadId": thread, "date": date, "snippet": snippet}).fetchone()[0] == 1
+assert names("Win now"), "a provider snippet with a space for the line break missed the cached SMS"
+assert names("Win"), "a truncated provider snippet missed the cached SMS"
+assert names(""), "an empty snippet must not mark Room stale"
+assert not names("reply"), "a same-second message Room lacks looked cached"
+assert not names("tomorrow", date=900), "a scheduled message looked like a Telephony one"
+db.execute("DELETE FROM messages WHERE thread_id = ?", (thread,))
+print("PASS: the newest cached message ignores scheduled rows and matches provider snippets")

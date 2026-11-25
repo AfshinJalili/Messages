@@ -47,9 +47,6 @@ interface MessagesDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertMessages(vararg message: Message)
 
-    @Query("SELECT EXISTS(SELECT 1 FROM messages WHERE thread_id = :threadId AND is_scheduled = 0)")
-    fun hasThreadMessages(threadId: Long): Boolean
-
     @Query("SELECT * FROM messages")
     fun getAll(): List<Message>
 
@@ -99,6 +96,22 @@ interface MessagesDao {
         ORDER BY messages.date DESC LIMIT 1"""
     )
     fun getLatestVisiblePreview(threadId: Long): MessagePreview?
+
+    /**
+     * The date of [threadId]'s newest cached Telephony message, spam and recycled included; null when
+     * none. Scheduled messages are left out: Telephony does not have them yet.
+     */
+    @Query("SELECT MAX(date) FROM messages WHERE thread_id = :threadId AND is_scheduled = 0")
+    fun getThreadLatestDate(threadId: Long): Int?
+
+    /**
+     * True when [threadId] has a Telephony message at [date] that a thread [snippet] can name: an SMS
+     * whose body starts with it (providers may truncate the snippet, or turn a line break into a
+     * space, so whitespace is ignored), or any MMS, whose snippet is a subject or text part that need
+     * not match the cached body.
+     */
+    @Query("SELECT EXISTS(SELECT 1 FROM messages WHERE thread_id = :threadId AND is_scheduled = 0 AND date = :date AND (is_mms = 1 OR instr(replace(replace(replace(replace(body, ' ', ''), char(10), ''), char(13), ''), char(9), ''), replace(replace(replace(replace(:snippet, ' ', ''), char(10), ''), char(13), ''), char(9), '')) = 1))")
+    fun hasMessageForSnippet(threadId: Long, date: Int, snippet: String): Boolean
 
     @Query("SELECT messages.* FROM messages LEFT OUTER JOIN recycle_bin_messages ON messages.id = recycle_bin_messages.id WHERE recycle_bin_messages.id IS NULL AND body LIKE :text")
     fun getMessagesWithText(text: String): List<Message>

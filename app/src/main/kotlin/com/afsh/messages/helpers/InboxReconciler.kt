@@ -17,8 +17,15 @@ import com.afsh.messages.models.Conversation
  */
 object InboxReconciler {
 
+    /**
+     * @param forced the pass [InboxRepository.requestForceReconcile] asked for after this app became
+     * the default SMS app again: Telephony's date, snippet and read state win over Room's (see
+     * [mergeConversationWithCache]), and the inbox shows progress as on the first import, since the
+     * message import that follows may copy many threads.
+     */
     fun reconcile(
         context: Context,
+        forced: Boolean = false,
         onFinished: () -> Unit = {},
         onFailed: () -> Unit = {},
     ) {
@@ -39,14 +46,14 @@ object InboxReconciler {
                     MyContactsContentProvider.getSimpleContacts(app, cursor)
                 }
                 // An empty cache means the first import: the inbox shows how far it has got.
-                val firstImport = allCached.isEmpty()
+                val showProgress = forced || allCached.isEmpty()
                 val conversations = repository.conversations(
                     privateContacts = privateContacts,
                     failOnError = true,
-                    onProgress = if (firstImport) InboxImport::reportConversations else null,
+                    onProgress = if (showProgress) InboxImport::reportConversations else null,
                 )
                 // Hold the bar through Room writes; message indexing continues the same percent.
-                if (firstImport) InboxImport.conversationsDone()
+                if (showProgress) InboxImport.conversationsDone()
                 val cachedIds = allCached.mapTo(HashSet()) { it.threadId }
                 val conversationsById = conversations.associateBy { it.threadId }
                 val conversationsByNumber = conversations.asReversed().associateBy { it.phoneNumber }
@@ -86,7 +93,7 @@ object InboxReconciler {
                             !Conversation.areContentsTheSame(old = cachedConv, new = it)
                         }
                         if (conv != null) {
-                            repository.insertOrUpdate(conv, cachedConv)
+                            repository.insertOrUpdate(conv, cachedConv, trustTelephony = forced)
                         }
                     }
 
@@ -112,5 +119,37 @@ object InboxReconciler {
         }
     }
 
+    /**
+     * The warm-resume pass when Room's thread count already matches Telephony: reads only the newest
+     * [limit] threads, so a new message, a read or a delete made elsewhere refreshes without walking
+     * every thread. Missing rows are inserted; rows the merge with Room (see
+     * [mergeConversationWithCache]) would change are rewritten, in one transaction. Rows that match
+     * are not written, since every write re-runs the inbox query. Archived rows are left alone, as
+     * [reconcile] leaves them. Threads outside the window, and deleted threads, are [reconcile]'s.
+     * Blocks; throws when Telephony can't be read. Returns the number of rows written.
+     */
+    fun syncRecentWindow(context: Context, limit: Int = RECENT_WINDOW): Int =
+        syncRecentWindow(ConversationRepository.from(appContext(context)), limit)
+
+    internal fun syncRecentWindow(repository: ConversationRepository, limit: Int): Int {
+        val drifted = repository.conversations(failOnError = true, limit = limit).mapNotNull { incoming ->
+            val cached = repository.cachedConversation(incoming.threadId)
+            when {
+                cached == null -> incoming to null
+                cached.isArchived -> null
+                Conversation.areContentsTheSame(old = cached, new = mergeConversationWithCache(incoming, cached)) -> null
+                else -> incoming to cached
+            }
+        }
+        if (drifted.isEmpty()) return 0
+        repository.runInTransaction {
+            drifted.forEach { (incoming, cached) -> repository.insertOrUpdate(incoming, cached) }
+        }
+        return drifted.size
+    }
+
     private fun appContext(context: Context) = context.applicationContext
+
+    /** Threads the warm-resume pass reads: more than one screen of the inbox. */
+    private const val RECENT_WINDOW = 20
 }

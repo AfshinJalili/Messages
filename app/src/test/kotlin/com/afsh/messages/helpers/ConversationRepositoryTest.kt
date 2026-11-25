@@ -28,7 +28,6 @@ class ConversationRepositoryTest {
         }
         override fun getAll(): List<Conversation> = rows.values.toList()
         override fun getCount(): Int = rows.size
-        override fun getLatestDate(): Int = rows.values.maxOfOrNull { it.date } ?: 0
         override fun getConversationWithThreadId(threadId: Long): Conversation? = rows[threadId]
         override fun markRead(threadId: Long) = update(threadId) { it.copy(read = true, unreadCount = 0) }
         override fun markUnread(threadId: Long) = update(threadId) { it.copy(read = false) }
@@ -82,6 +81,20 @@ class ConversationRepositoryTest {
         override fun getLatestVisiblePreview(threadId: Long): MessagePreview? =
             messages.values.filter { it.threadId == threadId && !(!it.isMMS && it.id in spam) }
                 .maxByOrNull { it.date }?.let { MessagePreview(it.body, it.date) }
+        override fun getThreadLatestDate(threadId: Long): Int? =
+            messages.values.filter { it.threadId == threadId && !it.isScheduled }.maxOfOrNull { it.date }
+        override fun hasMessageForSnippet(threadId: Long, date: Int, snippet: String): Boolean {
+            val wanted = snippet.filterNot { it in WHITESPACE }
+            return messages.values.any {
+                it.threadId == threadId && !it.isScheduled && it.date == date &&
+                    (it.isMMS || it.body.filterNot { c -> c in WHITESPACE }.startsWith(wanted))
+            }
+        }
+    }
+
+    private companion object {
+        /** What the DAO query strips before comparing: providers may turn a newline into a space. */
+        const val WHITESPACE = " \n\r\t"
     }
 
     private class FakeDraftsDao : DraftsDao by unsupported() {
@@ -101,6 +114,10 @@ class ConversationRepositoryTest {
         var digest = 0 to 0
         var lastUnreadCounts: Map<Long, Int>? = null
         var lastDraftDates: Map<Long, Long>? = null
+        var lastLimit: Int? = null
+        var lastFailOnError: Boolean? = null
+        /** Every read of the threads table fails: an error with failOnError, otherwise no rows. */
+        var unreadableThreads = false
         /** Reading these threads fails: an error with failOnError, otherwise no rows, as the provider does. */
         val unreadable = HashSet<Long>()
 
@@ -113,13 +130,17 @@ class ConversationRepositoryTest {
             draftDates: Map<Long, Long>,
             failOnError: Boolean,
             onProgress: ((done: Int, total: Int) -> Unit)?,
+            limit: Int?,
         ): ArrayList<Conversation> {
             lastUnreadCounts = unreadCounts
             lastDraftDates = draftDates
-            if (threadId in unreadable) {
+            lastLimit = limit
+            lastFailOnError = failOnError
+            if (unreadableThreads || threadId in unreadable) {
                 if (failOnError) throw IllegalStateException("provider") else return ArrayList()
             }
-            return ArrayList(threads.values.filter { threadId == null || it.threadId == threadId })
+            val newestFirst = threads.values.filter { threadId == null || it.threadId == threadId }.sortedByDescending { it.date }
+            return ArrayList(if (limit == null) newestFirst else newestFirst.take(limit))
         }
         override fun threadDigest() = digest
         override fun smsRows(ids: Collection<Long>) = rows.filter { !it.isMms && it.id in ids }
@@ -225,9 +246,17 @@ class ConversationRepositoryTest {
         messages.spam[id] = SpamMessage(id, threadId, reason, markedTS = 0)
     }
 
-    private fun message(id: Long, threadId: Long, scheduled: Boolean = false, date: Int = 0, read: Boolean = false, body: String = "") = Message(
+    private fun message(
+        id: Long,
+        threadId: Long,
+        scheduled: Boolean = false,
+        date: Int = 0,
+        read: Boolean = false,
+        body: String = "",
+        isMms: Boolean = false,
+    ) = Message(
         id = id, body = body, type = 1, status = 0, participants = ArrayList(), date = date, read = read,
-        threadId = threadId, isMMS = false, attachment = null, senderPhoneNumber = "", senderName = "",
+        threadId = threadId, isMMS = isMms, attachment = null, senderPhoneNumber = "", senderName = "",
         senderPhotoUri = "", subscriptionId = 0, isScheduled = scheduled,
     ).also { messages.messages[id] = it }
 
@@ -321,19 +350,107 @@ class ConversationRepositoryTest {
     }
 
     @Test
-    fun `a full reconcile is needed when Room is empty or drifted from Telephony`() {
+    fun `a full reconcile is needed when Room is empty or its thread count drifted from Telephony`() {
         assertTrue(repository.needsFullReconcile())
 
         conversations.insertOrUpdate(conversation(10, date = 100))
         telephony.digest = 1 to 100
         assertFalse(repository.needsFullReconcile())
 
+        // A newer message in a thread Room has is the recent window's, not a full reconcile's.
         telephony.digest = 1 to 101
+        assertFalse(repository.needsFullReconcile())
+
+        telephony.digest = 2 to 101
         assertTrue(repository.needsFullReconcile())
 
         telephony.digest = -1 to -1
         assertTrue(repository.needsFullReconcile())
     }
+
+    // region Recent window (InboxReconciler's policy, run against this file's fakes)
+
+    @Test
+    fun `conversations pass their limit to Telephony`() {
+        telephony.threads[10] = conversation(10, date = 300)
+        telephony.threads[11] = conversation(11, date = 200)
+        telephony.threads[12] = conversation(12, date = 100)
+
+        assertEquals(listOf(10L, 11L), repository.conversations(limit = 2).map { it.threadId })
+        assertEquals(2, telephony.lastLimit)
+
+        repository.conversations()
+        assertNull(telephony.lastLimit)
+    }
+
+    @Test
+    fun `the recent window reads only the newest threads and writes what drifted, in one transaction`() {
+        conversations.insertOrUpdate(conversation(10, date = 300).copy(snippet = "old"))
+        conversations.insertOrUpdate(conversation(11, date = 200))
+        conversations.insertOrUpdate(conversation(12, date = 150, read = true, unread = 0))
+        conversations.insertOrUpdate(conversation(13, date = 50))
+        telephony.threads[10] = conversation(10, date = 300).copy(snippet = "new")
+        telephony.threads[11] = conversation(11, date = 200)
+        telephony.threads[12] = conversation(12, date = 160, read = false, unread = 2)
+        telephony.threads[14] = conversation(14, date = 120)
+        // Outside the window: a drifted old thread is left for the full reconcile.
+        telephony.threads[13] = conversation(13, date = 50).copy(snippet = "drifted")
+
+        val written = InboxReconciler.syncRecentWindow(repository, limit = 4)
+
+        assertEquals(3, written)
+        assertEquals(4, telephony.lastLimit)
+        assertEquals(true, telephony.lastFailOnError)
+        assertEquals(1, effects.transactions)
+        assertEquals("new", conversations.rows.getValue(10).snippet)
+        assertEquals(160, conversations.rows.getValue(12).date)
+        assertEquals(2, conversations.rows.getValue(12).unreadCount)
+        assertFalse(conversations.rows.getValue(12).read)
+        assertEquals(conversation(14, date = 120), conversations.rows.getValue(14))
+        assertEquals("s", conversations.rows.getValue(13).snippet)
+        assertEquals(listOf(10L, 12L, 14L), effects.refreshed.sorted())
+    }
+
+    @Test
+    fun `the recent window writes nothing when Room already matches`() {
+        // Room's preview columns are app-owned and absent from Telephony's row; they are no drift.
+        conversations.insertOrUpdate(conversation(10).copy(previewSnippet = "visible", previewDate = 90))
+        telephony.threads[10] = conversation(10)
+
+        assertEquals(0, InboxReconciler.syncRecentWindow(repository, limit = 20))
+        assertEquals(0, effects.transactions)
+        assertTrue(effects.refreshed.isEmpty())
+        assertEquals("visible", conversations.rows.getValue(10).previewSnippet)
+    }
+
+    @Test
+    fun `the recent window keeps app-owned metadata of the rows it updates`() {
+        conversations.insertOrUpdate(conversation(10, title = "Mom").copy(usesCustomTitle = true, snippet = "old"))
+        telephony.threads[10] = conversation(10).copy(snippet = "new")
+
+        assertEquals(1, InboxReconciler.syncRecentWindow(repository, limit = 20))
+        val row = conversations.rows.getValue(10)
+        assertEquals("new", row.snippet)
+        assertEquals("Mom", row.title)
+        assertTrue(row.usesCustomTitle)
+    }
+
+    @Test
+    fun `the recent window leaves archived rows alone, as the full reconcile does`() {
+        conversations.insertOrUpdate(conversation(10).copy(isArchived = true, snippet = "old"))
+        telephony.threads[10] = conversation(10).copy(snippet = "new")
+
+        assertEquals(0, InboxReconciler.syncRecentWindow(repository, limit = 20))
+        assertEquals("old", conversations.rows.getValue(10).snippet)
+    }
+
+    @Test(expected = IllegalStateException::class)
+    fun `a recent window that cannot read Telephony fails`() {
+        telephony.unreadableThreads = true
+        InboxReconciler.syncRecentWindow(repository, limit = 20)
+    }
+
+    // endregion
 
     @Test
     fun `an SMS thread id comes from Room first, then Telephony`() {
@@ -674,7 +791,7 @@ class ConversationRepositoryTest {
 
     @Test
     fun `the preview shows the latest message that is not spam, dated only when the thread has spam`() {
-        conversations.insertOrUpdate(conversation(8).copy(messageCount = 3))
+        conversations.insertOrUpdate(conversation(8, date = 20).copy(messageCount = 3, snippet = "buy now"))
         message(1, threadId = 8, date = 10, body = "hello")
         message(2, threadId = 8, date = 20, body = "buy now")
         spam(2, threadId = 8)
@@ -689,10 +806,10 @@ class ConversationRepositoryTest {
 
     @Test
     fun `a thread of only spam is all spam, and one without spam keeps its own date`() {
-        conversations.insertOrUpdate(conversation(8).copy(messageCount = 1))
+        conversations.insertOrUpdate(conversation(8, date = 10).copy(messageCount = 1, snippet = "buy now"))
         message(1, threadId = 8, date = 10, body = "buy now")
         spam(1, threadId = 8)
-        conversations.insertOrUpdate(conversation(9).copy(messageCount = 1))
+        conversations.insertOrUpdate(conversation(9, date = 30).copy(messageCount = 1, snippet = "hi"))
         message(3, threadId = 9, date = 30, body = "hi")
 
         repository.refreshPreview(8)
@@ -702,6 +819,85 @@ class ConversationRepositoryTest {
         assertNull(conversations.rows.getValue(8).previewSnippet)
         assertEquals("hi", conversations.rows.getValue(9).previewSnippet)
         assertNull(conversations.rows.getValue(9).previewDate)
+    }
+
+    @Test
+    fun `a thread date newer than every cached message keeps the conversation's own snippet`() {
+        conversations.insertOrUpdate(conversation(8, date = 50).copy(messageCount = 3, previewSnippet = "old"))
+        message(1, threadId = 8, date = 10, body = "hello")
+        message(2, threadId = 8, date = 20, body = "buy now")
+        spam(2, threadId = 8)
+
+        repository.refreshPreview(8)
+
+        val row = conversations.rows.getValue(8)
+        assertNull(row.previewSnippet)
+        assertNull(row.previewDate)
+    }
+
+    @Test
+    fun `a newer cached spam message does not make Room look stale`() {
+        conversations.insertOrUpdate(conversation(8, date = 20).copy(messageCount = 2, snippet = "buy now"))
+        message(1, threadId = 8, date = 10, body = "hello")
+        message(2, threadId = 8, date = 20, body = "buy now")
+        spam(2, threadId = 8)
+
+        repository.refreshPreview(8)
+
+        assertEquals("hello", conversations.rows.getValue(8).previewSnippet)
+    }
+
+    @Test
+    fun `a same-second Telephony message Room has not cached keeps the conversation's own snippet`() {
+        conversations.insertOrUpdate(conversation(8, date = 20).copy(messageCount = 2, snippet = "reply", previewSnippet = "old"))
+        message(1, threadId = 8, date = 20, body = "sent")
+
+        repository.refreshPreview(8)
+
+        assertNull(conversations.rows.getValue(8).previewSnippet)
+    }
+
+    @Test
+    fun `a truncated Telephony snippet still names the cached message`() {
+        conversations.insertOrUpdate(conversation(8, date = 20).copy(messageCount = 2, snippet = "a long"))
+        message(1, threadId = 8, date = 10, body = "hello")
+        message(2, threadId = 8, date = 20, body = "a long message")
+        spam(2, threadId = 8)
+
+        repository.refreshPreview(8)
+
+        assertEquals("hello", conversations.rows.getValue(8).previewSnippet)
+    }
+
+    @Test
+    fun `Room holds the newest message only when it has the one Telephony names`() {
+        message(1, threadId = 8, date = 20, body = "sent")
+        message(2, threadId = 9, date = 30, isMms = true)
+
+        assertFalse(repository.holdsNewestMessage(conversation(7, date = 20)))
+        assertFalse(repository.holdsNewestMessage(conversation(8, date = 21).copy(snippet = "sent")))
+        assertFalse(repository.holdsNewestMessage(conversation(8, date = 20).copy(snippet = "reply")))
+        assertTrue(repository.holdsNewestMessage(conversation(8, date = 20).copy(snippet = "sent")))
+        assertTrue(repository.holdsNewestMessage(conversation(8, date = 19).copy(snippet = "older")))
+        // An MMS snippet is its subject or text part, so any MMS at that second counts.
+        assertTrue(repository.holdsNewestMessage(conversation(9, date = 30).copy(snippet = "photo")))
+    }
+
+    @Test
+    fun `a scheduled message is not a cached Telephony message`() {
+        message(1, threadId = 8, date = 20, body = "old")
+        message(2, threadId = 8, scheduled = true, date = 900, body = "tomorrow")
+        message(3, threadId = 9, scheduled = true, date = 900, body = "tomorrow")
+
+        assertFalse(repository.holdsNewestMessage(conversation(8, date = 25).copy(snippet = "arrived elsewhere")))
+        assertFalse(repository.holdsNewestMessage(conversation(9, date = 25).copy(snippet = "arrived elsewhere")))
+    }
+
+    @Test
+    fun `a snippet whose line breaks the provider turned into spaces still names the cached message`() {
+        message(1, threadId = 8, date = 20, body = "Win\nnow")
+
+        assertTrue(repository.holdsNewestMessage(conversation(8, date = 20).copy(snippet = "Win now")))
     }
 
     @Test

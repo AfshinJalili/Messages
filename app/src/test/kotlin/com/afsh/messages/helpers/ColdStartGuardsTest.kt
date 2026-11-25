@@ -27,6 +27,15 @@ class ColdStartGuardsTest {
     }
 
     @Test
+    fun `a resume reconciles only after the messenger started`() {
+        val text = File(root, "activities/MainActivity.kt").readText()
+        // Before initMessenger, a resume follows a permission prompt: a reconcile then has no contacts.
+        val gated = Regex("""if \(resumedBefore && messengerStarted\) \{[^}]*InboxRepository\.refreshInbox\(this\)""")
+        assertTrue(gated.containsMatchIn(text))
+        assertTrue(Regex("""fun initMessenger\(\) \{\s*messengerStarted = true""").containsMatchIn(text))
+    }
+
+    @Test
     fun `inbox repository exposes dirty-check launch path`() {
         val text = File(root, "helpers/InboxRepository.kt").readText()
         assertTrue(text.contains("fun scheduleLaunchReconcile"))
@@ -34,6 +43,7 @@ class ColdStartGuardsTest {
         val repository = File(root, "helpers/ConversationRepository.kt").readText()
         assertTrue(repository.contains("fun needsFullReconcile"))
         assertTrue(repository.contains("telephony.threadDigest()"))
+        assertTrue(text.contains("InboxReconciler.syncRecentWindow"))
         assertTrue(text.contains("force"))
     }
 
@@ -51,6 +61,20 @@ class ColdStartGuardsTest {
             assertFalse(expanded.contains("FROM messages", ignoreCase = true))
             assertFalse(expanded.contains("spam_messages", ignoreCase = true))
             assertFalse(expanded.contains("recycle_bin_messages", ignoreCase = true))
+        }
+    }
+
+    @Test
+    fun `backup cannot restore a stale cache or import flag`() {
+        val manifest = File("src/main/AndroidManifest.xml").readText()
+        assertTrue(manifest.contains("android:allowBackup=\"false\""))
+        assertTrue(manifest.contains("android:dataExtractionRules=\"@xml/data_extraction_rules\""))
+        val rules = File("src/main/res/xml/data_extraction_rules.xml").readText()
+        listOf("cloud-backup", "device-transfer").forEach { section ->
+            val body = Regex("<$section>(.*?)</$section>", RegexOption.DOT_MATCHES_ALL).find(rules)!!.groupValues[1]
+            listOf("root", "file", "database", "sharedpref", "external").forEach { domain ->
+                assertTrue("$section keeps $domain", body.contains("<exclude domain=\"$domain\" path=\".\" />"))
+            }
         }
     }
 

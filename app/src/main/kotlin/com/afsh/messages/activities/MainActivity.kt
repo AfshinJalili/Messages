@@ -108,6 +108,7 @@ import com.afsh.messages.ui.inbox.InboxRow
 import com.afsh.messages.ui.firstrun.FirstRunEvent
 import com.afsh.messages.ui.firstrun.FirstRunScreen
 import com.afsh.messages.ui.firstrun.FirstRunStep
+import com.afsh.messages.ui.firstrun.firstRunStep
 import com.afsh.messages.ui.inbox.InboxScreen
 import com.afsh.messages.ui.inbox.InboxUiState
 import com.afsh.messages.ui.components.TopDestination
@@ -127,6 +128,9 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
     private var roomSnapshotReceived = false
     private var splashReady = false
     private var resumedBefore = false
+    // Set by initMessenger. Before it, a resume follows a system permission prompt or 32/33: a
+    // reconcile then would run without contact access and write bare numbers as titles.
+    private var messengerStarted = false
     // 73: the last provider refresh failed; cleared by the next one that succeeds.
     private var refreshFailed = false
     private var importProgress: ImportProgress? = null
@@ -250,7 +254,7 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
         checkShortcut()
         // The first resume follows onCreate, whose initMessenger already reconciles and then
         // refreshes the counts; a second full run right behind it only delayed the first screen.
-        if (resumedBefore) {
+        if (resumedBefore && messengerStarted) {
             // Debounced: give ThreadActivity read flushes time to reach Room before reconciling.
             InboxRepository.refreshInbox(this)
         }
@@ -322,7 +326,13 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
     override fun onActivityResult(requestCode: Int, resultCode: Int, resultData: Intent?) {
         super.onActivityResult(requestCode, resultCode, resultData)
         // Declining Android's prompt leaves 32 up, so the person can read why and try again.
-        if (requestCode == MAKE_DEFAULT_APP_REQUEST && isDefaultSmsApp()) firstRun = FirstRunStep.PERMISSIONS
+        if (requestCode == MAKE_DEFAULT_APP_REQUEST && isDefaultSmsApp()) {
+            // DefaultSmsChangedReceiver records this too, but its broadcast can land after a
+            // reconcile has read the flag. The next reconcile from here runs forced.
+            InboxRepository.requestForceReconcile(this)
+            val step = firstRunStep(isDefaultSmsApp = true, smsPermissionsHeld = hasSmsPermissions())
+            if (step == null) askPermissions() else firstRun = step
+        }
     }
 
     /** 32 until the app is the SMS app; 33 while SMS access is missing; otherwise straight to the inbox. */
@@ -332,14 +342,12 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
             finish()
             return
         }
-        firstRun = when {
-            !isDefaultSmsApp() -> FirstRunStep.DEFAULT_APP
-            !hasPermission(PERMISSION_READ_SMS) || !hasPermission(PERMISSION_SEND_SMS) -> FirstRunStep.PERMISSIONS
-            else -> null
-        }
+        firstRun = firstRunStep(isDefaultSmsApp(), hasSmsPermissions())
         if (firstRun != null) splashReady = true
         if (firstRun == null) askPermissions()
     }
+
+    private fun hasSmsPermissions(): Boolean = hasPermission(PERMISSION_READ_SMS) && hasPermission(PERMISSION_SEND_SMS)
 
     private fun isDefaultSmsApp(): Boolean = if (isQPlus()) {
         getSystemService(RoleManager::class.java)?.isRoleHeld(RoleManager.ROLE_SMS) == true
@@ -400,6 +408,7 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
     }
 
     private fun initMessenger() {
+        messengerStarted = true
         // Contacts permission may have just been granted; the inbox's contact cache needs its observer.
         (application as App).watchContacts()
         InboxRepository.setReconcileListener { status ->

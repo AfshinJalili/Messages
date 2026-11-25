@@ -199,6 +199,15 @@ class Config(context: Context) : BaseConfig(context) {
             .putStringSet(IMPORT_HANDLED_THREADS, HashSet(importHandledThreads))
             .apply()
 
+    /**
+     * Telephony changed while another app was the default SMS app, so the next provider reconcile
+     * must skip the dirty-check. Stored rather than held in memory: the broadcast that sets it often
+     * wakes a process that dies before the inbox opens. Owned by [InboxRepository].
+     */
+    var forceReconcilePending: Boolean
+        get() = prefs.getBoolean(FORCE_RECONCILE_PENDING, false)
+        set(forceReconcilePending) = prefs.edit().putBoolean(FORCE_RECONCILE_PENDING, forceReconcilePending).apply()
+
     var keyboardHeight: Int
         get() = prefs.getInt(SOFT_KEYBOARD_HEIGHT, context.getDefaultKeyboardHeight())
         set(keyboardHeight) = prefs.edit().putInt(SOFT_KEYBOARD_HEIGHT, keyboardHeight).apply()

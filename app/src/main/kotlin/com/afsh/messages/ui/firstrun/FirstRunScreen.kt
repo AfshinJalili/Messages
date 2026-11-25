@@ -34,6 +34,16 @@ private val PermissionIconSize = 25.dp
 /** 32, then 33: becoming the SMS app, then the optional permissions. */
 enum class FirstRunStep { DEFAULT_APP, PERMISSIONS }
 
+/**
+ * 32 until the app is the default SMS app; 33 while SMS access is still missing (Android 8 and 9);
+ * null once only the system prompts remain, since Android 10+ grants SMS access with the SMS role.
+ */
+fun firstRunStep(isDefaultSmsApp: Boolean, smsPermissionsHeld: Boolean): FirstRunStep? = when {
+    !isDefaultSmsApp -> FirstRunStep.DEFAULT_APP
+    !smsPermissionsHeld -> FirstRunStep.PERMISSIONS
+    else -> null
+}
+
 sealed interface FirstRunEvent {
     data object BecomeDefault : FirstRunEvent
     data object Continue : FirstRunEvent
