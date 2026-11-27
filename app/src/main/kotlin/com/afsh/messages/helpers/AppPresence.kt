@@ -83,6 +83,14 @@ class AppPresenceTracker(
         }
     }
 
+    /**
+     * Re-resolves presence once the keyguard is gone. After an unlock the conversation resumes while the
+     * keyguard still reports locked, so without this the open thread would stay [AppPresence.Locked].
+     */
+    fun onDeviceUnlocked() {
+        update {}
+    }
+
     private inline fun update(mutation: () -> Unit) {
         val enteredThreadId: Long? = synchronized(lock) {
             mutation()

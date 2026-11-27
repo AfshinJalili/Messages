@@ -3,12 +3,16 @@ package com.afsh.messages.helpers
 import android.app.Activity
 import android.app.Application
 import android.app.KeyguardManager
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.PowerManager
+import androidx.core.content.ContextCompat
 import com.afsh.commons.extensions.appLockManager
 import com.afsh.commons.extensions.notificationManager
 import com.afsh.commons.helpers.ensureBackgroundThread
@@ -216,6 +220,14 @@ object MessagingEvents {
             )
             coordinator = MessagingEventCoordinator(tracker, host)
             application.registerActivityLifecycleCallbacks(PresenceLifecycleCallbacks(tracker))
+            // System UI sends USER_PRESENT, so a not-exported receiver never gets it. It is a protected
+            // broadcast, so other apps cannot send it.
+            ContextCompat.registerReceiver(
+                app,
+                DeviceUnlockReceiver(tracker),
+                IntentFilter(Intent.ACTION_USER_PRESENT),
+                ContextCompat.RECEIVER_EXPORTED,
+            )
             initialized = true
         }
     }
@@ -270,6 +282,15 @@ object MessagingEvents {
         override fun onActivityStarted(activity: Activity) {}
         override fun onActivityStopped(activity: Activity) {}
         override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {}
+    }
+
+    /** No Activity callback fires when the keyguard leaves after the conversation already resumed. */
+    private class DeviceUnlockReceiver(
+        private val tracker: AppPresenceTracker,
+    ) : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            tracker.onDeviceUnlocked()
+        }
     }
 
     private class AndroidMessagingEventHost(private val context: Context) : MessagingEventHost {
