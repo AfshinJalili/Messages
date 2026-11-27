@@ -9,3 +9,4 @@ code:
   - '!.agents/**'
   - '!.github/ISSUE_TEMPLATE/**'
   - '!LICENSE'
+  - '!site/**'

@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>دریافت پیام‌ها برای اندروید</title>
+  <meta name="description" content="آخرین نسخهٔ برنامهٔ پیام‌ها را دریافت کنید و در چند قدم روی گوشی اندروید نصب کنید.">
+  <meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#131314" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="assets/fonts/vazirmatn.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+  <a class="skip" href="#main">رفتن به محتوا</a>
+
+  <header class="topbar">
+    <div class="wrap">
+      <a class="brand" href="./"><img src="favicon.svg" alt="" width="40" height="40">پیام‌ها</a>
+      <nav aria-label="اصلی">
+        <a class="hide-sm" href="./#questions">پرسش‌ها</a>
+        <a class="hide-sm" href="https://github.com/AfshinJalili/Messages">گیت‌هاب</a>
+        <a href="download.html" aria-current="page">دریافت</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main" class="dl">
+    <div class="wrap">
+      <h1>دریافت پیام‌ها</h1>
+      <p class="intro">برنامه از گوگل‌پلی نصب نمی‌شود؛ فایل نصبی را همین‌جا بگیرید. برای به‌روزرسانی هم دوباره به همین صفحه بیایید.</p>
+
+      <p class="status" id="update-status" role="status" hidden>
+        <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-info"/></svg>
+        <span data-status-text></span>
+      </p>
+
+      <section class="get" aria-labelledby="stable-title">
+        <div class="get-head">
+          <img src="favicon.svg" alt="" width="64" height="64">
+          <div>
+            <h2 id="stable-title">پیام‌ها <bdi data-release="stable.version"></bdi></h2>
+            <p data-when-loaded="stable" hidden>منتشرشده در <span data-release="stable.date"></span>، حجم <span data-release="stable.size"></span></p>
+          </div>
+        </div>
+
+        <a class="btn btn-filled btn-large btn-block" data-apk="stable" href="https://github.com/AfshinJalili/Messages/releases/latest">
+          <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-download"/></svg>
+          <span>دریافت فایل نصبی</span>
+        </a>
+
+        <ul class="facts">
+          <li><svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-info"/></svg>اندروید ۸ یا جدیدتر</li>
+          <li><svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-volunteer_activism"/></svg>رایگان، بدون تبلیغ</li>
+          <li><svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-cloud_off"/></svg>بدون دسترسی به اینترنت</li>
+        </ul>
+
+        <div class="links">
+          <a data-notes="stable" href="https://github.com/AfshinJalili/Messages/releases/latest">تغییرات این نسخه <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-open_in_new"/></svg></a>
+          <a href="https://github.com/AfshinJalili/Messages/releases">همهٔ نسخه‌ها <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-open_in_new"/></svg></a>
+        </div>
+
+        <details data-when-loaded="stable" data-needs="sha256" hidden>
+          <summary>اثر انگشت فایل (SHA-256) برای بررسی سلامت</summary>
+          <code data-release="stable.sha256"></code>
+        </details>
+      </section>
+
+      <section class="section" id="install" aria-labelledby="install-title">
+        <div class="section-head">
+          <h2 id="install-title">نصب در چهار قدم</h2>
+          <p>فقط بار اول کمی طول می‌کشد. پیامک‌های قبلی‌تان پاک نمی‌شوند.</p>
+        </div>
+        <ol class="steps">
+          <li class="step">
+            <span class="marker" aria-hidden="true"></span>
+            <div>
+              <h3>فایل را دریافت کنید</h3>
+              <p>دکمهٔ «دریافت فایل نصبی» را بزنید. فایلی با پسوند <bdi>.apk</bdi> در پوشهٔ دانلودها ذخیره می‌شود.</p>
+            </div>
+          </li>
+          <li class="step">
+            <span class="marker" aria-hidden="true"></span>
+            <div>
+              <h3>اجازهٔ نصب بدهید</h3>
+              <p>فایل را باز کنید. اگر اندروید گفت نصب از این منبع مجاز نیست، به «تنظیمات» بروید، گزینهٔ «اجازه از این منبع» را روشن کنید و برگردید.</p>
+            </div>
+          </li>
+          <li class="step">
+            <span class="marker" aria-hidden="true"></span>
+            <div>
+              <h3>نصب را بزنید</h3>
+              <p>اگر Play Protect هشدار داد که برنامه را نمی‌شناسد، «جزئیات بیشتر» و بعد «در هر صورت نصب شود» را بزنید. برنامه در گوگل‌پلی نیست و برای همین ناشناس است.</p>
+            </div>
+          </li>
+          <li class="step">
+            <span class="marker" aria-hidden="true"></span>
+            <div>
+              <h3>برنامهٔ پیامک گوشی‌تان کنید</h3>
+              <p>پیام‌ها را باز کنید و وقتی پرسید، آن را برنامهٔ پیامک پیش‌فرض کنید. همهٔ پیامک‌های قبلی همان‌جا هستند.</p>
+            </div>
+          </li>
+        </ol>
+      </section>
+
+      <section class="nightly" id="nightly" aria-labelledby="nightly-title">
+        <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-schedule"/></svg>
+        <h2 id="nightly-title">نسخهٔ شبانه</h2>
+        <p>برای کسانی که می‌خواهند تغییرات تازه را زودتر امتحان کنند. هر روز از آخرین کد ساخته می‌شود و ممکن است ایراد داشته باشد. کنار نسخهٔ اصلی و جدا از آن نصب می‌شود.</p>
+        <a data-apk="nightly" href="https://github.com/AfshinJalili/Messages/releases">دریافت نسخهٔ شبانه<span data-when-loaded="nightly" hidden> (ساخته‌شده در <span data-release="nightly.date"></span>)</span></a>
+      </section>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap">
+      <span>پیام‌ها، متن‌باز با مجوز <a href="https://github.com/AfshinJalili/Messages/blob/main/LICENSE">GPL-3.0</a></span>
+      <a href="https://github.com/AfshinJalili/Messages">کد در گیت‌هاب</a>
+      <a href="https://github.com/AfshinJalili/Messages/issues">گزارش مشکل</a>
+    </div>
+  </footer>
+
+  <script src="assets/release.js" defer></script>
+</body>
+</html>

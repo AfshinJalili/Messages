@@ -1,0 +1,60 @@
+name: Pages
+
+# Publishes site/ (the Persian landing and download pages) to GitHub Pages.
+# The app's "Check for updates" opens <pages>/download.html?v=<versionName>.
+# release.json is written here, with the workflow token, so visitors never call the
+# GitHub API themselves (60 anonymous requests an hour per IP). The site redeploys after
+# every finished stable or nightly release so the download button always points at the newest APK.
+# Repository setting once: Settings → Pages → Source: GitHub Actions.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'site/**'
+      - 'graphics/icon.svg'
+      - 'tools/site_release_json.sh'
+      - '.github/workflows/pages.yml'
+  workflow_run:
+    workflows: [Release, Release nightly]
+    types: [completed]
+  workflow_dispatch:
+
+# The newest deploy wins; an older one has stale release data anyway.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Write release data and icon
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tools/site_release_json.sh "$GITHUB_REPOSITORY" > site/release.json
+          cat site/release.json
+          cp graphics/icon.svg site/favicon.svg
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -277,7 +277,7 @@ class SettingsController(
             is SettingsEvent.SetRestoreMms -> state.review?.let { state = state.copy(review = it.copy(restoreMms = event.enabled)) }
             SettingsEvent.Restore -> restore()
             SettingsEvent.OpenHelp -> activity.launchViewIntent(HELP_URL)
-            SettingsEvent.CheckForUpdates -> activity.launchViewIntent(RELEASES_URL)
+            SettingsEvent.CheckForUpdates -> activity.launchViewIntent(updatesUrl())
         }
     }
 
@@ -430,6 +430,11 @@ class SettingsController(
         const val JSON = "application/json"
         const val DARK_LUMINANCE = 0.5
         const val HELP_URL = "https://github.com/AfshinJalili/Messages/issues"
-        const val RELEASES_URL = "https://github.com/AfshinJalili/Messages/releases/latest"
+
+        /** The download page compares `v` with the newest release and says whether an update is waiting. */
+        const val DOWNLOAD_URL = "https://afshinjalili.github.io/Messages/download.html"
+
+        fun updatesUrl(): String =
+            Uri.parse(DOWNLOAD_URL).buildUpon().appendQueryParameter("v", BuildConfig.VERSION_NAME).build().toString()
     }
 }
