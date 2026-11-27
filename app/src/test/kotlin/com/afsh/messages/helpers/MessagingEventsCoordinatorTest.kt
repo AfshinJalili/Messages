@@ -171,6 +171,28 @@ class MessagingEventsCoordinatorTest {
     }
 
     @Test
+    fun `unlocking after the conversation resumed under the keyguard clears its notification and stops alerts`() {
+        val threadScreen = Any()
+        // After an unlock, the platform resumes the conversation while the keyguard still reports locked.
+        deviceLockedOrOff = true
+        presence.onConversationActive(threadScreen, threadId = 10L, isRecycleBin = false)
+        assertEquals(AppPresence.Locked, presence.current())
+        assertTrue(host.cancelledNotifications.isEmpty())
+
+        deviceLockedOrOff = false
+        presence.onDeviceUnlocked()
+        assertEquals(listOf(10L), host.cancelledNotifications)
+
+        val event = incoming(threadId = 10L)
+        assertEquals(AttentionDecision.Suppress, coordinator.publish(event))
+        assertTrue(host.incomingAlerts.isEmpty())
+
+        // A repeated unlock broadcast does not cancel again.
+        presence.onDeviceUnlocked()
+        assertEquals(listOf(10L), host.cancelledNotifications)
+    }
+
+    @Test
     fun `tablet split view treats open conversation pane as active beside resumed Inbox`() {
         val inbox = Any()
         val threadA = Any()
