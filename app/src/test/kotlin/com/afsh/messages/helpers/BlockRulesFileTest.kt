@@ -1,6 +1,7 @@
 package com.afsh.messages.helpers
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.ByteArrayInputStream
@@ -37,5 +38,35 @@ class BlockRulesFileTest {
         assertTrue(rules.numbers.isEmpty())
         assertEquals(setOf("winner", "free prize"), rules.phrases)
         assertTrue(rules.allowed.isEmpty())
+    }
+
+    private fun read(text: String) = BlockRulesFile.read(ByteArrayInputStream(text.toByteArray()))
+
+    @Test
+    fun `a rules file saved with a byte order mark still imports`() {
+        val rules = read("\uFEFF{\"version\":1,\"numbers\":[\"555\"],\"phrases\":[\"prize\"]}")
+        assertEquals(setOf("555"), rules.numbers)
+        assertEquals(setOf("prize"), rules.phrases)
+    }
+
+    @Test
+    fun `a message backup is not a rules file and imports nothing`() {
+        val backup = """[{"address":"+989121234567","body":"Hi, ok, see you"}]"""
+        assertThrows(IllegalArgumentException::class.java) { read(backup) }
+    }
+
+    @Test
+    fun `a truncated rules file fails instead of importing its text as phrases`() {
+        assertThrows(IllegalArgumentException::class.java) { read("""{"version":1,"phrases":["prize","""") }
+    }
+
+    @Test
+    fun `entries are trimmed, blanks dropped and phrases kept once ignoring case`() {
+        val rules = read(
+            """{"numbers":[" 555 ",""],"phrases":[""," ","  Prize ","prize","PRIZE","win"],"allowed":["  ","BANK "]}""",
+        )
+        assertEquals(setOf("555"), rules.numbers)
+        assertEquals(setOf("Prize", "win"), rules.phrases)
+        assertEquals(setOf("BANK"), rules.allowed)
     }
 }

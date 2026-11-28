@@ -3,7 +3,6 @@ package com.afsh.messages.activities
 import com.afsh.commons.extensions.openRequestExactAlarmSettings
 import com.afsh.commons.extensions.showErrorToast
 import com.afsh.commons.extensions.toast
-import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.messages.BuildConfig
 import com.afsh.messages.R
 import com.afsh.messages.helpers.MessageSendCoordinator
@@ -30,9 +29,7 @@ internal class ThreadSendHost(private val visit: ThreadVisit) : MessageSendCoord
             visit.threadItems = newItems
             visit.publish(newItems)
             visit.holder.scrollToBottom()
-            if (visit.sender.needsRefresh) {
-                ensureBackgroundThread { visit.loader.reload() }
-            }
+            if (visit.sender.needsRefresh) visit.loader.reload()
         }
     }
 
@@ -44,7 +41,7 @@ internal class ThreadSendHost(private val visit: ThreadVisit) : MessageSendCoord
         visit.holder.clearSchedule()
     }
 
-    override fun retryFailed(message: Message) = visit.holder.retryFailed(message)
+    override fun retryFailed(message: Message) = activity.runOnUiThread { visit.holder.retryFailed(message) }
 
     override fun timeInPast(retryMillis: Long?) {
         activity.toast(R.string.must_pick_time_in_the_future)

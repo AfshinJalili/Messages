@@ -93,7 +93,7 @@ class SmsStatusDeliveredReceiver : SendStatusReceiver() {
             val messageId = messageUri.lastPathSegment?.toLongOrNull() ?: 0L
             ensureBackgroundThread {
                 if (status != Sms.Sent.STATUS_NONE) {
-                    context.messagesDB.updateStatus(messageId, status)
+                    context.messagesDB.updateStatus(messageId, isMms = false, status = status)
                 }
                 val threadId = ConversationRepository.from(context).smsThreadId(messageId)
                 MessagingEvents.publish(MessagingEvent.DeliveryUpdated(threadId = threadId, messageId = messageId))

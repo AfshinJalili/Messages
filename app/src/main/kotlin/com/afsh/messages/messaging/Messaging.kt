@@ -5,7 +5,6 @@ import android.telephony.SmsMessage
 import android.util.Patterns
 import android.widget.Toast.LENGTH_LONG
 import com.klinker.android.send_message.Settings
-import com.afsh.commons.extensions.showErrorToast
 import com.afsh.commons.extensions.toast
 import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.messages.R
@@ -36,8 +35,41 @@ fun Context.isLongMmsMessage(text: String, settings: Settings = getSendMessageSe
     return numPages > settings.sendLongAsMmsAfter && settings.sendLongAsMms
 }
 
-/** Sends the message using the in-app SmsManager API wrappers if it's an SMS or using android-smsmms for MMS. */
+/**
+ * Sends the message using the in-app SmsManager API wrappers if it's an SMS or using android-smsmms for MMS.
+ * A failure shows as a toast (see [sendErrorText]).
+ */
 fun Context.sendMessageCompat(
+    text: String,
+    addresses: List<String>,
+    subId: Int?,
+    attachments: List<Attachment>,
+    messageToResend: Message? = null,
+    forceMms: Boolean = false,
+) {
+    try {
+        sendMessage(text, addresses, subId, attachments, messageToResend, forceMms)
+    } catch (e: Exception) {
+        sendErrorText(e)?.let { toast(it, LENGTH_LONG) }
+    }
+    reportSendMessageUsage(addresses)
+}
+
+/** Ranks the conversation with [addresses] for the share sheet's direct-share targets. */
+fun Context.reportSendMessageUsage(addresses: List<String>) {
+    ensureBackgroundThread {
+        val threadId = getThreadId(addresses.toSet())
+        shortcutHelper.reportSendMessageUsage(threadId)
+    }
+}
+
+/**
+ * Hands the message to the SMS transport, or to android-smsmms for MMS. Throws when it could not be
+ * stored or sent: a [SmsException] for the SMS transport's own failures, the library's exception for MMS,
+ * wrapped in a [StoredSendException] when Telephony holds the whole message all the same. An MMS with
+ * several attachments goes as one MMS each; every part is tried, and the first failure is thrown.
+ */
+fun Context.sendMessage(
     text: String,
     addresses: List<String>,
     subId: Int?,
@@ -59,53 +91,45 @@ fun Context.sendMessageCompat(
             || addresses.size > 1 && settings.group
     if (isMms) {
         // we send all MMS attachments separately to reduces the chances of hitting provider MMS limit.
-        if (attachments.isNotEmpty()) {
-            val lastIndex = attachments.lastIndex
-            if (attachments.size > 1) {
-                for (i in 0 until lastIndex) {
-                    val attachment = attachments[i]
-                    messagingUtils.sendMmsMessage("", addresses, attachment, settings, mmsIdToResend)
-                }
+        // The text goes with the last one. A part that fails does not stop the others. android-smsmms does
+        // not say whether it stored a part before throwing, so an MMS failure is never a StoredSendException.
+        val parts = attachments.ifEmpty { listOf(null) }
+        var failure: Exception? = null
+        parts.forEachIndexed { index, attachment ->
+            try {
+                messagingUtils.sendMmsMessage(if (index == parts.lastIndex) text else "", addresses, attachment, settings, mmsIdToResend)
+            } catch (e: Exception) {
+                if (failure == null) failure = e
             }
-
-            val lastAttachment = attachments[lastIndex]
-            messagingUtils.sendMmsMessage(text, addresses, lastAttachment, settings, mmsIdToResend)
-        } else {
-            messagingUtils.sendMmsMessage(text, addresses, null, settings, mmsIdToResend)
         }
+        failure?.let { throw it }
     } else {
-        try {
-            messagingUtils.sendSmsMessage(
-                text = text,
-                addresses = addresses.toSet(),
-                subId = settings.subscriptionId,
-                requireDeliveryReport = settings.deliveryReports,
-                messageId = smsIdToResend
-            )
-        } catch (e: SmsException) {
-            when (e.errorCode) {
-                EMPTY_DESTINATION_ADDRESS -> toast(
-                    id = R.string.empty_destination_address,
-                    length = LENGTH_LONG
-                )
-
-                ERROR_PERSISTING_MESSAGE -> toast(
-                    id = R.string.unable_to_save_message,
-                    length = LENGTH_LONG
-                )
-
-                ERROR_SENDING_MESSAGE -> toast(
-                    msg = getString(R.string.unknown_error_occurred_sending_message, e.errorCode),
-                    length = LENGTH_LONG
-                )
-            }
-        } catch (e: Exception) {
-            showErrorToast(e)
-        }
+        messagingUtils.sendSmsMessage(
+            text = text,
+            addresses = addresses.toSet(),
+            subId = settings.subscriptionId,
+            requireDeliveryReport = settings.deliveryReports,
+            messageId = smsIdToResend
+        )
     }
-    ensureBackgroundThread {
-        val threadId = getThreadId(addresses.toSet())
-        shortcutHelper.reportSendMessageUsage(threadId)
+}
+
+/**
+ * A send that failed after Telephony stored the whole message: an SMS whose last recipient's copy the
+ * transport refused, marked failed. Telephony shows those rows and owns their retry, so a caller holding
+ * its own copy of the message lets it go. [cause] is why.
+ */
+class StoredSendException(cause: Exception) : Exception(cause)
+
+/** What to tell the person when a send threw [error]; null when there is nothing to tell. */
+fun Context.sendErrorText(error: Exception): String? {
+    val cause = if (error is StoredSendException) error.cause as Exception else error
+    return when {
+        cause !is SmsException -> String.format(getString(com.afsh.commons.R.string.error), cause.toString())
+        cause.errorCode == EMPTY_DESTINATION_ADDRESS -> getString(R.string.empty_destination_address)
+        cause.errorCode == ERROR_PERSISTING_MESSAGE -> getString(R.string.unable_to_save_message)
+        cause.errorCode == ERROR_SENDING_MESSAGE -> getString(R.string.unknown_error_occurred_sending_message, cause.errorCode)
+        else -> null
     }
 }
 

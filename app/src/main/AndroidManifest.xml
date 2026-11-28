@@ -262,47 +262,35 @@
             </intent-filter>
         </receiver>
 
+        <!-- Not exported: android-smsmms reaches these by class name, through our own PendingIntent
+             (MMS sent) or an in-app broadcast (MMS downloaded). It finds them by taskAffinity.
+             tests/check_receiver_exports.py keeps every receiver private unless the system sends to it. -->
         <receiver
             android:name=".receivers.MmsSentReceiver"
-            android:exported="true"
+            android:exported="false"
             android:taskAffinity="com.klinker.android.messaging.MMS_SENT" />
 
         <receiver
             android:name=".receivers.MmsReceiver"
-            android:exported="true"
+            android:exported="false"
             android:taskAffinity="com.klinker.android.messaging.MMS_RECEIVED" />
 
+        <!-- Notification actions: our explicit PendingIntents reach them, other apps cannot. -->
         <receiver
             android:name=".receivers.MarkAsReadReceiver"
-            android:enabled="true"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="com.afsh.messages.action.mark_as_read" />
-            </intent-filter>
-        </receiver>
+            android:exported="false" />
 
         <receiver
             android:name=".receivers.DirectReplyReceiver"
-            android:enabled="true"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="com.afsh.messages.action.reply" />
-            </intent-filter>
-        </receiver>
+            android:exported="false" />
 
         <receiver
             android:name=".receivers.CopyOtpReceiver"
-            android:enabled="true"
             android:exported="false" />
 
         <receiver
             android:name=".receivers.DeleteSmsReceiver"
-            android:enabled="true"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="com.afsh.messages.action.delete" />
-            </intent-filter>
-        </receiver>
+            android:exported="false" />
 
         <!-- Exported so Telephony can deliver it; the action is a protected broadcast, and the
              receiver only records a forced reconcile for the next launch. -->

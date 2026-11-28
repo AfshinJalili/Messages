@@ -2,8 +2,8 @@ package com.afsh.messages.services
 
 import android.app.Service
 import android.content.Intent
-import android.net.Uri
 import com.klinker.android.send_message.Settings
+import com.afsh.messages.helpers.SmsIntentParser
 import com.afsh.messages.messaging.sendMessageCompat
 
 class HeadlessSmsSendService : Service() {
@@ -15,10 +15,11 @@ class HeadlessSmsSendService : Service() {
                 return START_NOT_STICKY
             }
 
-            val number = Uri.decode(intent.dataString!!.removePrefix("sms:").removePrefix("smsto:").removePrefix("mms").removePrefix("mmsto:").trim())
+            val addresses = SmsIntentParser.parseRecipientsFromUri(intent.data).orEmpty()
+                .map { it.trim() }
+                .filter { it.isNotEmpty() }
             val text = intent.getStringExtra(Intent.EXTRA_TEXT)
-            if (!text.isNullOrEmpty()) {
-                val addresses = listOf(number)
+            if (addresses.isNotEmpty() && !text.isNullOrEmpty()) {
                 val subId = Settings.DEFAULT_SUBSCRIPTION_ID
                 sendMessageCompat(text, addresses, subId, emptyList())
             }

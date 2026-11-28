@@ -19,15 +19,17 @@ import java.lang.reflect.Proxy
 
 class ConversationRepositoryTest {
 
-    private class FakeConversationsDao : ConversationsDao by unsupported() {
+    /** [onWrite] runs after every write, as Room's invalidation does. */
+    private class FakeConversationsDao(private val onWrite: () -> Unit = {}) : ConversationsDao by unsupported() {
         val rows = LinkedHashMap<Long, Conversation>()
 
         override fun insertOrUpdate(conversation: Conversation): Long {
             rows[conversation.threadId] = conversation
+            onWrite()
             return conversation.threadId
         }
         override fun getAll(): List<Conversation> = rows.values.toList()
-        override fun getCount(): Int = rows.size
+        override fun getTelephonyThreadCount(): Int = rows.values.count { !it.isScheduled }
         override fun getConversationWithThreadId(threadId: Long): Conversation? = rows[threadId]
         override fun markRead(threadId: Long) = update(threadId) { it.copy(read = true, unreadCount = 0) }
         override fun markUnread(threadId: Long) = update(threadId) { it.copy(read = false) }
@@ -39,17 +41,20 @@ class ConversationRepositoryTest {
         override fun unarchive(threadId: Long) = update(threadId) { it.copy(isArchived = false) }
         override fun deleteThreadId(threadId: Long) {
             rows.remove(threadId)
+            onWrite()
         }
         override fun updatePreview(threadId: Long, snippet: String?, date: Int?, allSpam: Boolean) =
             update(threadId) { it.copy(previewSnippet = snippet, previewDate = date, allSpam = allSpam) }
 
         private fun update(threadId: Long, change: (Conversation) -> Conversation) {
             rows[threadId]?.let { rows[threadId] = change(it) }
+            onWrite()
         }
     }
 
+    /** Room's messages keyed like Room, by id and transport: SMS and MMS ids overlap. */
     private class FakeMessagesDao : MessagesDao by unsupported() {
-        val messages = LinkedHashMap<Long, Message>()
+        val messages = LinkedHashMap<Pair<Long, Boolean>, Message>()
         val spam = LinkedHashMap<Long, SpamMessage>()
 
         override fun getSpamIds(): List<Long> = spam.keys.toList()
@@ -59,12 +64,15 @@ class ConversationRepositoryTest {
         override fun deleteSpamMarker(id: Long) {
             spam.remove(id)
         }
-        override fun getThreadIdForMessage(id: Long): Long? = messages[id]?.threadId
+        override fun insertOrUpdate(message: Message) {
+            messages[message.id to message.isMMS] = message
+        }
+        override fun getThreadIdForMessage(id: Long, isMms: Boolean): Long? = messages[id to isMms]?.threadId
         override fun markRead(id: Long, isMMS: Boolean) {
-            messages[id]?.let { messages[id] = it.copy(read = true) }
+            messages[id to isMMS]?.let { messages[id to isMMS] = it.copy(read = true) }
         }
         override fun markUnread(id: Long, isMMS: Boolean) {
-            messages[id]?.let { messages[id] = it.copy(read = false) }
+            messages[id to isMMS]?.let { messages[id to isMMS] = it.copy(read = false) }
         }
         override fun markThreadRead(threadId: Long) {
             messages.replaceAll { _, m -> if (m.threadId == threadId) m.copy(read = true) else m }
@@ -72,8 +80,8 @@ class ConversationRepositoryTest {
         override fun deleteThreadMessages(threadId: Long) {
             messages.values.removeAll { it.threadId == threadId }
         }
-        override fun delete(id: Long) {
-            messages.remove(id)
+        override fun delete(id: Long, isMms: Boolean) {
+            messages.remove(id to isMms)
         }
         override fun getScheduledThreadMessages(threadId: Long): List<Message> =
             messages.values.filter { it.threadId == threadId && it.isScheduled }
@@ -95,6 +103,8 @@ class ConversationRepositoryTest {
     private companion object {
         /** What the DAO query strips before comparing: providers may turn a newline into a space. */
         const val WHITESPACE = " \n\r\t"
+        /** Telephony.Sms.MESSAGE_TYPE_FAILED. */
+        const val FAILED_TYPE = 5
     }
 
     private class FakeDraftsDao : DraftsDao by unsupported() {
@@ -111,7 +121,7 @@ class ConversationRepositoryTest {
         val archived = HashSet<Long>()
         var archiveAvailable = true
         var touched = 0
-        var digest = 0 to 0
+        var inboxThreadCount = 0
         var lastUnreadCounts: Map<Long, Int>? = null
         var lastDraftDates: Map<Long, Long>? = null
         var lastLimit: Int? = null
@@ -120,6 +130,8 @@ class ConversationRepositoryTest {
         var unreadableThreads = false
         /** Reading these threads fails: an error with failOnError, otherwise no rows, as the provider does. */
         val unreadable = HashSet<Long>()
+        /** Runs once the threads are read: what other writers do while a pass is running. */
+        var afterRead: () -> Unit = {}
 
         override fun unreadSms() = rows.filter { !it.isMms && !it.read && it.incoming }.map { it.id to it.threadId }
         override fun unreadMmsThreadIds() = rows.filter { it.isMms && !it.read && it.incoming }.map { it.threadId }
@@ -140,9 +152,15 @@ class ConversationRepositoryTest {
                 if (failOnError) throw IllegalStateException("provider") else return ArrayList()
             }
             val newestFirst = threads.values.filter { threadId == null || it.threadId == threadId }.sortedByDescending { it.date }
-            return ArrayList(if (limit == null) newestFirst else newestFirst.take(limit))
+            val result = ArrayList(if (limit == null) newestFirst else newestFirst.take(limit))
+            afterRead().also { afterRead = {} }
+            return result
         }
-        override fun threadDigest() = digest
+        override fun inboxThreadCount() = inboxThreadCount
+        /** Telephony's thread per recipient set; asking for a new set creates an empty thread, as Android does. */
+        val threadsByRecipients = HashMap<Set<String>, Long>()
+        private var nextThreadId = 1_000L
+        override fun threadIdFor(addresses: Set<String>): Long = threadsByRecipients.getOrPut(addresses) { nextThreadId++ }
         override fun smsRows(ids: Collection<Long>) = rows.filter { !it.isMms && it.id in ids }
             .map { TelephonySms(it.id, it.threadId, it.address, "body ${it.id}", it.date, it.read) }
         override fun existingSmsIds(ids: Collection<Long>): Set<Long> = rows.filter { !it.isMms && it.id in ids }.mapTo(HashSet()) { it.id }
@@ -175,7 +193,9 @@ class ConversationRepositoryTest {
         }
     }
 
-    private class FakeEffects : ConversationEffects {
+    /** [onCommit] runs when the outermost transaction ends. */
+    private class FakeEffects(private val onCommit: () -> Unit = {}) : ConversationEffects {
+        var depth = 0
         val refreshed = ArrayList<Long>()
         val events = ArrayList<MessagingEvent>()
         val manuallyUnread = HashMap<Long, Pair<Long, Boolean>>()
@@ -186,8 +206,12 @@ class ConversationRepositoryTest {
         val photos = HashMap<String, String>()
         var transactions = 0
 
+        /** Computes a refreshed preview, as the Android effects do; off by default. */
+        var computePreview: (Long) -> Unit = {}
+
         override fun refreshPreview(threadIds: Collection<Long>) {
             refreshed += threadIds
+            threadIds.forEach(computePreview)
         }
         override fun publish(event: MessagingEvent) {
             events += event
@@ -211,15 +235,23 @@ class ConversationRepositoryTest {
         }
         override fun runInTransaction(block: () -> Unit) {
             transactions++
-            block()
+            depth++
+            try {
+                block()
+            } finally {
+                depth--
+            }
+            if (depth == 0) onCommit()
         }
     }
 
-    private val conversations = FakeConversationsDao()
+    /** Room's rows as the inbox saw them: after each commit, a write outside a transaction being one. */
+    private val seen = ArrayList<Map<Long, Conversation>>()
+    private val conversations: FakeConversationsDao = FakeConversationsDao { if (effects.depth == 0) seen += HashMap(conversations.rows) }
     private val messages = FakeMessagesDao()
     private val drafts = FakeDraftsDao()
     private val telephony = FakeTelephony()
-    private val effects = FakeEffects()
+    private val effects: FakeEffects = FakeEffects { seen += HashMap(conversations.rows) }
     private var now = 1_000_000_000L
     private val repository = ConversationRepository(
         conversations = conversations,
@@ -254,11 +286,12 @@ class ConversationRepositoryTest {
         read: Boolean = false,
         body: String = "",
         isMms: Boolean = false,
+        participants: List<String> = emptyList(),
     ) = Message(
-        id = id, body = body, type = 1, status = 0, participants = ArrayList(), date = date, read = read,
+        id = id, body = body, type = 1, status = 0, participants = participants.mapTo(ArrayList()) { contact(it, it) }, date = date, read = read,
         threadId = threadId, isMMS = isMms, attachment = null, senderPhoneNumber = "", senderName = "",
         senderPhotoUri = "", subscriptionId = 0, isScheduled = scheduled,
-    ).also { messages.messages[id] = it }
+    ).also { messages.messages[id to isMms] = it }
 
     // region Unread counts
 
@@ -354,19 +387,264 @@ class ConversationRepositoryTest {
         assertTrue(repository.needsFullReconcile())
 
         conversations.insertOrUpdate(conversation(10, date = 100))
-        telephony.digest = 1 to 100
+        telephony.inboxThreadCount = 1
         assertFalse(repository.needsFullReconcile())
 
-        // A newer message in a thread Room has is the recent window's, not a full reconcile's.
-        telephony.digest = 1 to 101
-        assertFalse(repository.needsFullReconcile())
-
-        telephony.digest = 2 to 101
+        telephony.inboxThreadCount = 2
         assertTrue(repository.needsFullReconcile())
 
-        telephony.digest = -1 to -1
+        telephony.inboxThreadCount = -1
         assertTrue(repository.needsFullReconcile())
     }
+
+    @Test
+    fun `a temporary scheduled thread, which only Room has, is no drift`() {
+        conversations.insertOrUpdate(conversation(10))
+        conversations.insertOrUpdate(conversation(77).copy(isScheduled = true))
+        telephony.inboxThreadCount = 1
+
+        assertFalse(repository.needsFullReconcile())
+    }
+
+    // region Provider passes (InboxReconciler's policy, run against this file's fakes)
+
+    /** A full reconcile: Room is read, then Telephony, then the writes. */
+    private fun fullPass(forced: Boolean = false) {
+        val allCached = repository.cachedConversations()
+        InboxReconciler.storeConversations(repository, allCached, repository.conversations(failOnError = true), forced)
+    }
+
+    @Test
+    fun `a full pass inserts the threads Room lacks and drops those Telephony lost, in one transaction`() {
+        conversations.insertOrUpdate(conversation(10))
+        conversations.insertOrUpdate(conversation(20))
+        telephony.threads[10] = conversation(10)
+        telephony.threads[30] = conversation(30)
+
+        fullPass()
+
+        assertEquals(setOf(10L, 30L), conversations.rows.keys)
+        assertEquals(1, effects.transactions)
+    }
+
+    @Test
+    fun `a full pass rewrites a drifted row and keeps its custom title`() {
+        conversations.insertOrUpdate(conversation(10, title = "Mom").copy(usesCustomTitle = true, snippet = "old"))
+        telephony.threads[10] = conversation(10, date = 200).copy(snippet = "new")
+
+        fullPass()
+
+        val row = conversations.rows.getValue(10)
+        assertEquals("new", row.snippet)
+        assertEquals(200, row.date)
+        assertEquals("Mom", row.title)
+    }
+
+    @Test
+    fun `a full pass leaves archived rows alone`() {
+        conversations.insertOrUpdate(conversation(10).copy(isArchived = true, snippet = "old"))
+        telephony.threads[10] = conversation(10, date = 200).copy(snippet = "new")
+
+        fullPass()
+
+        assertEquals("old", conversations.rows.getValue(10).snippet)
+    }
+
+    /** Temporary scheduled thread [threadId] for [participants], with one message due in an hour. */
+    private fun temporaryThread(threadId: Long, vararg participants: String): Conversation {
+        val row = conversation(threadId, date = (now / 1000).toInt() + 3600).copy(
+            isScheduled = true, snippet = "later", phoneNumber = participants.first(), isGroupConversation = participants.size > 1,
+        )
+        conversations.insertOrUpdate(row)
+        message(threadId, threadId = threadId, scheduled = true, date = row.date, body = "later", participants = participants.toList())
+        return row
+    }
+
+    @Test
+    fun `a temporary thread folds into its real thread, which stays a plain conversation with its own date`() {
+        // Room already matches Telephony, so only the fold writes the real thread.
+        conversations.insertOrUpdate(conversation(10, date = 150).copy(snippet = "sent"))
+        temporaryThread(77, "+110")
+        telephony.threads[10] = conversation(10, date = 150).copy(snippet = "sent")
+        telephony.threadsByRecipients[setOf("+110")] = 10
+
+        fullPass()
+
+        val real = conversations.rows.getValue(10)
+        assertFalse("a real thread is never a scheduled one", real.isScheduled)
+        assertEquals(150, real.date)
+        assertEquals("sent", real.snippet)
+        assertFalse(77L in conversations.rows)
+        assertEquals(10L, messages.messages.getValue(77L to false).threadId)
+    }
+
+    @Test
+    fun `a folded real thread is left alone by the next pass`() {
+        temporaryThread(77, "+110")
+        telephony.threads[10] = conversation(10, date = 150)
+        telephony.threadsByRecipients[setOf("+110")] = 10
+        fullPass()
+        effects.refreshed.clear()
+
+        fullPass()
+
+        assertTrue(effects.refreshed.isEmpty())
+    }
+
+    @Test
+    fun `a real thread an old fold marked scheduled is a plain conversation again after one pass`() {
+        conversations.insertOrUpdate(conversation(10, date = (now / 1000).toInt() + 3600).copy(isScheduled = true, snippet = "later"))
+        message(5, threadId = 10, scheduled = true, date = (now / 1000).toInt() + 3600)
+        telephony.threads[10] = conversation(10, date = 150).copy(snippet = "sent")
+        telephony.inboxThreadCount = 1
+        assertTrue("Room's count leaves the marked row out", repository.needsFullReconcile())
+
+        fullPass()
+
+        val real = conversations.rows.getValue(10)
+        assertFalse(real.isScheduled)
+        assertEquals(150, real.date)
+        assertEquals("sent", real.snippet)
+        assertFalse(repository.needsFullReconcile())
+    }
+
+    @Test
+    fun `a temporary group thread does not fold into a one-to-one thread with its first participant`() {
+        temporaryThread(77, "+110", "+120")
+        telephony.threads[10] = conversation(10, date = 150)
+        telephony.threadsByRecipients[setOf("+110")] = 10
+
+        fullPass()
+
+        assertTrue(77L in conversations.rows)
+        assertFalse(conversations.rows.getValue(10).isScheduled)
+        assertEquals(77L, messages.messages.getValue(77L to false).threadId)
+    }
+
+    @Test
+    fun `a temporary thread keeps a custom title when its real thread has none`() {
+        conversations.insertOrUpdate(temporaryThread(77, "+110").copy(title = "Mom", usesCustomTitle = true))
+        telephony.threads[10] = conversation(10, date = 150)
+        telephony.threadsByRecipients[setOf("+110")] = 10
+
+        fullPass()
+
+        val real = conversations.rows.getValue(10)
+        assertEquals("Mom", real.title)
+        assertTrue(real.usesCustomTitle)
+    }
+
+    // A pass reads Room, then Telephony, then writes. Whatever lands in Room meanwhile is newer than its read.
+
+    @Test
+    fun `a full pass leaves a row written while it ran to that write`() {
+        conversations.insertOrUpdate(conversation(10, date = 100).copy(snippet = "old", messageCount = 5))
+        telephony.threads[10] = conversation(10, date = 150).copy(snippet = "mid", messageCount = 6)
+        val incoming = conversation(10, read = false, unread = 1, date = 200).copy(snippet = "new", messageCount = 7)
+        telephony.afterRead = { conversations.insertOrUpdate(incoming) }
+
+        fullPass()
+
+        assertEquals(incoming, conversations.rows.getValue(10))
+    }
+
+    @Test
+    fun `a full pass stores Telephony's new message over a row whose unread count was synced while it ran`() {
+        conversations.insertOrUpdate(conversation(10, date = 100).copy(snippet = "old", messageCount = 5))
+        telephony.threads[10] = conversation(10, read = false, unread = 1, date = 200).copy(snippet = "new", messageCount = 6)
+        // syncUnreadCounts runs beside the launch reconcile.
+        telephony.afterRead = { conversations.updateUnreadCount(10, 1) }
+
+        fullPass()
+
+        val row = conversations.rows.getValue(10)
+        assertEquals("new", row.snippet)
+        assertEquals(200, row.date)
+        assertEquals(6, row.messageCount)
+        assertEquals(1, row.unreadCount)
+    }
+
+    @Test
+    fun `a full pass does not undo a mark-read made while it ran`() {
+        conversations.insertOrUpdate(conversation(10, read = false, unread = 2))
+        // A renamed contact: the pass has something to write.
+        telephony.threads[10] = conversation(10, read = false, unread = 2, title = "Ali")
+        telephony.afterRead = { repository.markThreadRead(10) }
+
+        fullPass()
+
+        assertTrue(conversations.rows.getValue(10).read)
+        assertEquals(0, conversations.rows.getValue(10).unreadCount)
+    }
+
+    @Test
+    fun `a full pass does not bring back a thread deleted while it ran`() {
+        conversations.insertOrUpdate(conversation(10))
+        telephony.threads[10] = conversation(10, date = 200)
+        telephony.afterRead = { repository.delete(10) }
+
+        fullPass()
+
+        assertFalse(10L in conversations.rows)
+    }
+
+    @Test
+    fun `a forced pass leaves a row written while it ran to that write`() {
+        conversations.insertOrUpdate(conversation(10, date = 100))
+        telephony.threads[10] = conversation(10, date = 150).copy(snippet = "mid")
+        val incoming = conversation(10, read = false, unread = 1, date = 200).copy(snippet = "new")
+        telephony.afterRead = { conversations.insertOrUpdate(incoming) }
+
+        fullPass(forced = true)
+
+        assertEquals(incoming, conversations.rows.getValue(10))
+    }
+
+    @Test
+    fun `a full pass leaves a thread a receiver created while it ran to the receiver`() {
+        telephony.threads[10] = conversation(10, date = 150).copy(snippet = "mid")
+        val incoming = conversation(10, read = false, unread = 1, date = 200).copy(snippet = "new")
+        telephony.afterRead = { conversations.insertOrUpdate(incoming) }
+
+        fullPass()
+
+        assertEquals(incoming, conversations.rows.getValue(10))
+    }
+
+    @Test
+    fun `a full pass keeps a row a receiver wrote while it ran, though Telephony's read lacked the thread`() {
+        // Thread 10 had no messages left when the pass read Telephony; a new one landed in it meanwhile.
+        conversations.insertOrUpdate(conversation(10, date = 100))
+        val incoming = conversation(10, read = false, unread = 1, date = 200).copy(snippet = "new")
+        telephony.afterRead = { conversations.insertOrUpdate(incoming) }
+
+        fullPass()
+
+        assertEquals(incoming, conversations.rows[10L])
+    }
+
+    @Test
+    fun `a full pass writes no row whose merge with Room changes nothing`() {
+        // Room's preview columns and a custom title are app-owned and absent from Telephony's row.
+        conversations.insertOrUpdate(conversation(10, title = "Mom").copy(usesCustomTitle = true, previewSnippet = "visible", previewDate = 90))
+        telephony.threads[10] = conversation(10)
+
+        fullPass()
+
+        assertTrue(effects.refreshed.isEmpty())
+    }
+
+    @Test
+    fun `a full pass keeps a temporary scheduled thread that has no real thread yet`() {
+        conversations.insertOrUpdate(conversation(77).copy(isScheduled = true))
+        message(1, threadId = 77, scheduled = true, date = (now / 1000).toInt() + 3600)
+
+        fullPass()
+
+        assertTrue(77L in conversations.rows)
+    }
+
+    // endregion
 
     // region Recent window (InboxReconciler's policy, run against this file's fakes)
 
@@ -444,6 +722,39 @@ class ConversationRepositoryTest {
         assertEquals("old", conversations.rows.getValue(10).snippet)
     }
 
+    @Test
+    fun `the recent window leaves a row written while it ran to that write`() {
+        conversations.insertOrUpdate(conversation(10, date = 100).copy(snippet = "old", messageCount = 5))
+        telephony.threads[10] = conversation(10, date = 150).copy(snippet = "mid", messageCount = 6)
+        val incoming = conversation(10, read = false, unread = 1, date = 200).copy(snippet = "new", messageCount = 7)
+        telephony.afterRead = { conversations.insertOrUpdate(incoming) }
+
+        assertEquals(0, InboxReconciler.syncRecentWindow(repository, limit = 20))
+        assertEquals(incoming, conversations.rows.getValue(10))
+    }
+
+    @Test
+    fun `the recent window stores Telephony's new message over a row whose unread count was synced while it ran`() {
+        conversations.insertOrUpdate(conversation(10, date = 100).copy(snippet = "old", messageCount = 5))
+        telephony.threads[10] = conversation(10, read = false, unread = 1, date = 200).copy(snippet = "new", messageCount = 6)
+        telephony.afterRead = { conversations.updateUnreadCount(10, 1) }
+
+        assertEquals(1, InboxReconciler.syncRecentWindow(repository, limit = 20))
+        assertEquals("new", conversations.rows.getValue(10).snippet)
+        assertEquals(200, conversations.rows.getValue(10).date)
+    }
+
+    @Test
+    fun `the recent window does not bring back a thread deleted while it ran`() {
+        conversations.insertOrUpdate(conversation(10))
+        telephony.threads[10] = conversation(10, date = 200)
+        telephony.afterRead = { repository.delete(10) }
+
+        InboxReconciler.syncRecentWindow(repository, limit = 20)
+
+        assertFalse(10L in conversations.rows)
+    }
+
     @Test(expected = IllegalStateException::class)
     fun `a recent window that cannot read Telephony fails`() {
         telephony.unreadableThreads = true
@@ -463,6 +774,14 @@ class ConversationRepositoryTest {
         assertNull(repository.smsThreadId(7))
     }
 
+    @Test
+    fun `an SMS thread id is never taken from an MMS that shares its id`() {
+        message(5, threadId = 30, isMms = true)
+        sms(5, threadId = 20, read = true)
+
+        assertEquals(20L, repository.smsThreadId(5))
+    }
+
     // endregion
 
     // region Writing conversations
@@ -475,6 +794,18 @@ class ConversationRepositoryTest {
 
         assertEquals("Mum", conversations.rows.getValue(10).title)
         assertEquals(listOf(10L), effects.refreshed)
+    }
+
+    @Test
+    fun `a new thread of only spam never shows in the inbox, even for a moment`() {
+        message(1, threadId = 10, date = 100)
+        spam(1, threadId = 10)
+        effects.computePreview = repository::refreshPreview
+
+        repository.insertOrUpdate(conversation(10, date = 100).copy(messageCount = 1))
+
+        assertTrue(conversations.rows.getValue(10).allSpam)
+        assertTrue("the inbox hides an all-spam row", seen.all { it[10L]?.allSpam != false })
     }
 
     @Test
@@ -524,7 +855,7 @@ class ConversationRepositoryTest {
         repository.delete(10)
 
         assertEquals(setOf(20L), conversations.rows.keys)
-        assertEquals(setOf(2L), messages.messages.keys)
+        assertEquals(setOf(2L to false), messages.messages.keys)
         assertTrue(telephony.rows.isEmpty())
         assertEquals(listOf(10L), effects.forgotten)
     }
@@ -642,7 +973,7 @@ class ConversationRepositoryTest {
 
         assertEquals(listOf(false, true, false), telephony.rows.map { !it.read })
         assertTrue(conversations.rows.getValue(10).read)
-        assertTrue(messages.messages.getValue(1).read)
+        assertTrue(messages.messages.getValue(1L to false).read)
         assertNull(effects.manuallyUnread[10])
         assertEquals(listOf<MessagingEvent>(MessagingEvent.ReadStateChanged(10, read = true, unreadCount = 0)), effects.events)
     }
@@ -698,7 +1029,7 @@ class ConversationRepositoryTest {
         message(1, threadId = 10)
 
         assertFalse(repository.markMessageRead(1, isMms = false))
-        assertFalse(messages.messages.getValue(1).read)
+        assertFalse(messages.messages.getValue(1L to false).read)
     }
 
     // endregion
@@ -774,6 +1105,18 @@ class ConversationRepositoryTest {
     }
 
     @Test
+    fun `a scheduled message whose send failed stays past its time, and so does its temporary thread`() {
+        conversations.insertOrUpdate(conversation(77).copy(isScheduled = true))
+        val past = ((now - 120_000) / 1000).toInt()
+        messages.messages[5L to false] = message(5, threadId = 77, scheduled = true, date = past).copy(type = FAILED_TYPE)
+
+        repository.clearExpiredScheduledMessages(77)
+
+        assertEquals(setOf(5L to false), messages.messages.keys)
+        assertEquals(setOf(77L), conversations.rows.keys)
+    }
+
+    @Test
     fun `a temporary thread with a future scheduled message stays`() {
         conversations.insertOrUpdate(conversation(77).copy(isScheduled = true))
         val future = ((now + 600_000) / 1000).toInt()
@@ -781,7 +1124,7 @@ class ConversationRepositoryTest {
 
         repository.clearExpiredScheduledMessages(77)
 
-        assertEquals(setOf(5L), messages.messages.keys)
+        assertEquals(setOf(5L to false), messages.messages.keys)
         assertEquals(setOf(77L), conversations.rows.keys)
     }
 

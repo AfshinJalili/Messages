@@ -316,7 +316,7 @@ fun Context.deleteMessage(id: Long, isMMS: Boolean) {
     val selectionArgs = arrayOf(id.toString())
     try {
         contentResolver.delete(uri, selection, selectionArgs)
-        messagesDB.delete(id)
+        messagesDB.delete(id, isMMS)
         if (!isMMS) messagesDB.deleteSpamMarker(id)
     } catch (e: Exception) {
         showErrorToast(e)
@@ -325,7 +325,7 @@ fun Context.deleteMessage(id: Long, isMMS: Boolean) {
 
 fun Context.deleteScheduledMessage(messageId: Long) {
     try {
-        messagesDB.delete(messageId)
+        messagesDB.deleteScheduledMessage(messageId)
     } catch (e: Exception) {
         showErrorToast(e)
     }
@@ -358,12 +358,15 @@ fun Context.getNameFromAddress(address: String, privateCursor: Cursor?): String 
     return sender
 }
 
+/** The system contact of [address], else its private contact, else null; [callback] runs on a background thread. */
 fun Context.getContactFromAddress(address: String, callback: ((contact: SimpleContact?) -> Unit)) {
-    val privateCursor = getMyContactsCursor(false, true)
     SimpleContactsHelper(this).getAvailableContacts(false) {
         val contact = it.firstOrNull { it.doesHavePhoneNumber(address) }
         if (contact == null) {
-            val privateContacts = MyContactsContentProvider.getSimpleContacts(this, privateCursor)
+            // Opened only when needed, and always closed.
+            val privateContacts = getMyContactsCursor(false, true).use { cursor ->
+                MyContactsContentProvider.getSimpleContacts(this, cursor)
+            }
             val privateContact = privateContacts.firstOrNull { it.doesHavePhoneNumber(address) }
             callback(privateContact)
         } else {
@@ -426,7 +429,8 @@ fun Context.rescheduleAllScheduledMessages() {
         return
     }
 
-    scheduledMessages.forEach { message ->
+    // A failed one waits for the person; setting its alarm again would retry it on every app start.
+    scheduledMessages.filterNot { it.isFailedSchedule() }.forEach { message ->
         runCatching { scheduleMessage(message) }
     }
 }

@@ -13,11 +13,11 @@ import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.commons.helpers.isSPlus
 import com.afsh.messages.extensions.config
 import com.afsh.messages.extensions.copy
-import com.afsh.messages.extensions.deleteScheduledMessage
 import com.afsh.messages.extensions.filterNotInByKey
 import com.afsh.messages.extensions.messagesDB
 import com.afsh.messages.extensions.removeDiacriticsIfNeeded
 import com.afsh.messages.extensions.shouldUnarchive
+import com.afsh.messages.messaging.ScheduledMessageSender
 import com.afsh.messages.messaging.cancelScheduleSendPendingIntent
 import com.afsh.messages.messaging.isLongMmsMessage
 import com.afsh.messages.messaging.scheduleMessage
@@ -60,8 +60,11 @@ class MessageSendCoordinator(
         fun canScheduleExactAlarms(): Boolean
         /** Sets the exact alarm that sends [message]; it replaces any alarm for the same id. */
         fun setAlarm(message: Message)
-        /** Deletes a scheduled message and cancels its alarm. */
-        fun dropScheduled(messageId: Long)
+        /**
+         * Cancels scheduled message [messageId]'s alarm and sends it now, on [subscriptionId] or its own SIM (see
+         * [com.afsh.messages.messaging.ScheduledMessageSender.send]). True when it went.
+         */
+        fun sendScheduled(messageId: Long, subscriptionId: Int?): Boolean
         /** Stores temporary conversation [threadId] for the first scheduled [message] (see [ConversationRepository.createScheduledConversation]). */
         fun createScheduledConversation(message: Message, threadId: Long, cached: Conversation?)
         /** Shows a just-scheduled [snippet] on [threadId], dated now (see [ConversationRepository.bumpAfterScheduling]). */
@@ -90,7 +93,7 @@ class MessageSendCoordinator(
         fun sent()
         /** A message was scheduled: clear the composer and its send time. Background thread. */
         fun scheduled()
-        /** A Retry could not send: [message] gets its Retry back. */
+        /** A Retry could not send: [message] gets its Retry back. Any thread. */
         fun retryFailed(message: Message)
         /** The time picked is not in the future; [retryMillis] reopens the time picker at it, when not null. */
         fun timeInPast(retryMillis: Long?)
@@ -146,12 +149,7 @@ class MessageSendCoordinator(
         try {
             refreshedSinceSent = false
             platform.transmit(text, people.addresses, subscriptionId, attachments, resend = null, forceMms = false)
-            background {
-                val threadId = host.threadId
-                val messages = platform.latestMessages(threadId, limit = maxOf(1, attachments.size))
-                    .filterNotInByKey(host.loaded()) { it.getStableId() }
-                messages.forEach(::store)
-            }
+            background { storeSent(attachments.size) }
             host.sent()
         } catch (e: Exception) {
             host.failed(e)
@@ -199,6 +197,8 @@ class MessageSendCoordinator(
                     body = text,
                     date = (millis / 1000).toInt(),
                     attachment = message.attachment?.copy(text = text),
+                    // A schedule whose send failed is queued again.
+                    type = MESSAGE_TYPE_QUEUED,
                 )
                 // The alarm is keyed by the message id, so this replaces the old one.
                 platform.setAlarm(updated)
@@ -211,13 +211,19 @@ class MessageSendCoordinator(
     }
 
     /**
-     * Send now: the scheduled [message] goes as a normal one on its own SIM, with [attachments] (its
-     * attachments, back in the composer), and its schedule is dropped.
+     * Send now, or Retry after its send failed: the scheduled [message] goes at once with its own text and
+     * attachments, on [subscriptionId] or its own SIM; the composer is left alone. Its schedule goes only
+     * once it is on the device, and what went is stored as a message sent now is. Otherwise it stays,
+     * marked failed, and gets its Retry back.
      */
-    fun sendScheduledNow(message: Message, attachments: List<AttachmentSelection>) {
-        sendNow(message.body, attachments.toAttachments(), message.subscriptionId)
+    fun sendScheduledNow(message: Message, subscriptionId: Int? = null) {
+        refreshedSinceSent = false
         background {
-            platform.dropScheduled(message.id)
+            if (platform.sendScheduled(message.id, subscriptionId)) {
+                storeSent(message.attachment?.attachments.orEmpty().size)
+            } else {
+                host.retryFailed(message)
+            }
             host.reload()
         }
     }
@@ -279,6 +285,16 @@ class MessageSendCoordinator(
         }
     }
 
+    /**
+     * Stores the message just sent with [attachments] attachments, one provider row per MMS part, from
+     * the thread's newest provider messages that are not loaded yet. Background thread.
+     */
+    private fun storeSent(attachments: Int) {
+        platform.latestMessages(host.threadId, limit = maxOf(1, attachments))
+            .filterNotInByKey(host.loaded()) { it.getStableId() }
+            .forEach(::store)
+    }
+
     private fun store(message: Message) {
         host.showStored(message)
         platform.persist(message)
@@ -335,9 +351,9 @@ class MessageSendCoordinator(
 
         override fun setAlarm(message: Message) = app.scheduleMessage(message)
 
-        override fun dropScheduled(messageId: Long) {
-            app.deleteScheduledMessage(messageId)
+        override fun sendScheduled(messageId: Long, subscriptionId: Int?): Boolean {
             app.cancelScheduleSendPendingIntent(messageId)
+            return ScheduledMessageSender.from(app).send(messageId, subscriptionId)
         }
 
         override fun createScheduledConversation(message: Message, threadId: Long, cached: Conversation?) =

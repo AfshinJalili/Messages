@@ -44,7 +44,14 @@ internal class ThreadEvents(private val visit: ThreadVisit) : ThreadStateHolder.
             is ThreadEvent.SearchSubmit -> visit.loader.searchNext(event.query)
             is ThreadEvent.Act -> onMessageAction(event.action, event.messages)
             // Until the provider shows it leave the failed state, a second tap would transmit it again.
-            is ThreadEvent.Retry -> if (holder.startRetry(event.message)) visit.sender.resend(event.message, holder.sendSubscriptionId)
+            is ThreadEvent.Retry -> if (holder.startRetry(event.message)) {
+                if (event.message.isScheduled) {
+                    // A scheduled message whose send failed never reached Telephony: it goes now, on the SIM shown.
+                    visit.sender.sendScheduledNow(event.message, holder.sendSubscriptionId)
+                } else {
+                    visit.sender.resend(event.message, holder.sendSubscriptionId)
+                }
+            }
             is ThreadEvent.OpenAttachment -> openAttachment(event.message, event.attachment)
             is ThreadEvent.CopyText -> activity.copyToClipboard(event.text)
             ThreadEvent.JumpToLatest -> {

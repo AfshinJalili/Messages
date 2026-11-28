@@ -111,7 +111,7 @@ class SearchChecks {
         }
 
         messages.insertOrUpdate(searchMessage(81_031, recycledThread, literalBody))
-        messages.insertRecycleBinEntry(RecycleBinMessage(81_031, deletedTS = 1))
+        messages.insertRecycleBinEntry(RecycleBinMessage(81_031, isMMS = false, deletedTS = 1))
         conversations.insertOrUpdate(searchConversation(recycledThread, "Fixture $query recycled"))
         // Recycled-only: no visible preview, so people search must omit the thread.
         conversations.updatePreview(recycledThread, null, null, allSpam = false)
@@ -160,7 +160,7 @@ class SearchChecks {
         conversations.insertOrUpdate(searchConversation(notImported, "Fixture unopened person"))
         conversations.insertOrUpdate(searchConversation(recycledOnly, "Fixture unopened recycled"))
         database.MessagesDao().insertOrUpdate(searchMessage(82_021, recycledOnly, "synthetic body"))
-        database.MessagesDao().insertRecycleBinEntry(RecycleBinMessage(82_021, deletedTS = 1))
+        database.MessagesDao().insertRecycleBinEntry(RecycleBinMessage(82_021, isMMS = false, deletedTS = 1))
 
         val people = runBlocking { SearchRepository(targetContext, database.MessagesDao(), conversations).search("unopened") }
             .filter { it.person }

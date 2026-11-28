@@ -267,16 +267,60 @@ fun String.isPhoneNumber(): Boolean {
     return this.matches("^[0-9+\\-\\)\\( *#]+\$".toRegex())
 }
 
-// if we are comparing phone numbers, compare just the last 9 digits
-fun String.trimToComparableNumber(): String {
-    // don't trim if it's not a phone number
-    if (!this.isPhoneNumber()) {
-        return this
+/**
+ * This as a number to store and compare: Persian and Arabic-Indic digits become ASCII, spaces,
+ * `-()./` and direction marks go, and a leading `00` becomes `+`. What is left is digits, `*`, `#`
+ * and a leading `+`. Null when this is a sender name rather than a number.
+ */
+fun String.canonicalNumber(): String? {
+    val number = StringBuilder(length)
+    for (c in this) {
+        when {
+            c in '0'..'9' || c == '*' || c == '#' || c == '+' -> number.append(c)
+            c in '\u06F0'..'\u06F9' -> number.append('0' + (c - '\u06F0'))
+            c in '\u0660'..'\u0669' -> number.append('0' + (c - '\u0660'))
+            c.isWhitespace() || c in NUMBER_SEPARATORS || c.category == CharCategory.FORMAT -> Unit
+            else -> return null
+        }
     }
-    val normalizedNumber = this.normalizeString()
-    val startIndex = Math.max(0, normalizedNumber.length - 9)
-    return normalizedNumber.substring(startIndex)
+    val canonical = if (number.startsWith("00")) "+" + number.substring(2) else number.toString()
+    return canonical.takeIf { CANONICAL_NUMBER.matches(it) }
 }
+
+private const val NUMBER_SEPARATORS = "-()./"
+private val CANONICAL_NUMBER = Regex("\\+?[0-9*#]*[0-9][0-9*#]*")
+
+/** A number without a country code this short is a short code, which only matches itself. */
+private const val MIN_SUBSCRIBER_DIGITS = 7
+private const val MAX_COUNTRY_CODE_DIGITS = 3
+
+/**
+ * Whether this and [other] are one sender. Names match exactly. Numbers ([canonicalNumber]) match
+ * in full, except that a number written without a country code ("0912…", "912…", "5550183")
+ * matches the same number written with a `+` and one ("+98912…", "+15550183"). Without a `+` the
+ * extra digits may be an area code, so "88123456" is not "03188123456". A longer number whose
+ * last digits spell a shorter one, such as the panel line 50009121234567 and +989121234567, is a
+ * different sender.
+ */
+fun String.isSameNumber(other: String): Boolean {
+    val a = canonicalNumber() ?: return this == other
+    val b = other.canonicalNumber() ?: return false
+    // Without a + a number may be national: drop one trunk 0.
+    fun significant(number: String) = if (number.startsWith('+')) number.drop(1) else number.removePrefix("0")
+    val (short, long) = listOf(a, b).sortedBy { significant(it).length }
+    val shortDigits = significant(short)
+    val longDigits = significant(long)
+    if (shortDigits == longDigits) return true
+    return long.startsWith('+') &&
+        !short.startsWith('+') &&
+        shortDigits.length >= MIN_SUBSCRIBER_DIGITS &&
+        longDigits.length - shortDigits.length <= MAX_COUNTRY_CODE_DIGITS &&
+        longDigits.endsWith(shortDigits)
+}
+
+// A lookup key for a phone number: its last 9 digits, so numbers that differ may share one
+// (isSameNumber decides). Names stay as they are.
+fun String.trimToComparableNumber(): String = canonicalNumber()?.takeLast(9) ?: this
 
 // get the contact names first letter at showing the placeholder without image
 fun String.getNameLetter(): String {

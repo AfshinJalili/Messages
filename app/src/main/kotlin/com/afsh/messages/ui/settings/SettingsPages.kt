@@ -61,6 +61,8 @@ import com.afsh.messages.helpers.FILE_SIZE_NONE
 import com.afsh.messages.helpers.LOCK_SCREEN_NOTHING
 import com.afsh.messages.helpers.LOCK_SCREEN_SENDER
 import com.afsh.messages.helpers.LOCK_SCREEN_SENDER_MESSAGE
+import com.afsh.messages.helpers.lockScreenShowsMessage
+import com.afsh.messages.helpers.lockScreenShowsSender
 import com.afsh.messages.ui.components.Choice
 import com.afsh.messages.ui.components.ChoiceDialog
 import com.afsh.messages.ui.components.ConfirmationDialog
@@ -381,9 +383,9 @@ internal fun NotificationsPage(state: SettingsUiState, onEvent: (SettingsEvent) 
 @Composable
 private fun LockScreenPreview(visibility: Int) {
     val colors = MaterialTheme.colorScheme
-    val sender = stringResource(if (visibility == LOCK_SCREEN_NOTHING) R.string.lock_preview_app else R.string.lock_preview_sender)
+    val sender = stringResource(if (lockScreenShowsSender(visibility)) R.string.lock_preview_sender else R.string.lock_preview_app)
     val body = stringResource(
-        if (visibility == LOCK_SCREEN_SENDER_MESSAGE) R.string.lock_preview_message else R.string.lock_preview_hidden,
+        if (lockScreenShowsMessage(visibility)) R.string.lock_preview_message else R.string.new_message,
     )
     Card(
         Modifier

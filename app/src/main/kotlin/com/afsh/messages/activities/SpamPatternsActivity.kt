@@ -38,8 +38,10 @@ class SpamPatternsActivity : ComposePageActivity() {
     private fun onEvent(event: SpamPatternsEvent) {
         when (event) {
             SpamPatternsEvent.Back -> finish()
-            is SpamPatternsEvent.Save -> update(event.group) { list ->
-                if (event.index == null) list + event.pattern else list.toMutableList().apply { set(event.index, event.pattern) }
+            is SpamPatternsEvent.Save -> if (SpamPatterns.problem(event.pattern) == null) {
+                update(event.group) { list ->
+                    if (event.index == null) list + event.pattern else list.toMutableList().apply { set(event.index, event.pattern) }
+                }
             }
 
             is SpamPatternsEvent.Remove -> update(event.group) { list -> list.filterIndexed { index, _ -> index != event.index } }

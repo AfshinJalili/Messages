@@ -9,8 +9,12 @@ checksum-verified — they are not committed to this repository.
 `must-not-flag.json` is project-authored OTP, bank, and receipt templates
 (including the mandatory `لغو11` line), plus a friend concert invite with no
 link. Every row must not score `BLOCK` (OTP/bank stay `ALLOW`; the invite may
-be `NO_VERDICT`). No invented emoji-ham fixtures — real ham protection is
-`must-not-flag.json` plus PSSC/UCI ham. No private inbox text.
+be `NO_VERDICT`). The last rows are synthetic one-time codes that also carry
+promo words, emojis and links: PSSC masks every digit as `&number`, so only
+these rows show the code exemption working. A row's `sender` only names it in
+a failure: the filter reads the body alone. No invented emoji-ham fixtures —
+real ham protection is `must-not-flag.json` plus PSSC/UCI ham. No private
+inbox text.
 
 ## PSSC v0.3 — Persian SMS Spam Collection
 
@@ -22,6 +26,10 @@ be `NO_VERDICT`). No invented emoji-ham fixtures — real ham protection is
 
 Downloaded from Zenodo on each test run (cached). The test fails clearly if
 the md5 does not match. Do not vendor the SQLite file into the repo.
+
+PSSC masks links (`&link`), emojis (`&emoji`) and digits (`&number`). The test
+writes a link back in place of `&link` on spam and ham alike; the other masks
+stay, so PSSC never exercises promo emojis or one-time codes.
 
 ## UCI SMS Spam Collection v.1
 

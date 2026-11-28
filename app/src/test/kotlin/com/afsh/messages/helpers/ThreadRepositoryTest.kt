@@ -13,6 +13,7 @@ import org.junit.Test
 
 private const val INBOX = 1
 private const val SENT = 2
+private const val FAILED = 5
 private const val NOW = 1_000_000_000L
 
 /** Room and Telephony in memory, for one or more threads. */
@@ -35,6 +36,9 @@ private class FakeThreadPlatform : ThreadRepository.Platform {
     val deleted = ArrayList<Long>()
     val droppedScheduled = ArrayList<Long>()
     val restored = ArrayList<Long>()
+    /** Each bin move and restore with its transport: SMS and MMS ids overlap. */
+    val binnedTransports = ArrayList<Pair<Long, Boolean>>()
+    val restoredTransports = ArrayList<Pair<Long, Boolean>>()
     val temporaryThreads = ArrayList<Pair<Message, Long>>()
     val inboxRefreshes = ArrayList<Long>()
 
@@ -79,11 +83,13 @@ private class FakeThreadPlatform : ThreadRepository.Platform {
     override fun dropScheduled(messageId: Long) {
         droppedScheduled += messageId
     }
-    override fun moveToRecycleBin(messageId: Long) {
+    override fun moveToRecycleBin(messageId: Long, isMms: Boolean) {
         recycleBin += messageId
+        binnedTransports += messageId to isMms
     }
-    override fun restore(messageId: Long) {
+    override fun restore(messageId: Long, isMms: Boolean) {
         restored += messageId
+        restoredTransports += messageId to isMms
     }
     override fun delete(messageId: Long, isMms: Boolean) {
         deleted += messageId
@@ -117,9 +123,10 @@ private fun msg(
     read: Boolean = true,
     scheduled: Boolean = false,
     body: String = "m$id",
+    isMms: Boolean = false,
 ) = Message(
     id = id, body = body, type = type, status = -1, participants = ArrayList(), date = date, read = read, threadId = threadId,
-    isMMS = false, attachment = null, senderPhoneNumber = "", senderName = "", senderPhotoUri = "", subscriptionId = 1,
+    isMMS = isMms, attachment = null, senderPhoneNumber = "", senderName = "", senderPhotoUri = "", subscriptionId = 1,
     isScheduled = scheduled,
 )
 
@@ -433,6 +440,49 @@ class ThreadRepositoryTest {
     }
 
     @Test
+    fun `a failed scheduled message stays in the thread after its time, cached or reloaded`() {
+        val failed = msg(50, date = (NOW / 1000).toInt() - 3600, scheduled = true).copy(type = FAILED)
+        platform.room[50] = failed
+        platform.threadIdForAddresses = 1
+        platform.provider = arrayListOf(msg(1))
+        val repository = repository()
+
+        repository.loadCached()
+        assertEquals(listOf(50L), repository.ids())
+
+        repository.reload(listOf("+1"))
+        assertEquals(listOf(1L, 50L), repository.ids().sorted())
+    }
+
+    @Test
+    fun `a reload leaves a binned message out even when the provider's copy has changed since`() {
+        platform.useRecycleBin = true
+        platform.threadIdForAddresses = 1
+        platform.provider = arrayListOf(msg(1), msg(2, read = true))
+        platform.room[2] = msg(2, read = false)
+        platform.recycleBin += 2
+        val repository = repository()
+        repository.messages.list = arrayListOf(msg(1))
+
+        repository.reload(listOf("+1"))
+
+        assertEquals(listOf(1L), repository.ids())
+    }
+
+    @Test
+    fun `a reload caches a new outgoing MMS whose id is below the newest SMS id`() {
+        platform.threadIdForAddresses = 1
+        val newestSms = msg(9000, type = SENT)
+        platform.provider = arrayListOf(newestSms, msg(120, date = 9001, type = SENT, isMms = true))
+        val repository = repository()
+        repository.messages.list = arrayListOf(newestSms)
+
+        repository.reload(listOf("+1"))
+
+        assertTrue("SMS and MMS ids are separate sequences", 120L in platform.room)
+    }
+
+    @Test
     fun `a scheduled-only thread moves to the real thread once the provider has one`() {
         platform.threadIdForAddresses = 5
         platform.provider = arrayListOf(msg(1, threadId = 5))
@@ -468,6 +518,21 @@ class ThreadRepositoryTest {
         assertEquals(listOf(3L), platform.deleted)
         assertEquals(listOf(4L), repository.ids())
         assertEquals(listOf(1L, 1L, 1L), platform.refreshed)
+    }
+
+    @Test
+    fun `the bin moves and restores each message of its own transport`() {
+        val sms = msg(42)
+        val mms = msg(42, isMms = true)
+        val repository = repository()
+        repository.messages.list = arrayListOf(sms, mms, msg(43))
+
+        repository.delete(listOf(mms), toRecycleBin = true, fromRecycleBin = false, conversation = null)
+        repository.delete(listOf(sms), toRecycleBin = false, fromRecycleBin = true, conversation = null)
+
+        assertEquals(listOf(42L to true), platform.binnedTransports)
+        assertEquals(listOf(42L to false), platform.restoredTransports)
+        assertEquals(listOf(43L), repository.ids())
     }
 
     @Test

@@ -1,14 +1,10 @@
 package com.afsh.messages.helpers
 
-import com.afsh.messages.extensions.getMessagesDB
 import android.content.Context
 import com.afsh.commons.extensions.getMyContactsCursor
 import com.afsh.commons.extensions.showErrorToast
 import com.afsh.commons.helpers.MyContactsContentProvider
 import com.afsh.commons.helpers.ensureBackgroundThread
-import com.afsh.messages.extensions.config
-import com.afsh.messages.extensions.conversationsDB
-import com.afsh.messages.extensions.messagesDB
 import com.afsh.messages.models.Conversation
 
 /**
@@ -34,13 +30,9 @@ object InboxReconciler {
                 val app = context.applicationContext
                 val repository = ConversationRepository.from(app)
                 // Raw rows, including threads the inbox hides as spam. Otherwise hidden threads would be
-                // re-inserted on every run and never removed when Telephony drops them.
-                val allCached = try {
-                    ArrayList(app.conversationsDB.getAll())
-                } catch (_: Exception) {
-                    ArrayList()
-                }
-                val cachedConversations = allCached.filterTo(ArrayList()) { !it.isArchived }
+                // re-inserted on every run and never removed when Telephony drops them. A failed read fails
+                // the pass: an empty cache would look like a first import and match no row.
+                val allCached = repository.cachedConversations()
 
                 val privateContacts = app.getMyContactsCursor(favoritesOnly = false, withPhoneNumbersOnly = true).use { cursor ->
                     MyContactsContentProvider.getSimpleContacts(app, cursor)
@@ -54,55 +46,7 @@ object InboxReconciler {
                 )
                 // Hold the bar through Room writes; message indexing continues the same percent.
                 if (showProgress) InboxImport.conversationsDone()
-                val cachedIds = allCached.mapTo(HashSet()) { it.threadId }
-                val conversationsById = conversations.associateBy { it.threadId }
-                val conversationsByNumber = conversations.asReversed().associateBy { it.phoneNumber }
-
-                // One transaction for every write below, so the inbox re-queries once per reconcile
-                // instead of once per changed row.
-                app.getMessagesDB().runInTransaction {
-                    conversations.forEach { clonedConversation ->
-                        if (cachedIds.add(clonedConversation.threadId)) {
-                            repository.insertOrUpdate(clonedConversation, cached = null)
-                            if (!clonedConversation.isArchived) {
-                                cachedConversations.add(clonedConversation)
-                            }
-                        }
-                    }
-
-                    allCached.forEach { cachedConversation ->
-                        val threadId = cachedConversation.threadId
-                        val isTemporaryThread = cachedConversation.isScheduled
-                        val isConversationDeleted = !conversationsById.containsKey(threadId)
-                        if (isConversationDeleted && !isTemporaryThread) {
-                            repository.removeFromCache(threadId)
-                        }
-
-                        val newConversation = conversationsByNumber[cachedConversation.phoneNumber]
-                        if (isTemporaryThread && newConversation != null) {
-                            repository.removeFromCache(threadId)
-                            app.messagesDB.getScheduledThreadMessages(threadId).forEach { message ->
-                                app.messagesDB.insertOrUpdate(message.copy(threadId = newConversation.threadId))
-                            }
-                            repository.insertOrUpdate(newConversation, cachedConversation)
-                        }
-                    }
-
-                    cachedConversations.forEach { cachedConv ->
-                        val conv = conversationsById[cachedConv.threadId]?.takeIf {
-                            !Conversation.areContentsTheSame(old = cachedConv, new = it)
-                        }
-                        if (conv != null) {
-                            repository.insertOrUpdate(conv, cachedConv, trustTelephony = forced)
-                        }
-                    }
-
-                    // Only temporary scheduled threads can expire; querying every inbox row
-                    // on each reconcile was a free CPU tax after every resume and SMS.
-                    allCached.filter { it.isScheduled }.forEach { conversation ->
-                        repository.clearExpiredScheduledMessages(conversation.threadId)
-                    }
-                }
+                storeConversations(repository, allCached, conversations, forced)
 
                 try {
                     repository.removeOrphanSpamMarkers()
@@ -120,10 +64,54 @@ object InboxReconciler {
     }
 
     /**
+     * The full pass's writes: Telephony's [conversations] against [allCached], Room's rows as the pass read
+     * them before it read Telephony, so what Room got meanwhile stays (see [reconciledRow]). One transaction
+     * for every write, so the inbox re-queries once per reconcile instead of once per changed row.
+     */
+    internal fun storeConversations(
+        repository: ConversationRepository,
+        allCached: List<Conversation>,
+        conversations: List<Conversation>,
+        forced: Boolean,
+    ) {
+        val cachedById = allCached.associateBy { it.threadId }
+        val conversationsById = conversations.associateBy { it.threadId }
+        // A temporary thread folds into Telephony's thread for exactly its participants once that one has
+        // messages; a shared first number is not enough. The lookup is a provider call, so it runs before
+        // the transaction.
+        val folds = allCached.filter { it.isScheduled }.mapNotNull { temporary ->
+            repository.telephonyThreadFor(temporary)
+                ?.takeIf { it != temporary.threadId && it in conversationsById }
+                ?.let { temporary.threadId to it }
+        }
+
+        repository.runInTransaction {
+            conversations.forEach { conversation ->
+                repository.storeSnapshot(conversation, readBefore = cachedById[conversation.threadId], trustTelephony = forced)
+            }
+
+            allCached.forEach { cachedConversation ->
+                if (!cachedConversation.isScheduled && !conversationsById.containsKey(cachedConversation.threadId)) {
+                    repository.removeIfUnchanged(cachedConversation)
+                }
+            }
+
+            // After the real threads are stored, so a carried custom title stays.
+            folds.forEach { (temporaryThreadId, threadId) -> repository.foldScheduled(temporaryThreadId, threadId) }
+
+            // Only temporary scheduled threads can expire; querying every inbox row
+            // on each reconcile was a free CPU tax after every resume and SMS.
+            allCached.filter { it.isScheduled }.forEach { conversation ->
+                repository.clearExpiredScheduledMessages(conversation.threadId)
+            }
+        }
+    }
+
+    /**
      * The warm-resume pass when Room's thread count already matches Telephony: reads only the newest
      * [limit] threads, so a new message, a read or a delete made elsewhere refreshes without walking
-     * every thread. Missing rows are inserted; rows the merge with Room (see
-     * [mergeConversationWithCache]) would change are rewritten, in one transaction. Rows that match
+     * every thread. Missing rows are inserted; rows the merge with Room (see [reconciledRow]) would
+     * change are rewritten, in one transaction, keeping what Room got while the pass ran. Rows that match
      * are not written, since every write re-runs the inbox query. Archived rows are left alone, as
      * [reconcile] leaves them. Threads outside the window, and deleted threads, are [reconcile]'s.
      * Blocks; throws when Telephony can't be read. Returns the number of rows written.
@@ -132,20 +120,17 @@ object InboxReconciler {
         syncRecentWindow(ConversationRepository.from(appContext(context)), limit)
 
     internal fun syncRecentWindow(repository: ConversationRepository, limit: Int): Int {
-        val drifted = repository.conversations(failOnError = true, limit = limit).mapNotNull { incoming ->
-            val cached = repository.cachedConversation(incoming.threadId)
-            when {
-                cached == null -> incoming to null
-                cached.isArchived -> null
-                Conversation.areContentsTheSame(old = cached, new = mergeConversationWithCache(incoming, cached)) -> null
-                else -> incoming to cached
-            }
+        // Room first: a row that changes after this read is newer than what Telephony is about to say.
+        val cached = repository.cachedConversations().associateBy { it.threadId }
+        val drifted = repository.conversations(failOnError = true, limit = limit).filter { incoming ->
+            reconciledRow(incoming, current = cached[incoming.threadId]) != null
         }
         if (drifted.isEmpty()) return 0
+        var written = 0
         repository.runInTransaction {
-            drifted.forEach { (incoming, cached) -> repository.insertOrUpdate(incoming, cached) }
+            drifted.forEach { incoming -> if (repository.storeSnapshot(incoming, readBefore = cached[incoming.threadId])) written++ }
         }
-        return drifted.size
+        return written
     }
 
     private fun appContext(context: Context) = context.applicationContext

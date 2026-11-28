@@ -5,7 +5,6 @@ import androidx.compose.runtime.Immutable
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
-import androidx.room.PrimaryKey
 import com.afsh.commons.models.SimpleContact
 import com.afsh.messages.helpers.THREAD_RECEIVED_MESSAGE
 import com.afsh.messages.helpers.THREAD_SENT_MESSAGE
@@ -15,11 +14,13 @@ import com.afsh.messages.helpers.generateStableId
  * Room entity. Two fields (`senderName`, `subscriptionId`, `isScheduled`) are `var` for Room/helper
  * construction; Compose treats the type as immutable so timeline rows stay skippable while scrolling
  * (callers pass fresh instances from queries, never mutate live state in place).
+ *
+ * SMS and MMS ids are separate Telephony sequences that overlap, so a row is keyed by id and transport.
  */
 @Immutable
-@Entity(tableName = "messages", indices = [Index(value = ["thread_id", "date"])])
+@Entity(tableName = "messages", primaryKeys = ["id", "is_mms"], indices = [Index(value = ["thread_id", "date"])])
 data class Message(
-    @PrimaryKey val id: Long,
+    @ColumnInfo(name = "id") val id: Long,
     @ColumnInfo(name = "body") val body: String,
     @ColumnInfo(name = "type") val type: Int,
     @ColumnInfo(name = "status") val status: Int,
@@ -39,6 +40,18 @@ data class Message(
     fun isReceivedMessage() = type == Telephony.Sms.MESSAGE_TYPE_INBOX
 
     fun millis() = date * 1000L
+
+    /**
+     * A scheduled message due before [millis]. Its alarm has fired by then, so a thread no longer shows
+     * it, and once it is overdue it is dropped. A failed one is not due: it waits for the person.
+     */
+    fun isDueBefore(millis: Long) = isScheduled && !isFailedSchedule() && millis() < millis
+
+    /**
+     * A scheduled message that never reached the device when its alarm fired. It stays in its thread,
+     * past its time, for the person to send now, edit or delete, and its alarm is not set again.
+     */
+    fun isFailedSchedule() = isScheduled && type == Telephony.Sms.MESSAGE_TYPE_FAILED
 
     fun getSender(): SimpleContact? =
         participants.firstOrNull { it.doesHavePhoneNumber(senderPhoneNumber) }

@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.provider.Telephony
+import android.util.Log
 import com.afsh.commons.extensions.getMyContactsCursor
 import com.afsh.commons.helpers.SimpleContactsHelper
 import com.afsh.commons.helpers.ensureBackgroundThread
@@ -30,17 +31,22 @@ class SmsReceiver : BroadcastReceiver() {
 
         ensureBackgroundThread {
             try {
-                val parts = Telephony.Sms.Intents.getMessagesFromIntent(intent)
+                // A part the platform couldn't parse comes back null. Storing the readable rest beats losing it all.
+                val decoded = Telephony.Sms.Intents.getMessagesFromIntent(intent).orEmpty()
+                val parts = decoded.filterNotNull()
+                if (parts.size < decoded.size) {
+                    Log.w(TAG, "${decoded.size - parts.size} of ${decoded.size} parts of an incoming SMS couldn't be read")
+                }
                 if (parts.isEmpty()) return@ensureBackgroundThread
 
-                val address = parts.last().originatingAddress.orEmpty()
-                if (address.isBlank()) return@ensureBackgroundThread
+                // Stored under the localized "Unknown" rather than dropped, as the AOSP Mms app did.
+                val address = parts.last().originatingAddress?.takeIf { it.isNotBlank() }
+                    ?: appContext.getString(com.afsh.commons.R.string.unknown)
                 val subject = parts.last().pseudoSubject.orEmpty()
                 val status = parts.last().status
                 val body = buildString { parts.forEach { append(it.messageBody.orEmpty()) } }
                 val date = System.currentTimeMillis()
 
-                val spamReason = IncomingSpamClassifier.silenceReason(appContext, address, body)
                 val threadId = appContext.getThreadId(address)
                 val subscriptionId = intent.getIntExtra("subscription", -1)
 
@@ -53,7 +59,6 @@ class SmsReceiver : BroadcastReceiver() {
                     threadId = threadId,
                     subscriptionId = subscriptionId,
                     status = status,
-                    spamReason = spamReason,
                 )
             } finally {
                 pending.finish()
@@ -72,10 +77,8 @@ class SmsReceiver : BroadcastReceiver() {
         type: Int = Telephony.Sms.MESSAGE_TYPE_INBOX,
         subscriptionId: Int,
         status: Int,
-        spamReason: Int?,
     ) {
-        val photoUri = SimpleContactsHelper(context).getPhotoUriFromPhoneNumber(address)
-
+        // Stored first, so a lookup or write below that fails can't lose the message.
         val newMessageId = context.insertNewSMS(
             address = address,
             subject = subject,
@@ -86,11 +89,19 @@ class SmsReceiver : BroadcastReceiver() {
             type = type,
             subscriptionId = subscriptionId
         )
+        if (newMessageId == 0L) {
+            // Telephony refused the row (a full disk, say). A Room row or an alert would point at nothing.
+            Log.e(TAG, "Couldn't store an incoming SMS in Telephony")
+            return
+        }
 
+        val spamReason = IncomingSpamClassifier.silenceReason(context, address, body)
         // Marked before the conversation row is written, so a spam-only thread never shows in the inbox.
-        if (spamReason != null && newMessageId != 0L) {
+        if (spamReason != null) {
             context.messagesDB.insertSpamMarker(SpamMessage(id = newMessageId, threadId = threadId, reason = spamReason))
         }
+
+        val photoUri = SimpleContactsHelper(context).getPhotoUriFromPhoneNumber(address)
 
         val conversations = ConversationRepository.from(context)
         conversations.conversation(threadId)?.let { conv ->
@@ -149,5 +160,9 @@ class SmsReceiver : BroadcastReceiver() {
                 photoUri = photoUri,
             )
         )
+    }
+
+    companion object {
+        private const val TAG = "SmsReceiver"
     }
 }

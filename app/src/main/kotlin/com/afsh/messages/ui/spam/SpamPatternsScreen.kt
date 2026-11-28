@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -35,12 +34,12 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.afsh.messages.R
 import com.afsh.messages.helpers.FilterResult
 import com.afsh.messages.helpers.FilterRule
 import com.afsh.messages.helpers.FilterVerdict
+import com.afsh.messages.helpers.PatternProblem
 import com.afsh.messages.helpers.RuleBasedFilter
 import com.afsh.messages.helpers.SpamPatternGroup
 import com.afsh.messages.helpers.SpamPatterns
@@ -180,13 +179,20 @@ fun SpamPatternsScreen(
         }
     }
     editing?.let { current ->
+        val matchesEmpty = stringResource(R.string.spam_patterns_matches_empty)
         TextInputDialog(
             title = stringResource(if (current.index == null) R.string.spam_patterns_add else R.string.spam_patterns_edit),
             current = current.current,
             explanation = stringResource(R.string.spam_patterns_regex_hint),
             confirmLabel = stringResource(R.string.spam_patterns_save),
             dismissLabel = stringResource(com.afsh.commons.R.string.cancel),
-            error = { SpamPatterns.error(it) },
+            error = {
+                when (val problem = SpamPatterns.problem(it)) {
+                    is PatternProblem.Invalid -> problem.reason
+                    PatternProblem.MatchesEmpty -> matchesEmpty
+                    null -> null
+                }
+            },
             onSave = {
                 editing = null
                 onEvent(SpamPatternsEvent.Save(current.group, current.index, it))
@@ -227,7 +233,6 @@ fun SpamPatternsScreen(
 @Composable
 private fun TryMessage(patterns: SpamPatterns) {
     var body by rememberSaveable { mutableStateOf("") }
-    var sender by rememberSaveable { mutableStateOf("") }
     val colors = MaterialTheme.colorScheme
     Column(verticalArrangement = Arrangement.spacedBy(Afsh.spacing.sm)) {
         SectionHeading(stringResource(R.string.spam_patterns_try))
@@ -238,15 +243,8 @@ private fun TryMessage(patterns: SpamPatterns) {
             singleLine = false,
             textStyle = MaterialTheme.typography.bodyLarge,
         )
-        TextFieldSlab(
-            value = sender,
-            onValueChange = { sender = it },
-            placeholder = stringResource(R.string.spam_patterns_try_sender),
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-            textStyle = MaterialTheme.typography.bodyLarge,
-        )
         if (body.isNotBlank()) {
-            val result = remember(patterns, sender, body) { RuleBasedFilter.explain(patterns, sender, body) }
+            val result = remember(patterns, body) { RuleBasedFilter.explain(patterns, body) }
             val highlight = SpanStyle(
                 background = if (result.verdict == FilterVerdict.ALLOW) colors.secondaryContainer else colors.errorContainer,
                 color = if (result.verdict == FilterVerdict.ALLOW) colors.onSecondaryContainer else colors.onErrorContainer,

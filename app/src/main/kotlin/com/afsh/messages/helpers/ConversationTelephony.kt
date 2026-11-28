@@ -24,6 +24,7 @@ import com.afsh.commons.models.SimpleContact
 import com.afsh.messages.extensions.config
 import com.afsh.messages.extensions.getNameAndPhotoFromPhoneNumber
 import com.afsh.messages.extensions.getPhoneNumberFromAddressId
+import com.afsh.messages.extensions.getThreadId
 import com.afsh.messages.extensions.queryCursorUnsafe
 import com.afsh.messages.models.Conversation
 
@@ -51,8 +52,9 @@ interface ConversationTelephony {
 
     /**
      * Every thread with messages ([threadId] only, when given), newest first, or the newest [limit]
-     * of them. Threads with a blocked participant are left out. [unreadCounts] gives each row its
-     * unread count, and [draftDates] (milliseconds) replaces the date of a thread with a draft.
+     * of them. Threads without participants or with a blocked one are left out (see [inboxShows]).
+     * [unreadCounts] gives each row its unread count, and [draftDates] (milliseconds) dates a thread whose
+     * draft is newer than its last message (see [threadDate]).
      */
     fun conversations(
         threadId: Long?,
@@ -64,8 +66,14 @@ interface ConversationTelephony {
         limit: Int?,
     ): ArrayList<Conversation>
 
-    /** Thread count and latest thread date (seconds); `-1 to -1` when the provider can't be read. */
-    fun threadDigest(): Pair<Int, Int>
+    /** How many threads [conversations] keeps when it reads them all; -1 when the provider can't be read. */
+    fun inboxThreadCount(): Int
+
+    /**
+     * The thread of exactly [addresses], as Android files a message sent to them; 0 when the provider
+     * can't say. Android creates an empty thread when there is none yet.
+     */
+    fun threadIdFor(addresses: Set<String>): Long
 
     /** The SMS among [ids] that still exist. */
     fun smsRows(ids: Collection<Long>): List<TelephonySms>
@@ -139,7 +147,6 @@ class TelephonyConversations(context: Context) : ConversationTelephony {
         val config = context.config
         val archiveAvailable = config.isArchiveAvailable
 
-        val uri = "${Threads.CONTENT_URI}?simple=true".toUri()
         val projection = mutableListOf(
             Threads._ID,
             Threads.SNIPPET,
@@ -153,7 +160,7 @@ class TelephonyConversations(context: Context) : ConversationTelephony {
             projection += Threads.ARCHIVED
         }
 
-        var selection = "${Threads.MESSAGE_COUNT} > 0"
+        var selection = THREADS_WITH_MESSAGES
         var selectionArgs = arrayOf<String>()
         if (threadId != null) {
             selection += " AND ${Threads._ID} = ?"
@@ -161,12 +168,12 @@ class TelephonyConversations(context: Context) : ConversationTelephony {
         }
 
         val lookups = ThreadLookups(context, privateContacts, preload = threadId == null)
-        val blockedNumbers = context.getBlockedNumbers()
+        val blocked = blockedTest()
         val telephony = TelephonyReader(context)
         fun read(sortOrder: String): ArrayList<Conversation> {
             val conversations = ArrayList<Conversation>()
             resolver.queryCursorUnsafe(
-                uri,
+                THREADS_URI,
                 projection.toTypedArray(),
                 selection,
                 selectionArgs,
@@ -181,24 +188,11 @@ class TelephonyConversations(context: Context) : ConversationTelephony {
                     snippet = telephony.getThreadSnippet(id)
                 }
 
-                var date = cursor.getLongValue(Threads.DATE)
-                if (date.toString().length > 10) {
-                    date /= 1000
-                }
+                val date = threadDate(cursor.getLongValue(Threads.DATE), draftDates[id])
 
-                // drafts are stored locally they take priority over the original date
-                val draftDate = draftDates[id]
-                if (draftDate != null) {
-                    date = draftDate / 1000
-                }
-
-                val rawIds = cursor.getStringValue(Threads.RECIPIENT_IDS)
-                val recipientIds =
-                    rawIds.split(" ").filter { it.areDigitsOnly() }.map { it.toInt() }.toMutableList()
-                val phoneNumbers = recipientIds.mapTo(ArrayList()) { lookups.address(it) }
-                if (phoneNumbers.isEmpty() || phoneNumbers.any { context.isNumberBlocked(it, blockedNumbers) }) {
-                    return@queryCursorUnsafe
-                }
+                val recipientIds = recipientIds(cursor.getStringValue(Threads.RECIPIENT_IDS))
+                if (!inboxShows(recipientIds, lookups::address, blocked)) return@queryCursorUnsafe
+                val phoneNumbers = recipientIds.map(lookups::address)
 
                 val names = phoneNumbers.map { lookups.name(it) }
                 val title = TextUtils.join(", ", names.toTypedArray())
@@ -250,7 +244,21 @@ class TelephonyConversations(context: Context) : ConversationTelephony {
         return conversations
     }
 
-    override fun threadDigest(): Pair<Int, Int> = TelephonyReader(context).threadDigest()
+    override fun inboxThreadCount(): Int {
+        val lookups = ThreadLookups(context, privateContacts = emptyList(), preload = true)
+        val blocked = blockedTest()
+        var count = 0
+        return try {
+            resolver.queryCursorUnsafe(THREADS_URI, arrayOf(Threads.RECIPIENT_IDS), THREADS_WITH_MESSAGES, emptyArray(), null) { cursor ->
+                if (inboxShows(recipientIds(cursor.getStringValue(Threads.RECIPIENT_IDS)), lookups::address, blocked)) count++
+            }
+            count
+        } catch (_: Exception) {
+            -1
+        }
+    }
+
+    override fun threadIdFor(addresses: Set<String>): Long = context.getThreadId(addresses)
 
     override fun smsRows(ids: Collection<Long>): List<TelephonySms> {
         val rows = ArrayList<TelephonySms>()
@@ -397,10 +405,43 @@ class TelephonyConversations(context: Context) : ConversationTelephony {
 
     private fun notIn(ids: Collection<Long>): String =
         if (ids.isEmpty()) "" else " AND ${Sms._ID} NOT IN (${ids.joinToString()})"
+
+    /** Whether a number is blocked, or null when nothing is. Reads the block list once per call. */
+    private fun blockedTest(): ((String) -> Boolean)? {
+        val blockedNumbers = context.getBlockedNumbers()
+        return if (blockedNumbers.isEmpty()) null else { number -> context.isNumberBlocked(number, blockedNumbers) }
+    }
+
+    private companion object {
+        val THREADS_URI: Uri = "${Threads.CONTENT_URI}?simple=true".toUri()
+        const val THREADS_WITH_MESSAGES = "${Threads.MESSAGE_COUNT} > 0"
+    }
 }
 
 /**
- * Per-call caches for [TelephonyConversations.conversations]. Each thread used to cost one
+ * A thread's date in seconds: Telephony's [providerDate] (seconds, or milliseconds on some providers), or
+ * its draft's [draftMillis] when that is later. A fresh draft lifts the thread; an old one must not sink it
+ * below its newest message.
+ */
+internal fun threadDate(providerDate: Long, draftMillis: Long?): Long {
+    val date = if (providerDate.toString().length > 10) providerDate / 1000 else providerDate
+    return if (draftMillis == null) date else maxOf(date, draftMillis / 1000)
+}
+
+/** The canonical address ids of a thread, from the threads table's space-separated list. */
+internal fun recipientIds(raw: String?): List<Int> =
+    raw.orEmpty().split(" ").filter { it.areDigitsOnly() }.map { it.toInt() }
+
+/**
+ * Whether the inbox shows a thread with [recipientIds]: it needs one, and none may be [blocked]
+ * ([address] resolves an id). With [blocked] null nothing is blocked, and no address is resolved.
+ */
+internal fun inboxShows(recipientIds: List<Int>, address: (Int) -> String, blocked: ((String) -> Boolean)?): Boolean =
+    recipientIds.isNotEmpty() && (blocked == null || recipientIds.none { blocked(address(it)) })
+
+/**
+ * Per-call caches for reading the threads table ([TelephonyConversations.conversations],
+ * [TelephonyConversations.inboxThreadCount]). Each thread used to cost one
  * canonical-address query per recipient plus two contact lookups, so a first import of a few hundred
  * threads took half a minute. Addresses now come from one query, and names and photos come from
  * [MessagingCache.namePhoto], which outlives the call, so a later dirty-check reconcile does not look
@@ -411,11 +452,13 @@ private class ThreadLookups(
     private val privateContacts: List<SimpleContact>,
     preload: Boolean,
 ) {
-    private val addresses: Map<Int, String>? = if (preload) loadAddresses() else null
+    // Read on first use: counting threads with nothing blocked needs no address.
+    private val addresses: Map<Int, String>? by lazy { if (preload) loadAddresses() else null }
+    private val queried = HashMap<Int, String>()
     private val contacts = HashMap<String, Pair<String, String>>()
     private val canReadContacts = context.hasPermission(PERMISSION_READ_CONTACTS)
 
-    fun address(id: Int): String = addresses?.get(id) ?: context.getPhoneNumberFromAddressId(id)
+    fun address(id: Int): String = addresses?.get(id) ?: queried.getOrPut(id) { context.getPhoneNumberFromAddressId(id) }
 
     /** The system contact, then a private contact, then the number. */
     fun name(number: String): String {

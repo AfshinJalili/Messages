@@ -1,6 +1,7 @@
 package com.afsh.messages.helpers
 
 import android.content.Context
+import android.provider.Telephony.Mms
 import android.provider.Telephony.Sms
 import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.messages.extensions.config
@@ -8,7 +9,6 @@ import com.afsh.messages.extensions.getMessagesDB
 import com.afsh.messages.extensions.getThreadId
 import com.afsh.messages.extensions.insertNewSMS
 import com.afsh.messages.extensions.messagesDB
-import com.afsh.messages.models.Message
 import com.afsh.messages.models.SpamMessage
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.abs
@@ -25,7 +25,23 @@ object SpamBackfill {
     // Two overlapping runs could both miss a match and insert the same SMS twice.
     private val running = AtomicBoolean(false)
 
-    private class Row(val id: Long, val address: String, val body: String, val date: Long, val reason: Int)
+    /** A legacy `blocked_messages` copy. */
+    internal class Row(val id: Long, val address: String, val body: String, val date: Long, val reason: Int)
+
+    /** A Telephony message a legacy copy was made from. */
+    internal data class Stored(val id: Long, val isMms: Boolean)
+
+    /** What moving a row needs from Android: settings, Telephony and the spam markers. */
+    internal interface Platform {
+        fun isAllowed(address: String): Boolean
+        /** The Telephony thread for [address], or 0 when it can't be had. */
+        fun threadId(address: String): Long
+        /** The message [row] was copied from: same thread and body, received within a minute. */
+        fun findStored(threadId: Long, row: Row): Stored?
+        /** Inserts [row] as an incoming SMS; its id, or 0 when the insert failed. */
+        fun insertSms(threadId: Long, row: Row): Long
+        fun markSpam(smsId: Long, threadId: Long, reason: Int)
+    }
 
     fun run(context: Context) {
         if (!running.compareAndSet(false, true)) return
@@ -48,10 +64,11 @@ object SpamBackfill {
                 if (cursor.moveToNext()) Row(cursor.getLong(0), cursor.getString(1), cursor.getString(2), cursor.getLong(3), cursor.getInt(4)) else null
             }.toList()
         }
+        val platform = AndroidPlatform(app)
         var failed = false
         rows.forEach { row ->
             val moved = try {
-                app.moveRow(row)
+                move(row, platform)
             } catch (_: Exception) {
                 false
             }
@@ -67,15 +84,43 @@ object SpamBackfill {
         }
     }
 
-    private fun Context.moveRow(row: Row): Boolean {
-        // The user already said this sender is not spam.
-        if (config.allowedNumbers.containsNumber(row.address)) return true
-        val threadId = getThreadId(row.address)
+    /**
+     * Puts [row] on Telephony with a spam marker, or without one when the user has since said the
+     * sender is not spam. False leaves the row for the next launch.
+     */
+    internal fun move(row: Row, platform: Platform): Boolean {
+        val threadId = platform.threadId(row.address)
         if (threadId == 0L) return false
-        val match = findStoredMessage(threadId, row.body, row.date)
+        val match = platform.findStored(threadId, row)
         // MMS copies came from MmsReceiver; the MMS itself is in Telephony and markers are SMS-only.
-        if (match?.isMMS == true) return true
-        val smsId = match?.id ?: insertNewSMS(
+        if (match?.isMms == true) return true
+        val smsId = match?.id ?: platform.insertSms(threadId, row)
+        if (smsId == 0L) return false
+        if (!platform.isAllowed(row.address)) platform.markSpam(smsId, threadId, row.reason)
+        return true
+    }
+
+    /**
+     * The Telephony message a legacy copy was made from: same thread and body, received within a
+     * minute. Every copy here came from a sender someone blocked, so the lookup must not drop
+     * blocked senders the way a conversation's message list does. A sent SMS with the same words
+     * is not it, or the user's own reply would go to Spam.
+     */
+    internal fun findStored(context: Context, threadId: Long, body: String, date: Long): Stored? {
+        val reader = TelephonyReader(context)
+        reader.findReceivedSmsId(threadId, body, date - MATCH_WINDOW_MS + 1, date + MATCH_WINDOW_MS - 1)
+            ?.let { return Stored(it, isMms = false) }
+        val before = ((date + MATCH_WINDOW_MS) / 1000).toInt() + 1
+        return reader.getMms(threadId, "${Mms.DATE} DESC LIMIT $MESSAGES_LIMIT", dateFrom = before)
+            .firstOrNull { it.body == body && abs(it.millis() - date) < MATCH_WINDOW_MS }
+            ?.let { Stored(it.id, isMms = true) }
+    }
+
+    private class AndroidPlatform(private val app: Context) : Platform {
+        override fun isAllowed(address: String) = app.config.allowedNumbers.containsNumber(address)
+        override fun threadId(address: String) = app.getThreadId(address)
+        override fun findStored(threadId: Long, row: Row) = findStored(app, threadId, row.body, row.date)
+        override fun insertSms(threadId: Long, row: Row) = app.insertNewSMS(
             address = row.address,
             subject = "",
             body = row.body,
@@ -85,15 +130,9 @@ object SpamBackfill {
             type = Sms.MESSAGE_TYPE_INBOX,
             subscriptionId = -1,
         )
-        if (smsId == 0L) return false
-        messagesDB.insertSpamMarker(SpamMessage(id = smsId, threadId = threadId, reason = row.reason))
-        return true
-    }
 
-    /** The Telephony message a legacy copy was made from: same thread and body, received within a minute. */
-    internal fun Context.findStoredMessage(threadId: Long, body: String, date: Long): Message? {
-        val before = ((date + MATCH_WINDOW_MS) / 1000).toInt() + 1
-        return TelephonyReader(this).getMessages(threadId, dateFrom = before, includeScheduledMessages = false)
-            .firstOrNull { it.body == body && abs(it.millis() - date) < MATCH_WINDOW_MS }
+        override fun markSpam(smsId: Long, threadId: Long, reason: Int) {
+            app.messagesDB.insertSpamMarker(SpamMessage(id = smsId, threadId = threadId, reason = reason))
+        }
     }
 }

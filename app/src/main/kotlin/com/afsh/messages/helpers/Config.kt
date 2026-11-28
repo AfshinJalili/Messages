@@ -2,7 +2,8 @@ package com.afsh.messages.helpers
 
 import android.content.Context
 import androidx.core.content.ContextCompat
-import com.afsh.commons.extensions.trimToComparableNumber
+import com.afsh.commons.extensions.canonicalNumber
+import com.afsh.commons.extensions.isSameNumber
 import com.afsh.commons.helpers.BACKGROUND_COLOR
 import com.afsh.commons.helpers.BaseConfig
 import com.afsh.commons.helpers.IS_SYSTEM_THEME_ENABLED
@@ -149,8 +150,11 @@ class Config(context: Context) : BaseConfig(context) {
         get() = prefs.getStringSet(BLOCKED_KEYWORDS, HashSet<String>())!!
         set(blockedKeywords) = prefs.edit().putStringSet(BLOCKED_KEYWORDS, blockedKeywords).apply()
 
+    /** Stores [keyword] trimmed; a blank phrase, or one already blocked in any case, is not added. */
     fun addBlockedKeyword(keyword: String) {
-        blockedKeywords = blockedKeywords.plus(keyword)
+        val phrase = keyword.trim()
+        if (phrase.isEmpty() || blockedKeywords.any { it.equals(phrase, ignoreCase = true) }) return
+        blockedKeywords = blockedKeywords.plus(phrase)
     }
 
     fun removeBlockedKeyword(keyword: String) {
@@ -265,8 +269,9 @@ class Config(context: Context) : BaseConfig(context) {
 
     // Allowing and blocking replace each other, so the latest decision about a sender wins.
     fun addAllowedNumber(number: String) {
-        spamNumbers = spamNumbers.filterNot { setOf(it).containsNumber(number) }.toSet()
-        allowedNumbers = allowedNumbers.plus(number)
+        val sender = senderKey(number).ifEmpty { return }
+        spamNumbers = spamNumbers.filterNot { setOf(it).containsNumber(sender) }.toSet()
+        allowedNumbers = allowedNumbers.plus(sender)
     }
 
     /** Removes every stored form of [number] from the never-spam allowlist. */
@@ -280,9 +285,13 @@ class Config(context: Context) : BaseConfig(context) {
         set(spamNumbers) = prefs.edit().putStringSet(SPAM_NUMBERS, spamNumbers).apply()
 
     fun addSpamNumber(number: String) {
-        allowedNumbers = allowedNumbers.filterNot { setOf(it).containsNumber(number) }.toSet()
-        spamNumbers = spamNumbers.plus(number)
+        val sender = senderKey(number).ifEmpty { return }
+        allowedNumbers = allowedNumbers.filterNot { setOf(it).containsNumber(sender) }.toSet()
+        spamNumbers = spamNumbers.plus(sender)
     }
+
+    /** A typed sender as stored: a number as its [canonicalNumber] digits, a name as typed, trimmed. */
+    private fun senderKey(number: String) = number.canonicalNumber() ?: number.trim()
 
     /** Unblocks every stored form of [number], so "+1 555 0183" also clears "5550183". */
     fun removeSpamNumber(number: String) {
@@ -349,8 +358,8 @@ class Config(context: Context) : BaseConfig(context) {
     }
 }
 
-/** Matches "+98912…" against "0912…"; sender names like "HAMRAH_AVAL" must match exactly. */
-fun Collection<String>.containsNumber(number: String): Boolean {
-    val key = number.trimToComparableNumber()
-    return any { it.trimToComparableNumber() == key }
-}
+/**
+ * Matches "0912 345 6789" or «۰۹۱۲۳۴۵۶۷۸۹» against "+98912…", but not the panel line
+ * "50009121234567"; sender names like "HAMRAH_AVAL" must match exactly. See [isSameNumber].
+ */
+fun Collection<String>.containsNumber(number: String): Boolean = any { it.isSameNumber(number) }

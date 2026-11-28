@@ -310,7 +310,7 @@ class InboxChecks {
     fun migration11to12() = migratedDatabase(
         name = "inbox-migration-check.db",
         version = 11,
-        migrations = listOf("MIGRATION_11_12", "MIGRATION_12_13", "MIGRATION_13_14", "MIGRATION_14_15"),
+        migrations = listOf("MIGRATION_11_12", "MIGRATION_12_13", "MIGRATION_13_14", "MIGRATION_14_15", "MIGRATION_15_16"),
         seed = { db ->
             db.execSQL("INSERT INTO drafts (thread_id, body, date) VALUES (1, 'keep draft', 123)")
             db.execSQL("INSERT INTO blocked_messages (address, body, date, reason) VALUES ('test', 'keep spam', 123, 1)")
@@ -335,7 +335,7 @@ class InboxChecks {
     fun migration14to15() = migratedDatabase(
         name = "inbox-preview-migration-check.db",
         version = 14,
-        migrations = listOf("MIGRATION_14_15"),
+        migrations = listOf("MIGRATION_14_15", "MIGRATION_15_16"),
         seed = { db ->
             db.execSQL(
                 "INSERT INTO conversations (thread_id, snippet, date, read, title, photo_uri, is_group_conversation, phone_number, is_scheduled, uses_custom_title, archived, unread_count, message_count) " +
@@ -357,5 +357,33 @@ class InboxChecks {
         check(row.snippet == "visible-body") { "Migration must backfill the visible preview as the inbox snippet" }
         check(row.date == 5) { "Spam threads must take their date from the latest visible message" }
         check(!row.allSpam)
+    }
+
+    /** SMS and MMS ids overlap: from v16 the cache and the recycle bin key on id and transport, keeping every v15 row. */
+    @Test
+    fun migration15to16() = migratedDatabase(
+        name = "message-identity-migration-check.db",
+        version = 15,
+        migrations = listOf("MIGRATION_15_16"),
+        seed = { db ->
+            val columns = "id, body, type, participants, date, read, thread_id, is_mms, sender_phone_number, sender_name, sender_photo_uri, subscription_id, status, is_scheduled"
+            db.execSQL("INSERT INTO messages ($columns) VALUES (42, 'binned sms', 1, '[]', 5, 1, 3, 0, '', '', '', -1, -1, 0)")
+            db.execSQL("INSERT INTO messages ($columns) VALUES (43, 'binned mms', 1, '[]', 6, 1, 3, 1, '', '', '', -1, -1, 0)")
+            db.execSQL("INSERT INTO messages ($columns) VALUES (44, 'kept sms', 1, '[]', 7, 1, 3, 0, '', '', '', -1, -1, 0)")
+            db.execSQL("INSERT INTO recycle_bin_messages (id, deleted_ts) VALUES (42, 8)")
+            db.execSQL("INSERT INTO recycle_bin_messages (id, deleted_ts) VALUES (43, 9)")
+        },
+    ) { room ->
+        val messages = room.MessagesDao()
+        fun binned(threadId: Long) = messages.getThreadMessagesFromRecycleBin(threadId).map { it.id to it.isMMS }.toSet()
+        check(binned(3) == setOf(42L to false, 43L to true)) { "Each bin entry keeps the transport of the message it named" }
+        check(messages.getNonRecycledThreadMessages(3).map { it.body } == listOf("kept sms"))
+
+        messages.insertOrUpdate(fixtureMessage(42, "mms in another thread", threadId = 4, isMms = true))
+        check(binned(3) == setOf(42L to false, 43L to true)) { "Caching MMS 42 must not replace the binned SMS 42" }
+        check(messages.getNonRecycledThreadMessages(4).map { it.id to it.isMMS } == listOf(42L to true)) {
+            "MMS 42 must not inherit the bin entry of SMS 42"
+        }
+        check(messages.getRecycleBinSummaries().map { it.threadId to it.messageCount } == listOf(3L to 2))
     }
 }

@@ -22,7 +22,6 @@ import com.afsh.commons.models.SimpleContact
 import com.afsh.messages.extensions.getNameAndPhotoFromPhoneNumber
 import com.afsh.messages.extensions.getThreadParticipants
 import com.afsh.messages.extensions.messagesDB
-import com.afsh.messages.extensions.queryCursorUnsafe
 import com.afsh.messages.helpers.AttachmentUtils.parseAttachmentNames
 import com.afsh.messages.messaging.MessagingUtils.Companion.ADDRESS_SEPARATOR
 import com.afsh.messages.models.Attachment
@@ -65,8 +64,9 @@ class TelephonyReader(context: Context) {
     fun getMms(threadId: Long? = null, sortOrder: String? = null, dateFrom: Int = -1): ArrayList<Message> =
         context.getMMS(threadId, sortOrder, dateFrom)
 
-    /** The newest MMS on the phone, or null. */
-    fun getLatestMms(): Message? = context.getLatestMMS()
+    /** MMS [messageId] as a [Message], or null when it is missing or can't be read. */
+    fun getMmsById(messageId: Long): Message? =
+        context.queryMms("${Mms._ID} = ?", arrayOf(messageId.toString()), null).firstOrNull()
 
     /** The From address of MMS [messageId], or "" when it can't be read. */
     fun getMmsSender(messageId: Long): String = context.getMMSSender(messageId)
@@ -76,9 +76,6 @@ class TelephonyReader(context: Context) {
 
     /** The body of the newest SMS or MMS in [threadId], or "". */
     fun getThreadSnippet(threadId: Long): String = context.getThreadSnippet(threadId)
-
-    /** Thread count and latest thread date (seconds); `-1 to -1` when the provider can't be read. */
-    fun threadDigest(): Pair<Int, Int> = context.telephonyThreadDigest()
 
     /** Every Telephony thread id, oldest thread first. */
     fun threadIds(): List<Long> {
@@ -100,6 +97,22 @@ class TelephonyReader(context: Context) {
             message = context.smsMessage(cursor, senderNumber)
         }
         return message
+    }
+
+    /**
+     * The id of a received SMS in [threadId] whose body is exactly [body], dated
+     * [fromMillis]..[untilMillis], or null when there is none. Like [getSms] it does not drop
+     * blocked senders. A provider that can't be read throws, so the caller doesn't take "can't
+     * tell" for "not there".
+     */
+    fun findReceivedSmsId(threadId: Long, body: String, fromMillis: Long, untilMillis: Long): Long? {
+        val selection = "${Sms.THREAD_ID} = ? AND ${Sms.TYPE} = ${Sms.MESSAGE_TYPE_INBOX} AND ${Sms.BODY} = ? AND " +
+            "${Sms.DATE} BETWEEN ? AND ?"
+        val args = arrayOf(threadId.toString(), body, fromMillis.toString(), untilMillis.toString())
+        val cursor = checkNotNull(context.contentResolver.query(Sms.CONTENT_URI, arrayOf(Sms._ID), selection, args, null)) {
+            "Telephony SMS can't be read"
+        }
+        return cursor.use { if (it.moveToFirst()) it.getLongValue(Sms._ID) else null }
     }
 
     /** The address of SMS [messageId], or "" when it can't be read. */
@@ -180,7 +193,7 @@ private fun Context.getMessages(
 
     messages = messages
         .filter { it.participants.isNotEmpty() }
-        .filterNot { it.isScheduled && it.millis() < System.currentTimeMillis() }
+        .filterNot { it.isDueBefore(System.currentTimeMillis()) }
         .sortedWith(compareBy<Message> { it.date }.thenBy { it.id })
         .takeLast(displayLimit)
         .toMutableList() as ArrayList<Message>
@@ -254,17 +267,6 @@ private fun Context.getMMS(
     sortOrder: String? = null,
     dateFrom: Int = -1,
 ): ArrayList<Message> {
-    val uri = Mms.CONTENT_URI
-    val projection = arrayOf(
-        Mms._ID,
-        Mms.DATE,
-        Mms.READ,
-        Mms.MESSAGE_BOX,
-        Mms.THREAD_ID,
-        Mms.SUBSCRIPTION_ID,
-        Mms.STATUS
-    )
-
     var selection: String? = null
     var selectionArgs: Array<String>? = null
 
@@ -278,6 +280,22 @@ private fun Context.getMMS(
         selection = "${Sms.THREAD_ID} = ? AND ${Sms.DATE} < ${dateFrom.toLong()}"
         selectionArgs = arrayOf(threadId.toString())
     }
+
+    return queryMms(selection, selectionArgs, sortOrder)
+}
+
+/** Each MMS row matching [selection], with its parts, sender and thread participants. */
+private fun Context.queryMms(selection: String?, selectionArgs: Array<String>?, sortOrder: String?): ArrayList<Message> {
+    val uri = Mms.CONTENT_URI
+    val projection = arrayOf(
+        Mms._ID,
+        Mms.DATE,
+        Mms.READ,
+        Mms.MESSAGE_BOX,
+        Mms.THREAD_ID,
+        Mms.SUBSCRIPTION_ID,
+        Mms.STATUS
+    )
 
     val messages = ArrayList<Message>()
     val contactsMap = HashMap<Int, SimpleContact>()
@@ -353,31 +371,6 @@ private fun Context.getMMSSender(msgId: Long): String {
     return ""
 }
 
-
-/**
- * Cheap Telephony fingerprint for launch: thread count and latest date only.
- * Skips contact lookups, blocked-number filters, unread scans and draft merges that
- * [TelephonyConversations.conversations] pays for on a full reconcile.
- */
-private fun Context.telephonyThreadDigest(): Pair<Int, Int> {
-    val uri = "${Threads.CONTENT_URI}?simple=true".toUri()
-    val projection = arrayOf(Threads.DATE)
-    val selection = "${Threads.MESSAGE_COUNT} > 0"
-    var count = 0
-    var latest = 0
-    try {
-        contentResolver.queryCursorUnsafe(uri, projection, selection, emptyArray(), null) { cursor ->
-            count++
-            var date = cursor.getLongValue(Threads.DATE)
-            if (date.toString().length > 10) date /= 1000
-            if (date > latest) latest = date.toInt()
-        }
-    } catch (_: Exception) {
-        return -1 to -1
-    }
-    return count to latest
-}
-
 // based on https://stackoverflow.com/a/6446831/1967672
 @SuppressLint("NewApi")
 private fun Context.getMmsAttachment(id: Long): MessageAttachment {
@@ -450,11 +443,6 @@ private fun Context.getMmsAttachment(id: Long): MessageAttachment {
     }
 
     return messageAttachment
-}
-
-private fun Context.getLatestMMS(): Message? {
-    val sortOrder = "${Mms.DATE} DESC LIMIT 1"
-    return getMMS(sortOrder = sortOrder).firstOrNull()
 }
 
 private fun Context.getThreadSnippet(threadId: Long): String {

@@ -90,6 +90,9 @@ class ConversationRepository(
     /** Room's row for [threadId], or null when Room has none. */
     fun cachedConversation(threadId: Long): Conversation? = conversations.getConversationWithThreadId(threadId)
 
+    /** Every Room row: archived ones, those the inbox hides as spam, and temporary scheduled ones too. */
+    fun cachedConversations(): List<Conversation> = conversations.getAll()
+
     /** Unread incoming messages per thread, spam left out. */
     fun unreadCountsByThread(): Map<Long, Int> {
         val result = HashMap<Long, Int>(128)
@@ -113,14 +116,17 @@ class ConversationRepository(
     }
 
     /**
-     * True when Room has no rows (first import), Telephony can't be counted, or the thread counts
-     * disagree. A newer message in a thread Room already has is not drift: the recent-window pass
-     * ([InboxReconciler.syncRecentWindow]) picks it up without walking every thread.
+     * True when Room has no Telephony thread (first import), Telephony can't be counted, or the thread
+     * counts disagree. Both sides count only what a reconcile keeps: Room's temporary scheduled rows and
+     * the Telephony threads the inbox leaves out (see [ConversationTelephony.inboxThreadCount]) would
+     * otherwise run the full pass on every launch, resume and send. A newer message in a thread Room
+     * already has is not drift: the recent-window pass ([InboxReconciler.syncRecentWindow]) picks it up
+     * without walking every thread.
      */
     fun needsFullReconcile(): Boolean {
-        val roomCount = conversations.getCount()
+        val roomCount = conversations.getTelephonyThreadCount()
         if (roomCount == 0) return true
-        val (telephonyCount, _) = telephony.threadDigest()
+        val telephonyCount = telephony.inboxThreadCount()
         return telephonyCount < 0 || telephonyCount != roomCount
     }
 
@@ -144,7 +150,7 @@ class ConversationRepository(
     /** The thread of SMS [messageId]: Room's when it knows, otherwise Telephony's. Null for 0 or unknown. */
     fun smsThreadId(messageId: Long): Long? {
         if (messageId == 0L) return null
-        messages.getThreadIdForMessage(messageId)?.takeIf { it != 0L }?.let { return it }
+        messages.getThreadIdForMessage(messageId, isMms = false)?.takeIf { it != 0L }?.let { return it }
         return telephony.smsThreadId(messageId)
     }
 
@@ -199,17 +205,37 @@ class ConversationRepository(
     // region Writes
 
     /**
-     * Stores a Telephony snapshot of a conversation, merged with the [cached] row (see
-     * [mergeConversationWithCache], which [trustTelephony] goes to), and refreshes its preview.
+     * Stores a Telephony snapshot of a conversation, merged with Room's row of its thread (see
+     * [mergeConversationWithCache]), and refreshes its preview in the same transaction: a new row is
+     * written with all_spam unset, and the inbox must not see a spam-only thread before its preview
+     * hides it.
      */
-    fun insertOrUpdate(
-        conversation: Conversation,
-        cached: Conversation? = conversations.getConversationWithThreadId(conversation.threadId),
-        trustTelephony: Boolean = false,
-    ) {
-        val updated = mergeConversationWithCache(conversation, cached, trustTelephony)
+    fun insertOrUpdate(conversation: Conversation) = effects.runInTransaction {
+        val updated = mergeConversationWithCache(conversation, conversations.getConversationWithThreadId(conversation.threadId))
         conversations.insertOrUpdate(updated)
         effects.refreshPreview(listOf(updated.threadId))
+    }
+
+    /**
+     * A provider pass's write: stores Telephony [snapshot] over Room's row of its thread as it is now (see
+     * [reconciledRow]); [readBefore] is that row as the pass read it before it read Telephony. Call it
+     * inside the pass's transaction. True when it wrote.
+     */
+    fun storeSnapshot(snapshot: Conversation, readBefore: Conversation?, trustTelephony: Boolean = false): Boolean {
+        val current = conversations.getConversationWithThreadId(snapshot.threadId)
+        val row = reconciledRow(snapshot, current, readBefore, trustTelephony) ?: return false
+        conversations.insertOrUpdate(row)
+        effects.refreshPreview(listOf(row.threadId))
+        return true
+    }
+
+    /**
+     * A provider pass's removal of [readBefore], a row whose thread Telephony no longer listed: dropped
+     * only when Room's row is still the one the pass read before it read Telephony. A row written since
+     * (a new message in that thread, say) is newer than the pass; the next full pass decides.
+     */
+    fun removeIfUnchanged(readBefore: Conversation) {
+        if (conversations.getConversationWithThreadId(readBefore.threadId) == readBefore) removeFromCache(readBefore.threadId)
     }
 
     /** Runs [block]'s writes in one transaction, so the inbox re-queries once for all of them. */
@@ -433,6 +459,35 @@ class ConversationRepository(
     }
 
     /**
+     * Telephony's thread for the participants of temporary scheduled [conversation]: the one its messages
+     * land in once sent. Null when no scheduled message is left to name them, or Telephony can't say.
+     * Android creates the thread, empty, when there is none yet, as opening the conversation does.
+     */
+    fun telephonyThreadFor(conversation: Conversation): Long? {
+        val participants = messages.getScheduledThreadMessages(conversation.threadId).firstOrNull()?.participants ?: return null
+        val addresses = participants.getAddresses().toSet().takeIf { it.isNotEmpty() } ?: return null
+        return telephony.threadIdFor(addresses).takeIf { it != 0L }
+    }
+
+    /**
+     * Temporary scheduled conversation [temporaryThreadId] has a real Telephony thread now, [threadId]: its
+     * scheduled messages move there and its row goes. The real thread's row stays a Telephony row, which the
+     * provider pass stores; only a custom title carries over, when that row has none.
+     */
+    fun foldScheduled(temporaryThreadId: Long, threadId: Long) {
+        val temporary = conversations.getConversationWithThreadId(temporaryThreadId)
+        messages.getScheduledThreadMessages(temporaryThreadId).forEach { message ->
+            messages.insertOrUpdate(message.copy(threadId = threadId))
+        }
+        removeFromCache(temporaryThreadId)
+        val real = conversations.getConversationWithThreadId(threadId)
+        if (temporary != null && temporary.usesCustomTitle && real != null && !real.usesCustomTitle) {
+            conversations.insertOrUpdate(real.copy(title = temporary.title, usesCustomTitle = true))
+        }
+        effects.refreshPreview(listOf(threadId))
+    }
+
+    /**
      * Deletes the scheduled messages of [threadId] ([messagesToDelete], when given) that are more than
      * a minute overdue. A temporary conversation left with none is deleted too.
      */
@@ -440,8 +495,8 @@ class ConversationRepository(
         val messages = messagesToDelete ?: this.messages.getScheduledThreadMessages(threadId)
         val cutoff = clock() - 1.minutes.inWholeMilliseconds
         try {
-            messages.filter { it.isScheduled && it.millis() < cutoff }.forEach { this.messages.delete(it.id) }
-            if (messages.filterNot { it.isScheduled && it.millis() < cutoff }.isEmpty()) {
+            messages.filter { it.isDueBefore(cutoff) }.forEach { this.messages.delete(it.id, it.isMMS) }
+            if (messages.filterNot { it.isDueBefore(cutoff) }.isEmpty()) {
                 val conversation = conversations.getConversationWithThreadId(threadId)
                 if (conversation != null && conversation.isScheduled) {
                     conversations.deleteThreadId(threadId)
@@ -478,8 +533,13 @@ class ConversationRepository(
  *
  * [trustTelephony] is for the forced pass after this app becomes the default SMS app again. Another
  * app may have marked a thread unread or deleted its newest message meanwhile, and Room may hold a
- * stale preview, so Telephony's date, snippet and read state win. Custom titles, scheduled dates and
- * the preview columns are still kept: Telephony has no say over them.
+ * stale preview, so Telephony's date, snippet and read state win. Custom titles and the preview
+ * columns are still kept: Telephony has no say over them.
+ *
+ * [incoming] is a Telephony row, so the result is never a temporary scheduled thread, and [cached]
+ * must be the same thread's row. A temporary thread lends a real one nothing but a custom title (see
+ * [ConversationRepository.foldScheduled]); its flag and its date would make the real thread look
+ * scheduled.
  */
 internal fun mergeConversationWithCache(
     incoming: Conversation,
@@ -487,6 +547,7 @@ internal fun mergeConversationWithCache(
     trustTelephony: Boolean = false,
 ): Conversation {
     if (cached == null) return incoming
+    require(cached.threadId == incoming.threadId) { "thread ${incoming.threadId} merged with thread ${cached.threadId}" }
     var updated = incoming
     if (cached.usesCustomTitle) {
         updated = updated.copy(
@@ -494,21 +555,18 @@ internal fun mergeConversationWithCache(
             usesCustomTitle = true,
         )
     }
-    if (cached.isScheduled) {
-        updated = updated.copy(
-            date = cached.date,
-            isScheduled = true,
-        )
-    }
+    // A Telephony row is never a temporary scheduled thread. A cached row flagged so took a temporary
+    // thread's flag, date and snippet in an old fold, so none of them stands as a newer local state.
+    val trustLocal = !trustTelephony && !cached.isScheduled
     // Keep a newer local preview (e.g. optimistic send bump) until Telephony catches up.
-    if (!trustTelephony && cached.date > updated.date) {
+    if (trustLocal && cached.date > updated.date) {
         updated = updated.copy(
             date = cached.date,
             snippet = cached.snippet,
         )
     }
     val hasNewerMessage = incoming.date > cached.date || incoming.messageCount > cached.messageCount
-    if (!trustTelephony && cached.read && cached.unreadCount == 0 && !updated.read && !hasNewerMessage) {
+    if (trustLocal && cached.read && cached.unreadCount == 0 && !updated.read && !hasNewerMessage) {
         updated = updated.copy(read = true, unreadCount = 0)
     }
     // REPLACE would clear denormalized preview columns; keep them until refresh below.
@@ -517,6 +575,38 @@ internal fun mergeConversationWithCache(
         previewDate = cached.previewDate,
         allSpam = cached.allSpam,
     )
+}
+
+/**
+ * The row a provider pass stores for Telephony [snapshot] over Room's [current] row (see
+ * [mergeConversationWithCache]), or null when it would change nothing, since every write re-runs the
+ * inbox query. Archived rows are left alone.
+ *
+ * [readBefore] is Room's row as the pass read it, before it read Telephony. What Room got since is
+ * newer than the snapshot: a row deleted since stays deleted, and a row created or written since (an
+ * incoming message, a read, an unread-count sync) keeps its date, snippet and message count when those
+ * changed, and its read state when that changed. The rest comes from the snapshot.
+ */
+internal fun reconciledRow(
+    snapshot: Conversation,
+    current: Conversation?,
+    readBefore: Conversation? = current,
+    trustTelephony: Boolean = false,
+): Conversation? {
+    if (current == null && readBefore != null) return null
+    if (current?.isArchived == true) return null
+    var row = mergeConversationWithCache(snapshot, current, trustTelephony)
+    if (current != null && current != readBefore) {
+        if (readBefore == null || current.date != readBefore.date || current.snippet != readBefore.snippet ||
+            current.messageCount != readBefore.messageCount
+        ) {
+            row = row.copy(date = current.date, snippet = current.snippet, messageCount = current.messageCount)
+        }
+        if (readBefore == null || current.read != readBefore.read || current.unreadCount != readBefore.unreadCount) {
+            row = row.copy(read = current.read, unreadCount = current.unreadCount)
+        }
+    }
+    return row.takeUnless { current != null && Conversation.areContentsTheSame(old = current, new = it) }
 }
 
 private class AndroidConversationEffects(private val app: Context) : ConversationEffects {

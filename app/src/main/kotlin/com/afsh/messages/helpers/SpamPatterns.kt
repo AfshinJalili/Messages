@@ -28,6 +28,15 @@ enum class SpamPatternGroup(val key: String) {
     PROMO_EMOJI_WEAK("promo_emoji_weak"),
 }
 
+/** Why a pattern can't be saved. */
+sealed interface PatternProblem {
+    /** It doesn't compile; [reason] is the regex engine's first line. */
+    data class Invalid(val reason: String) : PatternProblem
+
+    /** It also matches empty text, almost always a stray `|` or an all-optional pattern. */
+    data object MatchesEmpty : PatternProblem
+}
+
 data class SpamPatterns(val groups: Map<SpamPatternGroup, List<String>>) {
 
     operator fun get(group: SpamPatternGroup): List<String> = groups[group].orEmpty()
@@ -43,31 +52,41 @@ data class SpamPatterns(val groups: Map<SpamPatternGroup, List<String>>) {
 
     companion object {
         private const val DIGIT = "[0-9۰-۹٠-٩]"
+        /** Start of a Persian word. `\b` sees Persian letters on Android but not on JDK 19+, where tests run. */
+        private const val WORD_START = "(?<![\\p{L}\\p{N}_])"
         private const val ZWNJ = "[\\u200c ]?"
         private const val VS16 = "\\uFE0F?"
         /** Common short-link and web TLDs; bare host with optional path, no scheme required. */
         private const val TLD = "ir|io|com|net|me|ly|app|org|co|info|xyz|link|click|site|online|tv|cc|to"
+        /**
+         * A bare host such as Iu4.ir/e, shop.digikala.com or example.co.uk: labels, then a known TLD
+         * (and maybe a two-letter country after it) written in lowercase, so a missing space in
+         * "later.Me" isn't one. A sentence's closing period is not part of it.
+         */
+        private const val BARE_HOST =
+            "(?<![a-z0-9_.@-])(?:[a-z0-9-]+\\.)+(?-i:(?:$TLD)(?:\\.[a-z]{2})?)(?:/[\\w./-]*)?(?![a-z0-9_-]|\\.[a-z0-9])"
 
         val DEFAULT = SpamPatterns(
             mapOf(
                 SpamPatternGroup.CODE_WORDS to listOf(
-                    "(کد|رمز)$ZWNJ\\s*(تای?ید|تأیید|ورود|فعال|امنیتی|احراز|بازیابی|شناسایی|عبور|یک\\s*$ZWNJ\\s*بار|پویا|دوم)",
-                    "کد\\s*شما",
-                    "verification code",
-                    "security code",
-                    "confirmation code",
-                    "login code",
-                    "your code",
-                    "code is",
-                    "passcode",
-                    "one[- ]?time",
+                    "$WORD_START(کد|رمز)$ZWNJ\\s*(تای?ید|تأیید|ورود|فعال|امنیتی|احراز|بازیابی|شناسایی|عبور|یک\\s*$ZWNJ\\s*بار|پویا|دوم)",
+                    "${WORD_START}کد\\s*شما",
+                    "\\bverification code\\b",
+                    "\\bsecurity code\\b",
+                    "\\bconfirmation code\\b",
+                    "\\blogin code\\b",
+                    "\\byour code\\b",
+                    "\\bcode is\\b",
+                    "\\bpasscode\\b",
+                    "\\bone[- ]?time\\b",
                     "\\bOTP\\b",
                     "\\b2FA\\b",
                     // Web OTP: the last line is "@site #code".
                     "@[\\w.-]+\\s+#$DIGIT{4,8}",
                 ),
                 SpamPatternGroup.CODE to listOf(
-                    "(?<!$DIGIT)$DIGIT{4,8}(?!$DIGIT)",
+                    // Not part of a longer number, a date (1403/12/29), a time or an amount (1,500,000).
+                    "(?<!$DIGIT[/.,:]?)$DIGIT{4,8}(?![/.,:]?$DIGIT)",
                 ),
                 SpamPatternGroup.TRANSACTIONAL to listOf(
                     "برداشت",
@@ -80,7 +99,7 @@ data class SpamPatterns(val groups: Map<SpamPatternGroup, List<String>>) {
                 SpamPatternGroup.LINKS to listOf(
                     "https?://",
                     "www\\.",
-                    "(?<![\\w.@])[\\w-]+\\.(?:$TLD)(?:/[\\w./-]*)?(?![\\w.])",
+                    BARE_HOST,
                 ),
                 SpamPatternGroup.MARKETING to listOf(
                     "مجانی",
@@ -159,31 +178,88 @@ data class SpamPatterns(val groups: Map<SpamPatternGroup, List<String>>) {
             }
         }
 
-        /** Null when [pattern] compiles; otherwise the reason it does not. */
-        fun error(pattern: String): String? = try {
-            Regex(pattern)
-            null
-        } catch (e: IllegalArgumentException) {
-            e.message?.lineSequence()?.firstOrNull() ?: "invalid"
+        /**
+         * [pattern] as the filter matches it: folded like the body ([foldSpamText]), so a pattern
+         * typed with ZWNJ, Persian digits or Arabic Yeh matches the text it was copied from. A
+         * character the fold drops goes with its quantifier: «تـ*خفیف» is «تخفیف», not «خفیف» with
+         * an optional «ت».
+         */
+        fun compile(pattern: String): Regex = Regex(foldSpamText(withoutIgnored(pattern)).folded, RegexOption.IGNORE_CASE)
+
+        private val QUANTIFIER = Regex("(?:[*+?]|\\{\\d+(?:,\\d*)?\\})[?+]?")
+
+        private fun withoutIgnored(pattern: String): String = buildString {
+            var i = 0
+            while (i < pattern.length) {
+                if (pattern[i].isIgnoredForMatching()) {
+                    i = QUANTIFIER.matchAt(pattern, i + 1)?.let { it.range.last + 1 } ?: (i + 1)
+                } else {
+                    append(pattern[i])
+                    i++
+                }
+            }
+        }
+
+        /** Why [pattern] can't be saved, or null when it can. */
+        fun problem(pattern: String): PatternProblem? {
+            val regex = try {
+                compile(pattern)
+            } catch (e: IllegalArgumentException) {
+                return PatternProblem.Invalid(e.message?.lineSequence()?.firstOrNull() ?: "invalid")
+            }
+            return PatternProblem.MatchesEmpty.takeIf { regex.containsMatchIn("") }
         }
     }
 }
 
 /**
- * Length-preserving fold so pattern ranges still index the original body: Arabic/Persian digits
- * to ASCII, Yeh/Kaf variants to Persian, ZWNJ to a space.
+ * Text as patterns and phrases see it, and where each of its characters came from: [starts] holds
+ * a folded character's index in the original, and [ends] the last index it covers there, which
+ * takes in the dropped marks and tatweel right after it.
  */
-fun normalizeSpamText(body: String): String = buildString(body.length) {
-    for (c in body) {
-        when (c) {
-            '\u064A', '\u0649' -> append('\u06CC') // Arabic Yeh / Alef Maqsura → Persian Yeh
-            '\u0643' -> append('\u06A9') // Arabic Kaf → Persian Kaf
-            in '\u06F0'..'\u06F9' -> append('0' + (c - '\u06F0')) // Persian digits
-            in '\u0660'..'\u0669' -> append('0' + (c - '\u0660')) // Arabic-Indic digits
-            '\u200c' -> append(' ') // ZWNJ → space
-            else -> append(c)
+class SpamText(val folded: String, private val starts: IntArray, private val ends: IntArray) {
+    /** The characters of the original text that a match in [folded] covers. */
+    fun originalRange(range: IntRange): IntRange = starts[range.first]..ends[range.last]
+}
+
+/**
+ * Folds [text] for matching: Arabic/Persian digits to ASCII, Yeh/Kaf variants to Persian, ZWNJ to a
+ * space, and tatweel, Arabic diacritics and invisible format characters (ZWJ, direction marks and
+ * isolates) dropped, so «تـخـفـیـف», «جَشنواره» and a number wrapped in isolates read as typed.
+ */
+fun foldSpamText(text: String): SpamText {
+    val folded = StringBuilder(text.length)
+    val starts = IntArray(text.length)
+    val ends = IntArray(text.length)
+    text.forEachIndexed { index, c ->
+        if (c.isIgnoredForMatching()) {
+            // A diacritic belongs to the letter before it, so a highlight doesn't split the two.
+            if (folded.isNotEmpty()) ends[folded.length - 1] = index
+            return@forEachIndexed
         }
+        starts[folded.length] = index
+        ends[folded.length] = index
+        folded.append(
+            when (c) {
+                '\u064A', '\u0649' -> '\u06CC' // Arabic Yeh / Alef Maqsura → Persian Yeh
+                '\u0643' -> '\u06A9' // Arabic Kaf → Persian Kaf
+                in '\u06F0'..'\u06F9' -> '0' + (c - '\u06F0') // Persian digits
+                in '\u0660'..'\u0669' -> '0' + (c - '\u0660') // Arabic-Indic digits
+                '\u200c' -> ' ' // ZWNJ → space
+                else -> c
+            },
+        )
     }
+    return SpamText(folded.toString(), starts, ends)
+}
+
+private fun Char.isIgnoredForMatching() = when (this) {
+    '\u200c' -> false // ZWNJ separates words: it folds to a space
+    '\u0640', // tatweel
+    in '\u064B'..'\u065F', '\u0670', // Arabic diacritics and superscript alef
+    -> true
+    // ZWJ, LRM/RLM/ALM, bidi embeddings and isolates, soft hyphen, BOM
+    else -> category == CharCategory.FORMAT
 }
 
 /**

@@ -35,7 +35,7 @@ interface ConversationsDao {
         return getAllArchivedWithLatestSnippet().map { it.toConversation() }
     }
 
-    @Query("SELECT (SELECT body FROM messages LEFT OUTER JOIN recycle_bin_messages ON messages.id = recycle_bin_messages.id WHERE recycle_bin_messages.id IS NOT NULL AND messages.thread_id = conversations.thread_id ORDER BY messages.date DESC LIMIT 1) as new_snippet, NULL as new_date, * FROM conversations WHERE (SELECT COUNT(*) FROM messages LEFT OUTER JOIN recycle_bin_messages ON messages.id = recycle_bin_messages.id WHERE recycle_bin_messages.id IS NOT NULL AND messages.thread_id = conversations.thread_id) > 0")
+    @Query("SELECT (SELECT body FROM messages $JOIN_RECYCLE_BIN WHERE recycle_bin_messages.id IS NOT NULL AND messages.thread_id = conversations.thread_id ORDER BY messages.date DESC LIMIT 1) as new_snippet, NULL as new_date, * FROM conversations WHERE (SELECT COUNT(*) FROM messages $JOIN_RECYCLE_BIN WHERE recycle_bin_messages.id IS NOT NULL AND messages.thread_id = conversations.thread_id) > 0")
     fun getAllWithMessagesInRecycleBinWithLatestSnippet(): List<ConversationWithSnippetOverride>
 
     fun getAllWithMessagesInRecycleBin(): List<Conversation> {
@@ -45,8 +45,9 @@ interface ConversationsDao {
     @Query("SELECT * FROM conversations")
     fun getAll(): List<Conversation>
 
-    @Query("SELECT COUNT(*) FROM conversations")
-    fun getCount(): Int
+    /** Rows that stand for a Telephony thread: all but the temporary ones of scheduled messages, which only Room has. */
+    @Query("SELECT COUNT(*) FROM conversations WHERE is_scheduled = 0")
+    fun getTelephonyThreadCount(): Int
 
     @Query("SELECT * FROM conversations WHERE thread_id = :threadId")
     fun getConversationWithThreadId(threadId: Long): Conversation?

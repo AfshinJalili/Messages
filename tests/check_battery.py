@@ -7,10 +7,15 @@ Fails on:
   scheduleProviderReconcile / refreshInbox
 - Message-path receivers that use reconcile=false without a targeted Room write
   (inbox / thread would go stale without the full reconcile)
+- MessagingEvent.ScheduledMessageSent (a full reconcile) published anywhere but the
+  due-scheduled-message sender in messaging/ScheduledMessage.kt
 - InboxImport aborting the whole message import on one thread failure, or finishing only
   when every thread succeeded (a permanently bad thread must be abandonable)
 - InboxReconciler clearing expired scheduled messages for every conversation instead of only
   scheduled ones
+- The launch/resume dirty-check counting rows a reconcile never keeps (Room's temporary scheduled
+  rows, Telephony threads the inbox leaves out), so the counts never match and every launch,
+  resume and send runs the full reconcile
 - App contact observers registered on more than Contacts.CONTENT_URI, or an onChange that
   schedules a provider reconcile / refreshInbox
 - WakeLock.acquire() without a timeout in app Kotlin
@@ -34,6 +39,11 @@ IMPORT_FILE = APP_KT / "helpers/InboxImport.kt"
 RECONCILER_FILE = APP_KT / "helpers/InboxReconciler.kt"
 EVENTS_FILE = APP_KT / "helpers/MessagingEvents.kt"
 SYNC_FILE = APP_KT / "helpers/ConversationSync.kt"
+CONVERSATION_REPO_FILE = APP_KT / "helpers/ConversationRepository.kt"
+CONVERSATION_TELEPHONY_FILE = APP_KT / "helpers/ConversationTelephony.kt"
+CONVERSATIONS_DAO_FILE = APP_KT / "interfaces/ConversationsDao.kt"
+# The one sender of a due scheduled message; its ScheduledMessageSent triggers a full reconcile.
+SCHEDULED_SENDER_FILE = APP_KT / "messaging/ScheduledMessage.kt"
 
 violations: list[str] = []
 
@@ -100,10 +110,6 @@ for path in kotlin_files(RECEIVERS):
     text = path.read_text()
     if path.name in ALLOW_RECONCILE:
         continue
-    if "ScheduledMessageSent" in text:
-        violations.append(
-            f"{rel(path)}: only ScheduledMessageReceiver may publish ScheduledMessageSent (triggers full reconcile)"
-        )
     for match in CONVERSATIONS_CHANGED.finditer(text):
         args = match.group(1)
         if "reconcile = false" not in args:
@@ -124,6 +130,13 @@ for path in kotlin_files(RECEIVERS):
                 f"{rel(path)}: message-path receiver requires a targeted Room write "
                 f"({' + '.join(missing)}); otherwise inbox/thread stay stale"
             )
+
+# ScheduledMessageSent triggers a full reconcile, so only the due-scheduled-message sender may publish it.
+for path in kotlin_files(APP_KT):
+    if path != SCHEDULED_SENDER_FILE and "MessagingEvent.ScheduledMessageSent(" in path.read_text():
+        violations.append(
+            f"{rel(path)}: only {rel(SCHEDULED_SENDER_FILE)} may publish ScheduledMessageSent (triggers full reconcile)"
+        )
 
 # --- InboxImport: bounded per-thread failures ---------------------------------
 import_text = IMPORT_FILE.read_text()
@@ -181,6 +194,36 @@ if re.search(
     violations.append(
         f"{rel(RECONCILER_FILE)}: still clearing expired scheduled messages for every cached conversation"
     )
+
+# --- Dirty-check: both counts hold only what a reconcile keeps ----------------
+def member_body(text: str, signature: str) -> str:
+    """The text of the member starting at signature, up to the next member at the same indent."""
+    start = text.find(signature)
+    if start < 0:
+        return ""
+    end = re.search(r"\n    (?:override |private |internal )?fun ", text[start + len(signature):])
+    return text[start : start + len(signature) + end.start()] if end else text[start:]
+
+
+dirty_check = member_body(CONVERSATION_REPO_FILE.read_text(), "fun needsFullReconcile()")
+if "conversations.getTelephonyThreadCount()" not in dirty_check or "telephony.inboxThreadCount()" not in dirty_check:
+    violations.append(
+        f"{rel(CONVERSATION_REPO_FILE)}: needsFullReconcile must compare getTelephonyThreadCount() "
+        "with inboxThreadCount(), the counts of what a reconcile keeps"
+    )
+room_count = re.search(r'@Query\("([^"]*)"\)\s*fun getTelephonyThreadCount\(', CONVERSATIONS_DAO_FILE.read_text())
+if not room_count or "is_scheduled = 0" not in room_count.group(1):
+    violations.append(
+        f"{rel(CONVERSATIONS_DAO_FILE)}: getTelephonyThreadCount must leave out is_scheduled rows, "
+        "which Telephony never has"
+    )
+telephony_text = CONVERSATION_TELEPHONY_FILE.read_text()
+for member in ("override fun conversations(", "override fun inboxThreadCount()"):
+    if "inboxShows(" not in member_body(telephony_text, member):
+        violations.append(
+            f"{rel(CONVERSATION_TELEPHONY_FILE)}: {member.split('fun ')[1].rstrip('(')} must keep threads "
+            "through inboxShows, so the count and the reconcile leave out the same threads"
+        )
 
 # --- Contacts observer: one URI, debounced, no reconcile ----------------------
 app_text = APP_FILE.read_text()

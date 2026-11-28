@@ -83,8 +83,8 @@ class ThreadRepository(
 
         /** Deletes a scheduled message and cancels its alarm. */
         fun dropScheduled(messageId: Long)
-        fun moveToRecycleBin(messageId: Long)
-        fun restore(messageId: Long)
+        fun moveToRecycleBin(messageId: Long, isMms: Boolean)
+        fun restore(messageId: Long, isMms: Boolean)
         fun delete(messageId: Long, isMms: Boolean)
         /** Stores [threadId]'s conversation afresh from Telephony. */
         fun refreshConversation(threadId: Long)
@@ -123,7 +123,7 @@ class ThreadRepository(
             ArrayList()
         }
         platform.clearExpiredScheduled(threadId, loaded)
-        loaded.removeAll { it.isScheduled && it.millis() < clock() }
+        loaded.removeAll { it.isDueBefore(clock()) }
         loaded.sortBy { it.date }
         if (loaded.size > MESSAGES_LIMIT) loaded = ArrayList(loaded.takeLast(MESSAGES_LIMIT))
         messages.list = loaded
@@ -256,9 +256,10 @@ class ThreadRepository(
     fun reload(addresses: Collection<String>): Boolean {
         messages.allFetched = false
         val current = messages.list
-        val lastMaxId = current.filterNot { it.isScheduled }.maxByOrNull { it.id }?.id ?: 0L
+        // SMS and MMS ids are separate sequences, so the newest loaded id is per transport.
+        val lastMaxIds = current.filterNot { it.isScheduled }.groupBy { it.isMMS }.mapValues { (_, rows) -> rows.maxOf { it.id } }
         val newThreadId = platform.threadIdFor(addresses.toSet())
-        val loaded = ArrayList(
+        var loaded = ArrayList(
             platform.providerMessages(
                 newThreadId,
                 includeScheduled = false,
@@ -273,11 +274,15 @@ class ThreadRepository(
             platform.moveScheduled(current.filter { it.threadId != threadId }, threadId)
         }
 
-        loaded.addAll(platform.scheduledMessages(threadId).filterNot { it.isScheduled && it.millis() < clock() })
-        if (platform.useRecycleBin) loaded.removeAll(platform.recycledMessages(threadId).toSet())
+        loaded.addAll(platform.scheduledMessages(threadId).filterNot { it.isDueBefore(clock()) })
+        if (platform.useRecycleBin) {
+            // By identity: the provider's copy of a binned message may differ from Room's (read, status, name).
+            loaded = loaded.filterNotInByKey(platform.recycledMessages(threadId)) { it.getStableId() }
+        }
         messages.list = loaded
 
-        loaded.filter { !it.isScheduled && !it.isReceivedMessage() && it.id > lastMaxId }.forEach(platform::cacheIfMissing)
+        loaded.filter { !it.isScheduled && !it.isReceivedMessage() && it.id > (lastMaxIds[it.isMMS] ?: 0L) }
+            .forEach(platform::cacheIfMissing)
         return moved
     }
 
@@ -291,8 +296,8 @@ class ThreadRepository(
         toRemove.forEach { message ->
             when {
                 message.isScheduled -> platform.dropScheduled(message.id)
-                toRecycleBin -> platform.moveToRecycleBin(message.id)
-                fromRecycleBin -> platform.restore(message.id)
+                toRecycleBin -> platform.moveToRecycleBin(message.id, message.isMMS)
+                fromRecycleBin -> platform.restore(message.id, message.isMMS)
                 else -> platform.delete(message.id, message.isMMS)
             }
         }
@@ -450,8 +455,8 @@ class ThreadRepository(
             app.cancelScheduleSendPendingIntent(messageId)
         }
 
-        override fun moveToRecycleBin(messageId: Long) = recycleBin.moveToRecycleBin(messageId)
-        override fun restore(messageId: Long) = recycleBin.restore(messageId)
+        override fun moveToRecycleBin(messageId: Long, isMms: Boolean) = recycleBin.moveToRecycleBin(messageId, isMms)
+        override fun restore(messageId: Long, isMms: Boolean) = recycleBin.restore(messageId, isMms)
         override fun delete(messageId: Long, isMms: Boolean) = app.deleteMessage(messageId, isMms)
         override fun refreshConversation(threadId: Long) = conversations.refreshFromTelephony(listOf(threadId))
         override fun createScheduledConversation(message: Message, threadId: Long, cached: Conversation?) =
