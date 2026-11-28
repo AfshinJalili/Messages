@@ -212,10 +212,14 @@ data class SpamPatterns(val groups: Map<SpamPatternGroup, List<String>>) {
     }
 }
 
-/** Text as patterns and phrases see it, and where each of its characters came from. */
-class SpamText(val folded: String, private val origins: IntArray) {
+/**
+ * Text as patterns and phrases see it, and where each of its characters came from: [starts] holds
+ * a folded character's index in the original, and [ends] the last index it covers there, which
+ * takes in the dropped marks and tatweel right after it.
+ */
+class SpamText(val folded: String, private val starts: IntArray, private val ends: IntArray) {
     /** The characters of the original text that a match in [folded] covers. */
-    fun originalRange(range: IntRange): IntRange = origins[range.first]..origins[range.last]
+    fun originalRange(range: IntRange): IntRange = starts[range.first]..ends[range.last]
 }
 
 /**
@@ -225,10 +229,16 @@ class SpamText(val folded: String, private val origins: IntArray) {
  */
 fun foldSpamText(text: String): SpamText {
     val folded = StringBuilder(text.length)
-    val origins = IntArray(text.length)
+    val starts = IntArray(text.length)
+    val ends = IntArray(text.length)
     text.forEachIndexed { index, c ->
-        if (c.isIgnoredForMatching()) return@forEachIndexed
-        origins[folded.length] = index
+        if (c.isIgnoredForMatching()) {
+            // A diacritic belongs to the letter before it, so a highlight doesn't split the two.
+            if (folded.isNotEmpty()) ends[folded.length - 1] = index
+            return@forEachIndexed
+        }
+        starts[folded.length] = index
+        ends[folded.length] = index
         folded.append(
             when (c) {
                 '\u064A', '\u0649' -> '\u06CC' // Arabic Yeh / Alef Maqsura → Persian Yeh
@@ -240,7 +250,7 @@ fun foldSpamText(text: String): SpamText {
             },
         )
     }
-    return SpamText(folded.toString(), origins)
+    return SpamText(folded.toString(), starts, ends)
 }
 
 private fun Char.isIgnoredForMatching() = when (this) {
