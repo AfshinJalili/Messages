@@ -69,8 +69,16 @@ class NotificationHelper(private val context: Context) {
         val notificationId = threadId.hashCode()
         // The thread's message notification as it shows now; the thread's "not sent" one has a tag.
         val shown = notificationManager.activeNotifications.find { it.id == notificationId && it.tag == null }?.notification
-        val style = getMessagesStyle(address, body, sender, oldMessages = shown?.let(::messagesOf).orEmpty())
-        val shownMessages = shownMessagesAfter(shown, messageId, isMms, count = style.messages.size)
+        // Android's default lock screen shows a notification's own content: only its "hide sensitive
+        // content" option shows the public version, and an app cannot ask for that on a channel that
+        // already exists. So when the lock-screen setting hides the message, the notification leaves it out.
+        val lockScreenVisibility = context.config.lockScreenVisibilitySetting
+        val showsMessage = lockScreenShowsMessage(lockScreenVisibility)
+        val style = if (showsMessage) getMessagesStyle(address, body, sender, oldMessages = shown?.let(::messagesOf).orEmpty()) else null
+        val shownMessages = shownMessagesAfter(
+            shown, messageId, isMms,
+            count = style?.messages?.size ?: NotificationCompat.MessagingStyle.MAXIMUM_RETAINED_MESSAGES,
+        )
 
         val contentIntent = Intent(context, ThreadActivity::class.java).apply {
             putExtra(THREAD_ID, threadId)
@@ -134,15 +142,22 @@ class NotificationHelper(private val context: Context) {
                 .build()
         }
 
-        // The notification itself always shows everything. Where Android hides sensitive lock-screen
-        // content, it shows the public version instead, which the lock-screen setting decides.
-        val lockScreenVisibility = context.config.lockScreenVisibilitySetting
+        val messageCount = shownMessages.ids.size
         val builder = NotificationCompat.Builder(context, notificationChannelId).apply {
-            setLargeIcon(bitmap ?: SimpleContactsHelper(context).getContactLetterIcon(sender))
-            setStyle(style)
+            if (style != null) {
+                setLargeIcon(bitmap ?: SimpleContactsHelper(context).getContactLetterIcon(sender))
+                setStyle(style)
+                setShortcutInfo(shortcut)
+            } else {
+                // Not the MMS picture or the contact photo: either can show what the setting hides.
+                if (lockScreenShowsSender(lockScreenVisibility)) {
+                    setLargeIcon(SimpleContactsHelper(context).getContactLetterIcon(sender))
+                }
+                setRedactedContent(sender, lockScreenVisibility, messageCount)
+            }
             addExtras(shownMessages.toExtras())
             setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
-            setPublicVersion(publicMessageNotification(notificationChannelId, sender, lockScreenVisibility))
+            setPublicVersion(publicMessageNotification(notificationChannelId, sender, lockScreenVisibility, messageCount))
 
             color = context.primaryRoleColor()
             setSmallIcon(R.drawable.ic_message_bubble)
@@ -163,8 +178,8 @@ class NotificationHelper(private val context: Context) {
                 putExtra(OTP_CODE, code)
                 putExtra(THREAD_ID, threadId)
             }
-            // Actions also show on the lock screen: the code stays out of the label unless the setting shows the message.
-            val copyLabel = if (lockScreenShowsMessage(lockScreenVisibility)) {
+            // Actions show on the lock screen too: the code stays out of the label unless the setting shows the message.
+            val copyLabel = if (showsMessage) {
                 context.getString(R.string.copy_otp_code, code)
             } else {
                 context.getString(R.string.copy_otp_code_hidden)
@@ -195,7 +210,6 @@ class NotificationHelper(private val context: Context) {
             ).setChannelId(notificationChannelId)
         }
 
-        builder.setShortcutInfo(shortcut)
         if (!stillAlerts()) return
         notificationManager.notify(notificationId, builder.build())
         context.shortcutHelper.reportReceiveMessageUsage(threadId)
@@ -275,16 +289,23 @@ class NotificationHelper(private val context: Context) {
         }
     }
 
-    /** What a lock screen that hides sensitive content shows: who wrote, or only that a message came. */
-    private fun publicMessageNotification(channelId: String, sender: String, lockScreenVisibility: Int): Notification {
-        val title = if (lockScreenShowsSender(lockScreenVisibility)) sender else context.getString(R.string.app_launcher_name)
-        return NotificationCompat.Builder(context, channelId)
-            .setContentTitle(title)
-            .setContentText(context.getString(R.string.new_message))
-            .setSmallIcon(R.drawable.ic_message_bubble)
-            .setColor(context.primaryRoleColor())
-            .setCategory(Notification.CATEGORY_MESSAGE)
-            .build()
+    /** Where Android hides sensitive lock-screen content, it shows this instead. */
+    private fun publicMessageNotification(
+        channelId: String,
+        sender: String,
+        lockScreenVisibility: Int,
+        messageCount: Int,
+    ): Notification = NotificationCompat.Builder(context, channelId)
+        .setRedactedContent(sender, lockScreenVisibility, messageCount)
+        .setSmallIcon(R.drawable.ic_message_bubble)
+        .setColor(context.primaryRoleColor())
+        .setCategory(Notification.CATEGORY_MESSAGE)
+        .build()
+
+    /** Who wrote, or only the app, as the lock-screen setting allows; never the message. */
+    private fun NotificationCompat.Builder.setRedactedContent(sender: String, lockScreenVisibility: Int, messageCount: Int) = apply {
+        setContentTitle(if (lockScreenShowsSender(lockScreenVisibility)) sender else context.getString(R.string.app_launcher_name))
+        setContentText(context.getString(if (messageCount > 1) R.string.new_messages else R.string.new_message))
     }
 
     private fun getMessagesStyle(
