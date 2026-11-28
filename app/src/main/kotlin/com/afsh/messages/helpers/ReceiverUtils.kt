@@ -7,7 +7,8 @@ object ReceiverUtils {
 
     fun isMessageFilteredOut(context: Context, body: String): Boolean {
         for (blockedKeyword in context.config.blockedKeywords) {
-            if (body.contains(blockedKeyword, ignoreCase = true)) {
+            // A blank phrase is in every message.
+            if (blockedKeyword.isNotBlank() && body.contains(blockedKeyword, ignoreCase = true)) {
                 return true
             }
         }

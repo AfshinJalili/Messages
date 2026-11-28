@@ -149,8 +149,11 @@ class Config(context: Context) : BaseConfig(context) {
         get() = prefs.getStringSet(BLOCKED_KEYWORDS, HashSet<String>())!!
         set(blockedKeywords) = prefs.edit().putStringSet(BLOCKED_KEYWORDS, blockedKeywords).apply()
 
+    /** Stores [keyword] trimmed; a blank phrase, or one already blocked in any case, is not added. */
     fun addBlockedKeyword(keyword: String) {
-        blockedKeywords = blockedKeywords.plus(keyword)
+        val phrase = keyword.trim()
+        if (phrase.isEmpty() || blockedKeywords.any { it.equals(phrase, ignoreCase = true) }) return
+        blockedKeywords = blockedKeywords.plus(phrase)
     }
 
     fun removeBlockedKeyword(keyword: String) {

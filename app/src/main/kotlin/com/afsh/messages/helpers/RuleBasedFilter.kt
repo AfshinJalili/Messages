@@ -120,7 +120,7 @@ object RuleBasedFilter {
 }
 
 /** Where each blocked phrase occurs in [body], for highlighting why a keyword rule matched. */
-fun keywordMatches(keywords: Collection<String>, body: String): List<IntRange> = keywords.filter { it.isNotEmpty() }.flatMap { keyword ->
+fun keywordMatches(keywords: Collection<String>, body: String): List<IntRange> = keywords.filter { it.isNotBlank() }.flatMap { keyword ->
     generateSequence(body.indexOf(keyword, ignoreCase = true).takeIf { it >= 0 }) { from ->
         body.indexOf(keyword, from + keyword.length, ignoreCase = true).takeIf { it >= 0 }
     }.map { it until it + keyword.length }.toList()
