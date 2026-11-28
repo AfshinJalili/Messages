@@ -5,7 +5,6 @@ import android.telephony.SmsMessage
 import android.util.Patterns
 import android.widget.Toast.LENGTH_LONG
 import com.klinker.android.send_message.Settings
-import com.afsh.commons.extensions.showErrorToast
 import com.afsh.commons.extensions.toast
 import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.messages.R
@@ -36,8 +35,34 @@ fun Context.isLongMmsMessage(text: String, settings: Settings = getSendMessageSe
     return numPages > settings.sendLongAsMmsAfter && settings.sendLongAsMms
 }
 
-/** Sends the message using the in-app SmsManager API wrappers if it's an SMS or using android-smsmms for MMS. */
+/**
+ * Sends the message using the in-app SmsManager API wrappers if it's an SMS or using android-smsmms for MMS.
+ * A failure shows as a toast (see [sendErrorText]).
+ */
 fun Context.sendMessageCompat(
+    text: String,
+    addresses: List<String>,
+    subId: Int?,
+    attachments: List<Attachment>,
+    messageToResend: Message? = null,
+    forceMms: Boolean = false,
+) {
+    try {
+        sendMessage(text, addresses, subId, attachments, messageToResend, forceMms)
+    } catch (e: Exception) {
+        sendErrorText(e)?.let { toast(it, LENGTH_LONG) }
+    }
+    ensureBackgroundThread {
+        val threadId = getThreadId(addresses.toSet())
+        shortcutHelper.reportSendMessageUsage(threadId)
+    }
+}
+
+/**
+ * Hands the message to the SMS transport, or to android-smsmms for MMS. Throws when the SMS could not be
+ * stored or sent, with a [SmsException] for the transport's own failures.
+ */
+fun Context.sendMessage(
     text: String,
     addresses: List<String>,
     subId: Int?,
@@ -74,39 +99,23 @@ fun Context.sendMessageCompat(
             messagingUtils.sendMmsMessage(text, addresses, null, settings, mmsIdToResend)
         }
     } else {
-        try {
-            messagingUtils.sendSmsMessage(
-                text = text,
-                addresses = addresses.toSet(),
-                subId = settings.subscriptionId,
-                requireDeliveryReport = settings.deliveryReports,
-                messageId = smsIdToResend
-            )
-        } catch (e: SmsException) {
-            when (e.errorCode) {
-                EMPTY_DESTINATION_ADDRESS -> toast(
-                    id = R.string.empty_destination_address,
-                    length = LENGTH_LONG
-                )
-
-                ERROR_PERSISTING_MESSAGE -> toast(
-                    id = R.string.unable_to_save_message,
-                    length = LENGTH_LONG
-                )
-
-                ERROR_SENDING_MESSAGE -> toast(
-                    msg = getString(R.string.unknown_error_occurred_sending_message, e.errorCode),
-                    length = LENGTH_LONG
-                )
-            }
-        } catch (e: Exception) {
-            showErrorToast(e)
-        }
+        messagingUtils.sendSmsMessage(
+            text = text,
+            addresses = addresses.toSet(),
+            subId = settings.subscriptionId,
+            requireDeliveryReport = settings.deliveryReports,
+            messageId = smsIdToResend
+        )
     }
-    ensureBackgroundThread {
-        val threadId = getThreadId(addresses.toSet())
-        shortcutHelper.reportSendMessageUsage(threadId)
-    }
+}
+
+/** What to tell the person when a send threw [error]; null when there is nothing to tell. */
+fun Context.sendErrorText(error: Exception): String? = when {
+    error !is SmsException -> String.format(getString(com.afsh.commons.R.string.error), error.toString())
+    error.errorCode == EMPTY_DESTINATION_ADDRESS -> getString(R.string.empty_destination_address)
+    error.errorCode == ERROR_PERSISTING_MESSAGE -> getString(R.string.unable_to_save_message)
+    error.errorCode == ERROR_SENDING_MESSAGE -> getString(R.string.unknown_error_occurred_sending_message, error.errorCode)
+    else -> null
 }
 
 /**
