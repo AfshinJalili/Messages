@@ -180,9 +180,25 @@ data class SpamPatterns(val groups: Map<SpamPatternGroup, List<String>>) {
 
         /**
          * [pattern] as the filter matches it: folded like the body ([foldSpamText]), so a pattern
-         * typed with ZWNJ, Persian digits or Arabic Yeh matches the text it was copied from.
+         * typed with ZWNJ, Persian digits or Arabic Yeh matches the text it was copied from. A
+         * character the fold drops goes with its quantifier: «تـ*خفیف» is «تخفیف», not «خفیف» with
+         * an optional «ت».
          */
-        fun compile(pattern: String): Regex = Regex(foldSpamText(pattern).folded, RegexOption.IGNORE_CASE)
+        fun compile(pattern: String): Regex = Regex(foldSpamText(withoutIgnored(pattern)).folded, RegexOption.IGNORE_CASE)
+
+        private val QUANTIFIER = Regex("(?:[*+?]|\\{\\d+(?:,\\d*)?\\})[?+]?")
+
+        private fun withoutIgnored(pattern: String): String = buildString {
+            var i = 0
+            while (i < pattern.length) {
+                if (pattern[i].isIgnoredForMatching()) {
+                    i = QUANTIFIER.matchAt(pattern, i + 1)?.let { it.range.last + 1 } ?: (i + 1)
+                } else {
+                    append(pattern[i])
+                    i++
+                }
+            }
+        }
 
         /** Why [pattern] can't be saved, or null when it can. */
         fun problem(pattern: String): PatternProblem? {

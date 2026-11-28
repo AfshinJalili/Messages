@@ -1,6 +1,7 @@
 package com.afsh.messages.helpers
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -276,9 +277,18 @@ class RuleBasedFilterTest {
 
     @Test
     fun `a pattern is checked as the filter reads it`() {
-        // The filter drops tatweel, which leaves a bare quantifier.
-        assertTrue(SpamPatterns.problem("\u0640+") is PatternProblem.Invalid)
+        // The filter drops tatweel, so a pattern of tatweel alone matches only empty text.
+        assertEquals(PatternProblem.MatchesEmpty, SpamPatterns.problem("\u0640+"))
         assertEquals(null, SpamPatterns.problem("قرعه\u200cکشی"))
+    }
+
+    @Test
+    fun `a quantifier on tatweel goes with the tatweel`() {
+        val pattern = "تـ*خفیف"
+        assertEquals(null, SpamPatterns.problem(pattern))
+        assertTrue(SpamPatterns.compile(pattern).containsMatchIn("تخفیف"))
+        assertFalse(SpamPatterns.compile(pattern).containsMatchIn("خفیف"))
+        assertTrue(SpamPatterns.compile("جَ{0,1}شن").containsMatchIn("جشن"))
     }
 
     @Test
