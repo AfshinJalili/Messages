@@ -17,6 +17,7 @@ import com.afsh.messages.helpers.ConversationSync
 import com.afsh.messages.helpers.MessagingEvent
 import com.afsh.messages.helpers.MessagingEvents
 import java.io.File
+import java.io.IOException
 
 /** Handles updating databases and publishing send outcomes when an MMS message is sent or fails. */
 class MmsSentReceiver : SendStatusReceiver() {
@@ -89,8 +90,14 @@ class MmsSentReceiver : SendStatusReceiver() {
          * android-smsmms writes the PDU it sends to `cacheDir/send.<n>.dat` and names it in the sent
          * intent. Only such a file is deleted, whatever path an intent names.
          */
-        internal fun isSentPduFile(path: String, cacheDir: File): Boolean =
-            File(path).canonicalFile.parentFile == cacheDir.canonicalFile
+        internal fun isSentPduFile(path: String, cacheDir: File): Boolean = try {
+            val file = File(path).canonicalFile
+            file.parentFile == cacheDir.canonicalFile && SENT_PDU_NAME.matches(file.name)
+        } catch (_: IOException) {
+            false
+        }
+
+        private val SENT_PDU_NAME = Regex("""send\.\d+\.dat""")
 
         private const val EXTRA_CONTENT_URI = "content_uri"
         private const val EXTRA_FILE_PATH = "file_path"

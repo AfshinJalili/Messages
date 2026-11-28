@@ -23,6 +23,18 @@ class MmsSentReceiverTest {
     }
 
     @Test
+    fun `another file in the cache is never deleted`() {
+        assertFalse(MmsSentReceiver.isSentPduFile(File(cacheDir, "image_manager_disk_cache").path, cacheDir))
+        assertFalse(MmsSentReceiver.isSentPduFile(File(cacheDir, "send.dat").path, cacheDir))
+        assertFalse(MmsSentReceiver.isSentPduFile(File(cacheDir, "send.12.dat.bak").path, cacheDir))
+    }
+
+    @Test
+    fun `a path that cannot be resolved is never deleted`() {
+        assertFalse(MmsSentReceiver.isSentPduFile("send.1.dat\u0000", cacheDir))
+    }
+
+    @Test
     fun `a path that climbs out of the cache is never deleted`() {
         assertFalse(MmsSentReceiver.isSentPduFile("${cacheDir.path}/../databases/messages.db", cacheDir))
     }
