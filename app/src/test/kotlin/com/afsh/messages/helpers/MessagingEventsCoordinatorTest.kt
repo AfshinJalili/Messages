@@ -14,6 +14,7 @@ private class FakeMessagingEventHost : MessagingEventHost {
     val incomingAlerts = mutableListOf<MessagingEvent.IncomingMessage>()
     val sendFailureAlerts = mutableListOf<MessagingEvent.SendFailed>()
     val cancelledNotifications = mutableListOf<Long>()
+    val cancelledSendFailures = mutableListOf<Long>()
     var inboxRefreshes = 0
 
     override fun isConversationMuted(threadId: Long): Boolean = threadId in mutedThreads
@@ -30,6 +31,10 @@ private class FakeMessagingEventHost : MessagingEventHost {
         cancelledNotifications += threadId
     }
 
+    override fun cancelSendFailureNotification(threadId: Long) {
+        cancelledSendFailures += threadId
+    }
+
     override fun refreshInbox() {
         inboxRefreshes++
     }
@@ -39,11 +44,11 @@ class MessagingEventsCoordinatorTest {
 
     private var deviceLockedOrOff = false
     private val host = FakeMessagingEventHost()
-    private val presence = AppPresenceTracker(
+    private val presence: AppPresenceTracker = AppPresenceTracker(
         isDeviceLockedOrOff = { deviceLockedOrOff },
-        onEnterConversation = { host.cancelConversationNotification(it) },
+        onEnterConversation = { coordinator.conversationEntered(it) },
     )
-    private val coordinator = MessagingEventCoordinator(presence, host)
+    private val coordinator: MessagingEventCoordinator = MessagingEventCoordinator(presence, host)
 
     private fun incoming(
         threadId: Long = 10L,
@@ -322,18 +327,63 @@ class MessagingEventsCoordinatorTest {
     @Test
     fun `non-alerting message events never post alerts or trigger full inbox reconcile`() {
         val events = listOf(
-            MessagingEvent.MessageSent(threadId = 10L, messageId = 1L, isMms = false),
             MessagingEvent.DeliveryUpdated(threadId = 10L, messageId = 1L),
-            MessagingEvent.ReadStateChanged(threadId = 10L, read = true, unreadCount = 0),
+            MessagingEvent.ReadStateChanged(threadId = 10L, read = false, unreadCount = 1),
             MessagingEvent.MessageDeleted(threadId = 10L, messageId = 1L, isMms = false),
             MessagingEvent.ConversationsChanged(threadId = 10L, reconcile = false),
         )
         events.forEach { event ->
             assertEquals(AttentionDecision.Suppress, coordinator.publish(event))
         }
+        coordinator.publish(MessagingEvent.MessageSent(threadId = 10L, messageId = 1L, isMms = false))
+        coordinator.publish(MessagingEvent.ReadStateChanged(threadId = 10L, read = true, unreadCount = 0))
         assertTrue(host.incomingAlerts.isEmpty())
         assertTrue(host.sendFailureAlerts.isEmpty())
         assertEquals(0, host.inboxRefreshes)
+    }
+
+    // --- Clearing notifications that no longer apply ---
+
+    @Test
+    fun `entering a conversation clears its message and send failure notifications`() {
+        presence.onConversationActive(Any(), threadId = 10L, isRecycleBin = false)
+
+        assertEquals(listOf(10L), host.cancelledNotifications)
+        assertEquals(listOf(10L), host.cancelledSendFailures)
+    }
+
+    @Test
+    fun `a message sent in a conversation clears its send failure notification but not its message notification`() {
+        val sent = MessagingEvent.MessageSent(threadId = 10L, messageId = 300L, isMms = false)
+        assertEquals(AttentionDecision.ClearSendFailureAlert(10L), coordinator.publish(sent))
+
+        assertEquals(listOf(10L), host.cancelledSendFailures)
+        assertTrue(host.cancelledNotifications.isEmpty())
+    }
+
+    @Test
+    fun `the parts of one failed message alert once`() {
+        val firstPart = sendFailed(threadId = 10L, messageId = 200L)
+        assertEquals(AttentionDecision.ShowSendFailureAlert(firstPart), coordinator.publish(firstPart))
+        assertEquals(AttentionDecision.Suppress, coordinator.publish(sendFailed(threadId = 10L, messageId = 200L)))
+        assertEquals(AttentionDecision.Suppress, coordinator.publish(sendFailed(threadId = 10L, messageId = 200L)))
+
+        assertEquals(listOf(firstPart), host.sendFailureAlerts)
+    }
+
+    @Test
+    fun `another failed message alerts again, and so does the same one once its alert was cleared`() {
+        val first = sendFailed(threadId = 10L, messageId = 200L)
+        val second = sendFailed(threadId = 10L, messageId = 201L)
+        val mmsWithSameId = sendFailed(threadId = 10L, messageId = 201L, isMms = true)
+        coordinator.publish(first)
+        coordinator.publish(second)
+        coordinator.publish(mmsWithSameId)
+
+        coordinator.publish(MessagingEvent.MessageSent(threadId = 10L, messageId = 300L, isMms = false))
+        coordinator.publish(mmsWithSameId)
+
+        assertEquals(listOf(first, second, mmsWithSameId, mmsWithSameId), host.sendFailureAlerts)
     }
 
     @Test

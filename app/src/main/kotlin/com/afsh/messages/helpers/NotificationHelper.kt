@@ -235,6 +235,10 @@ class NotificationHelper(private val context: Context) {
         }
     }
 
+    /**
+     * One "not sent" notification per thread, beside its message notification. A later failure in the
+     * thread replaces it; [MessagingEvents] decides when it alerts and when it goes.
+     */
     @SuppressLint("NewApi")
     fun showSendingFailedNotification(recipientName: String, threadId: Long) {
         val hasCustomNotifications =
@@ -245,7 +249,7 @@ class NotificationHelper(private val context: Context) {
             createDefaultChannel()
         }
 
-        val notificationId = generateRandomId().hashCode()
+        val notificationId = threadId.hashCode()
         val intent = Intent(context, ThreadActivity::class.java).apply {
             putExtra(THREAD_ID, threadId)
         }
@@ -273,7 +277,11 @@ class NotificationHelper(private val context: Context) {
             .setAutoCancel(true)
             .setChannelId(notificationChannelId)
 
-        notificationManager.notify(notificationId, builder.build())
+        notificationManager.notify(SEND_FAILURE_TAG, notificationId, builder.build())
+    }
+
+    fun cancelSendFailureNotification(threadId: Long) {
+        notificationManager.cancel(SEND_FAILURE_TAG, threadId.hashCode())
     }
 
     /**
@@ -328,7 +336,7 @@ class NotificationHelper(private val context: Context) {
 
     private fun getOldMessages(notificationId: Int): List<NotificationCompat.MessagingStyle.Message> {
         val currentNotification =
-            notificationManager.activeNotifications.find { it.id == notificationId }
+            notificationManager.activeNotifications.find { it.id == notificationId && it.tag == null }
         return if (currentNotification != null) {
             val activeStyle =
                 NotificationCompat.MessagingStyle.extractMessagingStyleFromNotification(
@@ -338,5 +346,10 @@ class NotificationHelper(private val context: Context) {
         } else {
             emptyList()
         }
+    }
+
+    private companion object {
+        /** Sets a thread's "not sent" notification apart from its message notification, which has the same id. */
+        const val SEND_FAILURE_TAG = "send_failure"
     }
 }

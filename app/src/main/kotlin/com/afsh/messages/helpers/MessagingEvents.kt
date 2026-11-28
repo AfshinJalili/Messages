@@ -26,6 +26,7 @@ import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Typed messaging-domain occurrences routed through [MessagingEvents].
@@ -137,7 +138,10 @@ interface MessagingEventHost {
     fun isConversationMuted(threadId: Long): Boolean
     fun showIncomingAlert(event: MessagingEvent.IncomingMessage)
     fun showSendFailureAlert(event: MessagingEvent.SendFailed)
+    /** Removes the conversation's message notification. */
     fun cancelConversationNotification(threadId: Long)
+    /** Removes the conversation's "not sent" notification. */
+    fun cancelSendFailureNotification(threadId: Long)
     fun refreshInbox()
 }
 
@@ -161,18 +165,21 @@ class MessagingEventCoordinator(
     )
     val inThreadFailures: SharedFlow<MessagingEvent.SendFailed> = inThreadFailuresFlow.asSharedFlow()
 
+    /** The failed message each thread's "not sent" alert is for, so the parts of one message alert once. */
+    private val sendFailureAlerts = ConcurrentHashMap<Long, MessageKey>()
+
+    private data class MessageKey(val messageId: Long, val isMms: Boolean)
+
     fun publish(event: MessagingEvent): AttentionDecision {
-        val flags = when (event) {
-            is MessagingEvent.IncomingMessage ->
-                ConversationAttentionFlags(isMuted = host.isConversationMuted(event.threadId))
-            else -> ConversationAttentionFlags()
+        val decision = decide(event).let {
+            if (it is AttentionDecision.ShowSendFailureAlert && !recordSendFailureAlert(it.event)) AttentionDecision.Suppress else it
         }
-        val decision = AttentionPolicy.decide(event, presence.current(), flags)
 
         when (decision) {
             is AttentionDecision.ShowIncomingAlert -> host.showIncomingAlert(decision.event)
             is AttentionDecision.ShowSendFailureAlert -> host.showSendFailureAlert(decision.event)
             is AttentionDecision.ShowInThreadFailureReason -> inThreadFailuresFlow.tryEmit(decision.event)
+            is AttentionDecision.ClearSendFailureAlert -> clearSendFailureAlert(decision.threadId)
             AttentionDecision.Suppress -> Unit
         }
 
@@ -184,6 +191,32 @@ class MessagingEventCoordinator(
 
         eventsFlow.tryEmit(event)
         return decision
+    }
+
+    /** The user is now viewing [threadId]: none of its notifications has anything to tell them. */
+    fun conversationEntered(threadId: Long) {
+        host.cancelConversationNotification(threadId)
+        clearSendFailureAlert(threadId)
+    }
+
+    private fun decide(event: MessagingEvent): AttentionDecision {
+        val flags = when (event) {
+            is MessagingEvent.IncomingMessage ->
+                ConversationAttentionFlags(isMuted = host.isConversationMuted(event.threadId))
+            else -> ConversationAttentionFlags()
+        }
+        return AttentionPolicy.decide(event, presence.current(), flags)
+    }
+
+    /** False when the thread's alert already shows this message: another part of it failed. */
+    private fun recordSendFailureAlert(event: MessagingEvent.SendFailed): Boolean {
+        val key = MessageKey(event.messageId, event.isMms)
+        return sendFailureAlerts.put(event.threadId, key) != key
+    }
+
+    private fun clearSendFailureAlert(threadId: Long) {
+        sendFailureAlerts.remove(threadId)
+        host.cancelSendFailureNotification(threadId)
     }
 }
 
@@ -217,7 +250,7 @@ object MessagingEvents {
                     // isLockedNow: reading presence on a receiver thread must not lock the app.
                     screenOff || keyguardLocked || app.appLockManager.isLockedNow()
                 },
-                onEnterConversation = { threadId -> host.cancelConversationNotification(threadId) },
+                onEnterConversation = { threadId -> coordinator.conversationEntered(threadId) },
             )
             coordinator = MessagingEventCoordinator(tracker, host)
             application.registerActivityLifecycleCallbacks(PresenceLifecycleCallbacks(tracker))
@@ -255,6 +288,7 @@ object MessagingEvents {
             override fun showIncomingAlert(event: MessagingEvent.IncomingMessage) = Unit
             override fun showSendFailureAlert(event: MessagingEvent.SendFailed) = Unit
             override fun cancelConversationNotification(threadId: Long) = Unit
+            override fun cancelSendFailureNotification(threadId: Long) = Unit
             override fun refreshInbox() = Unit
         }
         return MessagingEventCoordinator(AppPresenceTracker(), noOpHost)
@@ -327,6 +361,10 @@ object MessagingEvents {
 
         override fun cancelConversationNotification(threadId: Long) {
             context.notificationManager.cancel(threadId.hashCode())
+        }
+
+        override fun cancelSendFailureNotification(threadId: Long) {
+            context.notificationHelper.cancelSendFailureNotification(threadId)
         }
 
         override fun refreshInbox() {
