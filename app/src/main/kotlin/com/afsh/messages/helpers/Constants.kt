@@ -110,6 +110,12 @@ const val LOCK_SCREEN_SENDER_MESSAGE = 1
 const val LOCK_SCREEN_SENDER = 2
 const val LOCK_SCREEN_NOTHING = 3
 
+/** Whether a locked phone may show who a message is from, under lock-screen [visibility]. Unknown values show nothing. */
+fun lockScreenShowsSender(visibility: Int) = visibility == LOCK_SCREEN_SENDER_MESSAGE || visibility == LOCK_SCREEN_SENDER
+
+/** Whether a locked phone may show what a message says, a code in it included, under lock-screen [visibility]. */
+fun lockScreenShowsMessage(visibility: Int) = visibility == LOCK_SCREEN_SENDER_MESSAGE
+
 const val FILE_SIZE_NONE = -1L
 const val FILE_SIZE_100_KB = 102_400L
 const val FILE_SIZE_200_KB = 204_800L
