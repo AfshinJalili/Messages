@@ -1,6 +1,9 @@
 package com.afsh.messages.helpers
 
-import org.json.JSONArray
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.BeforeClass
@@ -60,6 +63,21 @@ class SpamFilterAccuracyTest {
         assertTrue(
             "must-not-flag set must not be BLOCK:\n${failures.joinToString("\n")}",
             failures.isEmpty(),
+        )
+    }
+
+    /**
+     * The synthetic code rows carry promo words, emojis and links, so the rules would block them:
+     * only the one-time-code exemption keeps them out of Spam, which is what [mustNotFlagOtpAndBank]
+     * checks. PSSC can't, since it masks digits.
+     */
+    @Test
+    fun mustNotFlagLeansOnTheCodeExemption() {
+        val withoutCodeWords = SpamPatterns.DEFAULT.with(SpamPatternGroup.CODE_WORDS, emptyList())
+        val needExemption = mustNotFlag.count { RuleBasedFilter.explain(withoutCodeWords, it.body).verdict == FilterVerdict.BLOCK }
+        assertTrue(
+            "only $needExemption must-not-flag rows need the code exemption, expected $SYNTHETIC_CODE_ROWS",
+            needExemption >= SYNTHETIC_CODE_ROWS,
         )
     }
 
@@ -161,6 +179,10 @@ class SpamFilterAccuracyTest {
         const val PSSC_FPR_CEILING = 0.042
         const val UCI_PRECISION_SOFT_FLOOR = 0.95
 
+        /** must-not-flag.json rows with a one-time code the rules would otherwise block. */
+        const val SYNTHETIC_CODE_ROWS = 5
+        const val MUST_NOT_FLAG_MIN_ROWS = 20
+
         /** What PSSC's `&link` mask is read as. */
         const val PSSC_LINK = "https://example.ir/x"
 
@@ -181,13 +203,11 @@ class SpamFilterAccuracyTest {
             val stream = loader.getResourceAsStream("spam-corpora/must-not-flag.json")
                 ?: error("missing spam-corpora/must-not-flag.json")
             val text = stream.use { it.readBytes().toString(StandardCharsets.UTF_8) }
-            val arr = JSONArray(text)
-            return buildList {
-                for (i in 0 until arr.length()) {
-                    val obj = arr.getJSONObject(i)
-                    add(Fixture(sender = obj.getString("sender"), body = obj.getString("body")))
-                }
-            }
+            // Not org.json: unit tests get Android's stub, whose JSONArray is always empty.
+            return Json.parseToJsonElement(text).jsonArray.map { row ->
+                val obj = row.jsonObject
+                Fixture(sender = obj.getValue("sender").jsonPrimitive.content, body = obj.getValue("body").jsonPrimitive.content)
+            }.also { check(it.size >= MUST_NOT_FLAG_MIN_ROWS) { "must-not-flag too small: ${it.size}" } }
         }
 
         private fun loadPssc(): List<Sample> {
