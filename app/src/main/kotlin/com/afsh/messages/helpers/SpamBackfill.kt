@@ -1,6 +1,7 @@
 package com.afsh.messages.helpers
 
 import android.content.Context
+import android.provider.Telephony.Mms
 import android.provider.Telephony.Sms
 import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.messages.extensions.config
@@ -99,12 +100,19 @@ object SpamBackfill {
         return true
     }
 
-    /** The Telephony message a legacy copy was made from: same thread and body, received within a minute. */
+    /**
+     * The Telephony message a legacy copy was made from: same thread and body, received within a
+     * minute. Every copy here came from a sender someone blocked, so the lookup must not drop
+     * blocked senders the way a conversation's message list does.
+     */
     internal fun findStored(context: Context, threadId: Long, body: String, date: Long): Stored? {
+        val reader = TelephonyReader(context)
+        reader.findSmsId(threadId, body, date - MATCH_WINDOW_MS + 1, date + MATCH_WINDOW_MS - 1)
+            ?.let { return Stored(it, isMms = false) }
         val before = ((date + MATCH_WINDOW_MS) / 1000).toInt() + 1
-        return TelephonyReader(context).getMessages(threadId, dateFrom = before, includeScheduledMessages = false)
+        return reader.getMms(threadId, "${Mms.DATE} DESC LIMIT $MESSAGES_LIMIT", dateFrom = before)
             .firstOrNull { it.body == body && abs(it.millis() - date) < MATCH_WINDOW_MS }
-            ?.let { Stored(it.id, it.isMMS) }
+            ?.let { Stored(it.id, isMms = true) }
     }
 
     private class AndroidPlatform(private val app: Context) : Platform {

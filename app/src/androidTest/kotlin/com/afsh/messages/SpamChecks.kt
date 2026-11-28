@@ -4,6 +4,8 @@ import android.content.Context
 import android.provider.Telephony
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.afsh.commons.extensions.getBlockedNumbers
+import com.afsh.commons.extensions.isNumberBlocked
 import com.afsh.messages.extensions.conversationsDB
 import com.afsh.messages.extensions.messagesDB
 import com.afsh.messages.helpers.BLOCK_REASON_KEYWORD
@@ -181,6 +183,25 @@ class SpamChecks {
         } finally {
             context.messagesDB.deleteSpamMarker(id)
         }
+    }
+
+    // Reads Telephony and Android's block list only.
+    @Test
+    fun backfillMatchesAnSmsFromABlockedSender() {
+        val blocked = context.getBlockedNumbers()
+        val sms = context.contentResolver.query(
+            Telephony.Sms.CONTENT_URI,
+            arrayOf(Telephony.Sms._ID, Telephony.Sms.THREAD_ID, Telephony.Sms.BODY, Telephony.Sms.DATE, Telephony.Sms.ADDRESS),
+            "${Telephony.Sms.BODY} != ''", null, "${Telephony.Sms.DATE} DESC"
+        )?.use { cursor ->
+            generateSequence { if (cursor.moveToNext()) cursor else null }
+                .firstOrNull { context.isNumberBlocked(it.getString(4), blocked) }
+                ?.let { listOf(it.getLong(0), it.getLong(1), it.getString(2), it.getLong(3)) }
+        }
+        assumeTrue("Needs an SMS from a number on Android's block list", sms != null)
+        val (id, threadId, body, date) = sms!!
+        val match = SpamBackfill.findStored(context, threadId as Long, body as String, (date as Long) + 30_000)
+        check(match?.id == id && !match.isMms) { "Expected SMS $id from a blocked sender, found ${match?.id}" }
     }
 
     // Reads Telephony only: an existing SMS gets a Room marker for the duration of the test.

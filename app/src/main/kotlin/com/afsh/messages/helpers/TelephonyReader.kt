@@ -103,6 +103,20 @@ class TelephonyReader(context: Context) {
         return message
     }
 
+    /**
+     * The id of an SMS in [threadId] whose body is exactly [body], dated [fromMillis]..[untilMillis],
+     * or null when there is none. Like [getSms] it does not drop blocked senders. A provider that
+     * can't be read throws, so the caller doesn't take "can't tell" for "not there".
+     */
+    fun findSmsId(threadId: Long, body: String, fromMillis: Long, untilMillis: Long): Long? {
+        val selection = "${Sms.THREAD_ID} = ? AND ${Sms.BODY} = ? AND ${Sms.DATE} BETWEEN ? AND ?"
+        val args = arrayOf(threadId.toString(), body, fromMillis.toString(), untilMillis.toString())
+        val cursor = checkNotNull(context.contentResolver.query(Sms.CONTENT_URI, arrayOf(Sms._ID), selection, args, null)) {
+            "Telephony SMS can't be read"
+        }
+        return cursor.use { if (it.moveToFirst()) it.getLongValue(Sms._ID) else null }
+    }
+
     /** The address of SMS [messageId], or "" when it can't be read. */
     fun getSmsAddress(messageId: Long): String {
         try {
