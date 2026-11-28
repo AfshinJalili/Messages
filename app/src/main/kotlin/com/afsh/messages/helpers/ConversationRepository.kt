@@ -202,15 +202,11 @@ class ConversationRepository(
     // region Writes
 
     /**
-     * Stores a Telephony snapshot of a conversation, merged with the [cached] row (see
-     * [mergeConversationWithCache], which [trustTelephony] goes to), and refreshes its preview.
+     * Stores a Telephony snapshot of a conversation, merged with Room's row of its thread (see
+     * [mergeConversationWithCache]), and refreshes its preview.
      */
-    fun insertOrUpdate(
-        conversation: Conversation,
-        cached: Conversation? = conversations.getConversationWithThreadId(conversation.threadId),
-        trustTelephony: Boolean = false,
-    ) {
-        val updated = mergeConversationWithCache(conversation, cached, trustTelephony)
+    fun insertOrUpdate(conversation: Conversation) {
+        val updated = mergeConversationWithCache(conversation, conversations.getConversationWithThreadId(conversation.threadId))
         conversations.insertOrUpdate(updated)
         effects.refreshPreview(listOf(updated.threadId))
     }
