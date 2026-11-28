@@ -27,6 +27,16 @@ class ReceiverRoomUpdatePathsTest {
     }
 
     @Test
+    fun `sms receive stores the message in Telephony before anything that can fail`() {
+        val text = source("SmsReceiver.kt")
+        val insert = text.indexOf("insertNewSMS(")
+        assertTrue(insert >= 0)
+        listOf("silenceReason(", "getPhotoUriFromPhoneNumber(", "getMyContactsCursor(").forEach { lookup ->
+            assertTrue("$lookup must run after insertNewSMS", text.indexOf(lookup) > insert)
+        }
+    }
+
+    @Test
     fun `mms receive writes conversation then publishes IncomingMessage`() {
         val text = source("MmsReceiver.kt")
         assertTrue(text.contains("conversations.insertOrUpdate("))
