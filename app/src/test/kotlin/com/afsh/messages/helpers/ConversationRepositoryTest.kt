@@ -60,6 +60,9 @@ class ConversationRepositoryTest {
         override fun deleteSpamMarker(id: Long) {
             spam.remove(id)
         }
+        override fun insertOrUpdate(message: Message) {
+            messages[message.id to message.isMMS] = message
+        }
         override fun getThreadIdForMessage(id: Long, isMms: Boolean): Long? = messages[id to isMms]?.threadId
         override fun markRead(id: Long, isMMS: Boolean) {
             messages[id to isMMS]?.let { messages[id to isMMS] = it.copy(read = true) }
@@ -370,6 +373,62 @@ class ConversationRepositoryTest {
         telephony.digest = -1 to -1
         assertTrue(repository.needsFullReconcile())
     }
+
+    // region Provider passes (InboxReconciler's policy, run against this file's fakes)
+
+    /** A full reconcile: Room is read, then Telephony, then the writes. */
+    private fun fullPass(forced: Boolean = false) {
+        val allCached = repository.cachedConversations()
+        InboxReconciler.storeConversations(repository, allCached, repository.conversations(failOnError = true), forced)
+    }
+
+    @Test
+    fun `a full pass inserts the threads Room lacks and drops those Telephony lost, in one transaction`() {
+        conversations.insertOrUpdate(conversation(10))
+        conversations.insertOrUpdate(conversation(20))
+        telephony.threads[10] = conversation(10)
+        telephony.threads[30] = conversation(30)
+
+        fullPass()
+
+        assertEquals(setOf(10L, 30L), conversations.rows.keys)
+        assertEquals(1, effects.transactions)
+    }
+
+    @Test
+    fun `a full pass rewrites a drifted row and keeps its custom title`() {
+        conversations.insertOrUpdate(conversation(10, title = "Mom").copy(usesCustomTitle = true, snippet = "old"))
+        telephony.threads[10] = conversation(10, date = 200).copy(snippet = "new")
+
+        fullPass()
+
+        val row = conversations.rows.getValue(10)
+        assertEquals("new", row.snippet)
+        assertEquals(200, row.date)
+        assertEquals("Mom", row.title)
+    }
+
+    @Test
+    fun `a full pass leaves archived rows alone`() {
+        conversations.insertOrUpdate(conversation(10).copy(isArchived = true, snippet = "old"))
+        telephony.threads[10] = conversation(10, date = 200).copy(snippet = "new")
+
+        fullPass()
+
+        assertEquals("old", conversations.rows.getValue(10).snippet)
+    }
+
+    @Test
+    fun `a full pass keeps a temporary scheduled thread that has no real thread yet`() {
+        conversations.insertOrUpdate(conversation(77).copy(isScheduled = true))
+        message(1, threadId = 77, scheduled = true, date = (now / 1000).toInt() + 3600)
+
+        fullPass()
+
+        assertTrue(77L in conversations.rows)
+    }
+
+    // endregion
 
     // region Recent window (InboxReconciler's policy, run against this file's fakes)
 

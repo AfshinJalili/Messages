@@ -90,6 +90,9 @@ class ConversationRepository(
     /** Room's row for [threadId], or null when Room has none. */
     fun cachedConversation(threadId: Long): Conversation? = conversations.getConversationWithThreadId(threadId)
 
+    /** Every Room row: archived ones, those the inbox hides as spam, and temporary scheduled ones too. */
+    fun cachedConversations(): List<Conversation> = conversations.getAll()
+
     /** Unread incoming messages per thread, spam left out. */
     fun unreadCountsByThread(): Map<Long, Int> {
         val result = HashMap<Long, Int>(128)
@@ -430,6 +433,18 @@ class ConversationRepository(
         } catch (e: Exception) {
             e.printStackTrace()
         }
+    }
+
+    /**
+     * Temporary scheduled conversation [temporary] has a real Telephony thread now, [real]: its scheduled
+     * messages move there, its row goes, and [real] is stored merged with it.
+     */
+    fun foldScheduled(temporary: Conversation, real: Conversation) {
+        removeFromCache(temporary.threadId)
+        messages.getScheduledThreadMessages(temporary.threadId).forEach { message ->
+            messages.insertOrUpdate(message.copy(threadId = real.threadId))
+        }
+        insertOrUpdate(real, temporary)
     }
 
     /**
