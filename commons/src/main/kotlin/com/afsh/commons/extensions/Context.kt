@@ -980,11 +980,15 @@ fun Context.isNumberBlocked(number: String, blockedNumbers: ArrayList<BlockedNum
     } || isNumberBlockedByPattern(number, blockedNumbers)
 }
 
+/**
+ * In a block-list pattern `*` stands for any run of characters and everything else is literal, so
+ * an entry such as `(021*` can't throw on every incoming message.
+ */
 fun Context.isNumberBlockedByPattern(number: String, blockedNumbers: ArrayList<BlockedNumber> = getBlockedNumbers()): Boolean {
     for (blockedNumber in blockedNumbers) {
         val num = blockedNumber.number
         if (num.isBlockedNumberPattern()) {
-            val pattern = num.replace("+", "\\+").replace("*", ".*")
+            val pattern = num.split('*').joinToString(".*") { Regex.escape(it) }
             if (number.matches(pattern.toRegex())) {
                 return true
             }
