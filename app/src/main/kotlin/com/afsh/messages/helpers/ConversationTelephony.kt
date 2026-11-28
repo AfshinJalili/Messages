@@ -53,8 +53,8 @@ interface ConversationTelephony {
     /**
      * Every thread with messages ([threadId] only, when given), newest first, or the newest [limit]
      * of them. Threads without participants or with a blocked one are left out (see [inboxShows]).
-     * [unreadCounts] gives each row its unread count, and [draftDates] (milliseconds) replaces the date
-     * of a thread with a draft.
+     * [unreadCounts] gives each row its unread count, and [draftDates] (milliseconds) dates a thread whose
+     * draft is newer than its last message (see [threadDate]).
      */
     fun conversations(
         threadId: Long?,
@@ -188,16 +188,7 @@ class TelephonyConversations(context: Context) : ConversationTelephony {
                     snippet = telephony.getThreadSnippet(id)
                 }
 
-                var date = cursor.getLongValue(Threads.DATE)
-                if (date.toString().length > 10) {
-                    date /= 1000
-                }
-
-                // drafts are stored locally they take priority over the original date
-                val draftDate = draftDates[id]
-                if (draftDate != null) {
-                    date = draftDate / 1000
-                }
+                val date = threadDate(cursor.getLongValue(Threads.DATE), draftDates[id])
 
                 val recipientIds = recipientIds(cursor.getStringValue(Threads.RECIPIENT_IDS))
                 if (!inboxShows(recipientIds, lookups::address, blocked)) return@queryCursorUnsafe
@@ -425,6 +416,16 @@ class TelephonyConversations(context: Context) : ConversationTelephony {
         val THREADS_URI: Uri = "${Threads.CONTENT_URI}?simple=true".toUri()
         const val THREADS_WITH_MESSAGES = "${Threads.MESSAGE_COUNT} > 0"
     }
+}
+
+/**
+ * A thread's date in seconds: Telephony's [providerDate] (seconds, or milliseconds on some providers), or
+ * its draft's [draftMillis] when that is later. A fresh draft lifts the thread; an old one must not sink it
+ * below its newest message.
+ */
+internal fun threadDate(providerDate: Long, draftMillis: Long?): Long {
+    val date = if (providerDate.toString().length > 10) providerDate / 1000 else providerDate
+    return if (draftMillis == null) date else maxOf(date, draftMillis / 1000)
 }
 
 /** The canonical address ids of a thread, from the threads table's space-separated list. */

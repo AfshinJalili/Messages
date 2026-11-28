@@ -44,6 +44,22 @@ class ConversationTelephonyTest {
     }
 
     @Test
+    fun `a draft newer than the thread's last message dates the thread`() {
+        assertEquals(1_700_000_500L, threadDate(providerDate = 1_700_000_000L, draftMillis = 1_700_000_500_000L))
+    }
+
+    @Test
+    fun `an older draft leaves the thread at its last message`() {
+        assertEquals(1_700_000_900L, threadDate(providerDate = 1_700_000_900L, draftMillis = 1_700_000_500_000L))
+    }
+
+    @Test
+    fun `a provider date in milliseconds is read as seconds`() {
+        assertEquals(1_700_000_900L, threadDate(providerDate = 1_700_000_900_123L, draftMillis = null))
+        assertEquals(1_700_000_900L, threadDate(providerDate = 1_700_000_900_123L, draftMillis = 1_700_000_500_000L))
+    }
+
+    @Test
     fun `recipient ids are read from the threads table's space-separated list`() {
         assertEquals(listOf(3, 15), recipientIds("3 15"))
         assertEquals(emptyList<Int>(), recipientIds(""))
