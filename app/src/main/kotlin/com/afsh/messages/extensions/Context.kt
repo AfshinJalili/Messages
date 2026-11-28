@@ -358,12 +358,15 @@ fun Context.getNameFromAddress(address: String, privateCursor: Cursor?): String 
     return sender
 }
 
+/** The system contact of [address], else its private contact, else null; [callback] runs on a background thread. */
 fun Context.getContactFromAddress(address: String, callback: ((contact: SimpleContact?) -> Unit)) {
-    val privateCursor = getMyContactsCursor(false, true)
     SimpleContactsHelper(this).getAvailableContacts(false) {
         val contact = it.firstOrNull { it.doesHavePhoneNumber(address) }
         if (contact == null) {
-            val privateContacts = MyContactsContentProvider.getSimpleContacts(this, privateCursor)
+            // Opened only when needed, and always closed.
+            val privateContacts = getMyContactsCursor(false, true).use { cursor ->
+                MyContactsContentProvider.getSimpleContacts(this, cursor)
+            }
             val privateContact = privateContacts.firstOrNull { it.doesHavePhoneNumber(address) }
             callback(privateContact)
         } else {
