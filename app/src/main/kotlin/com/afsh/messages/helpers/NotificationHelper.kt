@@ -50,7 +50,7 @@ class NotificationHelper(private val context: Context) {
         body: String,
         threadId: Long,
         bitmap: Bitmap?,
-        sender: String?,
+        sender: String,
         stillAlerts: () -> Boolean,
     ) {
         val hasCustomNotifications =
@@ -130,27 +130,14 @@ class NotificationHelper(private val context: Context) {
                 .build()
         }
 
-        val largeIcon = bitmap ?: if (sender != null) {
-            SimpleContactsHelper(context).getContactLetterIcon(sender)
-        } else {
-            null
-        }
+        // The notification itself always shows everything. Where Android hides sensitive lock-screen
+        // content, it shows the public version instead, which the lock-screen setting decides.
+        val lockScreenVisibility = context.config.lockScreenVisibilitySetting
         val builder = NotificationCompat.Builder(context, notificationChannelId).apply {
-            when (context.config.lockScreenVisibilitySetting) {
-                LOCK_SCREEN_SENDER_MESSAGE -> {
-                    setLargeIcon(largeIcon)
-                    setStyle(getMessagesStyle(address, body, notificationId, sender))
-                }
-
-                LOCK_SCREEN_SENDER -> {
-                    setContentTitle(sender)
-                    setLargeIcon(largeIcon)
-                    val summaryText = context.getString(R.string.new_message)
-                    setStyle(
-                        NotificationCompat.BigTextStyle().setSummaryText(summaryText).bigText(body)
-                    )
-                }
-            }
+            setLargeIcon(bitmap ?: SimpleContactsHelper(context).getContactLetterIcon(sender))
+            setStyle(getMessagesStyle(address, body, notificationId, sender))
+            setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
+            setPublicVersion(publicMessageNotification(notificationChannelId, sender, lockScreenVisibility))
 
             color = context.primaryRoleColor()
             setSmallIcon(R.drawable.ic_message_bubble)
@@ -171,9 +158,15 @@ class NotificationHelper(private val context: Context) {
                 putExtra(OTP_CODE, code)
                 putExtra(THREAD_ID, threadId)
             }
+            // Actions also show on the lock screen: the code stays out of the label unless the setting shows the message.
+            val copyLabel = if (lockScreenShowsMessage(lockScreenVisibility)) {
+                context.getString(R.string.copy_otp_code, code)
+            } else {
+                context.getString(R.string.copy_otp_code_hidden)
+            }
             builder.addAction(
                 AfshIcon.Copy.resource,
-                context.getString(R.string.copy_otp_code, code),
+                copyLabel,
                 PendingIntent.getBroadcast(
                     context,
                     notificationId,
@@ -275,6 +268,18 @@ class NotificationHelper(private val context: Context) {
             enableVibration(true)
             notificationManager.createNotificationChannel(this)
         }
+    }
+
+    /** What a lock screen that hides sensitive content shows: who wrote, or only that a message came. */
+    private fun publicMessageNotification(channelId: String, sender: String, lockScreenVisibility: Int): Notification {
+        val title = if (lockScreenShowsSender(lockScreenVisibility)) sender else context.getString(R.string.app_launcher_name)
+        return NotificationCompat.Builder(context, channelId)
+            .setContentTitle(title)
+            .setContentText(context.getString(R.string.new_message))
+            .setSmallIcon(R.drawable.ic_message_bubble)
+            .setColor(context.primaryRoleColor())
+            .setCategory(Notification.CATEGORY_MESSAGE)
+            .build()
     }
 
     private fun getMessagesStyle(

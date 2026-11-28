@@ -114,6 +114,7 @@
     <string name="no_unread_conversations">پیام خوانده‌نشده‌ای ندارید</string>
     <string name="new_messages">پیام‌های تازه</string>
     <string name="copy_otp_code">رونوشت %s</string>
+    <string name="copy_otp_code_hidden">رونوشت کد</string>
     <string name="speak_message">پیام گفتاری</string>
     <string name="swipe_action_none">خاموش</string>
     <string name="conversation_archived">گفت‌وگو بایگانی شد</string>
@@ -417,7 +418,6 @@
     <string name="lock_preview_sender">مینا فراهانی</string>
     <string name="lock_preview_app">پیام‌ها</string>
     <string name="lock_preview_message">صبح بخیر! ایستگاهم.</string>
-    <string name="lock_preview_hidden">پیام تازه · محتوا پنهان</string>
     <string name="settings_app_access">دسترسی به برنامه</string>
     <string name="app_lock">قفل برنامه</string>
     <string name="app_lock_on">روشن · پیام‌ها با رمز یا اثر انگشت باز می‌شود</string>

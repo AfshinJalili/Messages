@@ -1,5 +1,6 @@
 package com.afsh.messages
 
+import android.app.Notification
 import android.app.NotificationManager
 import android.os.SystemClock
 import androidx.core.content.pm.ShortcutManagerCompat
@@ -23,11 +24,12 @@ class NotificationReplyChecks {
         val threadId = Long.MAX_VALUE - 76543
         val manager = target.getSystemService(NotificationManager::class.java)
         val keep = InstrumentationRegistry.getArguments().getString("keep_notification") == "true"
+        val body = "Quick reply verification. No SMS was sent."
         try {
             NotificationHelper(context).showMessageNotification(
                 messageId = 0,
                 address = "5550100",
-                body = "Quick reply verification. No SMS was sent.",
+                body = body,
                 threadId = threadId,
                 bitmap = null,
                 sender = "Quick reply check",
@@ -42,6 +44,14 @@ class NotificationReplyChecks {
                 action.remoteInputs.orEmpty().any { it.resultKey == REPLY && it.allowFreeFormInput }
             }) { "Sender-only notification is missing its quick reply input" }
             check(context.config.lockScreenVisibilitySetting == LOCK_SCREEN_SENDER)
+            // Sender only: a lock screen that hides content shows the sender and "New message", never the body.
+            check(notification.visibility == Notification.VISIBILITY_PRIVATE) { "Message notification is not private" }
+            val public = checkNotNull(notification.publicVersion) { "Message notification has no public version" }
+            check(public.extras.getCharSequence(Notification.EXTRA_TITLE)?.toString() == "Quick reply check")
+            check(public.extras.getCharSequence(Notification.EXTRA_TEXT)?.toString() == target.getString(R.string.new_message))
+            check(!public.extras.containsKey(Notification.EXTRA_MESSAGES) && !public.extras.containsKey(Notification.EXTRA_BIG_TEXT)) {
+                "The public version shows the message"
+            }
         } finally {
             if (!keep) {
                 manager.cancel(threadId.hashCode())

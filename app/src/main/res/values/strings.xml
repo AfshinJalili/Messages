@@ -134,6 +134,7 @@
     <!-- Thread -->
     <string name="new_messages">New messages</string>
     <string name="copy_otp_code">Copy %s</string>
+    <string name="copy_otp_code_hidden">Copy code</string>
     <string name="speak_message">Dictate message</string>
     <!-- Inbox swipe actions -->
     <string name="swipe_action_none">Off</string>
@@ -446,7 +447,6 @@
     <string name="lock_preview_sender">Mina Farahani</string>
     <string name="lock_preview_app">Messages</string>
     <string name="lock_preview_message">Morning! I’m at the station.</string>
-    <string name="lock_preview_hidden">New message · content hidden</string>
     <string name="settings_app_access">App access</string>
     <string name="app_lock">App lock</string>
     <string name="app_lock_on">On · a password or fingerprint opens Messages</string>

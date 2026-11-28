@@ -385,7 +385,7 @@ private fun LockScreenPreview(visibility: Int) {
     val colors = MaterialTheme.colorScheme
     val sender = stringResource(if (lockScreenShowsSender(visibility)) R.string.lock_preview_sender else R.string.lock_preview_app)
     val body = stringResource(
-        if (lockScreenShowsMessage(visibility)) R.string.lock_preview_message else R.string.lock_preview_hidden,
+        if (lockScreenShowsMessage(visibility)) R.string.lock_preview_message else R.string.new_message,
     )
     Card(
         Modifier
