@@ -214,7 +214,8 @@ object MessagingEvents {
                 isDeviceLockedOrOff = {
                     val screenOff = powerManager != null && !powerManager.isInteractive
                     val keyguardLocked = keyguardManager != null && keyguardManager.isKeyguardLocked
-                    screenOff || keyguardLocked || app.appLockManager.isLocked()
+                    // isLockedNow: reading presence on a receiver thread must not lock the app.
+                    screenOff || keyguardLocked || app.appLockManager.isLockedNow()
                 },
                 onEnterConversation = { threadId -> host.cancelConversationNotification(threadId) },
             )
