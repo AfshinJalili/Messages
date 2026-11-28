@@ -52,6 +52,11 @@ fun Context.sendMessageCompat(
     } catch (e: Exception) {
         sendErrorText(e)?.let { toast(it, LENGTH_LONG) }
     }
+    reportSendMessageUsage(addresses)
+}
+
+/** Ranks the conversation with [addresses] for the share sheet's direct-share targets. */
+fun Context.reportSendMessageUsage(addresses: List<String>) {
     ensureBackgroundThread {
         val threadId = getThreadId(addresses.toSet())
         shortcutHelper.reportSendMessageUsage(threadId)
@@ -59,8 +64,9 @@ fun Context.sendMessageCompat(
 }
 
 /**
- * Hands the message to the SMS transport, or to android-smsmms for MMS. Throws when the SMS could not be
- * stored or sent, with a [SmsException] for the transport's own failures.
+ * Hands the message to the SMS transport, or to android-smsmms for MMS. Throws when it could not be
+ * stored or sent: a [SmsException] for the SMS transport's own failures, the library's exception for MMS.
+ * An MMS with several attachments goes as one MMS each; every part is tried, and the first failure is thrown.
  */
 fun Context.sendMessage(
     text: String,
@@ -84,20 +90,17 @@ fun Context.sendMessage(
             || addresses.size > 1 && settings.group
     if (isMms) {
         // we send all MMS attachments separately to reduces the chances of hitting provider MMS limit.
-        if (attachments.isNotEmpty()) {
-            val lastIndex = attachments.lastIndex
-            if (attachments.size > 1) {
-                for (i in 0 until lastIndex) {
-                    val attachment = attachments[i]
-                    messagingUtils.sendMmsMessage("", addresses, attachment, settings, mmsIdToResend)
-                }
+        // The text goes with the last one. A part that fails does not stop the others.
+        val parts = attachments.ifEmpty { listOf(null) }
+        var failure: Exception? = null
+        parts.forEachIndexed { index, attachment ->
+            try {
+                messagingUtils.sendMmsMessage(if (index == parts.lastIndex) text else "", addresses, attachment, settings, mmsIdToResend)
+            } catch (e: Exception) {
+                if (failure == null) failure = e
             }
-
-            val lastAttachment = attachments[lastIndex]
-            messagingUtils.sendMmsMessage(text, addresses, lastAttachment, settings, mmsIdToResend)
-        } else {
-            messagingUtils.sendMmsMessage(text, addresses, null, settings, mmsIdToResend)
         }
+        failure?.let { throw it }
     } else {
         messagingUtils.sendSmsMessage(
             text = text,

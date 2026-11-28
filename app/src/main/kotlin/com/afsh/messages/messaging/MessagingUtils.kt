@@ -192,11 +192,8 @@ class MessagingUtils(val context: Context) {
         mmsSentIntent.putExtra(MmsSentReceiver.EXTRA_ORIGINAL_RESENT_MESSAGE_ID, messageId)
         transaction.setExplicitBroadcastForSentMms(mmsSentIntent)
 
-        try {
-            transaction.sendNewMessage(message)
-        } catch (e: Exception) {
-            context.showErrorToast(e)
-        }
+        // Throws when the MMS did not go, so a caller knows; it may be in Telephony's outbox all the same.
+        transaction.sendNewMessage(message)
     }
 
     /** Returns a short localized send-failure reason, or null when [resultCode] is [Activity.RESULT_OK]. */
