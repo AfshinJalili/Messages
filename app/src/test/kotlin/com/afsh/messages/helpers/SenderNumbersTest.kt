@@ -37,4 +37,45 @@ class SenderNumbersTest {
         context.config.addSpamNumber(" BANK-PROMO ")
         assertEquals(setOf("BANK-PROMO"), context.config.spamNumbers)
     }
+
+    @Test
+    fun `a panel line is not the mobile number its last digits spell`() {
+        assertFalse(setOf("50009121234567").containsNumber("+989121234567"))
+        assertFalse(setOf("50009121234567").containsNumber("09121234567"))
+    }
+
+    @Test
+    fun `allowing a mobile number leaves an always-spam panel line alone`() {
+        context.config.addSpamNumber("50009121234567")
+        context.config.addAllowedNumber("+989121234567")
+        assertEquals(setOf("50009121234567"), context.config.spamNumbers)
+    }
+
+    @Test
+    fun `one number written with or without its country code is one sender`() {
+        listOf(
+            "+989121234567" to "09121234567",
+            "+989121234567" to "9121234567",
+            "+989121234567" to "989121234567",
+            "00989121234567" to "09121234567",
+            "+1 555 0183" to "5550183",
+            "3000" to "3000",
+        ).forEach { (a, b) ->
+            assertTrue("$a ~ $b", setOf(a).containsNumber(b))
+            assertTrue("$b ~ $a", setOf(b).containsNumber(a))
+        }
+    }
+
+    @Test
+    fun `different numbers are different senders`() {
+        listOf(
+            "+4412345678" to "+14412345678",
+            "09121234567" to "09121234568",
+            "1000" to "21000",
+            "*8000" to "8000",
+        ).forEach { (a, b) ->
+            assertFalse("$a ~ $b", setOf(a).containsNumber(b))
+            assertFalse("$b ~ $a", setOf(b).containsNumber(a))
+        }
+    }
 }

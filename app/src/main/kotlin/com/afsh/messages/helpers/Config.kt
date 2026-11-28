@@ -3,7 +3,7 @@ package com.afsh.messages.helpers
 import android.content.Context
 import androidx.core.content.ContextCompat
 import com.afsh.commons.extensions.canonicalNumber
-import com.afsh.commons.extensions.trimToComparableNumber
+import com.afsh.commons.extensions.isSameNumber
 import com.afsh.commons.helpers.BACKGROUND_COLOR
 import com.afsh.commons.helpers.BaseConfig
 import com.afsh.commons.helpers.IS_SYSTEM_THEME_ENABLED
@@ -293,7 +293,7 @@ class Config(context: Context) : BaseConfig(context) {
     /** A typed sender as stored: a number as its [canonicalNumber] digits, a name as typed, trimmed. */
     private fun senderKey(number: String) = number.canonicalNumber() ?: number.trim()
 
-    /** Unblocks every stored form of [number], so "+98 912 345 6789" also clears "09123456789". */
+    /** Unblocks every stored form of [number], so "+1 555 0183" also clears "5550183". */
     fun removeSpamNumber(number: String) {
         spamNumbers = spamNumbers.filterNot { setOf(it).containsNumber(number) }.toSet()
     }
@@ -359,10 +359,7 @@ class Config(context: Context) : BaseConfig(context) {
 }
 
 /**
- * Matches "0912 345 6789" or «۰۹۱۲۳۴۵۶۷۸۹» against "+98912…" by their last nine digits; sender
- * names like "HAMRAH_AVAL" must match exactly.
+ * Matches "0912 345 6789" or «۰۹۱۲۳۴۵۶۷۸۹» against "+98912…", but not the panel line
+ * "50009121234567"; sender names like "HAMRAH_AVAL" must match exactly. See [isSameNumber].
  */
-fun Collection<String>.containsNumber(number: String): Boolean {
-    val key = number.trimToComparableNumber()
-    return any { it.trimToComparableNumber() == key }
-}
+fun Collection<String>.containsNumber(number: String): Boolean = any { it.isSameNumber(number) }

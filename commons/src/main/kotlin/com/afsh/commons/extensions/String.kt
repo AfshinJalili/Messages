@@ -290,7 +290,34 @@ fun String.canonicalNumber(): String? {
 private const val NUMBER_SEPARATORS = "-()./"
 private val CANONICAL_NUMBER = Regex("\\+?[0-9*#]*[0-9][0-9*#]*")
 
-// A lookup key for a phone number: its last 9 digits. Names stay as they are.
+/** A number without a country code this short is a short code, which only matches itself. */
+private const val MIN_SUBSCRIBER_DIGITS = 7
+private const val MAX_COUNTRY_CODE_DIGITS = 3
+
+/**
+ * Whether this and [other] are one sender. Names match exactly. Numbers ([canonicalNumber]) match
+ * in full, except that a number written without a country code ("0912…", "912…", "5550183")
+ * matches the same number with one ("+98912…", "+15550183"). A longer number whose last digits
+ * spell a shorter one, such as the panel line 50009121234567 and +989121234567, is a different
+ * sender.
+ */
+fun String.isSameNumber(other: String): Boolean {
+    val a = canonicalNumber() ?: return this == other
+    val b = other.canonicalNumber() ?: return false
+    // Without a + a number may be national: drop one trunk 0.
+    fun significant(number: String) = if (number.startsWith('+')) number.drop(1) else number.removePrefix("0")
+    val (short, long) = listOf(a, b).sortedBy { significant(it).length }
+    val shortDigits = significant(short)
+    val longDigits = significant(long)
+    if (shortDigits == longDigits) return true
+    return !short.startsWith('+') &&
+        shortDigits.length >= MIN_SUBSCRIBER_DIGITS &&
+        longDigits.length - shortDigits.length <= MAX_COUNTRY_CODE_DIGITS &&
+        longDigits.endsWith(shortDigits)
+}
+
+// A lookup key for a phone number: its last 9 digits, so numbers that differ may share one
+// (isSameNumber decides). Names stay as they are.
 fun String.trimToComparableNumber(): String = canonicalNumber()?.takeLast(9) ?: this
 
 // get the contact names first letter at showing the placeholder without image
