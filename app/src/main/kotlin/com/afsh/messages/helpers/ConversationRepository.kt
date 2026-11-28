@@ -534,12 +534,13 @@ class ConversationRepository(
  *
  * [trustTelephony] is for the forced pass after this app becomes the default SMS app again. Another
  * app may have marked a thread unread or deleted its newest message meanwhile, and Room may hold a
- * stale preview, so Telephony's date, snippet and read state win. Custom titles, scheduled dates and
- * the preview columns are still kept: Telephony has no say over them.
+ * stale preview, so Telephony's date, snippet and read state win. Custom titles and the preview
+ * columns are still kept: Telephony has no say over them.
  *
- * [cached] must be the same thread's row. A temporary scheduled thread lends a real one nothing but a
- * custom title (see [ConversationRepository.foldScheduled]); its flag and its date would make the real
- * thread look scheduled.
+ * [incoming] is a Telephony row, so the result is never a temporary scheduled thread, and [cached]
+ * must be the same thread's row. A temporary thread lends a real one nothing but a custom title (see
+ * [ConversationRepository.foldScheduled]); its flag and its date would make the real thread look
+ * scheduled.
  */
 internal fun mergeConversationWithCache(
     incoming: Conversation,
@@ -555,21 +556,18 @@ internal fun mergeConversationWithCache(
             usesCustomTitle = true,
         )
     }
-    if (cached.isScheduled) {
-        updated = updated.copy(
-            date = cached.date,
-            isScheduled = true,
-        )
-    }
+    // A Telephony row is never a temporary scheduled thread. A cached row flagged so took a temporary
+    // thread's flag, date and snippet in an old fold, so none of them stands as a newer local state.
+    val trustLocal = !trustTelephony && !cached.isScheduled
     // Keep a newer local preview (e.g. optimistic send bump) until Telephony catches up.
-    if (!trustTelephony && cached.date > updated.date) {
+    if (trustLocal && cached.date > updated.date) {
         updated = updated.copy(
             date = cached.date,
             snippet = cached.snippet,
         )
     }
     val hasNewerMessage = incoming.date > cached.date || incoming.messageCount > cached.messageCount
-    if (!trustTelephony && cached.read && cached.unreadCount == 0 && !updated.read && !hasNewerMessage) {
+    if (trustLocal && cached.read && cached.unreadCount == 0 && !updated.read && !hasNewerMessage) {
         updated = updated.copy(read = true, unreadCount = 0)
     }
     // REPLACE would clear denormalized preview columns; keep them until refresh below.

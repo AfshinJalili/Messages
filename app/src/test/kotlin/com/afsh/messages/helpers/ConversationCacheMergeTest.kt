@@ -144,12 +144,11 @@ class ConversationCacheMergeTest {
     }
 
     @Test
-    fun `a forced pass still keeps app-owned metadata and a scheduled date`() {
+    fun `a forced pass still keeps app-owned metadata`() {
         val cached = conversation(
             date = 3_000,
             title = "Team Chat",
             usesCustomTitle = true,
-            isScheduled = true,
             previewSnippet = "Cached preview",
         )
         val telephony = conversation(date = 1_000, title = "+15550100")
@@ -157,8 +156,20 @@ class ConversationCacheMergeTest {
         val merged = mergeConversationWithCache(telephony, cached, trustTelephony = true)
 
         assertEquals("Team Chat", merged.title)
-        assertTrue(merged.isScheduled)
-        assertEquals(3_000, merged.date)
         assertEquals("Cached preview", merged.previewSnippet)
+    }
+
+    @Test
+    fun `a Telephony row is never scheduled, even over a row an old fold marked so`() {
+        // An old reconcile folded a temporary thread into this one: its flag, date and snippet are not this thread's.
+        val cached = conversation(date = 9_000, snippet = "Scheduled text", isScheduled = true, title = "Team Chat", usesCustomTitle = true)
+        val telephony = conversation(date = 1_000, snippet = "Sent", title = "+15550100")
+
+        val merged = mergeConversationWithCache(telephony, cached)
+
+        assertFalse(merged.isScheduled)
+        assertEquals(1_000, merged.date)
+        assertEquals("Sent", merged.snippet)
+        assertEquals("Team Chat", merged.title)
     }
 }

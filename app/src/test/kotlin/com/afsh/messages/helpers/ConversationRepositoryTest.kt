@@ -492,6 +492,23 @@ class ConversationRepositoryTest {
     }
 
     @Test
+    fun `a real thread an old fold marked scheduled is a plain conversation again after one pass`() {
+        conversations.insertOrUpdate(conversation(10, date = (now / 1000).toInt() + 3600).copy(isScheduled = true, snippet = "later"))
+        message(5, threadId = 10, scheduled = true, date = (now / 1000).toInt() + 3600)
+        telephony.threads[10] = conversation(10, date = 150).copy(snippet = "sent")
+        telephony.inboxThreadCount = 1
+        assertTrue("Room's count leaves the marked row out", repository.needsFullReconcile())
+
+        fullPass()
+
+        val real = conversations.rows.getValue(10)
+        assertFalse(real.isScheduled)
+        assertEquals(150, real.date)
+        assertEquals("sent", real.snippet)
+        assertFalse(repository.needsFullReconcile())
+    }
+
+    @Test
     fun `a temporary group thread does not fold into a one-to-one thread with its first participant`() {
         temporaryThread(77, "+110", "+120")
         telephony.threads[10] = conversation(10, date = 150)
