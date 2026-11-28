@@ -39,8 +39,10 @@ object RuleBasedFilter {
     /**
      * A code is a one-time code only this many characters or fewer from a code word, in the same
      * sentence: «کد تایید شما: 482913», but not a year at the end of "Your code is LUCKY. Win… 2025".
+     * One Persian SMS segment, so a long service name between the two still counts: «رمز یکبار
+     * مصرف شما جهت ورود به همراه بانک ملت: 123456» is 38 characters apart.
      */
-    const val CODE_WINDOW = 30
+    const val CODE_WINDOW = 70
     private val SENTENCE_END = Regex("[.!?؟…](?:\\s|$)")
 
     fun evaluate(context: Context, body: String): FilterVerdict = explain(context, body).verdict

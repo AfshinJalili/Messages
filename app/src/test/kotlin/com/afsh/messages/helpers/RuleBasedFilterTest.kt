@@ -321,6 +321,11 @@ class RuleBasedFilterTest {
             "Your OTP is 4821. Do not share it.",
             "123456 کد ورود شما به دیجی\u200cکالا است",
             "کد ورود: 123456\n\n@digikala.com #123456",
+            // A long service or bank name between the code word and the code.
+            "رمز یکبار مصرف شما جهت ورود به همراه بانک ملت: 123456",
+            "کد فعالسازی حساب کاربری شما در سامانه سجام: 12345",
+            "کد امنیتی ورود به حساب کاربری شما در درگاه ملی خدمات دولت هوشمند: 123456",
+            "بانک ملت\nرمز پویا خرید اینترنتی\nفروشگاه: دیجی کالا\nمبلغ: 1,250,000 ریال\nرمز: 48291734",
         ).forEach { body ->
             assertEquals(body, FilterRule.ONE_TIME_CODE, explain(body).rule)
         }
@@ -340,7 +345,7 @@ class RuleBasedFilterTest {
 
     @Test
     fun `a number far from the code word is not the code`() {
-        val body = "Your code is ready to use at any of our stores across the country from 2025"
+        val body = "Your code is ready to use at any of our stores across the country, online or in person, from 2025"
         assertNotEquals(FilterRule.ONE_TIME_CODE, explain(body).rule)
     }
 
