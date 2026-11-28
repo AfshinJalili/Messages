@@ -169,21 +169,30 @@ data class SpamPatterns(val groups: Map<SpamPatternGroup, List<String>>) {
     }
 }
 
-/**
- * Length-preserving fold so pattern ranges still index the original body: Arabic/Persian digits
- * to ASCII, Yeh/Kaf variants to Persian, ZWNJ to a space.
- */
-fun normalizeSpamText(body: String): String = buildString(body.length) {
-    for (c in body) {
-        when (c) {
-            '\u064A', '\u0649' -> append('\u06CC') // Arabic Yeh / Alef Maqsura → Persian Yeh
-            '\u0643' -> append('\u06A9') // Arabic Kaf → Persian Kaf
-            in '\u06F0'..'\u06F9' -> append('0' + (c - '\u06F0')) // Persian digits
-            in '\u0660'..'\u0669' -> append('0' + (c - '\u0660')) // Arabic-Indic digits
-            '\u200c' -> append(' ') // ZWNJ → space
-            else -> append(c)
-        }
+/** Text as patterns and phrases see it, and where each of its characters came from. */
+class SpamText(val folded: String, private val origins: IntArray) {
+    /** The characters of the original text that a match in [folded] covers. */
+    fun originalRange(range: IntRange): IntRange = origins[range.first]..origins[range.last]
+}
+
+/** Folds [text] for matching: Arabic/Persian digits to ASCII, Yeh/Kaf variants to Persian, ZWNJ to a space. */
+fun foldSpamText(text: String): SpamText {
+    val folded = StringBuilder(text.length)
+    val origins = IntArray(text.length)
+    text.forEachIndexed { index, c ->
+        origins[folded.length] = index
+        folded.append(
+            when (c) {
+                '\u064A', '\u0649' -> '\u06CC' // Arabic Yeh / Alef Maqsura → Persian Yeh
+                '\u0643' -> '\u06A9' // Arabic Kaf → Persian Kaf
+                in '\u06F0'..'\u06F9' -> '0' + (c - '\u06F0') // Persian digits
+                in '\u0660'..'\u0669' -> '0' + (c - '\u0660') // Arabic-Indic digits
+                '\u200c' -> ' ' // ZWNJ → space
+                else -> c
+            },
+        )
     }
+    return SpamText(folded.toString(), origins)
 }
 
 /**

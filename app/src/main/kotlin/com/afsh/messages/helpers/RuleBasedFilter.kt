@@ -50,20 +50,23 @@ object RuleBasedFilter {
      */
     fun explain(patterns: SpamPatterns, sender: String, body: String): FilterResult {
         if (body.isBlank()) return FilterResult.NONE
-        val normalized = normalizeSpamText(body)
+        val text = foldSpamText(body)
         val compiled = CompiledPatterns.of(patterns)
-        fun find(group: SpamPatternGroup) = compiled.find(group, normalized)
-        fun signals(group: SpamPatternGroup) = compiled.signalMatches(group, normalized)
+        fun find(group: SpamPatternGroup) = compiled.find(group, text.folded)
+        fun signals(group: SpamPatternGroup) = compiled.signalMatches(group, text.folded)
+        // Matches are found in the folded text; the result points into the body as received.
+        fun result(verdict: FilterVerdict, rule: FilterRule, matches: List<FilterMatch>) =
+            FilterResult(verdict, rule, matches.map { FilterMatch(it.group, text.originalRange(it.range)) })
 
         val codeWords = find(SpamPatternGroup.CODE_WORDS)
         val codes = find(SpamPatternGroup.CODE)
         if (codeWords.isNotEmpty() && codes.isNotEmpty()) {
-            return FilterResult(FilterVerdict.ALLOW, FilterRule.ONE_TIME_CODE, codeWords + codes)
+            return result(FilterVerdict.ALLOW, FilterRule.ONE_TIME_CODE, codeWords + codes)
         }
 
         val transactional = find(SpamPatternGroup.TRANSACTIONAL)
         if (transactional.isNotEmpty()) {
-            return FilterResult(FilterVerdict.ALLOW, FilterRule.TRANSACTIONAL, transactional)
+            return result(FilterVerdict.ALLOW, FilterRule.TRANSACTIONAL, transactional)
         }
 
         val marketing = signals(SpamPatternGroup.MARKETING)
@@ -76,11 +79,7 @@ object RuleBasedFilter {
         val companion = links.isNotEmpty() || namedSender
         val block = weight >= BLOCK_WEIGHT || (weight >= BLOCK_WEIGHT_WITH_COMPANION && companion)
         if (block) {
-            return FilterResult(
-                FilterVerdict.BLOCK,
-                FilterRule.MARKETING,
-                marketing + strongEmoji + links,
-            )
+            return result(FilterVerdict.BLOCK, FilterRule.MARKETING, marketing + strongEmoji + links)
         }
         return FilterResult.NONE
     }
