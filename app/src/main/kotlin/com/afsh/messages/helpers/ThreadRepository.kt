@@ -256,9 +256,10 @@ class ThreadRepository(
     fun reload(addresses: Collection<String>): Boolean {
         messages.allFetched = false
         val current = messages.list
-        val lastMaxId = current.filterNot { it.isScheduled }.maxByOrNull { it.id }?.id ?: 0L
+        // SMS and MMS ids are separate sequences, so the newest loaded id is per transport.
+        val lastMaxIds = current.filterNot { it.isScheduled }.groupBy { it.isMMS }.mapValues { (_, rows) -> rows.maxOf { it.id } }
         val newThreadId = platform.threadIdFor(addresses.toSet())
-        val loaded = ArrayList(
+        var loaded = ArrayList(
             platform.providerMessages(
                 newThreadId,
                 includeScheduled = false,
@@ -274,10 +275,14 @@ class ThreadRepository(
         }
 
         loaded.addAll(platform.scheduledMessages(threadId).filterNot { it.isScheduled && it.millis() < clock() })
-        if (platform.useRecycleBin) loaded.removeAll(platform.recycledMessages(threadId).toSet())
+        if (platform.useRecycleBin) {
+            // By identity: the provider's copy of a binned message may differ from Room's (read, status, name).
+            loaded = loaded.filterNotInByKey(platform.recycledMessages(threadId)) { it.getStableId() }
+        }
         messages.list = loaded
 
-        loaded.filter { !it.isScheduled && !it.isReceivedMessage() && it.id > lastMaxId }.forEach(platform::cacheIfMissing)
+        loaded.filter { !it.isScheduled && !it.isReceivedMessage() && it.id > (lastMaxIds[it.isMMS] ?: 0L) }
+            .forEach(platform::cacheIfMissing)
         return moved
     }
 

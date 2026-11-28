@@ -439,6 +439,34 @@ class ThreadRepositoryTest {
     }
 
     @Test
+    fun `a reload leaves a binned message out even when the provider's copy has changed since`() {
+        platform.useRecycleBin = true
+        platform.threadIdForAddresses = 1
+        platform.provider = arrayListOf(msg(1), msg(2, read = true))
+        platform.room[2] = msg(2, read = false)
+        platform.recycleBin += 2
+        val repository = repository()
+        repository.messages.list = arrayListOf(msg(1))
+
+        repository.reload(listOf("+1"))
+
+        assertEquals(listOf(1L), repository.ids())
+    }
+
+    @Test
+    fun `a reload caches a new outgoing MMS whose id is below the newest SMS id`() {
+        platform.threadIdForAddresses = 1
+        val newestSms = msg(9000, type = SENT)
+        platform.provider = arrayListOf(newestSms, msg(120, date = 9001, type = SENT, isMms = true))
+        val repository = repository()
+        repository.messages.list = arrayListOf(newestSms)
+
+        repository.reload(listOf("+1"))
+
+        assertTrue("SMS and MMS ids are separate sequences", 120L in platform.room)
+    }
+
+    @Test
     fun `a scheduled-only thread moves to the real thread once the provider has one`() {
         platform.threadIdForAddresses = 5
         platform.provider = arrayListOf(msg(1, threadId = 5))
