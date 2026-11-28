@@ -123,7 +123,7 @@ class ThreadRepository(
             ArrayList()
         }
         platform.clearExpiredScheduled(threadId, loaded)
-        loaded.removeAll { it.isScheduled && it.millis() < clock() }
+        loaded.removeAll { it.isDueBefore(clock()) }
         loaded.sortBy { it.date }
         if (loaded.size > MESSAGES_LIMIT) loaded = ArrayList(loaded.takeLast(MESSAGES_LIMIT))
         messages.list = loaded
@@ -274,7 +274,7 @@ class ThreadRepository(
             platform.moveScheduled(current.filter { it.threadId != threadId }, threadId)
         }
 
-        loaded.addAll(platform.scheduledMessages(threadId).filterNot { it.isScheduled && it.millis() < clock() })
+        loaded.addAll(platform.scheduledMessages(threadId).filterNot { it.isDueBefore(clock()) })
         if (platform.useRecycleBin) {
             // By identity: the provider's copy of a binned message may differ from Room's (read, status, name).
             loaded = loaded.filterNotInByKey(platform.recycledMessages(threadId)) { it.getStableId() }

@@ -41,6 +41,12 @@ data class Message(
 
     fun millis() = date * 1000L
 
+    /**
+     * A scheduled message due before [millis]. Its alarm has fired by then, so a thread no longer shows
+     * it, and once it is overdue it is dropped.
+     */
+    fun isDueBefore(millis: Long) = isScheduled && millis() < millis
+
     fun getSender(): SimpleContact? =
         participants.firstOrNull { it.doesHavePhoneNumber(senderPhoneNumber) }
             ?: participants.firstOrNull { it.name == senderName }

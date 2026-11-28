@@ -180,7 +180,7 @@ private fun Context.getMessages(
 
     messages = messages
         .filter { it.participants.isNotEmpty() }
-        .filterNot { it.isScheduled && it.millis() < System.currentTimeMillis() }
+        .filterNot { it.isDueBefore(System.currentTimeMillis()) }
         .sortedWith(compareBy<Message> { it.date }.thenBy { it.id })
         .takeLast(displayLimit)
         .toMutableList() as ArrayList<Message>

@@ -440,8 +440,8 @@ class ConversationRepository(
         val messages = messagesToDelete ?: this.messages.getScheduledThreadMessages(threadId)
         val cutoff = clock() - 1.minutes.inWholeMilliseconds
         try {
-            messages.filter { it.isScheduled && it.millis() < cutoff }.forEach { this.messages.delete(it.id, it.isMMS) }
-            if (messages.filterNot { it.isScheduled && it.millis() < cutoff }.isEmpty()) {
+            messages.filter { it.isDueBefore(cutoff) }.forEach { this.messages.delete(it.id, it.isMMS) }
+            if (messages.filterNot { it.isDueBefore(cutoff) }.isEmpty()) {
                 val conversation = conversations.getConversationWithThreadId(threadId)
                 if (conversation != null && conversation.isScheduled) {
                     conversations.deleteThreadId(threadId)
