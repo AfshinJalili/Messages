@@ -14,6 +14,9 @@ class RuleBasedFilterTest {
     private fun explain(sender: String, body: String) =
         RuleBasedFilter.explain(SpamPatterns.DEFAULT, sender, body)
 
+    /** A link: the companion that lets one marketing word or emoji go to Spam. */
+    private val LINK = "\nexample.ir/x"
+
     @Test
     fun `OTP with لغو11 is allowed as a one-time code`() {
         val body = "کد تایید شما: 482913\nبانک ملت\nلغو11"
@@ -77,11 +80,11 @@ class RuleBasedFilterTest {
     }
 
     @Test
-    fun `one marketing word from a named sender blocks`() {
-        val body = "جشنواره تابستانی ما شروع شد"
-        val result = explain("HAMRAH_AVAL", body)
-        assertEquals(FilterVerdict.BLOCK, result.verdict)
-        assertEquals(FilterRule.MARKETING, result.rule)
+    fun `one marketing word from a named sender stays in inbox`() {
+        // Carriers, banks and government notices come from names and mention gifts or festivals.
+        assertEquals(FilterVerdict.NO_VERDICT, explain("HAMRAH_AVAL", "جشنواره تابستانی ما شروع شد").verdict)
+        assertEquals(FilterVerdict.NO_VERDICT, explain("BANKMELLAT", "دستور پرداخت شما با موفقیت اجرا شد").verdict)
+        assertEquals(FilterVerdict.NO_VERDICT, explain("IRANCELL", "مشترک گرامی، ۱۰۰ پیامک هدیه به شما تعلق گرفت").verdict)
     }
 
     @Test
@@ -241,7 +244,7 @@ class RuleBasedFilterTest {
 
     @Test
     fun `tatweel stretching a word still matches it, and the highlight covers the stretched word`() {
-        val body = "تـخـفـیـف ویـژه"
+        val body = "تـخـفـیـف ویـژه$LINK"
         val result = explain("SHOP", body)
         assertEquals(FilterVerdict.BLOCK, result.verdict)
         val words = result.matches.filter { it.group == SpamPatternGroup.MARKETING }.map { body.substring(it.range) }
@@ -251,7 +254,7 @@ class RuleBasedFilterTest {
     @Test
     fun `diacritics and direction marks inside a word still match it`() {
         // Fatha on the first letter, an RLM and a ZWJ inside the word.
-        val result = explain("SHOP", "جَشن\u200Fوا\u200Dره تابستانی")
+        val result = explain("SHOP", "جَشن\u200Fوا\u200Dره تابستانی$LINK")
         assertEquals(FilterVerdict.BLOCK, result.verdict)
         assertEquals(FilterRule.MARKETING, result.rule)
     }
@@ -267,7 +270,7 @@ class RuleBasedFilterTest {
             "هديه" to "یک هدیه برای شما",
         )
         cases.forEach { (pattern, body) ->
-            val result = RuleBasedFilter.explain(withMarketing(pattern), "SHOP", body)
+            val result = RuleBasedFilter.explain(withMarketing(pattern), "SHOP", body + LINK)
             assertEquals("$pattern in $body", FilterVerdict.BLOCK, result.verdict)
         }
     }
@@ -283,7 +286,7 @@ class RuleBasedFilterTest {
     fun `a pattern that can also match empty text still fires on its words`() {
         // An empty first branch wins at every position, so `(?:ویژه)?|حراج` can only ever find «ویژه».
         listOf("حراج|" to "فروش حراج", "(?:ویژه)?|حراج" to "فروش ویژه").forEach { (pattern, body) ->
-            val result = RuleBasedFilter.explain(withMarketing(pattern), "SHOP", body)
+            val result = RuleBasedFilter.explain(withMarketing(pattern), "SHOP", body + LINK)
             assertEquals(pattern, FilterVerdict.BLOCK, result.verdict)
         }
     }
@@ -344,7 +347,7 @@ class RuleBasedFilterTest {
 
     @Test
     fun `a date is not a code, so a discount code doesn't pass as a one-time code`() {
-        val result = explain("SHOP", "تخفیف ویژه ۵۰ درصد! کد شما: OFF50 تا ۱۴۰۳/۱۲/۲۹")
+        val result = explain("SHOP", "تخفیف ویژه ۵۰ درصد! کد شما: OFF50 تا ۱۴۰۳/۱۲/۲۹$LINK")
         assertEquals(FilterVerdict.BLOCK, result.verdict)
         assertEquals(FilterRule.MARKETING, result.rule)
     }

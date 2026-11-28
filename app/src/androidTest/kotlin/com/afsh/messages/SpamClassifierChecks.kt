@@ -99,7 +99,8 @@ class SpamClassifierChecks {
     @Test
     fun editedPatternsPersistAndDriveTheVerdict() {
         context.config.ruleFilterEnabled = true
-        val body = "پیشنهاد ویژه امروز"
+        // One edited word plus a link goes to Spam; neither alone does.
+        val body = "پیشنهاد ویژه امروز example.ir/x"
         check(RuleBasedFilter.explain(context, "SHOP", body).verdict == FilterVerdict.NO_VERDICT)
         context.config.spamPatterns = context.config.spamPatterns.with(SpamPatternGroup.MARKETING, listOf("پیشنهاد ویژه"))
         check(context.config.spamPatterns[SpamPatternGroup.MARKETING] == listOf("پیشنهاد ویژه"))

@@ -24,15 +24,16 @@ object RuleBasedFilter {
 
     /**
      * Signal weights used by [explain]: a marketing / event / CTA word is [WORD_WEIGHT], and a
-     * strong promo or layout emoji (🎉, ✅, 📍, …) is the same weight. Links and named senders are
-     * companions. One strong signal alone from a numeric sender stays in the inbox; one plus a
-     * companion, or two signals, goes to Spam. Opt-out lines such as «لغو11» are never a signal.
+     * strong promo or layout emoji (🎉, ✅, 📍, …) is the same weight. A link is a companion. One
+     * strong signal alone stays in the inbox; one plus a link, or two signals, goes to Spam.
+     * Opt-out lines such as «لغو11» are never a signal. A sender name is not a companion: carriers,
+     * banks and government notices come from names and mention gifts, festivals or "free".
      */
     const val WORD_WEIGHT = 2
     const val EMOJI_WEIGHT = 2
     /** Block without a companion when total weight reaches this (e.g. one word + one emoji). */
     const val BLOCK_WEIGHT = 3
-    /** With a link or named sender, this weight is enough (one marketing word or one strong emoji). */
+    /** With a link, this weight is enough (one marketing word or one strong emoji). */
     const val BLOCK_WEIGHT_WITH_COMPANION = 2
 
     /**
@@ -53,7 +54,7 @@ object RuleBasedFilter {
      * Ordered, high-precision first. A one-time code (a code word and a code) and transactional
      * bank/receipt language are always allowed: service SMS carry links and the mandatory "لغو11"
      * line, which must not send them to Spam. Marketing scores word and strong-emoji weights
-     * equally, with a link or named sender as a companion — never an unsubscribe shortcut.
+     * equally, with a link as a companion — never an unsubscribe shortcut. [sender] is not read.
      */
     fun explain(patterns: SpamPatterns, sender: String, body: String): FilterResult {
         if (body.isBlank()) return FilterResult.NONE
@@ -81,9 +82,7 @@ object RuleBasedFilter {
 
         val weight = marketing.size * WORD_WEIGHT + strongEmoji.size * EMOJI_WEIGHT
         val links = find(SpamPatternGroup.LINKS)
-        val namedSender = isAlphaSender(sender)
-        val companion = links.isNotEmpty() || namedSender
-        val block = weight >= BLOCK_WEIGHT || (weight >= BLOCK_WEIGHT_WITH_COMPANION && companion)
+        val block = weight >= BLOCK_WEIGHT || (weight >= BLOCK_WEIGHT_WITH_COMPANION && links.isNotEmpty())
         if (block) {
             return result(FilterVerdict.BLOCK, FilterRule.MARKETING, marketing + strongEmoji + links)
         }
@@ -103,9 +102,6 @@ object RuleBasedFilter {
         }
         return null
     }
-
-    private fun isAlphaSender(sender: String) =
-        sender.any { it.isLetter() } || sender.trimStart().firstOrNull().let { it == '*' || it == '#' }
 
     /** Compiled once per pattern set; patterns that do not compile are skipped. */
     private class CompiledPatterns(private val regexes: Map<SpamPatternGroup, List<Regex>>) {

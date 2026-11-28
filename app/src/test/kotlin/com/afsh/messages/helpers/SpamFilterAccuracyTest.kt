@@ -15,9 +15,8 @@ import java.sql.DriverManager
  *
  * Mapping: BLOCK = spam prediction; ALLOW and NO_VERDICT = ham (stays in inbox).
  *
- * The corpora carry no sender, and the filter reads one (a named sender is a companion). Each
- * corpus is scored once per [SenderKind] with that one sender on spam and ham alike, so the
- * sender never tells the filter the label. Thresholds are in the companion object. Precision is
+ * The corpora carry no sender. Each corpus is scored once per [SenderKind] with that one sender
+ * on spam and ham alike, so a sender can never tell the filter the label. Thresholds are in the companion object. Precision is
  * gated tightly; recall is a floor so the filter cannot silently go inert. UCI English recall is
  * reported but not gated.
  *
@@ -176,14 +175,14 @@ class SpamFilterAccuracyTest {
          * Measured 2026-11-28 with one sender on spam and ham alike and PSSC's `&link` written back
          * (PSSC v0.3 n=4324):
          * - number: P=95.1% R=43.6% F1=59.8% FPR=2.2% (tp=929 fp=48 tn=2145 fn=1202)
-         * - name: P=92.7% R=54.4% F1=68.6% FPR=4.1% (tp=1159 fp=91 tn=2102 fn=972)
+         * - name: the same, now that a sender name is no companion (was P=92.7% R=54.4% FPR=4.1%)
          * UCI v.1 n=5574, either sender: P=100.0% R=0.0% FPR=0.0% (tp=0 fp=0 tn=4827 fn=747;
          * English recall is not a gate — the filter is Persian-keyword-first).
          * Floors = measured − 2pp (precision/recall); FPR ceiling = measured + 2pp.
          * UCI soft precision floor = 95%.
          */
         val PSSC_NUMBER = Gate(precision = 0.931, recall = 0.416, fpr = 0.042)
-        val PSSC_NAME = Gate(precision = 0.907, recall = 0.524, fpr = 0.061)
+        val PSSC_NAME = Gate(precision = 0.931, recall = 0.416, fpr = 0.042)
         const val UCI_PRECISION_SOFT_FLOOR = 0.95
 
         /** What PSSC's `&link` mask is read as. */
