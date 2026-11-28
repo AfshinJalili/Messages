@@ -1,7 +1,9 @@
 package com.afsh.messages.receivers
 
+import android.content.ContentUris
 import android.content.Context
 import android.net.Uri
+import android.util.Log
 import com.klinker.android.send_message.MmsReceivedReceiver
 import com.afsh.commons.extensions.getMyContactsCursor
 import com.afsh.commons.extensions.showErrorToast
@@ -24,7 +26,14 @@ import com.afsh.messages.models.Message
 class MmsReceiver : MmsReceivedReceiver() {
 
     override fun onMessageReceived(context: Context, messageUri: Uri) {
-        val mms = TelephonyReader(context).getLatestMms() ?: return
+        // Read the row the library just stored. Each download finishes on its own thread, so the
+        // newest MMS may be another download or an outgoing message.
+        val messageId = runCatching { ContentUris.parseId(messageUri) }.getOrDefault(-1L)
+        val mms = TelephonyReader(context).getMmsById(messageId)
+        if (mms == null) {
+            Log.w(TAG, "Couldn't read the downloaded MMS $messageUri")
+            return
+        }
         val address = mms.getSender()?.phoneNumbers?.firstOrNull()?.normalizedNumber ?: ""
         ensureBackgroundThread {
             handleMmsMessage(context, mms, address)
@@ -71,5 +80,9 @@ class MmsReceiver : MmsReceivedReceiver() {
                 attachmentUri = attachmentUri,
             )
         )
+    }
+
+    companion object {
+        private const val TAG = "MmsReceiver"
     }
 }

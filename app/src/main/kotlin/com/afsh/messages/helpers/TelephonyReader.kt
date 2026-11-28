@@ -65,8 +65,9 @@ class TelephonyReader(context: Context) {
     fun getMms(threadId: Long? = null, sortOrder: String? = null, dateFrom: Int = -1): ArrayList<Message> =
         context.getMMS(threadId, sortOrder, dateFrom)
 
-    /** The newest MMS on the phone, or null. */
-    fun getLatestMms(): Message? = context.getLatestMMS()
+    /** MMS [messageId] as a [Message], or null when it is missing or can't be read. */
+    fun getMmsById(messageId: Long): Message? =
+        context.queryMms("${Mms._ID} = ?", arrayOf(messageId.toString()), null).firstOrNull()
 
     /** The From address of MMS [messageId], or "" when it can't be read. */
     fun getMmsSender(messageId: Long): String = context.getMMSSender(messageId)
@@ -455,11 +456,6 @@ private fun Context.getMmsAttachment(id: Long): MessageAttachment {
     }
 
     return messageAttachment
-}
-
-private fun Context.getLatestMMS(): Message? {
-    val sortOrder = "${Mms.DATE} DESC LIMIT 1"
-    return getMMS(sortOrder = sortOrder).firstOrNull()
 }
 
 private fun Context.getThreadSnippet(threadId: Long): String {
