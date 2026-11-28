@@ -353,6 +353,25 @@ class MessagingEventsCoordinatorTest {
     }
 
     @Test
+    fun `reading a conversation anywhere clears its message notification but not its send failure`() {
+        val read = MessagingEvent.ReadStateChanged(threadId = 10L, read = true, unreadCount = 0)
+        assertEquals(AttentionDecision.ClearIncomingAlert(10L), coordinator.publish(read))
+        assertEquals(listOf(10L), host.cancelledNotifications)
+
+        coordinator.publish(MessagingEvent.ReadStateChanged(threadId = 20L, read = false, unreadCount = 1))
+        assertEquals(listOf(10L), host.cancelledNotifications)
+        assertTrue(host.cancelledSendFailures.isEmpty())
+    }
+
+    @Test
+    fun `an action outside messaging events clears the message notification through the coordinator`() {
+        coordinator.clearConversationNotification(10L)
+
+        assertEquals(listOf(10L), host.cancelledNotifications)
+        assertTrue(host.cancelledSendFailures.isEmpty())
+    }
+
+    @Test
     fun `a message sent in a conversation clears its send failure notification but not its message notification`() {
         val sent = MessagingEvent.MessageSent(threadId = 10L, messageId = 300L, isMms = false)
         assertEquals(AttentionDecision.ClearSendFailureAlert(10L), coordinator.publish(sent))

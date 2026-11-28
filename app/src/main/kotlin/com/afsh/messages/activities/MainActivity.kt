@@ -694,6 +694,7 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
 
             InboxAction.DELETE -> confirmDelete(selected)
 
+            // markThreadRead publishes ReadStateChanged, which clears the thread's notification.
             InboxAction.MARK_READ -> updateInBackground { selected.filter { !it.read }.forEach { conversationRepository.markThreadRead(it.threadId) } }
             InboxAction.MARK_UNREAD -> updateInBackground { selected.filter { it.read }.forEach { conversationRepository.markThreadUnread(it.threadId) } }
             InboxAction.MUTE, InboxAction.UNMUTE -> {
@@ -739,7 +740,10 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
                     explanation = resources.getQuantityString(R.plurals.always_spam_text, count),
                     confirmLabel = resources.getQuantityString(R.plurals.always_spam, count),
                 ) {
-                    selected.forEach { config.addSpamNumber(it.phoneNumber) }
+                    selected.forEach {
+                        config.addSpamNumber(it.phoneNumber)
+                        MessagingEvents.clearConversationNotification(it.threadId)
+                    }
                     clearSelection()
                 }
             }
@@ -774,7 +778,9 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
                     confirmLabel = resources.getQuantityString(R.plurals.block_on_phone, count),
                     destructive = true,
                 ) {
-                    blockNumbersOnPhone(selected.map { it.phoneNumber })
+                    if (blockNumbersOnPhone(selected.map { it.phoneNumber })) {
+                        selected.forEach { MessagingEvents.clearConversationNotification(it.threadId) }
+                    }
                     clearSelection()
                 }
             }

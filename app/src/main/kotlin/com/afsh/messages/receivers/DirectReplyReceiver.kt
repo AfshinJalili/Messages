@@ -4,11 +4,8 @@ import android.annotation.SuppressLint
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.os.Handler
-import android.os.Looper
 import androidx.core.app.RemoteInput
 import com.afsh.commons.extensions.showErrorToast
-import com.afsh.commons.helpers.SimpleContactsHelper
 import com.afsh.messages.extensions.*
 import com.afsh.messages.helpers.ConversationRepository
 import com.afsh.messages.helpers.MessagingEvent
@@ -56,19 +53,8 @@ class DirectReplyReceiver : BroadcastReceiver() {
                     context.showErrorToast(e)
                 }
 
-                val photoUri = SimpleContactsHelper(context).getPhotoUriFromPhoneNumber(address)
-                val bitmap = context.getNotificationBitmap(photoUri)
-                Handler(Looper.getMainLooper()).post {
-                    context.notificationHelper.appendDirectReplyNotification(
-                        messageId = messageId,
-                        address = address,
-                        body = body,
-                        threadId = threadId,
-                        bitmap = bitmap,
-                    )
-                }
-
-                // markThreadRead also publishes MessagingEvent.ReadStateChanged.
+                // Replying reads the thread. The ReadStateChanged this publishes clears the notification,
+                // which also ends the reply's spinner, whether or not the thread is muted or open.
                 ConversationRepository.from(context).markThreadRead(threadId)
                 if (messageId != 0L) {
                     MessagingEvents.publish(MessagingEvent.MessageSent(threadId = threadId, messageId = messageId, isMms = false))

@@ -6,7 +6,8 @@ Fails on:
 - Revived legacy Events.kt or refreshMessages / refreshConversations helpers
 - Direct calls to showMessageNotification or showSendingFailedNotification outside
   NotificationHelper.kt and MessagingEvents.kt
-- DirectReplyReceiver calling showMessageNotification instead of appendDirectReplyNotification
+- DirectReplyReceiver touching the tray itself instead of marking the thread read (the
+  ReadStateChanged that publishes is what clears the notification and its reply spinner)
 - Ad-hoc ProcessLifecycleOwner checks inside receivers/
 - Android framework imports leaking into pure AppPresence.kt or AttentionPolicy.kt
 - Missing MessagingEvents.init(this) in App.kt
@@ -107,9 +108,15 @@ for path in kotlin_files(APP_KT):
 
 if DIRECT_REPLY_FILE.is_file():
     direct_reply_text = DIRECT_REPLY_FILE.read_text()
-    if "appendDirectReplyNotification(" not in direct_reply_text:
+    if re.search(r"\bnotification(Helper|Manager)\b", direct_reply_text):
         violations.append(
-            f"{rel(DIRECT_REPLY_FILE)}: must update the shade via appendDirectReplyNotification()"
+            f"{rel(DIRECT_REPLY_FILE)}: must not post or cancel notifications itself; marking the "
+            "thread read publishes ReadStateChanged, and AttentionPolicy clears the notification"
+        )
+    if "markThreadRead(" not in direct_reply_text:
+        violations.append(
+            f"{rel(DIRECT_REPLY_FILE)}: must mark the thread read, which clears its notification "
+            "and ends the reply spinner"
         )
 
 # --- No ad-hoc ProcessLifecycleOwner foreground checks in receivers -----------

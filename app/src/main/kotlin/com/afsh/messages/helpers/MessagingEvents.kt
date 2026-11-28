@@ -179,6 +179,7 @@ class MessagingEventCoordinator(
             is AttentionDecision.ShowIncomingAlert -> host.showIncomingAlert(decision.event)
             is AttentionDecision.ShowSendFailureAlert -> host.showSendFailureAlert(decision.event)
             is AttentionDecision.ShowInThreadFailureReason -> inThreadFailuresFlow.tryEmit(decision.event)
+            is AttentionDecision.ClearIncomingAlert -> host.cancelConversationNotification(decision.threadId)
             is AttentionDecision.ClearSendFailureAlert -> clearSendFailureAlert(decision.threadId)
             AttentionDecision.Suppress -> Unit
         }
@@ -191,6 +192,14 @@ class MessagingEventCoordinator(
 
         eventsFlow.tryEmit(event)
         return decision
+    }
+
+    /**
+     * Removes [threadId]'s message notification for an action that is not a [MessagingEvent], such as
+     * marking its sender as spam or blocking it.
+     */
+    fun clearConversationNotification(threadId: Long) {
+        host.cancelConversationNotification(threadId)
     }
 
     /** The user is now viewing [threadId]: none of its notifications has anything to tell them. */
@@ -269,6 +278,9 @@ object MessagingEvents {
     fun currentPresence(): AppPresence = presence.current()
 
     fun publish(event: MessagingEvent): AttentionDecision = coordinator.publish(event)
+
+    /** See [MessagingEventCoordinator.clearConversationNotification]. */
+    fun clearConversationNotification(threadId: Long) = coordinator.clearConversationNotification(threadId)
 
     fun onConversationActive(token: Any, threadId: Long, isRecycleBin: Boolean) {
         presence.onConversationActive(token, threadId, isRecycleBin)

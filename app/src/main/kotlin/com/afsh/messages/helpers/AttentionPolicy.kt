@@ -9,6 +9,8 @@ sealed interface AttentionDecision {
     data class ShowIncomingAlert(val event: MessagingEvent.IncomingMessage) : AttentionDecision
     data class ShowSendFailureAlert(val event: MessagingEvent.SendFailed) : AttentionDecision
     data class ShowInThreadFailureReason(val event: MessagingEvent.SendFailed) : AttentionDecision
+    /** The conversation was read, so its message notification has nothing new to show. */
+    data class ClearIncomingAlert(val threadId: Long) : AttentionDecision
     /** A message of the conversation went, so its "not sent" notification is out of date. */
     data class ClearSendFailureAlert(val threadId: Long) : AttentionDecision
     data object Suppress : AttentionDecision
@@ -42,10 +44,13 @@ object AttentionPolicy {
             else -> AttentionDecision.ShowSendFailureAlert(event)
         }
 
+        // Wherever it was read (inbox, notification action, inline reply, another screen).
+        is MessagingEvent.ReadStateChanged ->
+            if (event.read) AttentionDecision.ClearIncomingAlert(event.threadId) else AttentionDecision.Suppress
+
         is MessagingEvent.MessageSent -> AttentionDecision.ClearSendFailureAlert(event.threadId)
 
         is MessagingEvent.DeliveryUpdated,
-        is MessagingEvent.ReadStateChanged,
         is MessagingEvent.MessageDeleted,
         is MessagingEvent.ScheduledMessageSent,
         is MessagingEvent.ConversationsChanged -> AttentionDecision.Suppress
