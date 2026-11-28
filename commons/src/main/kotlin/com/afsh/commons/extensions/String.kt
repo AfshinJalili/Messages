@@ -267,16 +267,31 @@ fun String.isPhoneNumber(): Boolean {
     return this.matches("^[0-9+\\-\\)\\( *#]+\$".toRegex())
 }
 
-// if we are comparing phone numbers, compare just the last 9 digits
-fun String.trimToComparableNumber(): String {
-    // don't trim if it's not a phone number
-    if (!this.isPhoneNumber()) {
-        return this
+/**
+ * This as a number to store and compare: Persian and Arabic-Indic digits become ASCII, spaces,
+ * `-()./` and direction marks go, and a leading `00` becomes `+`. What is left is digits, `*`, `#`
+ * and a leading `+`. Null when this is a sender name rather than a number.
+ */
+fun String.canonicalNumber(): String? {
+    val number = StringBuilder(length)
+    for (c in this) {
+        when {
+            c in '0'..'9' || c == '*' || c == '#' || c == '+' -> number.append(c)
+            c in '\u06F0'..'\u06F9' -> number.append('0' + (c - '\u06F0'))
+            c in '\u0660'..'\u0669' -> number.append('0' + (c - '\u0660'))
+            c.isWhitespace() || c in NUMBER_SEPARATORS || c.category == CharCategory.FORMAT -> Unit
+            else -> return null
+        }
     }
-    val normalizedNumber = this.normalizeString()
-    val startIndex = Math.max(0, normalizedNumber.length - 9)
-    return normalizedNumber.substring(startIndex)
+    val canonical = if (number.startsWith("00")) "+" + number.substring(2) else number.toString()
+    return canonical.takeIf { CANONICAL_NUMBER.matches(it) }
 }
+
+private const val NUMBER_SEPARATORS = "-()./"
+private val CANONICAL_NUMBER = Regex("\\+?[0-9*#]*[0-9][0-9*#]*")
+
+// A lookup key for a phone number: its last 9 digits. Names stay as they are.
+fun String.trimToComparableNumber(): String = canonicalNumber()?.takeLast(9) ?: this
 
 // get the contact names first letter at showing the placeholder without image
 fun String.getNameLetter(): String {
