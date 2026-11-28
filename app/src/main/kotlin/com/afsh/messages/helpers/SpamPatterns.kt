@@ -28,6 +28,15 @@ enum class SpamPatternGroup(val key: String) {
     PROMO_EMOJI_WEAK("promo_emoji_weak"),
 }
 
+/** Why a pattern can't be saved. */
+sealed interface PatternProblem {
+    /** It doesn't compile; [reason] is the regex engine's first line. */
+    data class Invalid(val reason: String) : PatternProblem
+
+    /** It also matches empty text, almost always a stray `|` or an all-optional pattern. */
+    data object MatchesEmpty : PatternProblem
+}
+
 data class SpamPatterns(val groups: Map<SpamPatternGroup, List<String>>) {
 
     operator fun get(group: SpamPatternGroup): List<String> = groups[group].orEmpty()
@@ -165,12 +174,14 @@ data class SpamPatterns(val groups: Map<SpamPatternGroup, List<String>>) {
          */
         fun compile(pattern: String): Regex = Regex(foldSpamText(pattern).folded, RegexOption.IGNORE_CASE)
 
-        /** Null when [pattern] compiles; otherwise the reason it does not. */
-        fun error(pattern: String): String? = try {
-            compile(pattern)
-            null
-        } catch (e: IllegalArgumentException) {
-            e.message?.lineSequence()?.firstOrNull() ?: "invalid"
+        /** Why [pattern] can't be saved, or null when it can. */
+        fun problem(pattern: String): PatternProblem? {
+            val regex = try {
+                compile(pattern)
+            } catch (e: IllegalArgumentException) {
+                return PatternProblem.Invalid(e.message?.lineSequence()?.firstOrNull() ?: "invalid")
+            }
+            return PatternProblem.MatchesEmpty.takeIf { regex.containsMatchIn("") }
         }
     }
 }

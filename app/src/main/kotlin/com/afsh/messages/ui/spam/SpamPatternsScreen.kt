@@ -41,6 +41,7 @@ import com.afsh.messages.R
 import com.afsh.messages.helpers.FilterResult
 import com.afsh.messages.helpers.FilterRule
 import com.afsh.messages.helpers.FilterVerdict
+import com.afsh.messages.helpers.PatternProblem
 import com.afsh.messages.helpers.RuleBasedFilter
 import com.afsh.messages.helpers.SpamPatternGroup
 import com.afsh.messages.helpers.SpamPatterns
@@ -180,13 +181,20 @@ fun SpamPatternsScreen(
         }
     }
     editing?.let { current ->
+        val matchesEmpty = stringResource(R.string.spam_patterns_matches_empty)
         TextInputDialog(
             title = stringResource(if (current.index == null) R.string.spam_patterns_add else R.string.spam_patterns_edit),
             current = current.current,
             explanation = stringResource(R.string.spam_patterns_regex_hint),
             confirmLabel = stringResource(R.string.spam_patterns_save),
             dismissLabel = stringResource(com.afsh.commons.R.string.cancel),
-            error = { SpamPatterns.error(it) },
+            error = {
+                when (val problem = SpamPatterns.problem(it)) {
+                    is PatternProblem.Invalid -> problem.reason
+                    PatternProblem.MatchesEmpty -> matchesEmpty
+                    null -> null
+                }
+            },
             onSave = {
                 editing = null
                 onEvent(SpamPatternsEvent.Save(current.group, current.index, it))

@@ -650,6 +650,7 @@
     <string name="spam_patterns_save">ذخیره‌ی الگو</string>
     <string name="spam_patterns_remove">حذف %s</string>
     <string name="spam_patterns_regex_hint">یک عبارت باقاعده (regex)، بدون توجه به بزرگی و کوچکی حروف. واژه‌ی ساده هم کار می‌کند.</string>
+    <string name="spam_patterns_matches_empty">این الگو متن خالی را هم می‌گیرد. گزینه‌ی خالی، مثل | در انتها، را بردارید.</string>
     <string name="spam_patterns_reset">بازگشت به پیش‌فرض</string>
     <string name="spam_patterns_reset_text">همه‌ی گروه‌ها به الگوهای داخلی برمی‌گردند و ویرایش‌هایتان از بین می‌رود.</string>
     <string name="spam_patterns_recheck">بررسی دوباره‌ی هرزنامه</string>

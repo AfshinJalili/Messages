@@ -680,6 +680,7 @@
     <string name="spam_patterns_save">Save pattern</string>
     <string name="spam_patterns_remove">Remove %s</string>
     <string name="spam_patterns_regex_hint">A regular expression, matched ignoring case. Plain words work too.</string>
+    <string name="spam_patterns_matches_empty">This pattern also matches empty text. Remove the empty choice, such as a trailing |.</string>
     <string name="spam_patterns_reset">Reset to defaults</string>
     <string name="spam_patterns_reset_text">Every group goes back to the built-in patterns. Your edits are lost.</string>
     <string name="spam_patterns_recheck">Recheck Spam</string>

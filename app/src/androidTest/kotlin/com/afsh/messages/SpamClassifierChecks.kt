@@ -7,6 +7,7 @@ import com.afsh.messages.helpers.BLOCK_REASON_NUMBER
 import com.afsh.messages.helpers.BLOCK_REASON_RULE
 import com.afsh.messages.helpers.FilterRule
 import com.afsh.messages.helpers.FilterVerdict
+import com.afsh.messages.helpers.PatternProblem
 import com.afsh.messages.helpers.RuleBasedFilter
 import com.afsh.messages.helpers.SpamPatternGroup
 import com.afsh.messages.helpers.SpamPatterns
@@ -111,7 +112,8 @@ class SpamClassifierChecks {
 
     @Test
     fun invalidPatternsAreReported() {
-        check(SpamPatterns.error("(unclosed") != null)
-        check(SpamPatterns.error("کد\\s*تایید") == null)
+        check(SpamPatterns.problem("(unclosed") is PatternProblem.Invalid)
+        check(SpamPatterns.problem("حراج|") == PatternProblem.MatchesEmpty)
+        check(SpamPatterns.problem("کد\\s*تایید") == null)
     }
 }

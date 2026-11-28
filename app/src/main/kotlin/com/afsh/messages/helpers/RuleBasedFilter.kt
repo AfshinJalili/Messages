@@ -94,10 +94,13 @@ object RuleBasedFilter {
                 regex.findAll(body).filter { !it.range.isEmpty() }.map { FilterMatch(group, it.range) }.toList()
             }
 
-        /** One match per pattern that hits, so each distinct pattern is one signal. */
+        /**
+         * One match per pattern that hits, so each distinct pattern is one signal. Empty matches
+         * are skipped, so `حراج|` still fires on «حراج».
+         */
         fun signalMatches(group: SpamPatternGroup, body: String): List<FilterMatch> =
             regexes[group].orEmpty().mapNotNull { regex ->
-                regex.find(body)?.takeIf { !it.range.isEmpty() }?.let { FilterMatch(group, it.range) }
+                regex.findAll(body).firstOrNull { !it.range.isEmpty() }?.let { FilterMatch(group, it.range) }
             }
 
         companion object {

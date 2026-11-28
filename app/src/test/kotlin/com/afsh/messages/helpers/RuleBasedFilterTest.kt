@@ -275,7 +275,23 @@ class RuleBasedFilterTest {
     @Test
     fun `a pattern is checked as the filter reads it`() {
         // The filter drops tatweel, which leaves a bare quantifier.
-        assertNotEquals(null, SpamPatterns.error("\u0640+"))
-        assertEquals(null, SpamPatterns.error("قرعه\u200cکشی"))
+        assertTrue(SpamPatterns.problem("\u0640+") is PatternProblem.Invalid)
+        assertEquals(null, SpamPatterns.problem("قرعه\u200cکشی"))
+    }
+
+    @Test
+    fun `a pattern that can also match empty text still fires on its words`() {
+        // An empty first branch wins at every position, so `(?:ویژه)?|حراج` can only ever find «ویژه».
+        listOf("حراج|" to "فروش حراج", "(?:ویژه)?|حراج" to "فروش ویژه").forEach { (pattern, body) ->
+            val result = RuleBasedFilter.explain(withMarketing(pattern), "SHOP", body)
+            assertEquals(pattern, FilterVerdict.BLOCK, result.verdict)
+        }
+    }
+
+    @Test
+    fun `a pattern that matches empty text can't be saved`() {
+        assertEquals(PatternProblem.MatchesEmpty, SpamPatterns.problem("حراج|"))
+        assertEquals(PatternProblem.MatchesEmpty, SpamPatterns.problem("(?:ویژه)?|حراج"))
+        assertEquals(null, SpamPatterns.problem("حراجی?"))
     }
 }
