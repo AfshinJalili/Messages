@@ -8,7 +8,6 @@ import com.afsh.commons.extensions.isNumberBlocked
 import com.afsh.commons.helpers.ContactLookupResult
 import com.afsh.commons.helpers.SimpleContactsHelper
 import com.afsh.messages.extensions.config
-import com.afsh.messages.helpers.ReceiverUtils.isMessageFilteredOut
 
 /**
  * Classifies inbound SMS/MMS after Telephony persistence. A non-null reason means the message
@@ -41,7 +40,7 @@ object IncomingSpamClassifier {
         if (isOneTimeCode(context, address, body)) {
             return null
         }
-        if (isMessageFilteredOut(context, body)) {
+        if (keywordMatches(context.config.blockedKeywords, body).isNotEmpty()) {
             return BLOCK_REASON_KEYWORD
         }
 

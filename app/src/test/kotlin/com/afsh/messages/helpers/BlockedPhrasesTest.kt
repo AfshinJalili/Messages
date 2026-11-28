@@ -3,7 +3,6 @@ package com.afsh.messages.helpers
 import com.afsh.messages.extensions.config
 import com.afsh.messages.receivers.PreferencesContext
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -28,7 +27,6 @@ class BlockedPhrasesTest {
     @Test
     fun `a blank phrase that is already stored catches nothing`() {
         context.config.blockedKeywords = setOf("", "  ")
-        assertFalse(ReceiverUtils.isMessageFilteredOut(context, "Hi, see you at 8"))
         assertTrue(keywordMatches(context.config.blockedKeywords, "Hi, see you at 8").isEmpty())
     }
 }
