@@ -40,7 +40,10 @@ internal class ThreadLoader(private val visit: ThreadVisit) {
 
     private var refreshPendingWhileStopped = false
 
-    /** Every load that replaces the messages: the cached ones, the provider's, and reloads. */
+    /**
+     * Every load that replaces the messages: the cached ones, the provider's, and reloads. Older pages and
+     * jumps add to them on ThreadRepository's own background thread, outside this.
+     */
     private val loads = ThreadLoads.serial()
 
     private val readCheck = Runnable {
