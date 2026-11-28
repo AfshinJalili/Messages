@@ -159,9 +159,15 @@ data class SpamPatterns(val groups: Map<SpamPatternGroup, List<String>>) {
             }
         }
 
+        /**
+         * [pattern] as the filter matches it: folded like the body ([foldSpamText]), so a pattern
+         * typed with ZWNJ, Persian digits or Arabic Yeh matches the text it was copied from.
+         */
+        fun compile(pattern: String): Regex = Regex(foldSpamText(pattern).folded, RegexOption.IGNORE_CASE)
+
         /** Null when [pattern] compiles; otherwise the reason it does not. */
         fun error(pattern: String): String? = try {
-            Regex(pattern)
+            compile(pattern)
             null
         } catch (e: IllegalArgumentException) {
             e.message?.lineSequence()?.firstOrNull() ?: "invalid"

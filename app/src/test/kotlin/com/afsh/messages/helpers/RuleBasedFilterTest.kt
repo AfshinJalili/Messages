@@ -255,4 +255,27 @@ class RuleBasedFilterTest {
         assertEquals(FilterVerdict.BLOCK, result.verdict)
         assertEquals(FilterRule.MARKETING, result.rule)
     }
+
+    private fun withMarketing(pattern: String) = SpamPatterns.DEFAULT.with(SpamPatternGroup.MARKETING, listOf(pattern))
+
+    @Test
+    fun `a user pattern typed with ZWNJ, Persian digits or Arabic Yeh matches like the body it was copied from`() {
+        val cases = listOf(
+            "قرعه\u200cکشی" to "در قرعه\u200cکشی بزرگ شرکت کنید",
+            "ثبت\u200cنام" to "همین امروز ثبت\u200cنام کنید",
+            "لغو۱۱" to "برای لغو11 بفرستید",
+            "هديه" to "یک هدیه برای شما",
+        )
+        cases.forEach { (pattern, body) ->
+            val result = RuleBasedFilter.explain(withMarketing(pattern), "SHOP", body)
+            assertEquals("$pattern in $body", FilterVerdict.BLOCK, result.verdict)
+        }
+    }
+
+    @Test
+    fun `a pattern is checked as the filter reads it`() {
+        // The filter drops tatweel, which leaves a bare quantifier.
+        assertNotEquals(null, SpamPatterns.error("\u0640+"))
+        assertEquals(null, SpamPatterns.error("قرعه\u200cکشی"))
+    }
 }

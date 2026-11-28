@@ -108,7 +108,7 @@ object RuleBasedFilter {
                 cached?.let { (key, value) -> if (key == patterns) return value }
                 val compiled = CompiledPatterns(
                     patterns.groups.mapValues { (_, list) ->
-                        list.mapNotNull { runCatching { Regex(it, RegexOption.IGNORE_CASE) }.getOrNull() }
+                        list.mapNotNull { runCatching { SpamPatterns.compile(it) }.getOrNull() }
                     },
                 )
                 cached = patterns to compiled
