@@ -22,7 +22,6 @@ import com.afsh.commons.models.SimpleContact
 import com.afsh.messages.extensions.getNameAndPhotoFromPhoneNumber
 import com.afsh.messages.extensions.getThreadParticipants
 import com.afsh.messages.extensions.messagesDB
-import com.afsh.messages.extensions.queryCursorUnsafe
 import com.afsh.messages.helpers.AttachmentUtils.parseAttachmentNames
 import com.afsh.messages.messaging.MessagingUtils.Companion.ADDRESS_SEPARATOR
 import com.afsh.messages.models.Attachment
@@ -77,9 +76,6 @@ class TelephonyReader(context: Context) {
 
     /** The body of the newest SMS or MMS in [threadId], or "". */
     fun getThreadSnippet(threadId: Long): String = context.getThreadSnippet(threadId)
-
-    /** Thread count and latest thread date (seconds); `-1 to -1` when the provider can't be read. */
-    fun threadDigest(): Pair<Int, Int> = context.telephonyThreadDigest()
 
     /** Every Telephony thread id, oldest thread first. */
     fun threadIds(): List<Long> {
@@ -373,31 +369,6 @@ private fun Context.getMMSSender(msgId: Long): String {
     } catch (_: Exception) {
     }
     return ""
-}
-
-
-/**
- * Cheap Telephony fingerprint for launch: thread count and latest date only.
- * Skips contact lookups, blocked-number filters, unread scans and draft merges that
- * [TelephonyConversations.conversations] pays for on a full reconcile.
- */
-private fun Context.telephonyThreadDigest(): Pair<Int, Int> {
-    val uri = "${Threads.CONTENT_URI}?simple=true".toUri()
-    val projection = arrayOf(Threads.DATE)
-    val selection = "${Threads.MESSAGE_COUNT} > 0"
-    var count = 0
-    var latest = 0
-    try {
-        contentResolver.queryCursorUnsafe(uri, projection, selection, emptyArray(), null) { cursor ->
-            count++
-            var date = cursor.getLongValue(Threads.DATE)
-            if (date.toString().length > 10) date /= 1000
-            if (date > latest) latest = date.toInt()
-        }
-    } catch (_: Exception) {
-        return -1 to -1
-    }
-    return count to latest
 }
 
 // based on https://stackoverflow.com/a/6446831/1967672

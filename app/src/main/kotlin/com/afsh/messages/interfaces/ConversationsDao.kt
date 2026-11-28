@@ -45,8 +45,9 @@ interface ConversationsDao {
     @Query("SELECT * FROM conversations")
     fun getAll(): List<Conversation>
 
-    @Query("SELECT COUNT(*) FROM conversations")
-    fun getCount(): Int
+    /** Rows that stand for a Telephony thread: all but the temporary ones of scheduled messages, which only Room has. */
+    @Query("SELECT COUNT(*) FROM conversations WHERE is_scheduled = 0")
+    fun getTelephonyThreadCount(): Int
 
     @Query("SELECT * FROM conversations WHERE thread_id = :threadId")
     fun getConversationWithThreadId(threadId: Long): Conversation?

@@ -116,14 +116,17 @@ class ConversationRepository(
     }
 
     /**
-     * True when Room has no rows (first import), Telephony can't be counted, or the thread counts
-     * disagree. A newer message in a thread Room already has is not drift: the recent-window pass
-     * ([InboxReconciler.syncRecentWindow]) picks it up without walking every thread.
+     * True when Room has no Telephony thread (first import), Telephony can't be counted, or the thread
+     * counts disagree. Both sides count only what a reconcile keeps: Room's temporary scheduled rows and
+     * the Telephony threads the inbox leaves out (see [ConversationTelephony.inboxThreadCount]) would
+     * otherwise run the full pass on every launch, resume and send. A newer message in a thread Room
+     * already has is not drift: the recent-window pass ([InboxReconciler.syncRecentWindow]) picks it up
+     * without walking every thread.
      */
     fun needsFullReconcile(): Boolean {
-        val roomCount = conversations.getCount()
+        val roomCount = conversations.getTelephonyThreadCount()
         if (roomCount == 0) return true
-        val (telephonyCount, _) = telephony.threadDigest()
+        val telephonyCount = telephony.inboxThreadCount()
         return telephonyCount < 0 || telephonyCount != roomCount
     }
 

@@ -69,7 +69,7 @@ if "fun scheduleLaunchReconcile" not in repo:
     violations.append(f"{rel(REPO)}: missing scheduleLaunchReconcile")
 conversation_repo = (REPO.parent / "ConversationRepository.kt").read_text()
 if "needsFullReconcile" not in repo or "fun needsFullReconcile" not in conversation_repo \
-        or "telephony.threadDigest()" not in conversation_repo:
+        or "telephony.inboxThreadCount()" not in conversation_repo:
     violations.append(f"{rel(REPO)}: launch reconcile must dirty-check via ConversationRepository.needsFullReconcile")
 if "InboxReconciler.syncRecentWindow" not in repo:
     violations.append(

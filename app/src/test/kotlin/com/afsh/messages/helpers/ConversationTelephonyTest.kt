@@ -1,6 +1,8 @@
 package com.afsh.messages.helpers
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ConversationTelephonyTest {
@@ -39,6 +41,30 @@ class ConversationTelephonyTest {
     @Test
     fun `a provider that ignores LIMIT is cut to the limit`() {
         assertEquals(rows(20), newestThreadsFirst(limit = 20) { rows(30) })
+    }
+
+    @Test
+    fun `recipient ids are read from the threads table's space-separated list`() {
+        assertEquals(listOf(3, 15), recipientIds("3 15"))
+        assertEquals(emptyList<Int>(), recipientIds(""))
+        assertEquals(emptyList<Int>(), recipientIds(null))
+    }
+
+    @Test
+    fun `the inbox leaves out a thread without recipients`() {
+        assertFalse(inboxShows(emptyList(), address = { "+1" }, blocked = { false }))
+    }
+
+    @Test
+    fun `the inbox leaves out a thread with a blocked recipient`() {
+        val addresses = mapOf(1 to "+1", 2 to "+2")
+        assertFalse(inboxShows(listOf(1, 2), address = addresses::getValue, blocked = { it == "+2" }))
+        assertTrue(inboxShows(listOf(1), address = addresses::getValue, blocked = { it == "+2" }))
+    }
+
+    @Test
+    fun `with nothing blocked no recipient address is looked up`() {
+        assertTrue(inboxShows(listOf(1, 2), address = { throw AssertionError("looked up $it") }, blocked = null))
     }
 
     @Test(expected = IllegalStateException::class)

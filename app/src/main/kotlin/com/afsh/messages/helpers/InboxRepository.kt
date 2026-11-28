@@ -159,7 +159,7 @@ object InboxRepository {
         scheduleProviderReconcile(context, immediate = true, force = force)
     }
 
-    /** True when Room has no rows (first import) or its thread count disagrees with Telephony. */
+    /** See [ConversationRepository.needsFullReconcile]. */
     internal fun needsFullReconcile(context: Context): Boolean =
         ConversationRepository.from(context).needsFullReconcile()
 

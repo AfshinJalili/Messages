@@ -29,7 +29,7 @@ class ConversationRepositoryTest {
             return conversation.threadId
         }
         override fun getAll(): List<Conversation> = rows.values.toList()
-        override fun getCount(): Int = rows.size
+        override fun getTelephonyThreadCount(): Int = rows.values.count { !it.isScheduled }
         override fun getConversationWithThreadId(threadId: Long): Conversation? = rows[threadId]
         override fun markRead(threadId: Long) = update(threadId) { it.copy(read = true, unreadCount = 0) }
         override fun markUnread(threadId: Long) = update(threadId) { it.copy(read = false) }
@@ -121,7 +121,7 @@ class ConversationRepositoryTest {
         val archived = HashSet<Long>()
         var archiveAvailable = true
         var touched = 0
-        var digest = 0 to 0
+        var inboxThreadCount = 0
         var lastUnreadCounts: Map<Long, Int>? = null
         var lastDraftDates: Map<Long, Long>? = null
         var lastLimit: Int? = null
@@ -156,7 +156,7 @@ class ConversationRepositoryTest {
             afterRead().also { afterRead = {} }
             return result
         }
-        override fun threadDigest() = digest
+        override fun inboxThreadCount() = inboxThreadCount
         /** Telephony's thread per recipient set; asking for a new set creates an empty thread, as Android does. */
         val threadsByRecipients = HashMap<Set<String>, Long>()
         private var nextThreadId = 1_000L
@@ -387,18 +387,23 @@ class ConversationRepositoryTest {
         assertTrue(repository.needsFullReconcile())
 
         conversations.insertOrUpdate(conversation(10, date = 100))
-        telephony.digest = 1 to 100
+        telephony.inboxThreadCount = 1
         assertFalse(repository.needsFullReconcile())
 
-        // A newer message in a thread Room has is the recent window's, not a full reconcile's.
-        telephony.digest = 1 to 101
+        telephony.inboxThreadCount = 2
+        assertTrue(repository.needsFullReconcile())
+
+        telephony.inboxThreadCount = -1
+        assertTrue(repository.needsFullReconcile())
+    }
+
+    @Test
+    fun `a temporary scheduled thread, which only Room has, is no drift`() {
+        conversations.insertOrUpdate(conversation(10))
+        conversations.insertOrUpdate(conversation(77).copy(isScheduled = true))
+        telephony.inboxThreadCount = 1
+
         assertFalse(repository.needsFullReconcile())
-
-        telephony.digest = 2 to 101
-        assertTrue(repository.needsFullReconcile())
-
-        telephony.digest = -1 to -1
-        assertTrue(repository.needsFullReconcile())
     }
 
     // region Provider passes (InboxReconciler's policy, run against this file's fakes)
