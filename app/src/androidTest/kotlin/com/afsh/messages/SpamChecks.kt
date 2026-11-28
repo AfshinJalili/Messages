@@ -219,8 +219,8 @@ class SpamChecks {
         assumeTrue("Needs an SMS on the device", sms != null)
         val (id, threadId, body, date) = sms!!
         // The legacy copy's timestamp was taken a moment after the SMS was stored.
-        val match = with(SpamBackfill) { context.findStoredMessage(threadId as Long, body as String, (date as Long) + 30_000) }
-        check(match?.id == id && match.isMMS == false) { "Expected SMS $id, found ${match?.id}" }
+        val match = SpamBackfill.findStored(context, threadId as Long, body as String, (date as Long) + 30_000)
+        check(match?.id == id && !match.isMms) { "Expected SMS $id, found ${match?.id}" }
     }
 
     // Reads Telephony only: an existing SMS gets a Room marker for the duration of the test.
