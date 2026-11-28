@@ -436,15 +436,32 @@ class ConversationRepository(
     }
 
     /**
-     * Temporary scheduled conversation [temporary] has a real Telephony thread now, [real]: its scheduled
-     * messages move there, its row goes, and [real] is stored merged with it.
+     * Telephony's thread for the participants of temporary scheduled [conversation]: the one its messages
+     * land in once sent. Null when no scheduled message is left to name them, or Telephony can't say.
+     * Android creates the thread, empty, when there is none yet, as opening the conversation does.
      */
-    fun foldScheduled(temporary: Conversation, real: Conversation) {
-        removeFromCache(temporary.threadId)
-        messages.getScheduledThreadMessages(temporary.threadId).forEach { message ->
-            messages.insertOrUpdate(message.copy(threadId = real.threadId))
+    fun telephonyThreadFor(conversation: Conversation): Long? {
+        val participants = messages.getScheduledThreadMessages(conversation.threadId).firstOrNull()?.participants ?: return null
+        val addresses = participants.getAddresses().toSet().takeIf { it.isNotEmpty() } ?: return null
+        return telephony.threadIdFor(addresses).takeIf { it != 0L }
+    }
+
+    /**
+     * Temporary scheduled conversation [temporaryThreadId] has a real Telephony thread now, [threadId]: its
+     * scheduled messages move there and its row goes. The real thread's row stays a Telephony row, which the
+     * provider pass stores; only a custom title carries over, when that row has none.
+     */
+    fun foldScheduled(temporaryThreadId: Long, threadId: Long) {
+        val temporary = conversations.getConversationWithThreadId(temporaryThreadId)
+        messages.getScheduledThreadMessages(temporaryThreadId).forEach { message ->
+            messages.insertOrUpdate(message.copy(threadId = threadId))
         }
-        insertOrUpdate(real, temporary)
+        removeFromCache(temporaryThreadId)
+        val real = conversations.getConversationWithThreadId(threadId)
+        if (temporary != null && temporary.usesCustomTitle && real != null && !real.usesCustomTitle) {
+            conversations.insertOrUpdate(real.copy(title = temporary.title, usesCustomTitle = true))
+        }
+        effects.refreshPreview(listOf(threadId))
     }
 
     /**
@@ -495,6 +512,10 @@ class ConversationRepository(
  * app may have marked a thread unread or deleted its newest message meanwhile, and Room may hold a
  * stale preview, so Telephony's date, snippet and read state win. Custom titles, scheduled dates and
  * the preview columns are still kept: Telephony has no say over them.
+ *
+ * [cached] must be the same thread's row. A temporary scheduled thread lends a real one nothing but a
+ * custom title (see [ConversationRepository.foldScheduled]); its flag and its date would make the real
+ * thread look scheduled.
  */
 internal fun mergeConversationWithCache(
     incoming: Conversation,
@@ -502,6 +523,7 @@ internal fun mergeConversationWithCache(
     trustTelephony: Boolean = false,
 ): Conversation {
     if (cached == null) return incoming
+    require(cached.threadId == incoming.threadId) { "thread ${incoming.threadId} merged with thread ${cached.threadId}" }
     var updated = incoming
     if (cached.usesCustomTitle) {
         updated = updated.copy(

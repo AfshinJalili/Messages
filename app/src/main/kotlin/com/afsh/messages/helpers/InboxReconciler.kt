@@ -80,7 +80,14 @@ object InboxReconciler {
         val cachedConversations = allCached.filterTo(ArrayList()) { !it.isArchived }
         val cachedIds = allCached.mapTo(HashSet()) { it.threadId }
         val conversationsById = conversations.associateBy { it.threadId }
-        val conversationsByNumber = conversations.asReversed().associateBy { it.phoneNumber }
+        // A temporary thread folds into Telephony's thread for exactly its participants once that one has
+        // messages; a shared first number is not enough. The lookup is a provider call, so it runs before
+        // the transaction.
+        val folds = allCached.filter { it.isScheduled }.mapNotNull { temporary ->
+            repository.telephonyThreadFor(temporary)
+                ?.takeIf { it != temporary.threadId && it in conversationsById }
+                ?.let { temporary.threadId to it }
+        }
 
         repository.runInTransaction {
             conversations.forEach { clonedConversation ->
@@ -94,15 +101,8 @@ object InboxReconciler {
 
             allCached.forEach { cachedConversation ->
                 val threadId = cachedConversation.threadId
-                val isTemporaryThread = cachedConversation.isScheduled
-                val isConversationDeleted = !conversationsById.containsKey(threadId)
-                if (isConversationDeleted && !isTemporaryThread) {
+                if (!cachedConversation.isScheduled && !conversationsById.containsKey(threadId)) {
                     repository.removeFromCache(threadId)
-                }
-
-                val newConversation = conversationsByNumber[cachedConversation.phoneNumber]
-                if (isTemporaryThread && newConversation != null) {
-                    repository.foldScheduled(cachedConversation, newConversation)
                 }
             }
 
@@ -114,6 +114,9 @@ object InboxReconciler {
                     repository.insertOrUpdate(conv, cachedConv, trustTelephony = forced)
                 }
             }
+
+            // After the real threads are stored, so a carried custom title stays.
+            folds.forEach { (temporaryThreadId, threadId) -> repository.foldScheduled(temporaryThreadId, threadId) }
 
             // Only temporary scheduled threads can expire; querying every inbox row
             // on each reconcile was a free CPU tax after every resume and SMS.

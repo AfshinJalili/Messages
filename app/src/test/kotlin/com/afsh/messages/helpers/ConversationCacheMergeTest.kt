@@ -114,6 +114,13 @@ class ConversationCacheMergeTest {
         assertFalse(merged.read)
         assertEquals(2, merged.unreadCount)
     }
+    @Test(expected = IllegalArgumentException::class)
+    fun `a row is never merged with another thread's row`() {
+        val temporary = conversation(date = 9_000, isScheduled = true).copy(threadId = 7L)
+
+        mergeConversationWithCache(conversation(date = 1_010), temporary)
+    }
+
     @Test
     fun `a forced pass keeps an unread mark made in another SMS app`() {
         val cached = conversation(date = 1_000, read = true, unreadCount = 0, messageCount = 5)

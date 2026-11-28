@@ -24,6 +24,7 @@ import com.afsh.commons.models.SimpleContact
 import com.afsh.messages.extensions.config
 import com.afsh.messages.extensions.getNameAndPhotoFromPhoneNumber
 import com.afsh.messages.extensions.getPhoneNumberFromAddressId
+import com.afsh.messages.extensions.getThreadId
 import com.afsh.messages.extensions.queryCursorUnsafe
 import com.afsh.messages.models.Conversation
 
@@ -66,6 +67,12 @@ interface ConversationTelephony {
 
     /** Thread count and latest thread date (seconds); `-1 to -1` when the provider can't be read. */
     fun threadDigest(): Pair<Int, Int>
+
+    /**
+     * The thread of exactly [addresses], as Android files a message sent to them; 0 when the provider
+     * can't say. Android creates an empty thread when there is none yet.
+     */
+    fun threadIdFor(addresses: Set<String>): Long
 
     /** The SMS among [ids] that still exist. */
     fun smsRows(ids: Collection<Long>): List<TelephonySms>
@@ -251,6 +258,8 @@ class TelephonyConversations(context: Context) : ConversationTelephony {
     }
 
     override fun threadDigest(): Pair<Int, Int> = TelephonyReader(context).threadDigest()
+
+    override fun threadIdFor(addresses: Set<String>): Long = context.getThreadId(addresses)
 
     override fun smsRows(ids: Collection<Long>): List<TelephonySms> {
         val rows = ArrayList<TelephonySms>()

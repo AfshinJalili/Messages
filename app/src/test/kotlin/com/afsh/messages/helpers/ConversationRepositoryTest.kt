@@ -149,6 +149,10 @@ class ConversationRepositoryTest {
             return ArrayList(if (limit == null) newestFirst else newestFirst.take(limit))
         }
         override fun threadDigest() = digest
+        /** Telephony's thread per recipient set; asking for a new set creates an empty thread, as Android does. */
+        val threadsByRecipients = HashMap<Set<String>, Long>()
+        private var nextThreadId = 1_000L
+        override fun threadIdFor(addresses: Set<String>): Long = threadsByRecipients.getOrPut(addresses) { nextThreadId++ }
         override fun smsRows(ids: Collection<Long>) = rows.filter { !it.isMms && it.id in ids }
             .map { TelephonySms(it.id, it.threadId, it.address, "body ${it.id}", it.date, it.read) }
         override fun existingSmsIds(ids: Collection<Long>): Set<Long> = rows.filter { !it.isMms && it.id in ids }.mapTo(HashSet()) { it.id }
@@ -260,8 +264,9 @@ class ConversationRepositoryTest {
         read: Boolean = false,
         body: String = "",
         isMms: Boolean = false,
+        participants: List<String> = emptyList(),
     ) = Message(
-        id = id, body = body, type = 1, status = 0, participants = ArrayList(), date = date, read = read,
+        id = id, body = body, type = 1, status = 0, participants = participants.mapTo(ArrayList()) { contact(it, it) }, date = date, read = read,
         threadId = threadId, isMMS = isMms, attachment = null, senderPhoneNumber = "", senderName = "",
         senderPhotoUri = "", subscriptionId = 0, isScheduled = scheduled,
     ).also { messages.messages[id to isMms] = it }
@@ -416,6 +421,73 @@ class ConversationRepositoryTest {
         fullPass()
 
         assertEquals("old", conversations.rows.getValue(10).snippet)
+    }
+
+    /** Temporary scheduled thread [threadId] for [participants], with one message due in an hour. */
+    private fun temporaryThread(threadId: Long, vararg participants: String): Conversation {
+        val row = conversation(threadId, date = (now / 1000).toInt() + 3600).copy(
+            isScheduled = true, snippet = "later", phoneNumber = participants.first(), isGroupConversation = participants.size > 1,
+        )
+        conversations.insertOrUpdate(row)
+        message(threadId, threadId = threadId, scheduled = true, date = row.date, body = "later", participants = participants.toList())
+        return row
+    }
+
+    @Test
+    fun `a temporary thread folds into its real thread, which stays a plain conversation with its own date`() {
+        // Room already matches Telephony, so only the fold writes the real thread.
+        conversations.insertOrUpdate(conversation(10, date = 150).copy(snippet = "sent"))
+        temporaryThread(77, "+110")
+        telephony.threads[10] = conversation(10, date = 150).copy(snippet = "sent")
+        telephony.threadsByRecipients[setOf("+110")] = 10
+
+        fullPass()
+
+        val real = conversations.rows.getValue(10)
+        assertFalse("a real thread is never a scheduled one", real.isScheduled)
+        assertEquals(150, real.date)
+        assertEquals("sent", real.snippet)
+        assertFalse(77L in conversations.rows)
+        assertEquals(10L, messages.messages.getValue(77L to false).threadId)
+    }
+
+    @Test
+    fun `a folded real thread is left alone by the next pass`() {
+        temporaryThread(77, "+110")
+        telephony.threads[10] = conversation(10, date = 150)
+        telephony.threadsByRecipients[setOf("+110")] = 10
+        fullPass()
+        effects.refreshed.clear()
+
+        fullPass()
+
+        assertTrue(effects.refreshed.isEmpty())
+    }
+
+    @Test
+    fun `a temporary group thread does not fold into a one-to-one thread with its first participant`() {
+        temporaryThread(77, "+110", "+120")
+        telephony.threads[10] = conversation(10, date = 150)
+        telephony.threadsByRecipients[setOf("+110")] = 10
+
+        fullPass()
+
+        assertTrue(77L in conversations.rows)
+        assertFalse(conversations.rows.getValue(10).isScheduled)
+        assertEquals(77L, messages.messages.getValue(77L to false).threadId)
+    }
+
+    @Test
+    fun `a temporary thread keeps a custom title when its real thread has none`() {
+        conversations.insertOrUpdate(temporaryThread(77, "+110").copy(title = "Mom", usesCustomTitle = true))
+        telephony.threads[10] = conversation(10, date = 150)
+        telephony.threadsByRecipients[setOf("+110")] = 10
+
+        fullPass()
+
+        val real = conversations.rows.getValue(10)
+        assertEquals("Mom", real.title)
+        assertTrue(real.usesCustomTitle)
     }
 
     @Test
