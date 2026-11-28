@@ -294,4 +294,17 @@ class RuleBasedFilterTest {
         assertEquals(PatternProblem.MatchesEmpty, SpamPatterns.problem("(?:ویژه)?|حراج"))
         assertEquals(null, SpamPatterns.problem("حراجی?"))
     }
+
+    @Test
+    fun `one phrase is one signal even when a shorter pattern matches inside it`() {
+        // «کد تخفیف» matches both `کد\s*تخفیف` and `تخفیف`: one marketing phrase, not two.
+        val result = explain("09121234567", "سلام، کد تخفیف اسنپ رو برات فرستادم")
+        assertEquals(FilterVerdict.NO_VERDICT, result.verdict)
+    }
+
+    @Test
+    fun `a shorter pattern still counts where it stands alone`() {
+        val result = explain("09121234567", "کد تخفیف برای شما\nتخفیف تا ۵۰ درصد")
+        assertEquals(FilterVerdict.BLOCK, result.verdict)
+    }
 }

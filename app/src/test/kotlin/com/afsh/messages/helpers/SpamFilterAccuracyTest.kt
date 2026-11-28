@@ -169,14 +169,15 @@ class SpamFilterAccuracyTest {
     companion object {
         /**
          * Measured 2026-11-28 with one sender on spam and ham alike (PSSC v0.3 n=4324):
-         * - number: P=97.3% R=26.9% F1=42.1% FPR=0.7% (tp=573 fp=16 tn=2177 fn=1558)
+         * - number: P=97.3% R=26.9% F1=42.1% FPR=0.7% (tp=573 fp=16 tn=2177 fn=1558); with one
+         *   phrase counted once (not «کد تخفیف» as two signals): P=97.4% R=24.7% FPR=0.6%
          * - name: P=92.7% R=54.4% F1=68.6% FPR=4.1% (tp=1159 fp=91 tn=2102 fn=972)
          * UCI v.1 n=5574, either sender: P=100.0% R=0.0% FPR=0.0% (tp=0 fp=0 tn=4827 fn=747;
          * English recall is not a gate — the filter is Persian-keyword-first).
          * Floors = measured − 2pp (precision/recall); FPR ceiling = measured + 2pp.
          * UCI soft precision floor = 95%.
          */
-        val PSSC_NUMBER = Gate(precision = 0.953, recall = 0.249, fpr = 0.027)
+        val PSSC_NUMBER = Gate(precision = 0.953, recall = 0.227, fpr = 0.027)
         val PSSC_NAME = Gate(precision = 0.907, recall = 0.524, fpr = 0.061)
         const val UCI_PRECISION_SOFT_FLOOR = 0.95
 

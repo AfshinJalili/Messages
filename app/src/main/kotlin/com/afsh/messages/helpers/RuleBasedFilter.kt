@@ -53,7 +53,6 @@ object RuleBasedFilter {
         val text = foldSpamText(body)
         val compiled = CompiledPatterns.of(patterns)
         fun find(group: SpamPatternGroup) = compiled.find(group, text.folded)
-        fun signals(group: SpamPatternGroup) = compiled.signalMatches(group, text.folded)
         // Matches are found in the folded text; the result points into the body as received.
         fun result(verdict: FilterVerdict, rule: FilterRule, matches: List<FilterMatch>) =
             FilterResult(verdict, rule, matches.map { FilterMatch(it.group, text.originalRange(it.range)) })
@@ -69,9 +68,10 @@ object RuleBasedFilter {
             return result(FilterVerdict.ALLOW, FilterRule.TRANSACTIONAL, transactional)
         }
 
-        val marketing = signals(SpamPatternGroup.MARKETING)
-        val strongEmoji = signals(SpamPatternGroup.PROMO_EMOJI)
-        if (marketing.isEmpty() && strongEmoji.isEmpty()) return FilterResult.NONE
+        val signals = compiled.signalMatches(listOf(SpamPatternGroup.MARKETING, SpamPatternGroup.PROMO_EMOJI), text.folded)
+        if (signals.isEmpty()) return FilterResult.NONE
+        val marketing = signals.filter { it.group == SpamPatternGroup.MARKETING }
+        val strongEmoji = signals.filter { it.group == SpamPatternGroup.PROMO_EMOJI }
 
         val weight = marketing.size * WORD_WEIGHT + strongEmoji.size * EMOJI_WEIGHT
         val links = find(SpamPatternGroup.LINKS)
@@ -95,13 +95,27 @@ object RuleBasedFilter {
             }
 
         /**
-         * One match per pattern that hits, so each distinct pattern is one signal. Empty matches
-         * are skipped, so `حراج|` still fires on «حراج».
+         * One match per pattern that hits, so each distinct pattern is one signal. A match inside
+         * one already counted is the same words again («تخفیف» inside «کد تخفیف»), so it isn't
+         * counted; longer matches count first. Empty matches are skipped, so `حراج|` still fires
+         * on «حراج».
          */
-        fun signalMatches(group: SpamPatternGroup, body: String): List<FilterMatch> =
-            regexes[group].orEmpty().mapNotNull { regex ->
-                regex.findAll(body).firstOrNull { !it.range.isEmpty() }?.let { FilterMatch(group, it.range) }
+        fun signalMatches(groups: List<SpamPatternGroup>, body: String): List<FilterMatch> {
+            val patterns = groups.flatMap { group -> regexes[group].orEmpty().map { group to it } }
+            val candidates = patterns.withIndex().flatMap { (pattern, entry) ->
+                val (group, regex) = entry
+                regex.findAll(body).filter { !it.range.isEmpty() }.map { Triple(pattern, group, it.range) }.toList()
+            }.sortedByDescending { (_, _, range) -> range.last - range.first }
+            val counted = ArrayList<FilterMatch>()
+            val countedPatterns = HashSet<Int>()
+            for ((pattern, group, range) in candidates) {
+                if (pattern in countedPatterns) continue
+                if (counted.any { range.first >= it.range.first && range.last <= it.range.last }) continue
+                countedPatterns += pattern
+                counted += FilterMatch(group, range)
             }
+            return counted
+        }
 
         companion object {
             @Volatile
