@@ -238,4 +238,21 @@ class RuleBasedFilterTest {
         assertTrue(emojis.contains("✅"))
         assertTrue(emojis.contains("📍"))
     }
+
+    @Test
+    fun `tatweel stretching a word still matches it, and the highlight covers the stretched word`() {
+        val body = "تـخـفـیـف ویـژه"
+        val result = explain("SHOP", body)
+        assertEquals(FilterVerdict.BLOCK, result.verdict)
+        val words = result.matches.filter { it.group == SpamPatternGroup.MARKETING }.map { body.substring(it.range) }
+        assertTrue(words.toString(), "تـخـفـیـف ویـژه" in words)
+    }
+
+    @Test
+    fun `diacritics and direction marks inside a word still match it`() {
+        // Fatha on the first letter, an RLM and a ZWJ inside the word.
+        val result = explain("SHOP", "جَشن\u200Fوا\u200Dره تابستانی")
+        assertEquals(FilterVerdict.BLOCK, result.verdict)
+        assertEquals(FilterRule.MARKETING, result.rule)
+    }
 }
