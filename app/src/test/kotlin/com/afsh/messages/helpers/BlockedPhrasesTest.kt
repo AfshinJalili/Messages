@@ -29,4 +29,27 @@ class BlockedPhrasesTest {
         context.config.blockedKeywords = setOf("", "  ")
         assertTrue(keywordMatches(context.config.blockedKeywords, "Hi, see you at 8").isEmpty())
     }
+
+    private fun matchedText(phrase: String, body: String) = keywordMatches(listOf(phrase), body).map { body.substring(it) }
+
+    @Test
+    fun `a phrase matches the same words written with other digits or letter forms`() {
+        assertEquals(listOf("لغو۱۱"), matchedText("لغو11", "حراج بزرگ\nلغو۱۱"))
+        assertEquals(listOf("كيش"), matchedText("کیش", "سفر به كيش ايرلاين"))
+        assertEquals(listOf("LOTTERY"), matchedText("lottery", "WIN THE LOTTERY"))
+    }
+
+    @Test
+    fun `the highlight covers a phrase stretched with tatweel`() {
+        assertEquals(listOf("تـخـفـیـف"), matchedText("تخفیف", "۵۰ درصد تـخـفـیـف"))
+    }
+
+    @Test
+    fun `a blocked phrase in Persian digits silences the message`() {
+        context.config.blockedKeywords = setOf("لغو11")
+        assertEquals(
+            BLOCK_REASON_KEYWORD,
+            IncomingSpamClassifier.silenceReason(context, "+989121234567", "حراج بزرگ\nلغو۱۱"),
+        )
+    }
 }

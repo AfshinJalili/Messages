@@ -118,9 +118,15 @@ object RuleBasedFilter {
     }
 }
 
-/** Where each blocked phrase occurs in [body], for highlighting why a keyword rule matched. */
-fun keywordMatches(keywords: Collection<String>, body: String): List<IntRange> = keywords.filter { it.isNotBlank() }.flatMap { keyword ->
-    generateSequence(body.indexOf(keyword, ignoreCase = true).takeIf { it >= 0 }) { from ->
-        body.indexOf(keyword, from + keyword.length, ignoreCase = true).takeIf { it >= 0 }
-    }.map { it until it + keyword.length }.toList()
+/**
+ * Where each blocked phrase occurs in [body], ignoring case and folded like the filter's patterns
+ * ([foldSpamText]), so «لغو11» also catches «لغو۱۱». Ranges point into [body] as received.
+ */
+fun keywordMatches(keywords: Collection<String>, body: String): List<IntRange> {
+    val text = foldSpamText(body)
+    return keywords.map { foldSpamText(it).folded }.filter { it.isNotBlank() }.flatMap { keyword ->
+        generateSequence(text.folded.indexOf(keyword, ignoreCase = true).takeIf { it >= 0 }) { from ->
+            text.folded.indexOf(keyword, from + keyword.length, ignoreCase = true).takeIf { it >= 0 }
+        }.map { text.originalRange(it until it + keyword.length) }.toList()
+    }
 }
