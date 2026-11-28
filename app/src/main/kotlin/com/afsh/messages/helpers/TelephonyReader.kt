@@ -104,12 +104,14 @@ class TelephonyReader(context: Context) {
     }
 
     /**
-     * The id of an SMS in [threadId] whose body is exactly [body], dated [fromMillis]..[untilMillis],
-     * or null when there is none. Like [getSms] it does not drop blocked senders. A provider that
-     * can't be read throws, so the caller doesn't take "can't tell" for "not there".
+     * The id of a received SMS in [threadId] whose body is exactly [body], dated
+     * [fromMillis]..[untilMillis], or null when there is none. Like [getSms] it does not drop
+     * blocked senders. A provider that can't be read throws, so the caller doesn't take "can't
+     * tell" for "not there".
      */
-    fun findSmsId(threadId: Long, body: String, fromMillis: Long, untilMillis: Long): Long? {
-        val selection = "${Sms.THREAD_ID} = ? AND ${Sms.BODY} = ? AND ${Sms.DATE} BETWEEN ? AND ?"
+    fun findReceivedSmsId(threadId: Long, body: String, fromMillis: Long, untilMillis: Long): Long? {
+        val selection = "${Sms.THREAD_ID} = ? AND ${Sms.TYPE} = ${Sms.MESSAGE_TYPE_INBOX} AND ${Sms.BODY} = ? AND " +
+            "${Sms.DATE} BETWEEN ? AND ?"
         val args = arrayOf(threadId.toString(), body, fromMillis.toString(), untilMillis.toString())
         val cursor = checkNotNull(context.contentResolver.query(Sms.CONTENT_URI, arrayOf(Sms._ID), selection, args, null)) {
             "Telephony SMS can't be read"

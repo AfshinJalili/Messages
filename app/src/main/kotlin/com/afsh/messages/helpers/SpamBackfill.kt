@@ -103,11 +103,12 @@ object SpamBackfill {
     /**
      * The Telephony message a legacy copy was made from: same thread and body, received within a
      * minute. Every copy here came from a sender someone blocked, so the lookup must not drop
-     * blocked senders the way a conversation's message list does.
+     * blocked senders the way a conversation's message list does. A sent SMS with the same words
+     * is not it, or the user's own reply would go to Spam.
      */
     internal fun findStored(context: Context, threadId: Long, body: String, date: Long): Stored? {
         val reader = TelephonyReader(context)
-        reader.findSmsId(threadId, body, date - MATCH_WINDOW_MS + 1, date + MATCH_WINDOW_MS - 1)
+        reader.findReceivedSmsId(threadId, body, date - MATCH_WINDOW_MS + 1, date + MATCH_WINDOW_MS - 1)
             ?.let { return Stored(it, isMms = false) }
         val before = ((date + MATCH_WINDOW_MS) / 1000).toInt() + 1
         return reader.getMms(threadId, "${Mms.DATE} DESC LIMIT $MESSAGES_LIMIT", dateFrom = before)

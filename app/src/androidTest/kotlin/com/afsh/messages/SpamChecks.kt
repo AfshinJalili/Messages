@@ -192,13 +192,13 @@ class SpamChecks {
         val sms = context.contentResolver.query(
             Telephony.Sms.CONTENT_URI,
             arrayOf(Telephony.Sms._ID, Telephony.Sms.THREAD_ID, Telephony.Sms.BODY, Telephony.Sms.DATE, Telephony.Sms.ADDRESS),
-            "${Telephony.Sms.BODY} != ''", null, "${Telephony.Sms.DATE} DESC"
+            "${Telephony.Sms.BODY} != '' AND ${Telephony.Sms.TYPE} = ${Telephony.Sms.MESSAGE_TYPE_INBOX}", null, "${Telephony.Sms.DATE} DESC"
         )?.use { cursor ->
             generateSequence { if (cursor.moveToNext()) cursor else null }
                 .firstOrNull { context.isNumberBlocked(it.getString(4), blocked) }
                 ?.let { listOf(it.getLong(0), it.getLong(1), it.getString(2), it.getLong(3)) }
         }
-        assumeTrue("Needs an SMS from a number on Android's block list", sms != null)
+        assumeTrue("Needs a received SMS from a number on Android's block list", sms != null)
         val (id, threadId, body, date) = sms!!
         val match = SpamBackfill.findStored(context, threadId as Long, body as String, (date as Long) + 30_000)
         check(match?.id == id && !match.isMms) { "Expected SMS $id from a blocked sender, found ${match?.id}" }
@@ -235,9 +235,9 @@ class SpamChecks {
     fun backfillMatchesTheStoredSmsInsteadOfInsertingACopy() {
         val sms = context.contentResolver.query(
             Telephony.Sms.CONTENT_URI, arrayOf(Telephony.Sms._ID, Telephony.Sms.THREAD_ID, Telephony.Sms.BODY, Telephony.Sms.DATE),
-            "${Telephony.Sms.BODY} != ''", null, "${Telephony.Sms.DATE} DESC"
+            "${Telephony.Sms.BODY} != '' AND ${Telephony.Sms.TYPE} = ${Telephony.Sms.MESSAGE_TYPE_INBOX}", null, "${Telephony.Sms.DATE} DESC"
         )?.use { if (it.moveToFirst()) listOf(it.getLong(0), it.getLong(1), it.getString(2), it.getLong(3)) else null }
-        assumeTrue("Needs an SMS on the device", sms != null)
+        assumeTrue("Needs a received SMS on the device", sms != null)
         val (id, threadId, body, date) = sms!!
         // The legacy copy's timestamp was taken a moment after the SMS was stored.
         val match = SpamBackfill.findStored(context, threadId as Long, body as String, (date as Long) + 30_000)
