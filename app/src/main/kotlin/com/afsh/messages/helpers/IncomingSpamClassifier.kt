@@ -1,6 +1,7 @@
 package com.afsh.messages.helpers
 
 import android.content.Context
+import android.util.Log
 import com.afsh.commons.extensions.baseConfig
 import com.afsh.commons.extensions.getMyContactsCursor
 import com.afsh.commons.extensions.isNumberBlocked
@@ -14,8 +15,17 @@ import com.afsh.messages.helpers.ReceiverUtils.isMessageFilteredOut
  * should be silenced (no notification) and indexed in the local Spam folder.
  */
 object IncomingSpamClassifier {
+    private const val TAG = "IncomingSpamClassifier"
 
-    fun silenceReason(context: Context, address: String, body: String): Int? {
+    /** A failure while classifying gives null: an error never hides a stored message. */
+    fun silenceReason(context: Context, address: String, body: String): Int? = try {
+        reason(context, address, body)
+    } catch (e: Exception) {
+        Log.w(TAG, "Couldn't classify an incoming message; it is not silenced", e)
+        null
+    }
+
+    private fun reason(context: Context, address: String, body: String): Int? {
         // The user's own decision about a sender beats every rule below.
         if (context.config.allowedNumbers.containsNumber(address)) {
             return null
