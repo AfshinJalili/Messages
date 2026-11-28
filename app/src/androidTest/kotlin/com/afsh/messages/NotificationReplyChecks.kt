@@ -30,7 +30,8 @@ class NotificationReplyChecks {
                 body = "Quick reply verification. No SMS was sent.",
                 threadId = threadId,
                 bitmap = null,
-                sender = "Quick reply check"
+                sender = "Quick reply check",
+                stillAlerts = { true },
             )
             val deadline = SystemClock.uptimeMillis() + 5000
             while (manager.activeNotifications.none { it.id == threadId.hashCode() } && SystemClock.uptimeMillis() < deadline) {

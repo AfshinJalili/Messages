@@ -406,6 +406,28 @@ class MessagingEventsCoordinatorTest {
     }
 
     @Test
+    fun `an alert decided before the user opened its conversation is no longer wanted`() {
+        val inbox = Any()
+        presence.onScreenResumed(inbox)
+        val event = incoming(threadId = 10L)
+        assertEquals(AttentionDecision.ShowIncomingAlert(event), coordinator.publish(event))
+        assertTrue(coordinator.stillAlerts(event))
+
+        presence.onConversationActive(Any(), threadId = 10L, isRecycleBin = false)
+        assertFalse(coordinator.stillAlerts(event))
+        assertTrue(coordinator.stillAlerts(incoming(threadId = 20L)))
+    }
+
+    @Test
+    fun `an alert for a conversation muted before it posts is no longer wanted`() {
+        val event = incoming(threadId = 10L)
+        coordinator.publish(event)
+        host.mutedThreads += 10L
+
+        assertFalse(coordinator.stillAlerts(event))
+    }
+
+    @Test
     fun `structural conversation change and scheduled send trigger inbox reconcile`() {
         coordinator.publish(MessagingEvent.ConversationsChanged(reconcile = true))
         coordinator.publish(MessagingEvent.ScheduledMessageSent(threadId = 10L, messageId = 5L))

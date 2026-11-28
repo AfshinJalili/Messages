@@ -9,13 +9,10 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.net.Uri
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.os.PowerManager
 import androidx.core.content.ContextCompat
 import com.afsh.commons.extensions.appLockManager
 import com.afsh.commons.extensions.notificationManager
-import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.messages.R
 import com.afsh.messages.activities.AppLockActivity
 import com.afsh.messages.extensions.config
@@ -27,6 +24,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.Executors
 
 /**
  * Typed messaging-domain occurrences routed through [MessagingEvents].
@@ -195,6 +193,13 @@ class MessagingEventCoordinator(
     }
 
     /**
+     * Whether [event]'s alert, decided when it was published, should still post: it posts after its
+     * picture loads, and by then the user may have opened or muted the conversation.
+     */
+    fun stillAlerts(event: MessagingEvent.IncomingMessage): Boolean =
+        decide(event) is AttentionDecision.ShowIncomingAlert
+
+    /**
      * Removes [threadId]'s message notification for an action that is not a [MessagingEvent], such as
      * marking its sender as spam or blocking it.
      */
@@ -249,7 +254,7 @@ object MessagingEvents {
         synchronized(this) {
             if (initialized) return
             val app = application.applicationContext
-            val host = AndroidMessagingEventHost(app)
+            val host = AndroidMessagingEventHost(app, stillAlerts = { event -> coordinator.stillAlerts(event) })
             val powerManager = app.getSystemService(PowerManager::class.java)
             val keyguardManager = app.getSystemService(KeyguardManager::class.java)
             val tracker = AppPresenceTracker(
@@ -340,30 +345,35 @@ object MessagingEvents {
         }
     }
 
-    private class AndroidMessagingEventHost(private val context: Context) : MessagingEventHost {
-        private val mainHandler = Handler(Looper.getMainLooper())
+    private class AndroidMessagingEventHost(
+        private val context: Context,
+        private val stillAlerts: (MessagingEvent.IncomingMessage) -> Boolean,
+    ) : MessagingEventHost {
+        /**
+         * Changes the tray one at a time, in the order they were asked for: a post reads the messages
+         * the previous post left in the notification, and a clear lands after the alert before it.
+         */
+        private val tray = Executors.newSingleThreadExecutor()
 
         override fun isConversationMuted(threadId: Long): Boolean =
             context.config.isConversationMuted(threadId)
 
         override fun showIncomingAlert(event: MessagingEvent.IncomingMessage) {
-            ensureBackgroundThread {
-                val bitmap = loadIncomingBitmap(event)
-                mainHandler.post {
-                    context.notificationHelper.showMessageNotification(
-                        messageId = event.messageId,
-                        address = event.address,
-                        body = event.body,
-                        threadId = event.threadId,
-                        bitmap = bitmap,
-                        sender = event.senderName,
-                    )
-                }
+            tray.execute {
+                context.notificationHelper.showMessageNotification(
+                    messageId = event.messageId,
+                    address = event.address,
+                    body = event.body,
+                    threadId = event.threadId,
+                    bitmap = loadIncomingBitmap(event),
+                    sender = event.senderName,
+                    stillAlerts = { stillAlerts(event) },
+                )
             }
         }
 
         override fun showSendFailureAlert(event: MessagingEvent.SendFailed) {
-            mainHandler.post {
+            tray.execute {
                 context.notificationHelper.showSendingFailedNotification(
                     recipientName = event.recipientName,
                     threadId = event.threadId,
@@ -372,11 +382,11 @@ object MessagingEvents {
         }
 
         override fun cancelConversationNotification(threadId: Long) {
-            context.notificationManager.cancel(threadId.hashCode())
+            tray.execute { context.notificationManager.cancel(threadId.hashCode()) }
         }
 
         override fun cancelSendFailureNotification(threadId: Long) {
-            context.notificationHelper.cancelSendFailureNotification(threadId)
+            tray.execute { context.notificationHelper.cancelSendFailureNotification(threadId) }
         }
 
         override fun refreshInbox() {

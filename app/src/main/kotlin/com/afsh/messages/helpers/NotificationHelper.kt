@@ -16,7 +16,6 @@ import androidx.core.app.RemoteInput
 import androidx.core.app.Person
 import com.afsh.commons.extensions.notificationManager
 import com.afsh.commons.helpers.SimpleContactsHelper
-import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.messages.R
 import com.afsh.messages.activities.ThreadActivity
 import com.afsh.messages.extensions.config
@@ -38,6 +37,12 @@ class NotificationHelper(private val context: Context) {
         .setName(context.getString(R.string.me))
         .build()
 
+    /**
+     * Posts [threadId]'s message notification with [body] added to the messages it already shows.
+     * Blocking, and not thread-safe per thread: [MessagingEvents] calls it off the main thread, one
+     * post at a time, so each post reads what the last one left. [stillAlerts] is asked last, right
+     * before posting, since the user may have opened or muted the thread meanwhile.
+     */
     @SuppressLint("NewApi")
     fun showMessageNotification(
         messageId: Long,
@@ -46,11 +51,8 @@ class NotificationHelper(private val context: Context) {
         threadId: Long,
         bitmap: Bitmap?,
         sender: String?,
+        stillAlerts: () -> Boolean,
     ) {
-        if (context.config.isConversationMuted(threadId)) {
-            return
-        }
-
         val hasCustomNotifications =
             context.config.customNotifications.contains(threadId.toString())
         val notificationChannelId =
@@ -58,6 +60,9 @@ class NotificationHelper(private val context: Context) {
         if (!hasCustomNotifications) {
             createDefaultChannel()
         }
+
+        val shortcut = context.shortcutHelper.getShortcut(threadId)
+            ?: context.shortcutHelper.createOrUpdateShortcut(threadId)
 
         val notificationId = threadId.hashCode()
         val contentIntent = Intent(context, ThreadActivity::class.java).apply {
@@ -192,21 +197,10 @@ class NotificationHelper(private val context: Context) {
             ).setChannelId(notificationChannelId)
         }
 
-        var shortcut = context.shortcutHelper.getShortcut(threadId)
-        if (shortcut == null) {
-            ensureBackgroundThread {
-                shortcut = context.shortcutHelper.createOrUpdateShortcut(threadId)
-                builder.setShortcutInfo(shortcut)
-                notificationManager.notify(notificationId, builder.build())
-                context.shortcutHelper.reportReceiveMessageUsage(threadId)
-            }
-        } else {
-            builder.setShortcutInfo(shortcut)
-            notificationManager.notify(notificationId, builder.build())
-            ensureBackgroundThread {
-                context.shortcutHelper.reportReceiveMessageUsage(threadId)
-            }
-        }
+        builder.setShortcutInfo(shortcut)
+        if (!stillAlerts()) return
+        notificationManager.notify(notificationId, builder.build())
+        context.shortcutHelper.reportReceiveMessageUsage(threadId)
     }
 
     /**
