@@ -30,12 +30,9 @@ object InboxReconciler {
                 val app = context.applicationContext
                 val repository = ConversationRepository.from(app)
                 // Raw rows, including threads the inbox hides as spam. Otherwise hidden threads would be
-                // re-inserted on every run and never removed when Telephony drops them.
-                val allCached = try {
-                    repository.cachedConversations()
-                } catch (_: Exception) {
-                    emptyList()
-                }
+                // re-inserted on every run and never removed when Telephony drops them. A failed read fails
+                // the pass: an empty cache would look like a first import and match no row.
+                val allCached = repository.cachedConversations()
 
                 val privateContacts = app.getMyContactsCursor(favoritesOnly = false, withPhoneNumbersOnly = true).use { cursor ->
                     MyContactsContentProvider.getSimpleContacts(app, cursor)
