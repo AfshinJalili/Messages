@@ -5,6 +5,7 @@ import android.os.Handler
 import android.os.Looper
 import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.messages.extensions.config
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Room is the inbox source of truth. This schedules provider reconciliation and applies
@@ -14,16 +15,18 @@ object InboxRepository {
 
     private val handler = Handler(Looper.getMainLooper())
     private var appContext: Context? = null
+
+    // Main thread only: a pass starts on it, and its outcome is posted back to it.
     private var reconciling = false
     private var reconcilePending = false
-    private var pendingForce = false
+
+    /** A forced pass was asked for; set from any thread, taken by the next pass. */
+    private val pendingForce = AtomicBoolean(false)
     private var reconcileListener: ((ReconcileStatus) -> Unit)? = null
 
     private val reconcileRunnable = Runnable {
         val context = appContext ?: return@Runnable
-        val force = pendingForce
-        pendingForce = false
-        runProviderReconcile(context, force = force)
+        runProviderReconcile(context, force = pendingForce.getAndSet(false))
     }
 
     fun init(context: Context) {
@@ -72,7 +75,7 @@ object InboxRepository {
         force: Boolean = true,
     ) {
         val app = resolveContext(context) ?: return
-        pendingForce = pendingForce || force
+        if (force) pendingForce.set(true)
         handler.removeCallbacks(reconcileRunnable)
         if (immediate) {
             handler.post(reconcileRunnable)
@@ -104,7 +107,7 @@ object InboxRepository {
     private fun runProviderReconcile(context: Context, force: Boolean) {
         if (reconciling) {
             reconcilePending = true
-            pendingForce = pendingForce || force
+            if (force) pendingForce.set(true)
             return
         }
         reconciling = true
@@ -130,33 +133,37 @@ object InboxRepository {
             }
             handler.post {
                 reconcileListener?.invoke(ReconcileStatus.RUNNING)
+                // The reconciler calls back on its worker; the outcome is the main thread's, as above.
                 InboxReconciler.reconcile(
                     context = context,
                     forced = requested,
                     onFinished = {
-                        if (requested) context.config.forceReconcilePending = false
-                        refreshUnreadCounts(context)
-                        InboxImport.importMessagesIfNeeded(context)
-                        reconciling = false
-                        reconcileListener?.invoke(ReconcileStatus.DONE)
-                        drainPending(context)
+                        handler.post {
+                            if (requested) context.config.forceReconcilePending = false
+                            refreshUnreadCounts(context)
+                            InboxImport.importMessagesIfNeeded(context)
+                            reconciling = false
+                            reconcileListener?.invoke(ReconcileStatus.DONE)
+                            drainPending(context)
+                        }
                     },
                     onFailed = {
-                        reconciling = false
-                        reconcileListener?.invoke(ReconcileStatus.FAILED)
-                        drainPending(context)
+                        handler.post {
+                            reconciling = false
+                            reconcileListener?.invoke(ReconcileStatus.FAILED)
+                            drainPending(context)
+                        }
                     },
                 )
             }
         }
     }
 
+    /** Main thread. Starts the pass asked for while one ran; [pendingForce] still says whether it is forced. */
     private fun drainPending(context: Context) {
         if (!reconcilePending) return
         reconcilePending = false
-        val force = pendingForce
-        pendingForce = false
-        scheduleProviderReconcile(context, immediate = true, force = force)
+        scheduleProviderReconcile(context, immediate = true, force = false)
     }
 
     /** See [ConversationRepository.needsFullReconcile]. */
