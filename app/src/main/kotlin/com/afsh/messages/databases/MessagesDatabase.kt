@@ -32,7 +32,7 @@ import com.afsh.messages.models.SpamMessage
         Draft::class,
         SpamMessage::class
     ],
-    version = 15
+    version = 16
 )
 @TypeConverters(Converters::class)
 abstract class MessagesDatabase : RoomDatabase() {
@@ -74,6 +74,7 @@ abstract class MessagesDatabase : RoomDatabase() {
                             .addMigrations(MIGRATION_12_13)
                             .addMigrations(MIGRATION_13_14)
                             .addMigrations(MIGRATION_14_15)
+                            .addMigrations(MIGRATION_15_16)
                             .build()
                     }
                 }
@@ -220,6 +221,26 @@ abstract class MessagesDatabase : RoomDatabase() {
                     all_spam = CASE WHEN message_count > 0 AND (SELECT COUNT(*) FROM spam_messages WHERE spam_messages.thread_id = conversations.thread_id) >= message_count THEN 1 ELSE 0 END
                     """.trimIndent()
                 )
+            }
+        }
+
+        /**
+         * SMS and MMS ids are separate Telephony sequences that overlap, so a cached message and a
+         * recycle-bin entry are keyed by id and transport. Every row is kept. Ids were unique until now,
+         * so a bin entry takes the transport of the cached message with its id; one with no cached
+         * message stays an SMS entry.
+         */
+        private val MIGRATION_15_16 = object : Migration(15, 16) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("CREATE TABLE IF NOT EXISTS `recycle_bin_messages_new` (`id` INTEGER NOT NULL, `is_mms` INTEGER NOT NULL, `deleted_ts` INTEGER NOT NULL, PRIMARY KEY(`id`, `is_mms`))")
+                db.execSQL("INSERT INTO `recycle_bin_messages_new` (`id`, `is_mms`, `deleted_ts`) SELECT `recycle_bin_messages`.`id`, COALESCE(`messages`.`is_mms`, 0), `recycle_bin_messages`.`deleted_ts` FROM `recycle_bin_messages` LEFT OUTER JOIN `messages` ON `messages`.`id` = `recycle_bin_messages`.`id`")
+                db.execSQL("DROP TABLE `recycle_bin_messages`")
+                db.execSQL("ALTER TABLE `recycle_bin_messages_new` RENAME TO `recycle_bin_messages`")
+                db.execSQL("CREATE TABLE IF NOT EXISTS `messages_new` (`id` INTEGER NOT NULL, `body` TEXT NOT NULL, `type` INTEGER NOT NULL, `status` INTEGER NOT NULL, `participants` TEXT NOT NULL, `date` INTEGER NOT NULL, `read` INTEGER NOT NULL, `thread_id` INTEGER NOT NULL, `is_mms` INTEGER NOT NULL, `attachment` TEXT, `sender_phone_number` TEXT NOT NULL, `sender_name` TEXT NOT NULL, `sender_photo_uri` TEXT NOT NULL, `subscription_id` INTEGER NOT NULL, `is_scheduled` INTEGER NOT NULL, PRIMARY KEY(`id`, `is_mms`))")
+                db.execSQL("INSERT INTO `messages_new` (`id`, `body`, `type`, `status`, `participants`, `date`, `read`, `thread_id`, `is_mms`, `attachment`, `sender_phone_number`, `sender_name`, `sender_photo_uri`, `subscription_id`, `is_scheduled`) SELECT `id`, `body`, `type`, `status`, `participants`, `date`, `read`, `thread_id`, `is_mms`, `attachment`, `sender_phone_number`, `sender_name`, `sender_photo_uri`, `subscription_id`, `is_scheduled` FROM `messages`")
+                db.execSQL("DROP TABLE `messages`")
+                db.execSQL("ALTER TABLE `messages_new` RENAME TO `messages`")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_messages_thread_id_date` ON `messages` (`thread_id`, `date`)")
             }
         }
     }

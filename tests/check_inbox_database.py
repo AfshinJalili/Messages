@@ -42,7 +42,7 @@ insert_rows(
     },
 )
 insert_rows("messages", 30000, lambda i: {"id": i, "thread_id": (i - 1) % 1500 + 1, "date": i, "body": str(i)})
-db.execute("INSERT INTO recycle_bin_messages (id, deleted_ts) VALUES (30000, 1)")
+db.execute("INSERT INTO recycle_bin_messages (id, is_mms, deleted_ts) VALUES (30000, 0, 1)")
 # Thread 1500's latest non-recycled message is 28500; denormalized preview already matches.
 dao_source = (source / "interfaces/ConversationsDao.kt").read_text()
 dao = (source / "interfaces/MessagesDao.kt").read_text()
@@ -151,7 +151,7 @@ print("PASS: starred and search results exclude recycled messages")
 
 # The Recycle bin cards count each conversation's recycled messages and date the latest deletion.
 summaries = dao_query("getRecycleBinSummaries")
-db.execute("INSERT INTO recycle_bin_messages (id, deleted_ts) VALUES (28500, 5)")
+db.execute("INSERT INTO recycle_bin_messages (id, is_mms, deleted_ts) VALUES (28500, 0, 5)")
 rows = {thread: (count, deleted) for thread, count, deleted in db.execute(summaries).fetchall()}
 assert rows == {(30000 - 1) % 1500 + 1: (2, 5)}, rows
 db.execute("DELETE FROM recycle_bin_messages WHERE id = 28500")
@@ -192,3 +192,96 @@ assert not names("reply"), "a same-second message Room lacks looked cached"
 assert not names("tomorrow", date=900), "a scheduled message looked like a Telephony one"
 db.execute("DELETE FROM messages WHERE thread_id = ?", (thread,))
 print("PASS: the newest cached message ignores scheduled rows and matches provider snippets")
+
+# SMS and MMS ids are separate Telephony sequences that overlap: a cached message and a recycle-bin
+# entry are keyed by id and transport, and every recycle-bin join matches on both.
+for name, text in (("MessagesDao", dao), ("ConversationsDao", dao_source)):
+    for match in re.finditer(r"messages\.id = recycle_bin_messages\.id", text):
+        assert text[match.end():].startswith(" AND messages.is_mms = recycle_bin_messages.is_mms"), \
+            f"{name} joins the recycle bin on id alone"
+assert "recycle_bin_messages ON" not in dao_source.replace("$JOIN_RECYCLE_BIN", ""), "ConversationsDao must use JOIN_RECYCLE_BIN"
+MESSAGE_COLUMNS = ("id, body, type, status, participants, date, read, thread_id, is_mms, attachment,"
+                   " sender_phone_number, sender_name, sender_photo_uri, subscription_id, is_scheduled")
+def cache(conn, message_id, thread, is_mms, body, scheduled=0):
+    conn.execute(f"INSERT OR REPLACE INTO messages ({MESSAGE_COLUMNS}) VALUES (?, ?, 2, -1, '[]', 1, 1, ?, ?, NULL, '', '', '', 0, ?)",
+                 (message_id, body, thread, is_mms, scheduled))
+def run(method, **params):
+    return db.execute(dao_query(method), {k: int(v) if isinstance(v, bool) else v for k, v in params.items()})
+def bodies(method, **params):
+    return sorted(row[1] for row in run(method, **params).fetchall() if row[0] == shared)
+shared, sms_thread, mms_thread = 990042, 990101, 990102
+cache(db, shared, sms_thread, 0, "sms")
+cache(db, shared, mms_thread, 1, "mms")
+cache(db, shared, mms_thread, 1, "mms")  # insertOrUpdate of the MMS again: the SMS must survive.
+assert db.execute("SELECT body FROM messages WHERE id = ? ORDER BY is_mms", (shared,)).fetchall() == [("sms",), ("mms",)]
+assert run("getThreadIdForMessage", id=shared, isMms=False).fetchone()[0] == sms_thread
+assert run("getThreadIdForMessage", id=shared, isMms=True).fetchone()[0] == mms_thread
+db.execute("INSERT INTO recycle_bin_messages (id, is_mms, deleted_ts) VALUES (?, 0, 7)", (shared,))
+assert bodies("getThreadMessagesFromRecycleBin", threadId=sms_thread) == ["sms"]
+assert bodies("getThreadMessagesFromRecycleBin", threadId=mms_thread) == [], "binning an SMS binned the MMS with its id"
+assert bodies("getNonRecycledThreadMessages", threadId=mms_thread) == ["mms"]
+assert bodies("getAllRecycleBinMessages") == ["sms"]
+assert bodies("getOldRecycleBinMessages", timestamp=8) == ["sms"], "purging would erase the MMS sharing a binned SMS's id"
+assert bodies("getMessagesWithIds", ids=shared) == ["mms"]
+assert bodies("getMessagesWithText", text="mms") == ["mms"]
+rows = {thread: (count, deleted) for thread, count, deleted in run("getRecycleBinSummaries").fetchall()}
+assert rows.get(sms_thread) == (1, 7) and mms_thread not in rows, rows
+run("updateType", id=shared, isMms=True, type=5)
+run("updateStatus", id=shared, isMms=True, status=0)
+assert db.execute("SELECT type, status FROM messages WHERE id = ? AND is_mms = 0", (shared,)).fetchone() == (2, -1), \
+    "a status update for the MMS changed the SMS"
+run("deleteThreadMessagesFromRecycleBin", threadId=mms_thread)
+run("deleteFromRecycleBin", id=shared, isMms=True)
+assert db.execute("SELECT is_mms FROM recycle_bin_messages WHERE id = ?", (shared,)).fetchall() == [(0,)], \
+    "restoring the MMS restored the SMS"
+run("deleteFromMessages", id=shared, isMms=True)
+assert db.execute("SELECT body FROM messages WHERE id = ?", (shared,)).fetchall() == [("sms",)], "deleting the MMS deleted the SMS"
+cache(db, shared, sms_thread, 1, "scheduled", scheduled=1)
+run("deleteScheduledMessage", id=shared)
+assert db.execute("SELECT body FROM messages WHERE id = ?", (shared,)).fetchall() == [("sms",)], \
+    "dropping a scheduled message deleted a Telephony one"
+db.execute("DELETE FROM messages WHERE id = ?", (shared,))
+db.execute("DELETE FROM recycle_bin_messages WHERE id = ?", (shared,))
+print("PASS: SMS and MMS sharing an id stay apart in the cache and the recycle bin")
+
+# Migration 15→16 rebuilds both tables on (id, is_mms), keeps every row, and gives each bin entry
+# its message's transport. Built from the shipped v15 schema and the migration SQL in source.
+def build(version):
+    conn = sqlite3.connect(":memory:")
+    shape = json.loads((ROOT / f"app/schemas/com.afsh.messages.databases.MessagesDatabase/{version}.json").read_text())["database"]
+    for entity in shape["entities"]:
+        conn.execute(entity["createSql"].replace("${TABLE_NAME}", entity["tableName"]))
+        for index in entity.get("indices", []):
+            conn.execute(index["createSql"].replace("${TABLE_NAME}", entity["tableName"]))
+    return conn
+def shape_of(conn, table):
+    columns = sorted((name, kind, notnull, pk) for _, name, kind, notnull, _, pk in conn.execute(f"PRAGMA table_info({table})"))
+    indices = sorted((name, unique, tuple(c[2] for c in conn.execute(f"PRAGMA index_info({name})")))
+                     for _, name, unique, origin, _ in conn.execute(f"PRAGMA index_list({table})") if origin == "c")
+    return columns, indices
+block = re.search(r"private val MIGRATION_15_16.*?override fun migrate\(db: SupportSQLiteDatabase\) \{(.*?)^\s{8}\}", migration_source, re.S | re.M)
+assert block, "MIGRATION_15_16 missing"
+assert ".addMigrations(MIGRATION_15_16)" in migration_source, "MIGRATION_15_16 is not registered"
+statements = re.findall(r'db\.execSQL\("(.*?)"\)', block[1])
+assert statements, "MIGRATION_15_16 runs no SQL"
+v15_db = build(15)
+cache(v15_db, 1, 9, 0, "binned sms")
+cache(v15_db, 2, 9, 1, "binned mms")
+cache(v15_db, 3, 9, 0, "kept sms")
+cache(v15_db, 4, 8, 1, "scheduled mms", scheduled=1)
+v15_db.executemany("INSERT INTO recycle_bin_messages (id, deleted_ts) VALUES (?, ?)", [(1, 11), (2, 12), (77, 13)])
+v15_db.execute("INSERT INTO spam_messages (id, thread_id, reason, marked_ts) VALUES (3, 9, 1, 1)")
+v15_db.execute("INSERT INTO drafts (thread_id, body, date) VALUES (9, 'draft', 1)")
+messages_before = sorted(v15_db.execute(f"SELECT {MESSAGE_COLUMNS} FROM messages").fetchall())
+for sql in statements:
+    v15_db.execute(sql)
+assert sorted(v15_db.execute(f"SELECT {MESSAGE_COLUMNS} FROM messages").fetchall()) == messages_before, "migration lost or changed messages"
+assert sorted(v15_db.execute("SELECT id, is_mms, deleted_ts FROM recycle_bin_messages").fetchall()) == [(1, 0, 11), (2, 1, 12), (77, 0, 13)]
+assert v15_db.execute("SELECT COUNT(*) FROM spam_messages").fetchone()[0] == 1
+assert v15_db.execute("SELECT body FROM drafts").fetchone()[0] == "draft"
+v16_db = build(16)
+for table in ("messages", "recycle_bin_messages"):
+    assert shape_of(v15_db, table) == shape_of(v16_db, table), f"migrated {table} differs from the v16 schema"
+cache(v15_db, 1, 10, 1, "mms sharing an id")
+assert v15_db.execute("SELECT COUNT(*) FROM messages WHERE id = 1").fetchone()[0] == 2
+print("PASS: migration 15→16 keys messages and the recycle bin on id and transport, keeping every row")

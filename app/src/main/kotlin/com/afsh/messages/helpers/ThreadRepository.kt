@@ -83,8 +83,8 @@ class ThreadRepository(
 
         /** Deletes a scheduled message and cancels its alarm. */
         fun dropScheduled(messageId: Long)
-        fun moveToRecycleBin(messageId: Long)
-        fun restore(messageId: Long)
+        fun moveToRecycleBin(messageId: Long, isMms: Boolean)
+        fun restore(messageId: Long, isMms: Boolean)
         fun delete(messageId: Long, isMms: Boolean)
         /** Stores [threadId]'s conversation afresh from Telephony. */
         fun refreshConversation(threadId: Long)
@@ -291,8 +291,8 @@ class ThreadRepository(
         toRemove.forEach { message ->
             when {
                 message.isScheduled -> platform.dropScheduled(message.id)
-                toRecycleBin -> platform.moveToRecycleBin(message.id)
-                fromRecycleBin -> platform.restore(message.id)
+                toRecycleBin -> platform.moveToRecycleBin(message.id, message.isMMS)
+                fromRecycleBin -> platform.restore(message.id, message.isMMS)
                 else -> platform.delete(message.id, message.isMMS)
             }
         }
@@ -450,8 +450,8 @@ class ThreadRepository(
             app.cancelScheduleSendPendingIntent(messageId)
         }
 
-        override fun moveToRecycleBin(messageId: Long) = recycleBin.moveToRecycleBin(messageId)
-        override fun restore(messageId: Long) = recycleBin.restore(messageId)
+        override fun moveToRecycleBin(messageId: Long, isMms: Boolean) = recycleBin.moveToRecycleBin(messageId, isMms)
+        override fun restore(messageId: Long, isMms: Boolean) = recycleBin.restore(messageId, isMms)
         override fun delete(messageId: Long, isMms: Boolean) = app.deleteMessage(messageId, isMms)
         override fun refreshConversation(threadId: Long) = conversations.refreshFromTelephony(listOf(threadId))
         override fun createScheduledConversation(message: Message, threadId: Long, cached: Conversation?) =

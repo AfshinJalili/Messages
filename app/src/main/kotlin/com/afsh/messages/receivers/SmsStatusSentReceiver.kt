@@ -42,7 +42,7 @@ class SmsStatusSentReceiver : SendStatusReceiver() {
             // SMS sent outside the chat (call-reject replies from HeadlessSmsSendService) never reached
             // Room, so updateType changes no row: copy the row from Telephony instead. Then sync the
             // thread so the inbox snippet, date and unread count don't wait for a full reconcile.
-            val copied = if (context.messagesDB.updateType(messageId, type) == 0) {
+            val copied = if (context.messagesDB.updateType(messageId, isMms = false, type = type) == 0) {
                 telephony.getSms(messageId)?.also { context.messagesDB.insertOrUpdate(it.copy(type = type)) }
             } else {
                 null

@@ -35,6 +35,9 @@ private class FakeThreadPlatform : ThreadRepository.Platform {
     val deleted = ArrayList<Long>()
     val droppedScheduled = ArrayList<Long>()
     val restored = ArrayList<Long>()
+    /** Each bin move and restore with its transport: SMS and MMS ids overlap. */
+    val binnedTransports = ArrayList<Pair<Long, Boolean>>()
+    val restoredTransports = ArrayList<Pair<Long, Boolean>>()
     val temporaryThreads = ArrayList<Pair<Message, Long>>()
     val inboxRefreshes = ArrayList<Long>()
 
@@ -79,11 +82,13 @@ private class FakeThreadPlatform : ThreadRepository.Platform {
     override fun dropScheduled(messageId: Long) {
         droppedScheduled += messageId
     }
-    override fun moveToRecycleBin(messageId: Long) {
+    override fun moveToRecycleBin(messageId: Long, isMms: Boolean) {
         recycleBin += messageId
+        binnedTransports += messageId to isMms
     }
-    override fun restore(messageId: Long) {
+    override fun restore(messageId: Long, isMms: Boolean) {
         restored += messageId
+        restoredTransports += messageId to isMms
     }
     override fun delete(messageId: Long, isMms: Boolean) {
         deleted += messageId
@@ -117,9 +122,10 @@ private fun msg(
     read: Boolean = true,
     scheduled: Boolean = false,
     body: String = "m$id",
+    isMms: Boolean = false,
 ) = Message(
     id = id, body = body, type = type, status = -1, participants = ArrayList(), date = date, read = read, threadId = threadId,
-    isMMS = false, attachment = null, senderPhoneNumber = "", senderName = "", senderPhotoUri = "", subscriptionId = 1,
+    isMMS = isMms, attachment = null, senderPhoneNumber = "", senderName = "", senderPhotoUri = "", subscriptionId = 1,
     isScheduled = scheduled,
 )
 
@@ -468,6 +474,21 @@ class ThreadRepositoryTest {
         assertEquals(listOf(3L), platform.deleted)
         assertEquals(listOf(4L), repository.ids())
         assertEquals(listOf(1L, 1L, 1L), platform.refreshed)
+    }
+
+    @Test
+    fun `the bin moves and restores each message of its own transport`() {
+        val sms = msg(42)
+        val mms = msg(42, isMms = true)
+        val repository = repository()
+        repository.messages.list = arrayListOf(sms, mms, msg(43))
+
+        repository.delete(listOf(mms), toRecycleBin = true, fromRecycleBin = false, conversation = null)
+        repository.delete(listOf(sms), toRecycleBin = false, fromRecycleBin = true, conversation = null)
+
+        assertEquals(listOf(42L to true), platform.binnedTransports)
+        assertEquals(listOf(42L to false), platform.restoredTransports)
+        assertEquals(listOf(43L), repository.ids())
     }
 
     @Test

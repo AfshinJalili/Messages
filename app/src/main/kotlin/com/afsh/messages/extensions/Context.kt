@@ -316,7 +316,7 @@ fun Context.deleteMessage(id: Long, isMMS: Boolean) {
     val selectionArgs = arrayOf(id.toString())
     try {
         contentResolver.delete(uri, selection, selectionArgs)
-        messagesDB.delete(id)
+        messagesDB.delete(id, isMMS)
         if (!isMMS) messagesDB.deleteSpamMarker(id)
     } catch (e: Exception) {
         showErrorToast(e)
@@ -325,7 +325,7 @@ fun Context.deleteMessage(id: Long, isMMS: Boolean) {
 
 fun Context.deleteScheduledMessage(messageId: Long) {
     try {
-        messagesDB.delete(messageId)
+        messagesDB.deleteScheduledMessage(messageId)
     } catch (e: Exception) {
         showErrorToast(e)
     }

@@ -144,7 +144,7 @@ class ConversationRepository(
     /** The thread of SMS [messageId]: Room's when it knows, otherwise Telephony's. Null for 0 or unknown. */
     fun smsThreadId(messageId: Long): Long? {
         if (messageId == 0L) return null
-        messages.getThreadIdForMessage(messageId)?.takeIf { it != 0L }?.let { return it }
+        messages.getThreadIdForMessage(messageId, isMms = false)?.takeIf { it != 0L }?.let { return it }
         return telephony.smsThreadId(messageId)
     }
 
@@ -440,7 +440,7 @@ class ConversationRepository(
         val messages = messagesToDelete ?: this.messages.getScheduledThreadMessages(threadId)
         val cutoff = clock() - 1.minutes.inWholeMilliseconds
         try {
-            messages.filter { it.isScheduled && it.millis() < cutoff }.forEach { this.messages.delete(it.id) }
+            messages.filter { it.isScheduled && it.millis() < cutoff }.forEach { this.messages.delete(it.id, it.isMMS) }
             if (messages.filterNot { it.isScheduled && it.millis() < cutoff }.isEmpty()) {
                 val conversation = conversations.getConversationWithThreadId(threadId)
                 if (conversation != null && conversation.isScheduled) {

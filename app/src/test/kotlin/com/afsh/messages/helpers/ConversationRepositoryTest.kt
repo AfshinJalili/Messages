@@ -48,8 +48,9 @@ class ConversationRepositoryTest {
         }
     }
 
+    /** Room's messages keyed like Room, by id and transport: SMS and MMS ids overlap. */
     private class FakeMessagesDao : MessagesDao by unsupported() {
-        val messages = LinkedHashMap<Long, Message>()
+        val messages = LinkedHashMap<Pair<Long, Boolean>, Message>()
         val spam = LinkedHashMap<Long, SpamMessage>()
 
         override fun getSpamIds(): List<Long> = spam.keys.toList()
@@ -59,12 +60,12 @@ class ConversationRepositoryTest {
         override fun deleteSpamMarker(id: Long) {
             spam.remove(id)
         }
-        override fun getThreadIdForMessage(id: Long): Long? = messages[id]?.threadId
+        override fun getThreadIdForMessage(id: Long, isMms: Boolean): Long? = messages[id to isMms]?.threadId
         override fun markRead(id: Long, isMMS: Boolean) {
-            messages[id]?.let { messages[id] = it.copy(read = true) }
+            messages[id to isMMS]?.let { messages[id to isMMS] = it.copy(read = true) }
         }
         override fun markUnread(id: Long, isMMS: Boolean) {
-            messages[id]?.let { messages[id] = it.copy(read = false) }
+            messages[id to isMMS]?.let { messages[id to isMMS] = it.copy(read = false) }
         }
         override fun markThreadRead(threadId: Long) {
             messages.replaceAll { _, m -> if (m.threadId == threadId) m.copy(read = true) else m }
@@ -72,8 +73,8 @@ class ConversationRepositoryTest {
         override fun deleteThreadMessages(threadId: Long) {
             messages.values.removeAll { it.threadId == threadId }
         }
-        override fun delete(id: Long) {
-            messages.remove(id)
+        override fun delete(id: Long, isMms: Boolean) {
+            messages.remove(id to isMms)
         }
         override fun getScheduledThreadMessages(threadId: Long): List<Message> =
             messages.values.filter { it.threadId == threadId && it.isScheduled }
@@ -258,7 +259,7 @@ class ConversationRepositoryTest {
         id = id, body = body, type = 1, status = 0, participants = ArrayList(), date = date, read = read,
         threadId = threadId, isMMS = isMms, attachment = null, senderPhoneNumber = "", senderName = "",
         senderPhotoUri = "", subscriptionId = 0, isScheduled = scheduled,
-    ).also { messages.messages[id] = it }
+    ).also { messages.messages[id to isMms] = it }
 
     // region Unread counts
 
@@ -463,6 +464,14 @@ class ConversationRepositoryTest {
         assertNull(repository.smsThreadId(7))
     }
 
+    @Test
+    fun `an SMS thread id is never taken from an MMS that shares its id`() {
+        message(5, threadId = 30, isMms = true)
+        sms(5, threadId = 20, read = true)
+
+        assertEquals(20L, repository.smsThreadId(5))
+    }
+
     // endregion
 
     // region Writing conversations
@@ -524,7 +533,7 @@ class ConversationRepositoryTest {
         repository.delete(10)
 
         assertEquals(setOf(20L), conversations.rows.keys)
-        assertEquals(setOf(2L), messages.messages.keys)
+        assertEquals(setOf(2L to false), messages.messages.keys)
         assertTrue(telephony.rows.isEmpty())
         assertEquals(listOf(10L), effects.forgotten)
     }
@@ -642,7 +651,7 @@ class ConversationRepositoryTest {
 
         assertEquals(listOf(false, true, false), telephony.rows.map { !it.read })
         assertTrue(conversations.rows.getValue(10).read)
-        assertTrue(messages.messages.getValue(1).read)
+        assertTrue(messages.messages.getValue(1L to false).read)
         assertNull(effects.manuallyUnread[10])
         assertEquals(listOf<MessagingEvent>(MessagingEvent.ReadStateChanged(10, read = true, unreadCount = 0)), effects.events)
     }
@@ -698,7 +707,7 @@ class ConversationRepositoryTest {
         message(1, threadId = 10)
 
         assertFalse(repository.markMessageRead(1, isMms = false))
-        assertFalse(messages.messages.getValue(1).read)
+        assertFalse(messages.messages.getValue(1L to false).read)
     }
 
     // endregion
@@ -781,7 +790,7 @@ class ConversationRepositoryTest {
 
         repository.clearExpiredScheduledMessages(77)
 
-        assertEquals(setOf(5L), messages.messages.keys)
+        assertEquals(setOf(5L to false), messages.messages.keys)
         assertEquals(setOf(77L), conversations.rows.keys)
     }
 

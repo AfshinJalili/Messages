@@ -249,7 +249,7 @@ class SpamChecks {
     fun migration12to13() = migratedDatabase(
         name = "spam-migration-check.db",
         version = 12,
-        migrations = listOf("MIGRATION_12_13", "MIGRATION_13_14", "MIGRATION_14_15"),
+        migrations = listOf("MIGRATION_12_13", "MIGRATION_13_14", "MIGRATION_14_15", "MIGRATION_15_16"),
         seed = { db ->
             db.execSQL(
                 "INSERT INTO conversations (thread_id, snippet, date, read, title, photo_uri, is_group_conversation, phone_number, is_scheduled, uses_custom_title, archived, unread_count) " +

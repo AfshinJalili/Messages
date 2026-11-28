@@ -33,7 +33,7 @@ class RoomOnlyThread(private val context: Context, val conversation: Conversatio
     }
 
     fun delete() {
-        context.messagesDB.delete(pending.id)
+        context.messagesDB.delete(pending.id, pending.isMMS)
         context.conversationsDB.deleteThreadId(conversation.threadId)
     }
 
