@@ -39,10 +39,13 @@ class NotificationHelper(private val context: Context) {
         .build()
 
     /**
-     * Posts [threadId]'s message notification with [body] added to the messages it already shows.
-     * Blocking, and not thread-safe per thread: [MessagingEvents] calls it off the main thread, one
-     * post at a time, so each post reads what the last one left. [stillAlerts] is asked last, right
-     * before posting, since the user may have opened or muted the thread meanwhile.
+     * Posts [threadId]'s message notification with [body] added to the messages it already shows, and
+     * returns whether it posted. Blocking, and not thread-safe per thread: [MessagingEvents] calls it off
+     * the main thread, one post at a time, so each post reads what the last one left. With [continuing]
+     * false (the caller cancelled the notification since it last posted one) it starts afresh, since the
+     * system may list a cancelled notification a moment longer. [stillAlerts] is asked once the content
+     * is ready and before any of its PendingIntents change, since the user may have opened or muted the
+     * thread meanwhile.
      */
     @SuppressLint("NewApi")
     fun showMessageNotification(
@@ -53,8 +56,9 @@ class NotificationHelper(private val context: Context) {
         threadId: Long,
         bitmap: Bitmap?,
         sender: String,
+        continuing: Boolean,
         stillAlerts: () -> Boolean,
-    ) {
+    ): Boolean {
         val hasCustomNotifications =
             context.config.customNotifications.contains(threadId.toString())
         val notificationChannelId =
@@ -68,7 +72,11 @@ class NotificationHelper(private val context: Context) {
 
         val notificationId = threadId.hashCode()
         // The thread's message notification as it shows now; the thread's "not sent" one has a tag.
-        val shown = notificationManager.activeNotifications.find { it.id == notificationId && it.tag == null }?.notification
+        val shown = if (continuing) {
+            notificationManager.activeNotifications.find { it.id == notificationId && it.tag == null }?.notification
+        } else {
+            null
+        }
         // Android's default lock screen shows a notification's own content: only its "hide sensitive
         // content" option shows the public version, and an app cannot ask for that on a channel that
         // already exists. So when the lock-screen setting hides the message, the notification leaves it out.
@@ -79,6 +87,9 @@ class NotificationHelper(private val context: Context) {
             shown, messageId, isMms,
             count = style?.messages?.size ?: NotificationCompat.MessagingStyle.MAXIMUM_RETAINED_MESSAGES,
         )
+
+        // Before any PendingIntent below is updated: the live notification's actions share them.
+        if (!stillAlerts()) return false
 
         val contentIntent = Intent(context, ThreadActivity::class.java).apply {
             putExtra(THREAD_ID, threadId)
@@ -210,9 +221,9 @@ class NotificationHelper(private val context: Context) {
             ).setChannelId(notificationChannelId)
         }
 
-        if (!stillAlerts()) return
         notificationManager.notify(notificationId, builder.build())
         context.shortcutHelper.reportReceiveMessageUsage(threadId)
+        return true
     }
 
     /**

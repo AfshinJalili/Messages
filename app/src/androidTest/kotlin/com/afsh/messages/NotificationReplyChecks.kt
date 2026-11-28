@@ -34,6 +34,7 @@ class NotificationReplyChecks {
                 threadId = threadId,
                 bitmap = null,
                 sender = "Quick reply check",
+                continuing = true,
                 stillAlerts = { true },
             )
             val deadline = SystemClock.uptimeMillis() + 5000

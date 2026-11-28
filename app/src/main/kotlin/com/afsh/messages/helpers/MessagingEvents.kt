@@ -362,12 +362,19 @@ object MessagingEvents {
          */
         private val tray = Executors.newSingleThreadExecutor()
 
+        /**
+         * Threads whose message notification was cancelled here since it was last posted. The system
+         * may list a cancelled notification a moment longer, and a post must not bring back what it
+         * showed. Tray thread only.
+         */
+        private val cancelledThreads = HashSet<Long>()
+
         override fun isConversationMuted(threadId: Long): Boolean =
             context.config.isConversationMuted(threadId)
 
         override fun showIncomingAlert(event: MessagingEvent.IncomingMessage) {
             tray.execute {
-                context.notificationHelper.showMessageNotification(
+                val posted = context.notificationHelper.showMessageNotification(
                     messageId = event.messageId,
                     isMms = event.isMms,
                     address = event.address,
@@ -375,8 +382,10 @@ object MessagingEvents {
                     threadId = event.threadId,
                     bitmap = loadIncomingBitmap(event),
                     sender = event.senderName,
+                    continuing = event.threadId !in cancelledThreads,
                     stillAlerts = { stillAlerts(event) },
                 )
+                if (posted) cancelledThreads.remove(event.threadId)
             }
         }
 
@@ -390,7 +399,10 @@ object MessagingEvents {
         }
 
         override fun cancelConversationNotification(threadId: Long) {
-            tray.execute { context.notificationManager.cancel(threadId.hashCode()) }
+            tray.execute {
+                context.notificationManager.cancel(threadId.hashCode())
+                cancelledThreads += threadId
+            }
         }
 
         override fun cancelSendFailureNotification(threadId: Long) {
