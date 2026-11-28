@@ -15,13 +15,21 @@ import java.sql.DriverManager
  *
  * Mapping: BLOCK = spam prediction; ALLOW and NO_VERDICT = ham (stays in inbox).
  *
- * Thresholds below were measured on redesign-groundwork with the current defaults
- * (see companion object). Precision is gated tightly; recall is a floor so the
- * filter cannot silently go inert. UCI English recall is reported but not gated.
+ * The corpora carry no sender, and the filter reads one (a named sender is a companion). Each
+ * corpus is scored once per [SenderKind] with that one sender on spam and ham alike, so the
+ * sender never tells the filter the label. Thresholds are in the companion object. Precision is
+ * gated tightly; recall is a floor so the filter cannot silently go inert. UCI English recall is
+ * reported but not gated.
  */
 class SpamFilterAccuracyTest {
 
-    data class Sample(val sender: String, val body: String, val spam: Boolean, val source: String)
+    /** What every corpus message is scored as coming from. */
+    enum class SenderKind(val sender: String) {
+        NUMBER("09120000000"),
+        NAME("SENDER"),
+    }
+
+    data class Sample(val body: String, val spam: Boolean, val source: String)
     data class Counts(
         val tp: Int,
         val fp: Int,
@@ -37,6 +45,8 @@ class SpamFilterAccuracyTest {
             return if (p + r == 0.0) 0.0 else 2 * p * r / (p + r)
         }
     }
+
+    data class Fixture(val sender: String, val body: String)
 
     @Test
     fun mustNotFlagOtpAndBank() {
@@ -55,44 +65,54 @@ class SpamFilterAccuracyTest {
     }
 
     @Test
-    fun psscAccuracyMeetsFloor() {
-        val counts = score(psscSamples)
+    fun psscAccuracyFromNumbersMeetsFloor() = assertPssc(SenderKind.NUMBER, PSSC_NUMBER)
+
+    @Test
+    fun psscAccuracyFromNamesMeetsFloor() = assertPssc(SenderKind.NAME, PSSC_NAME)
+
+    @Test
+    fun uciAccuracyFromNumbersReported() = assertUci(SenderKind.NUMBER)
+
+    @Test
+    fun uciAccuracyFromNamesReported() = assertUci(SenderKind.NAME)
+
+    private fun assertPssc(kind: SenderKind, gate: Gate) {
+        val counts = score(psscSamples, kind)
+        report("PSSC", kind, psscSamples, counts)
+        assertTrue(
+            "PSSC ($kind) precision ${pct(counts.precision)} < floor ${pct(gate.precision)}",
+            counts.precision + 1e-9 >= gate.precision,
+        )
+        assertTrue(
+            "PSSC ($kind) recall ${pct(counts.recall)} < floor ${pct(gate.recall)}",
+            counts.recall + 1e-9 >= gate.recall,
+        )
+        assertTrue(
+            "PSSC ($kind) FPR ${pct(counts.fpr)} > ceiling ${pct(gate.fpr)}",
+            counts.fpr <= gate.fpr + 1e-9,
+        )
+    }
+
+    private fun assertUci(kind: SenderKind) {
+        val counts = score(uciSamples, kind)
+        report("UCI", kind, uciSamples, counts)
+        // English is a supplement; gate only that the suite ran and precision is not catastrophic.
+        assertTrue("UCI suite empty", uciSamples.isNotEmpty())
+        assertTrue(
+            "UCI ($kind) precision ${pct(counts.precision)} < soft floor ${pct(UCI_PRECISION_SOFT_FLOOR)}",
+            counts.precision + 1e-9 >= UCI_PRECISION_SOFT_FLOOR,
+        )
+    }
+
+    private fun report(corpus: String, kind: SenderKind, samples: List<Sample>, counts: Counts) {
         println(
-            "PSSC: n=${psscSamples.size} P=${pct(counts.precision)} R=${pct(counts.recall)} " +
+            "$corpus ($kind): n=${samples.size} P=${pct(counts.precision)} R=${pct(counts.recall)} " +
                 "F1=${pct(counts.f1)} FPR=${pct(counts.fpr)} " +
                 "tp=${counts.tp} fp=${counts.fp} tn=${counts.tn} fn=${counts.fn}",
         )
         if (counts.fp > 0 || counts.fn > 0) {
-            println(sampleErrors(psscSamples, limit = 8))
+            println(sampleErrors(samples, kind, limit = 8))
         }
-        assertTrue(
-            "PSSC precision ${pct(counts.precision)} < floor ${pct(PSSC_PRECISION_FLOOR)}",
-            counts.precision + 1e-9 >= PSSC_PRECISION_FLOOR,
-        )
-        assertTrue(
-            "PSSC recall ${pct(counts.recall)} < floor ${pct(PSSC_RECALL_FLOOR)}",
-            counts.recall + 1e-9 >= PSSC_RECALL_FLOOR,
-        )
-        assertTrue(
-            "PSSC FPR ${pct(counts.fpr)} > ceiling ${pct(PSSC_FPR_CEILING)}",
-            counts.fpr <= PSSC_FPR_CEILING + 1e-9,
-        )
-    }
-
-    @Test
-    fun uciAccuracyReported() {
-        val counts = score(uciSamples)
-        println(
-            "UCI: n=${uciSamples.size} P=${pct(counts.precision)} R=${pct(counts.recall)} " +
-                "F1=${pct(counts.f1)} FPR=${pct(counts.fpr)} " +
-                "tp=${counts.tp} fp=${counts.fp} tn=${counts.tn} fn=${counts.fn}",
-        )
-        // English is a supplement; gate only that the suite ran and precision is not catastrophic.
-        assertTrue("UCI suite empty", uciSamples.isNotEmpty())
-        assertTrue(
-            "UCI precision ${pct(counts.precision)} < soft floor ${pct(UCI_PRECISION_SOFT_FLOOR)}",
-            counts.precision + 1e-9 >= UCI_PRECISION_SOFT_FLOOR,
-        )
     }
 
     @Test
@@ -106,7 +126,7 @@ class SpamFilterAccuracyTest {
         )
     }
 
-    private fun score(samples: List<Sample>): Counts {
+    private fun score(samples: List<Sample>, kind: SenderKind): Counts {
         var tp = 0
         var fp = 0
         var tn = 0
@@ -114,7 +134,7 @@ class SpamFilterAccuracyTest {
         samples.forEach { sample ->
             val blocked = RuleBasedFilter.explain(
                 SpamPatterns.DEFAULT,
-                sample.sender,
+                kind.sender,
                 sample.body,
             ).verdict == FilterVerdict.BLOCK
             when {
@@ -127,11 +147,11 @@ class SpamFilterAccuracyTest {
         return Counts(tp, fp, tn, fn)
     }
 
-    private fun sampleErrors(samples: List<Sample>, limit: Int): String {
+    private fun sampleErrors(samples: List<Sample>, kind: SenderKind, limit: Int): String {
         val lines = mutableListOf<String>()
         for (sample in samples) {
             if (lines.size >= limit) break
-            val result = RuleBasedFilter.explain(SpamPatterns.DEFAULT, sample.sender, sample.body)
+            val result = RuleBasedFilter.explain(SpamPatterns.DEFAULT, kind.sender, sample.body)
             val blocked = result.verdict == FilterVerdict.BLOCK
             if (blocked != sample.spam) {
                 val kind = if (sample.spam) "FN" else "FP"
@@ -143,22 +163,24 @@ class SpamFilterAccuracyTest {
 
     private fun pct(v: Double) = "%.1f%%".format(v * 100.0)
 
+    /** Floors on precision and recall, and a ceiling on the false-positive rate. */
+    data class Gate(val precision: Double, val recall: Double, val fpr: Double)
+
     companion object {
         /**
-         * Measured 2026-11-18 after Persian promo-blast signals (`RuleBasedFilter` weights +
-         * `SpamPatterns.DEFAULT`): PSSC v0.3 n=4324 → P=98.6% R=54.4% F1=70.1% FPR=0.7%
-         * (tp=1159 fp=16 tn=2177 fn=972). Prior baseline was P=98.8% R=49.3% FPR=0.6%.
-         * UCI v.1 n=5574 → P=100.0% R=0.0% FPR=0.0% (tp=0 fp=0 tn=4827 fn=747; English
-         * recall is not a gate — the filter is Persian-keyword-first).
+         * Measured 2026-11-28 with one sender on spam and ham alike (PSSC v0.3 n=4324):
+         * - number: P=97.3% R=26.9% F1=42.1% FPR=0.7% (tp=573 fp=16 tn=2177 fn=1558)
+         * - name: P=92.7% R=54.4% F1=68.6% FPR=4.1% (tp=1159 fp=91 tn=2102 fn=972)
+         * UCI v.1 n=5574, either sender: P=100.0% R=0.0% FPR=0.0% (tp=0 fp=0 tn=4827 fn=747;
+         * English recall is not a gate — the filter is Persian-keyword-first).
          * Floors = measured − 2pp (precision/recall); FPR ceiling = measured + 2pp.
-         * UCI soft precision floor = measured − 5pp.
+         * UCI soft precision floor = 95%.
          */
-        const val PSSC_PRECISION_FLOOR = 0.966
-        const val PSSC_RECALL_FLOOR = 0.524
-        const val PSSC_FPR_CEILING = 0.027
+        val PSSC_NUMBER = Gate(precision = 0.953, recall = 0.249, fpr = 0.027)
+        val PSSC_NAME = Gate(precision = 0.907, recall = 0.524, fpr = 0.061)
         const val UCI_PRECISION_SOFT_FLOOR = 0.95
 
-        lateinit var mustNotFlag: List<Sample>
+        lateinit var mustNotFlag: List<Fixture>
         lateinit var psscSamples: List<Sample>
         lateinit var uciSamples: List<Sample>
 
@@ -170,7 +192,7 @@ class SpamFilterAccuracyTest {
             uciSamples = loadUci()
         }
 
-        private fun loadMustNotFlag(): List<Sample> {
+        private fun loadMustNotFlag(): List<Fixture> {
             val loader = checkNotNull(SpamFilterAccuracyTest::class.java.classLoader)
             val stream = loader.getResourceAsStream("spam-corpora/must-not-flag.json")
                 ?: error("missing spam-corpora/must-not-flag.json")
@@ -179,14 +201,7 @@ class SpamFilterAccuracyTest {
             return buildList {
                 for (i in 0 until arr.length()) {
                     val obj = arr.getJSONObject(i)
-                    add(
-                        Sample(
-                            sender = obj.getString("sender"),
-                            body = obj.getString("body"),
-                            spam = false,
-                            source = "must-not-flag",
-                        ),
-                    )
+                    add(Fixture(sender = obj.getString("sender"), body = obj.getString("body")))
                 }
             }
         }
@@ -206,12 +221,7 @@ class SpamFilterAccuracyTest {
                                 "ham" -> false
                                 else -> continue
                             }
-                            out += Sample(
-                                sender = if (spam) "PSSCSPAM" else "09120000000",
-                                body = body,
-                                spam = spam,
-                                source = "pssc",
-                            )
+                            out += Sample(body = body, spam = spam, source = "pssc")
                         }
                         check(out.size >= 4000) { "PSSC too small: ${out.size}" }
                         return out
@@ -233,12 +243,7 @@ class SpamFilterAccuracyTest {
                     "ham" -> false
                     else -> return@mapNotNull null
                 }
-                Sample(
-                    sender = if (spam) "UCIPROMO" else "447700000000",
-                    body = body,
-                    spam = spam,
-                    source = "uci",
-                )
+                Sample(body = body, spam = spam, source = "uci")
             }.also { check(it.size >= 5000) { "UCI too small: ${it.size}" } }
         }
     }
