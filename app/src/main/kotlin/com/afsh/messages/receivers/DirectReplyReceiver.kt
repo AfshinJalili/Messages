@@ -9,7 +9,6 @@ import android.os.Looper
 import androidx.core.app.RemoteInput
 import com.afsh.commons.extensions.showErrorToast
 import com.afsh.commons.helpers.SimpleContactsHelper
-import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.messages.extensions.*
 import com.afsh.messages.helpers.ConversationRepository
 import com.afsh.messages.helpers.MessagingEvent
@@ -40,7 +39,7 @@ class DirectReplyReceiver : BroadcastReceiver() {
                 }
             }
 
-            ensureBackgroundThread {
+            goAsyncInBackground {
                 var messageId = 0L
                 try {
                     context.sendMessageCompat(body, listOf(address), subscriptionId, emptyList())
