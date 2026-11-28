@@ -83,10 +83,11 @@ object SpamBackfill {
         }
     }
 
-    /** Puts [row] on Telephony with a spam marker. False leaves the row for the next launch. */
+    /**
+     * Puts [row] on Telephony with a spam marker, or without one when the user has since said the
+     * sender is not spam. False leaves the row for the next launch.
+     */
     internal fun move(row: Row, platform: Platform): Boolean {
-        // The user already said this sender is not spam.
-        if (platform.isAllowed(row.address)) return true
         val threadId = platform.threadId(row.address)
         if (threadId == 0L) return false
         val match = platform.findStored(threadId, row)
@@ -94,7 +95,7 @@ object SpamBackfill {
         if (match?.isMms == true) return true
         val smsId = match?.id ?: platform.insertSms(threadId, row)
         if (smsId == 0L) return false
-        platform.markSpam(smsId, threadId, row.reason)
+        if (!platform.isAllowed(row.address)) platform.markSpam(smsId, threadId, row.reason)
         return true
     }
 
