@@ -40,6 +40,13 @@ class BlockedPhrasesTest {
     }
 
     @Test
+    fun `a phrase matches through bidi isolates and embeddings`() {
+        // Apps wrap numbers in FSI…PDI (U+2068, U+2069) or LRE…PDF (U+202A, U+202C).
+        assertEquals(listOf("لغو\u206811"), matchedText("لغو11", "حراج\nلغو\u206811\u2069"))
+        assertEquals(listOf("لغو\u202A11"), matchedText("لغو11", "حراج\nلغو\u202A11\u202C"))
+    }
+
+    @Test
     fun `the highlight covers a phrase stretched with tatweel`() {
         assertEquals(listOf("تـخـفـیـف"), matchedText("تخفیف", "۵۰ درصد تـخـفـیـف"))
     }

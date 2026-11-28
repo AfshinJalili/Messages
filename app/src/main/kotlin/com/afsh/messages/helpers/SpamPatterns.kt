@@ -204,8 +204,8 @@ class SpamText(val folded: String, private val origins: IntArray) {
 
 /**
  * Folds [text] for matching: Arabic/Persian digits to ASCII, Yeh/Kaf variants to Persian, ZWNJ to a
- * space, and tatweel, direction marks, ZWJ and Arabic diacritics dropped, so «تـخـفـیـف» and «جَشنواره»
- * read as the plain words.
+ * space, and tatweel, Arabic diacritics and invisible format characters (ZWJ, direction marks and
+ * isolates) dropped, so «تـخـفـیـف», «جَشنواره» and a number wrapped in isolates read as typed.
  */
 fun foldSpamText(text: String): SpamText {
     val folded = StringBuilder(text.length)
@@ -228,12 +228,12 @@ fun foldSpamText(text: String): SpamText {
 }
 
 private fun Char.isIgnoredForMatching() = when (this) {
+    '\u200c' -> false // ZWNJ separates words: it folds to a space
     '\u0640', // tatweel
-    '\u200D', // ZWJ
-    '\u200E', '\u200F', '\u061C', // LRM, RLM, Arabic letter mark
     in '\u064B'..'\u065F', '\u0670', // Arabic diacritics and superscript alef
     -> true
-    else -> false
+    // ZWJ, LRM/RLM/ALM, bidi embeddings and isolates, soft hyphen, BOM
+    else -> category == CharCategory.FORMAT
 }
 
 /**
