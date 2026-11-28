@@ -58,6 +58,13 @@ data class SpamPatterns(val groups: Map<SpamPatternGroup, List<String>>) {
         private const val VS16 = "\\uFE0F?"
         /** Common short-link and web TLDs; bare host with optional path, no scheme required. */
         private const val TLD = "ir|io|com|net|me|ly|app|org|co|info|xyz|link|click|site|online|tv|cc|to"
+        /**
+         * A bare host such as Iu4.ir/e, shop.digikala.com or example.co.uk: labels, then a known TLD
+         * (and maybe a two-letter country after it) written in lowercase, so a missing space in
+         * "later.Me" isn't one. A sentence's closing period is not part of it.
+         */
+        private const val BARE_HOST =
+            "(?<![a-z0-9_.@-])(?:[a-z0-9-]+\\.)+(?-i:(?:$TLD)(?:\\.[a-z]{2})?)(?:/[\\w./-]*)?(?![a-z0-9_-]|\\.[a-z0-9])"
 
         val DEFAULT = SpamPatterns(
             mapOf(
@@ -92,7 +99,7 @@ data class SpamPatterns(val groups: Map<SpamPatternGroup, List<String>>) {
                 SpamPatternGroup.LINKS to listOf(
                     "https?://",
                     "www\\.",
-                    "(?<![\\w.@])[\\w-]+\\.(?:$TLD)(?:/[\\w./-]*)?(?![\\w.])",
+                    BARE_HOST,
                 ),
                 SpamPatternGroup.MARKETING to listOf(
                     "مجانی",

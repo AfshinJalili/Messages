@@ -348,4 +348,27 @@ class RuleBasedFilterTest {
         assertEquals(FilterVerdict.BLOCK, result.verdict)
         assertEquals(FilterRule.MARKETING, result.rule)
     }
+
+    /** The links the filter finds next to one marketing word from a number, where a link decides. */
+    private fun links(text: String): List<String> {
+        val body = "حراج $text"
+        return explain("09120000000", body).matches.filter { it.group == SpamPatternGroup.LINKS }.map { body.substring(it.range) }
+    }
+
+    @Test
+    fun `a bare host with several labels or a country suffix is a link`() {
+        assertEquals(listOf("shop.digikala.com"), links("shop.digikala.com"))
+        assertEquals(listOf("m.snapp.ir/x"), links("m.snapp.ir/x"))
+        assertEquals(listOf("example.co.uk"), links("example.co.uk"))
+    }
+
+    @Test
+    fun `a sentence's closing period is not part of the link`() {
+        assertEquals(listOf("digikala.com"), links("Visit digikala.com."))
+    }
+
+    @Test
+    fun `a missing space after a period is not a link`() {
+        assertEquals(emptyList<String>(), links("see you later.Me too"))
+    }
 }
