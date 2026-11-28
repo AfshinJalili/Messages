@@ -45,16 +45,26 @@ insert_rows("messages", 30000, lambda i: {"id": i, "thread_id": (i - 1) % 1500 +
 db.execute("INSERT INTO recycle_bin_messages (id, deleted_ts) VALUES (30000, 1)")
 # Thread 1500's latest non-recycled message is 28500; denormalized preview already matches.
 dao_source = (source / "interfaces/ConversationsDao.kt").read_text()
+dao = (source / "interfaces/MessagesDao.kt").read_text()
 
 def resolve_query_constants(sql):
-    """Expand the small SQL constants used by the shipped Room DAO query."""
+    """Expand the small SQL constants (declared in either DAO file) used by the shipped Room DAO queries."""
     def replace(match):
         name = match[1]
-        declaration = re.search(rf"private const val {name} = (.*?)(?:\n\n|\n@Dao)", dao_source, re.S)
+        declaration = None
+        for text in (dao_source, dao):
+            declaration = declaration or re.search(rf"(?:private|internal) const val {name} =\s*(.*?)(?:\n\n|\n@Dao)", text, re.S)
         assert declaration, f"Missing DAO SQL constant: {name}"
         return resolve_query_constants("".join(re.findall(r'"([^"]*)"', declaration[1])))
 
     return re.sub(r"\$(\w+)", replace, sql)
+
+def dao_query(method):
+    """The SQL of MessagesDao.[method], one-line or triple-quoted, with its constants expanded."""
+    for match in re.finditer(r'@Query\(\s*(?:"""(.*?)"""|"([^"\n]*)")\s*\)\s+fun (\w+)\(', dao, re.S):
+        if match[3] == method:
+            return resolve_query_constants(match[1] or match[2])
+    raise AssertionError(f"MessagesDao.{method} missing")
 
 queries = re.findall(r'@Query\("(SELECT .*?)"\)', dao_source)
 query = resolve_query_constants(next(q for q in queries if "FROM conversations WHERE archived = 0" in q))
@@ -132,16 +142,15 @@ for _ in range(2):
 print("PASS: migration 11→12 index can be retried")
 
 # Run the actual queries used by Starred and message search against a recycled hit.
-dao = (source / "interfaces/MessagesDao.kt").read_text()
 for method, params in [("getMessagesWithIds", {"ids": 30000}), ("getMessagesWithText", {"text": "30000"})]:
-    query = re.search(r'@Query\("([^"\n]+)"\)\s+fun ' + method + r'\(', dao)[1]
+    query = dao_query(method)
     assert not db.execute(query, params).fetchall(), f"{method} exposes recycled messages"
     active = {"ids": 29999} if method == "getMessagesWithIds" else {"text": "29999"}
     assert len(db.execute(query, active).fetchall()) == 1, f"{method} hides active messages"
 print("PASS: starred and search results exclude recycled messages")
 
 # The Recycle bin cards count each conversation's recycled messages and date the latest deletion.
-summaries = re.search(r'@Query\("([^"\n]+)"\)\s+fun getRecycleBinSummaries\(', dao)[1]
+summaries = dao_query("getRecycleBinSummaries")
 db.execute("INSERT INTO recycle_bin_messages (id, deleted_ts) VALUES (28500, 5)")
 rows = {thread: (count, deleted) for thread, count, deleted in db.execute(summaries).fetchall()}
 assert rows == {(30000 - 1) % 1500 + 1: (2, 5)}, rows

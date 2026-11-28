@@ -12,6 +12,10 @@ import com.afsh.messages.models.RecycleBinMessage
 import com.afsh.messages.models.RecycleBinSummary
 import com.afsh.messages.models.SpamMessage
 
+/** Joins each cached message to its recycle-bin entry, if it has one. */
+internal const val JOIN_RECYCLE_BIN =
+    "LEFT OUTER JOIN recycle_bin_messages ON messages.id = recycle_bin_messages.id"
+
 @Dao
 interface MessagesDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -50,32 +54,32 @@ interface MessagesDao {
     @Query("SELECT * FROM messages")
     fun getAll(): List<Message>
 
-    @Query("SELECT messages.* FROM messages LEFT OUTER JOIN recycle_bin_messages ON messages.id = recycle_bin_messages.id WHERE recycle_bin_messages.id IS NOT NULL")
+    @Query("SELECT messages.* FROM messages $JOIN_RECYCLE_BIN WHERE recycle_bin_messages.id IS NOT NULL")
     fun getAllRecycleBinMessages(): List<Message>
 
-    @Query("SELECT messages.* FROM messages LEFT OUTER JOIN recycle_bin_messages ON messages.id = recycle_bin_messages.id WHERE recycle_bin_messages.id IS NULL AND is_scheduled = 1")
+    @Query("SELECT messages.* FROM messages $JOIN_RECYCLE_BIN WHERE recycle_bin_messages.id IS NULL AND is_scheduled = 1")
     fun getAllScheduledMessages(): List<Message>
 
-    @Query("SELECT messages.* FROM messages LEFT OUTER JOIN recycle_bin_messages ON messages.id = recycle_bin_messages.id WHERE recycle_bin_messages.id IS NOT NULL AND recycle_bin_messages.deleted_ts < :timestamp")
+    @Query("SELECT messages.* FROM messages $JOIN_RECYCLE_BIN WHERE recycle_bin_messages.id IS NOT NULL AND recycle_bin_messages.deleted_ts < :timestamp")
     fun getOldRecycleBinMessages(timestamp: Long): List<Message>
 
     @Query("SELECT * FROM messages WHERE thread_id = :threadId")
     fun getThreadMessages(threadId: Long): List<Message>
 
-    @Query("SELECT messages.* FROM messages LEFT OUTER JOIN recycle_bin_messages ON messages.id = recycle_bin_messages.id WHERE recycle_bin_messages.id IS NULL AND thread_id = :threadId")
+    @Query("SELECT messages.* FROM messages $JOIN_RECYCLE_BIN WHERE recycle_bin_messages.id IS NULL AND thread_id = :threadId")
     fun getNonRecycledThreadMessages(threadId: Long): List<Message>
 
-    @Query("SELECT messages.* FROM messages LEFT OUTER JOIN recycle_bin_messages ON messages.id = recycle_bin_messages.id WHERE recycle_bin_messages.id IS NOT NULL AND thread_id = :threadId")
+    @Query("SELECT messages.* FROM messages $JOIN_RECYCLE_BIN WHERE recycle_bin_messages.id IS NOT NULL AND thread_id = :threadId")
     fun getThreadMessagesFromRecycleBin(threadId: Long): List<Message>
 
-    @Query("SELECT messages.* FROM messages LEFT OUTER JOIN recycle_bin_messages ON messages.id = recycle_bin_messages.id WHERE recycle_bin_messages.id IS NULL AND thread_id = :threadId AND is_scheduled = 1")
+    @Query("SELECT messages.* FROM messages $JOIN_RECYCLE_BIN WHERE recycle_bin_messages.id IS NULL AND thread_id = :threadId AND is_scheduled = 1")
     fun getScheduledThreadMessages(threadId: Long): List<Message>
 
     @Query("SELECT * FROM messages WHERE thread_id = :threadId AND id = :messageId AND is_scheduled = 1")
     fun getScheduledMessageWithId(threadId: Long, messageId: Long): Message
 
     /** One row per conversation in the recycle bin: how many of its messages it holds and the latest deletion. */
-    @Query("SELECT messages.thread_id AS thread_id, COUNT(*) AS message_count, MAX(recycle_bin_messages.deleted_ts) AS deleted_ts FROM messages INNER JOIN recycle_bin_messages ON messages.id = recycle_bin_messages.id GROUP BY messages.thread_id")
+    @Query("SELECT messages.thread_id AS thread_id, COUNT(*) AS message_count, MAX(recycle_bin_messages.deleted_ts) AS deleted_ts FROM messages $JOIN_RECYCLE_BIN WHERE recycle_bin_messages.id IS NOT NULL GROUP BY messages.thread_id")
     fun getRecycleBinSummaries(): List<RecycleBinSummary>
 
     @Query("SELECT COUNT(*) FROM recycle_bin_messages")
@@ -89,7 +93,7 @@ interface MessagesDao {
 
     @Query(
         """SELECT messages.body AS body, messages.date AS date FROM messages
-        LEFT OUTER JOIN recycle_bin_messages ON messages.id = recycle_bin_messages.id
+        $JOIN_RECYCLE_BIN
         WHERE recycle_bin_messages.id IS NULL
         AND messages.thread_id = :threadId
         AND NOT (messages.is_mms = 0 AND messages.id IN (SELECT id FROM spam_messages))
@@ -113,15 +117,15 @@ interface MessagesDao {
     @Query("SELECT EXISTS(SELECT 1 FROM messages WHERE thread_id = :threadId AND is_scheduled = 0 AND date = :date AND (is_mms = 1 OR instr(replace(replace(replace(replace(body, ' ', ''), char(10), ''), char(13), ''), char(9), ''), replace(replace(replace(replace(:snippet, ' ', ''), char(10), ''), char(13), ''), char(9), '')) = 1))")
     fun hasMessageForSnippet(threadId: Long, date: Int, snippet: String): Boolean
 
-    @Query("SELECT messages.* FROM messages LEFT OUTER JOIN recycle_bin_messages ON messages.id = recycle_bin_messages.id WHERE recycle_bin_messages.id IS NULL AND body LIKE :text")
+    @Query("SELECT messages.* FROM messages $JOIN_RECYCLE_BIN WHERE recycle_bin_messages.id IS NULL AND body LIKE :text")
     fun getMessagesWithText(text: String): List<Message>
 
-    @Query("SELECT messages.* FROM messages LEFT OUTER JOIN recycle_bin_messages ON messages.id = recycle_bin_messages.id WHERE recycle_bin_messages.id IS NULL AND messages.id IN (:ids)")
+    @Query("SELECT messages.* FROM messages $JOIN_RECYCLE_BIN WHERE recycle_bin_messages.id IS NULL AND messages.id IN (:ids)")
     fun getMessagesWithIds(ids: List<Long>): List<Message>
 
     @Query(
         """SELECT messages.* FROM messages
-        LEFT OUTER JOIN recycle_bin_messages ON messages.id = recycle_bin_messages.id
+        $JOIN_RECYCLE_BIN
         WHERE recycle_bin_messages.id IS NULL
         AND NOT (is_mms = 0 AND messages.id IN (SELECT id FROM spam_messages))
         AND (
