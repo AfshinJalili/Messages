@@ -362,6 +362,7 @@ object MessagingEvents {
             tray.execute {
                 context.notificationHelper.showMessageNotification(
                     messageId = event.messageId,
+                    isMms = event.isMms,
                     address = event.address,
                     body = event.body,
                     threadId = event.threadId,

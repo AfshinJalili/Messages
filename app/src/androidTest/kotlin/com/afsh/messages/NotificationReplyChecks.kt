@@ -28,6 +28,7 @@ class NotificationReplyChecks {
         try {
             NotificationHelper(context).showMessageNotification(
                 messageId = 0,
+                isMms = false,
                 address = "5550100",
                 body = body,
                 threadId = threadId,

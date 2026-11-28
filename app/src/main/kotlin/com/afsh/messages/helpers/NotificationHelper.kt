@@ -8,6 +8,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
+import android.os.Bundle
 import android.media.AudioAttributes
 import android.media.AudioManager
 import android.media.RingtoneManager
@@ -46,6 +47,7 @@ class NotificationHelper(private val context: Context) {
     @SuppressLint("NewApi")
     fun showMessageNotification(
         messageId: Long,
+        isMms: Boolean,
         address: String,
         body: String,
         threadId: Long,
@@ -65,6 +67,11 @@ class NotificationHelper(private val context: Context) {
             ?: context.shortcutHelper.createOrUpdateShortcut(threadId)
 
         val notificationId = threadId.hashCode()
+        // The thread's message notification as it shows now; the thread's "not sent" one has a tag.
+        val shown = notificationManager.activeNotifications.find { it.id == notificationId && it.tag == null }?.notification
+        val style = getMessagesStyle(address, body, sender, oldMessages = shown?.let(::messagesOf).orEmpty())
+        val shownMessages = shownMessagesAfter(shown, messageId, isMms, count = style.messages.size)
+
         val contentIntent = Intent(context, ThreadActivity::class.java).apply {
             putExtra(THREAD_ID, threadId)
         }
@@ -88,10 +95,7 @@ class NotificationHelper(private val context: Context) {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
 
-        val deleteSmsIntent = Intent(context, DeleteSmsReceiver::class.java).apply {
-            putExtra(THREAD_ID, threadId)
-            putExtra(MESSAGE_ID, messageId)
-        }
+        val deleteSmsIntent = DeleteSmsReceiver.intent(context, threadId, shownMessages.ids, shownMessages.areMms)
         val deleteSmsPendingIntent =
             PendingIntent.getBroadcast(
                 context,
@@ -135,7 +139,8 @@ class NotificationHelper(private val context: Context) {
         val lockScreenVisibility = context.config.lockScreenVisibilitySetting
         val builder = NotificationCompat.Builder(context, notificationChannelId).apply {
             setLargeIcon(bitmap ?: SimpleContactsHelper(context).getContactLetterIcon(sender))
-            setStyle(getMessagesStyle(address, body, notificationId, sender))
+            setStyle(style)
+            addExtras(shownMessages.toExtras())
             setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
             setPublicVersion(publicMessageNotification(notificationChannelId, sender, lockScreenVisibility))
 
@@ -285,8 +290,8 @@ class NotificationHelper(private val context: Context) {
     private fun getMessagesStyle(
         address: String,
         body: String,
-        notificationId: Int,
-        name: String?
+        name: String?,
+        oldMessages: List<NotificationCompat.MessagingStyle.Message>,
     ): NotificationCompat.MessagingStyle {
         val sender = if (name != null) {
             Person.Builder()
@@ -298,7 +303,7 @@ class NotificationHelper(private val context: Context) {
         }
 
         return NotificationCompat.MessagingStyle(user).also { style ->
-            getOldMessages(notificationId).forEach {
+            oldMessages.forEach {
                 style.addMessage(it)
             }
             val newMessage =
@@ -307,22 +312,39 @@ class NotificationHelper(private val context: Context) {
         }
     }
 
-    private fun getOldMessages(notificationId: Int): List<NotificationCompat.MessagingStyle.Message> {
-        val currentNotification =
-            notificationManager.activeNotifications.find { it.id == notificationId && it.tag == null }
-        return if (currentNotification != null) {
-            val activeStyle =
-                NotificationCompat.MessagingStyle.extractMessagingStyleFromNotification(
-                    currentNotification.notification
-                )
-            activeStyle?.messages.orEmpty()
-        } else {
-            emptyList()
+    private fun messagesOf(notification: Notification): List<NotificationCompat.MessagingStyle.Message> =
+        NotificationCompat.MessagingStyle.extractMessagingStyleFromNotification(notification)?.messages.orEmpty()
+
+    /**
+     * The messages [shown] lists plus the new one, oldest first, cut to the [count] that its
+     * MessagingStyle keeps: what the notification's Delete action deletes.
+     */
+    private fun shownMessagesAfter(shown: Notification?, messageId: Long, isMms: Boolean, count: Int): ShownMessages {
+        val extras = shown?.extras
+        var ids = extras?.getLongArray(SHOWN_MESSAGE_IDS) ?: LongArray(0)
+        var areMms = extras?.getBooleanArray(SHOWN_MESSAGES_ARE_MMS) ?: BooleanArray(0)
+        if (ids.size != areMms.size) {
+            ids = LongArray(0)
+            areMms = BooleanArray(0)
+        }
+        return ShownMessages(
+            ids = (ids + messageId).takeLast(count).toLongArray(),
+            areMms = (areMms + isMms).takeLast(count).toBooleanArray(),
+        )
+    }
+
+    /** The messages a conversation notification shows, by id and transport: SMS and MMS ids overlap. */
+    private class ShownMessages(val ids: LongArray, val areMms: BooleanArray) {
+        fun toExtras() = Bundle().apply {
+            putLongArray(SHOWN_MESSAGE_IDS, ids)
+            putBooleanArray(SHOWN_MESSAGES_ARE_MMS, areMms)
         }
     }
 
     private companion object {
         /** Sets a thread's "not sent" notification apart from its message notification, which has the same id. */
         const val SEND_FAILURE_TAG = "send_failure"
+        const val SHOWN_MESSAGE_IDS = "com.afsh.messages.shown_message_ids"
+        const val SHOWN_MESSAGES_ARE_MMS = "com.afsh.messages.shown_messages_are_mms"
     }
 }
