@@ -41,7 +41,7 @@ jobs:
           tools/site_release_json.sh "$GITHUB_REPOSITORY" > site/release.json
           cat site/release.json
           cp graphics/icon.svg site/favicon.svg
-      - uses: actions/configure-pages@v5
+      - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v4
         with:
           path: site
