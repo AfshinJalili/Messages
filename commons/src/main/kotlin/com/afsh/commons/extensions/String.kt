@@ -297,9 +297,10 @@ private const val MAX_COUNTRY_CODE_DIGITS = 3
 /**
  * Whether this and [other] are one sender. Names match exactly. Numbers ([canonicalNumber]) match
  * in full, except that a number written without a country code ("0912…", "912…", "5550183")
- * matches the same number with one ("+98912…", "+15550183"). A longer number whose last digits
- * spell a shorter one, such as the panel line 50009121234567 and +989121234567, is a different
- * sender.
+ * matches the same number written with a `+` and one ("+98912…", "+15550183"). Without a `+` the
+ * extra digits may be an area code, so "88123456" is not "03188123456". A longer number whose
+ * last digits spell a shorter one, such as the panel line 50009121234567 and +989121234567, is a
+ * different sender.
  */
 fun String.isSameNumber(other: String): Boolean {
     val a = canonicalNumber() ?: return this == other
@@ -310,7 +311,8 @@ fun String.isSameNumber(other: String): Boolean {
     val shortDigits = significant(short)
     val longDigits = significant(long)
     if (shortDigits == longDigits) return true
-    return !short.startsWith('+') &&
+    return long.startsWith('+') &&
+        !short.startsWith('+') &&
         shortDigits.length >= MIN_SUBSCRIBER_DIGITS &&
         longDigits.length - shortDigits.length <= MAX_COUNTRY_CODE_DIGITS &&
         longDigits.endsWith(shortDigits)

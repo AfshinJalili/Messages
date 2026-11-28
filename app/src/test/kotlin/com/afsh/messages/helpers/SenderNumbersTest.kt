@@ -73,6 +73,9 @@ class SenderNumbersTest {
             "09121234567" to "09121234568",
             "1000" to "21000",
             "*8000" to "8000",
+            // Without a + the extra digits may be an area code: another city's line.
+            "88123456" to "03188123456",
+            "5550183" to "2125550183",
         ).forEach { (a, b) ->
             assertFalse("$a ~ $b", setOf(a).containsNumber(b))
             assertFalse("$b ~ $a", setOf(b).containsNumber(a))
