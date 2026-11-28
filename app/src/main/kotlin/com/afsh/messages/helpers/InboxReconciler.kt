@@ -65,8 +65,8 @@ object InboxReconciler {
 
     /**
      * The full pass's writes: Telephony's [conversations] against [allCached], Room's rows as the pass read
-     * them before it read Telephony (see [ConversationRepository.storeIfUnchanged]). One transaction for every
-     * write, so the inbox re-queries once per reconcile instead of once per changed row.
+     * them before it read Telephony, so what Room got meanwhile stays (see [reconciledRow]). One transaction
+     * for every write, so the inbox re-queries once per reconcile instead of once per changed row.
      */
     internal fun storeConversations(
         repository: ConversationRepository,
@@ -87,7 +87,7 @@ object InboxReconciler {
 
         repository.runInTransaction {
             conversations.forEach { conversation ->
-                repository.storeIfUnchanged(conversation, readBefore = cachedById[conversation.threadId], trustTelephony = forced)
+                repository.storeSnapshot(conversation, readBefore = cachedById[conversation.threadId], trustTelephony = forced)
             }
 
             allCached.forEach { cachedConversation ->
@@ -111,11 +111,10 @@ object InboxReconciler {
      * The warm-resume pass when Room's thread count already matches Telephony: reads only the newest
      * [limit] threads, so a new message, a read or a delete made elsewhere refreshes without walking
      * every thread. Missing rows are inserted; rows the merge with Room (see [reconciledRow]) would
-     * change are rewritten, in one transaction, unless Room's row changed while the pass ran (see
-     * [ConversationRepository.storeIfUnchanged]). Rows that match are not written, since every write re-runs
-     * the inbox query. Archived rows are left alone, as [reconcile] leaves them. Threads outside the
-     * window, and deleted threads, are [reconcile]'s. Blocks; throws when Telephony can't be read.
-     * Returns the number of rows written.
+     * change are rewritten, in one transaction, keeping what Room got while the pass ran. Rows that match
+     * are not written, since every write re-runs the inbox query. Archived rows are left alone, as
+     * [reconcile] leaves them. Threads outside the window, and deleted threads, are [reconcile]'s.
+     * Blocks; throws when Telephony can't be read. Returns the number of rows written.
      */
     fun syncRecentWindow(context: Context, limit: Int = RECENT_WINDOW): Int =
         syncRecentWindow(ConversationRepository.from(appContext(context)), limit)
@@ -124,12 +123,12 @@ object InboxReconciler {
         // Room first: a row that changes after this read is newer than what Telephony is about to say.
         val cached = repository.cachedConversations().associateBy { it.threadId }
         val drifted = repository.conversations(failOnError = true, limit = limit).filter { incoming ->
-            reconciledRow(incoming, cached[incoming.threadId]) != null
+            reconciledRow(incoming, current = cached[incoming.threadId]) != null
         }
         if (drifted.isEmpty()) return 0
         var written = 0
         repository.runInTransaction {
-            drifted.forEach { incoming -> if (repository.storeIfUnchanged(incoming, readBefore = cached[incoming.threadId])) written++ }
+            drifted.forEach { incoming -> if (repository.storeSnapshot(incoming, readBefore = cached[incoming.threadId])) written++ }
         }
         return written
     }

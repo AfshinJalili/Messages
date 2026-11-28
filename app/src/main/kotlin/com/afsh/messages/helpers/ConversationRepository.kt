@@ -217,23 +217,22 @@ class ConversationRepository(
     }
 
     /**
-     * A provider pass's write: stores Telephony [snapshot] (see [reconciledRow]) only when Room's row of its
-     * thread is still [readBefore], the row the pass read before it read Telephony. A row deleted since stays
-     * deleted, and a row written since (an incoming message, a read, a send) keeps that write: Telephony's
-     * snapshot may predate it. The next pass reads both again. Call it inside the pass's transaction. True
-     * when it wrote.
+     * A provider pass's write: stores Telephony [snapshot] over Room's row of its thread as it is now (see
+     * [reconciledRow]); [readBefore] is that row as the pass read it before it read Telephony. Call it
+     * inside the pass's transaction. True when it wrote.
      */
-    fun storeIfUnchanged(snapshot: Conversation, readBefore: Conversation?, trustTelephony: Boolean = false): Boolean {
-        if (conversations.getConversationWithThreadId(snapshot.threadId) != readBefore) return false
-        val row = reconciledRow(snapshot, readBefore, trustTelephony) ?: return false
+    fun storeSnapshot(snapshot: Conversation, readBefore: Conversation?, trustTelephony: Boolean = false): Boolean {
+        val current = conversations.getConversationWithThreadId(snapshot.threadId)
+        val row = reconciledRow(snapshot, current, readBefore, trustTelephony) ?: return false
         conversations.insertOrUpdate(row)
         effects.refreshPreview(listOf(row.threadId))
         return true
     }
 
     /**
-     * A provider pass's removal of [readBefore], a row whose thread Telephony no longer has: dropped only
-     * when Room's row is still the one the pass read before it read Telephony (see [storeIfUnchanged]).
+     * A provider pass's removal of [readBefore], a row whose thread Telephony no longer listed: dropped
+     * only when Room's row is still the one the pass read before it read Telephony. A row written since
+     * (a new message in that thread, say) is newer than the pass; the next full pass decides.
      */
     fun removeIfUnchanged(readBefore: Conversation) {
         if (conversations.getConversationWithThreadId(readBefore.threadId) == readBefore) removeFromCache(readBefore.threadId)
@@ -579,14 +578,35 @@ internal fun mergeConversationWithCache(
 }
 
 /**
- * The row a provider pass stores for Telephony [snapshot] over Room's [cached] row (see
+ * The row a provider pass stores for Telephony [snapshot] over Room's [current] row (see
  * [mergeConversationWithCache]), or null when it would change nothing, since every write re-runs the
  * inbox query. Archived rows are left alone.
+ *
+ * [readBefore] is Room's row as the pass read it, before it read Telephony. What Room got since is
+ * newer than the snapshot: a row deleted since stays deleted, and a row created or written since (an
+ * incoming message, a read, an unread-count sync) keeps its date, snippet and message count when those
+ * changed, and its read state when that changed. The rest comes from the snapshot.
  */
-internal fun reconciledRow(snapshot: Conversation, cached: Conversation?, trustTelephony: Boolean = false): Conversation? {
-    if (cached?.isArchived == true) return null
-    val merged = mergeConversationWithCache(snapshot, cached, trustTelephony)
-    return merged.takeUnless { cached != null && Conversation.areContentsTheSame(old = cached, new = it) }
+internal fun reconciledRow(
+    snapshot: Conversation,
+    current: Conversation?,
+    readBefore: Conversation? = current,
+    trustTelephony: Boolean = false,
+): Conversation? {
+    if (current == null && readBefore != null) return null
+    if (current?.isArchived == true) return null
+    var row = mergeConversationWithCache(snapshot, current, trustTelephony)
+    if (current != null && current != readBefore) {
+        if (readBefore == null || current.date != readBefore.date || current.snippet != readBefore.snippet ||
+            current.messageCount != readBefore.messageCount
+        ) {
+            row = row.copy(date = current.date, snippet = current.snippet, messageCount = current.messageCount)
+        }
+        if (readBefore == null || current.read != readBefore.read || current.unreadCount != readBefore.unreadCount) {
+            row = row.copy(read = current.read, unreadCount = current.unreadCount)
+        }
+    }
+    return row.takeUnless { current != null && Conversation.areContentsTheSame(old = current, new = it) }
 }
 
 private class AndroidConversationEffects(private val app: Context) : ConversationEffects {

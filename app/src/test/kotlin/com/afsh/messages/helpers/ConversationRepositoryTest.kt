@@ -549,6 +549,22 @@ class ConversationRepositoryTest {
     }
 
     @Test
+    fun `a full pass stores Telephony's new message over a row whose unread count was synced while it ran`() {
+        conversations.insertOrUpdate(conversation(10, date = 100).copy(snippet = "old", messageCount = 5))
+        telephony.threads[10] = conversation(10, read = false, unread = 1, date = 200).copy(snippet = "new", messageCount = 6)
+        // syncUnreadCounts runs beside the launch reconcile.
+        telephony.afterRead = { conversations.updateUnreadCount(10, 1) }
+
+        fullPass()
+
+        val row = conversations.rows.getValue(10)
+        assertEquals("new", row.snippet)
+        assertEquals(200, row.date)
+        assertEquals(6, row.messageCount)
+        assertEquals(1, row.unreadCount)
+    }
+
+    @Test
     fun `a full pass does not undo a mark-read made while it ran`() {
         conversations.insertOrUpdate(conversation(10, read = false, unread = 2))
         // A renamed contact: the pass has something to write.
@@ -715,6 +731,17 @@ class ConversationRepositoryTest {
 
         assertEquals(0, InboxReconciler.syncRecentWindow(repository, limit = 20))
         assertEquals(incoming, conversations.rows.getValue(10))
+    }
+
+    @Test
+    fun `the recent window stores Telephony's new message over a row whose unread count was synced while it ran`() {
+        conversations.insertOrUpdate(conversation(10, date = 100).copy(snippet = "old", messageCount = 5))
+        telephony.threads[10] = conversation(10, read = false, unread = 1, date = 200).copy(snippet = "new", messageCount = 6)
+        telephony.afterRead = { conversations.updateUnreadCount(10, 1) }
+
+        assertEquals(1, InboxReconciler.syncRecentWindow(repository, limit = 20))
+        assertEquals("new", conversations.rows.getValue(10).snippet)
+        assertEquals(200, conversations.rows.getValue(10).date)
     }
 
     @Test
