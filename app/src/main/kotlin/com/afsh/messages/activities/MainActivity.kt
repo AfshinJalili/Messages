@@ -489,8 +489,6 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
             recycleBinAvailable = config.useRecycleBin,
             swipeLeft = config.swipeAction(towardsRight = false),
             swipeRight = config.swipeAction(towardsRight = true),
-            spamNumbers = config.spamNumbers,
-            allowedNumbers = config.allowedNumbers,
         )
         NavBadges.publish(inbox.navCounts)
     }
@@ -727,57 +725,19 @@ class MainActivity : SimpleActivity(), UndoDeletion.UndoHost {
             }
 
             InboxAction.DETAILS -> launchConversationDetails(first.threadId)
-            InboxAction.ALWAYS_SPAM -> {
-                val count = selected.size.coerceAtLeast(1)
-                val title = if (count == 1) {
-                    resources.getQuantityString(R.plurals.always_spam_title, 1, isolate(selected.first().title))
-                } else {
-                    resources.getQuantityString(R.plurals.always_spam_title, count, count)
-                }
-                confirm(
-                    title = title,
-                    explanation = resources.getQuantityString(R.plurals.always_spam_text, count),
-                    confirmLabel = resources.getQuantityString(R.plurals.always_spam, count),
-                ) {
-                    selected.forEach { config.addSpamNumber(it.phoneNumber) }
+            InboxAction.SPAM_AND_BLOCKING -> openSpamAndBlocking(
+                SpamSenders(
+                    numbers = selected.map { it.phoneNumber },
+                    threadIds = selected.map { it.threadId },
+                    name = first.title,
+                    canBlock = selected.none { it.isGroupConversation },
+                ),
+                offerUndo = { message, undo -> launchUndo(message, undoTimeoutMs(), onUndo = undo, onTimeout = {}) },
+                onChanged = {
                     clearSelection()
-                }
-            }
-
-            InboxAction.NEVER_SPAM -> {
-                val count = selected.size.coerceAtLeast(1)
-                val title = if (count == 1) {
-                    resources.getQuantityString(R.plurals.never_spam_title, 1, isolate(selected.first().title))
-                } else {
-                    resources.getQuantityString(R.plurals.never_spam_title, count, count)
-                }
-                confirm(
-                    title = title,
-                    explanation = resources.getQuantityString(R.plurals.never_spam_text, count),
-                    confirmLabel = resources.getQuantityString(R.plurals.never_spam, count),
-                ) {
-                    selected.forEach { config.addAllowedNumber(it.phoneNumber) }
-                    clearSelection()
-                }
-            }
-
-            InboxAction.BLOCK_ON_PHONE -> {
-                val count = selected.size.coerceAtLeast(1)
-                val title = if (count == 1) {
-                    resources.getQuantityString(R.plurals.block_on_phone_title, 1, isolate(selected.first().title))
-                } else {
-                    resources.getQuantityString(R.plurals.block_on_phone_title, count, count)
-                }
-                confirm(
-                    title = title,
-                    explanation = resources.getQuantityString(R.plurals.block_on_phone_text, count),
-                    confirmLabel = resources.getQuantityString(R.plurals.block_on_phone, count),
-                    destructive = true,
-                ) {
-                    blockNumbersOnPhone(selected.map { it.phoneNumber })
-                    clearSelection()
-                }
-            }
+                    publish()
+                },
+            )
         }
     }
 

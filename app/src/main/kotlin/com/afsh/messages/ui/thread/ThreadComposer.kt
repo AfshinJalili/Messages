@@ -2,7 +2,10 @@ package com.afsh.messages.ui.thread
 
 import com.afsh.messages.ui.Afsh
 import com.afsh.messages.ui.AfshCorners
+import com.afsh.messages.ui.components.AfshButton
 import com.afsh.messages.ui.components.AfshIcon
+import com.afsh.messages.ui.components.ButtonKind
+import com.afsh.messages.ui.components.TextAction
 import com.afsh.messages.ui.components.afshFieldColors
 import com.afsh.messages.ui.components.fieldMinHeight
 import com.afsh.messages.ui.components.AfshSheet
@@ -133,10 +136,13 @@ fun ThreadComposer(
 ) {
     val colors = MaterialTheme.colorScheme
     var attaching by rememberSaveable { mutableStateOf(false) }
-    // 67: a blocked sender keeps the composer's shape, switched off, until they are unblocked.
+    // 67: Android blocks the sender. The composer stays, switched off, with Unblock just above it.
     if (composer.blocked) {
         ComposerPanel {
-            DisabledComposer(stringResource(R.string.unblock_to_reply), Modifier.widthIn(max = 720.dp))
+            Column(Modifier.widthIn(max = 720.dp)) {
+                BlockedBar(onUnblock = { onEvent(ComposerEvent.Unblock) })
+                DisabledComposer(stringResource(R.string.composer_hint))
+            }
         }
         return
     }
@@ -152,6 +158,9 @@ fun ThreadComposer(
             if (!composer.canReply) {
                 ReplyDisabledField(onEvent, Modifier.fillMaxWidth())
                 return@Column
+            }
+            if (composer.alwaysSpam) {
+                AlwaysSpamNotice(onChange = { onEvent(ComposerEvent.SpamAndBlocking) })
             }
             if (composer.attachments.isNotEmpty()) {
                 AttachmentTray(composer.attachments, onEvent)
@@ -189,6 +198,52 @@ fun ThreadComposer(
     }
     if (attaching) {
         AttachSheet(onDismiss = { attaching = false }) { onEvent(ComposerEvent.Attach(it)) }
+    }
+}
+
+/** Above the blocked composer: why it is off, and the one way to turn it back on. */
+@Composable
+private fun BlockedBar(onUnblock: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    Surface(
+        Modifier
+            .fillMaxWidth()
+            .padding(start = Afsh.spacing.lg, top = Afsh.spacing.md, end = Afsh.spacing.lg),
+        shape = MaterialTheme.shapes.large,
+        color = colors.surfaceContainerHighest,
+    ) {
+        Row(
+            Modifier.padding(start = Afsh.spacing.lg, top = Afsh.spacing.sm, end = Afsh.spacing.sm, bottom = Afsh.spacing.sm),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.md),
+        ) {
+            Icon(AfshIcon.Block.painter(), contentDescription = null, tint = colors.onSurfaceVariant)
+            Text(
+                stringResource(R.string.you_blocked_sender),
+                style = MaterialTheme.typography.bodyMedium,
+                color = colors.onSurface,
+                modifier = Modifier.weight(1f),
+            )
+            AfshButton(stringResource(com.afsh.commons.R.string.unblock), onClick = onUnblock, kind = ButtonKind.SECONDARY)
+        }
+    }
+}
+
+/** Over the field while the sender is always spam: their messages skip the inbox, replies still go. */
+@Composable
+private fun AlwaysSpamNotice(onChange: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    Row(
+        Modifier.fillMaxWidth().padding(start = Afsh.spacing.xs),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Afsh.spacing.md),
+    ) {
+        Icon(AfshIcon.SpamShield.painter(), contentDescription = null, tint = colors.onSurfaceVariant)
+        Column(Modifier.weight(1f)) {
+            Text(stringResource(R.string.always_spam_notice), style = MaterialTheme.typography.titleSmall, color = colors.onSurface)
+            Text(stringResource(R.string.always_spam_notice_text), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+        }
+        TextAction(stringResource(R.string.change), onClick = onChange)
     }
 }
 

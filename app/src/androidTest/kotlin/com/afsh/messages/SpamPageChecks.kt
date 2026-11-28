@@ -93,12 +93,9 @@ class SpamPageChecks {
         compose.onNodeWithText("Last chance", substring = true).performTouchInput { longClick() }
         compose.onNodeWithText(quantity(R.plurals.inbox_selected, 1)).assertExists()
         compose.onNodeWithText(text(R.string.not_spam_short)).assertDoesNotExist()
+        // Not spam acts on the messages at once; the page offers Undo.
         compose.onNodeWithContentDescription(text(R.string.not_spam_short)).performClick()
-        check(events.none { it is SpamEvent.NotSpam }) { "Not spam must open the sheet first: $events" }
-        compose.onNodeWithText(text(R.string.not_spam_only)).performClick()
-        // AfshSheet.dismissThen hides first, then fires — wait like SheetChecks.
-        compose.waitUntil(5_000) { events.any { it is SpamEvent.NotSpam } }
-        check(events.last() == SpamEvent.NotSpam(listOf(messages[1]), neverSpamSender = false)) { "Events $events" }
+        check(events.last() == SpamEvent.NotSpam(listOf(messages[1]))) { "Events $events" }
         compose.onNodeWithContentDescription(text(R.string.not_spam_short)).assertDoesNotExist()
 
         // While selecting, a tap adds to the selection instead of opening.
@@ -106,11 +103,9 @@ class SpamPageChecks {
         compose.onNodeWithText("Last chance", substring = true).performClick()
         check(events.last() !is SpamEvent.Open) { "A tap while selecting must not open: $events" }
         compose.onNodeWithText(quantity(R.plurals.inbox_selected, 2)).assertExists()
-        compose.onNodeWithContentDescription(quantity(R.plurals.always_spam, 2)).performClick()
-        check(events.last() !is SpamEvent.BlockSender) { "Always spam must ask first" }
-        compose.onNodeWithText(quantity(R.plurals.always_spam_title, 2)).assertExists()
-        compose.onNodeWithText(quantity(R.plurals.always_spam, 2)).performClick()
-        check(events.last() == SpamEvent.BlockSender(listOf(messages[1], messages[2]))) { "Events $events" }
+        // Sender rules are the Spam and blocking sheet, which the activity opens.
+        compose.onNodeWithContentDescription(text(R.string.filter_rules)).performClick()
+        check(events.last() == SpamEvent.SpamAndBlocking(listOf(messages[1], messages[2]))) { "Events $events" }
 
         compose.onNodeWithText("Special offer", substring = true).performTouchInput { longClick() }
         compose.onNodeWithContentDescription(text(com.afsh.commons.R.string.delete)).performClick()

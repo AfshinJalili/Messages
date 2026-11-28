@@ -83,27 +83,13 @@
     <string name="no_blocked_messages">پیام مسدودشده‌ای نیست</string>
     <string name="clear_spam">پاک کردن همه</string>
     <string name="clear_spam_confirmation">همه‌ی پیام‌های مسدودشده برای همیشه حذف شوند؟</string>
-    <string name="not_spam">هرزنامه نیست (بازگشت به صندوق)</string>
-    <plurals name="never_spam">
-        <item quantity="one">هرگز این فرستنده را هرزنامه نکن</item>
-        <item quantity="other">هرگز این فرستنده‌ها را هرزنامه نکن</item>
-    </plurals>
-    <plurals name="never_spam_title">
-        <item quantity="one">هرگز %s را هرزنامه نکنیم؟</item>
-        <item quantity="other">هرگز این %d فرستنده را هرزنامه نکنیم؟</item>
-    </plurals>
-    <plurals name="never_spam_text">
-        <item quantity="one">پیام‌هایشان در صندوق می‌مانند، حتی اگر با یک عبارت یا فیلتر تبلیغاتی جور درآیند. در قوانین فیلتر می‌توانید تغییرش دهید.</item>
-        <item quantity="other">پیام‌هایشان در صندوق می‌مانند، حتی اگر با یک عبارت یا فیلتر تبلیغاتی جور درآیند. در قوانین فیلتر می‌توانید تغییرش دهید.</item>
-    </plurals>
-    <string name="sender_allowed">فرستنده مجاز شد و پیام بازگردانده شد</string>
     <plurals name="message_restored">
         <item quantity="one">پیام به صندوق بازگردانده شد</item>
         <item quantity="other">پیام‌ها به صندوق بازگردانده شدند</item>
     </plurals>
     <string name="block_reason_ai">فیلتر قدیمی</string>
     <string name="block_reason_keyword">کلیدواژه</string>
-    <string name="block_reason_number">شماره‌ی مسدودشده</string>
+    <string name="block_reason_number">قانون فرستنده</string>
     <string name="block_reason_rule">قانون</string>
     <string name="send_message">ارسال</string>
     <string name="no_recycle_bin_conversations">گفت‌وگویی در زباله‌دان نیست</string>
@@ -264,21 +250,6 @@
     <!-- Spam and filter rules (design 20, 21, 38, 50, 51) -->
     <string name="spam_empty_text">پیام‌های مسدود و مشکوک بدون اعلان در صندوق، اینجا می‌مانند.</string>
     <string name="not_spam_short">هرزنامه نیست</string>
-    <string name="not_spam_sheet_title">این پیام‌ها از هرزنامه بیرون بیایند؟</string>
-    <string name="not_spam_only">فقط همین پیام‌ها</string>
-    <string name="not_spam_only_text">به گفت‌وگو برمی‌گردند. پیام‌های بعدی ممکن است دوباره فیلتر شوند.</string>
-    <plurals name="always_spam">
-        <item quantity="one">همیشه این فرستنده را هرزنامه کن</item>
-        <item quantity="other">همیشه این فرستنده‌ها را هرزنامه کن</item>
-    </plurals>
-    <plurals name="always_spam_title">
-        <item quantity="one">همیشه %s هرزنامه باشد؟</item>
-        <item quantity="other">همیشه این %d فرستنده هرزنامه باشند؟</item>
-    </plurals>
-    <plurals name="always_spam_text">
-        <item quantity="one">از حالا پیام‌های تازه‌اش بی‌اعلان به هرزنامه می‌روند. پیامک‌های فعلی‌اش سر جایشان می‌مانند. پیام‌های بعدی را در کتابخانه ← هرزنامه ببینید.</item>
-        <item quantity="other">از حالا پیام‌های تازه‌شان بی‌اعلان به هرزنامه می‌روند. پیامک‌های فعلی‌شان سر جایشان می‌مانند. پیام‌های بعدی را در کتابخانه ← هرزنامه ببینید.</item>
-    </plurals>
     <plurals name="block_on_phone">
         <item quantity="one">مسدود کردن روی این گوشی</item>
         <item quantity="other">مسدود کردن این فرستنده‌ها روی این گوشی</item>
@@ -292,6 +263,32 @@
         <item quantity="other">هرزنامه پیام‌ها را در پوشهٔ هرزنامه نگه می‌دارد. مسدود کردن روی این گوشی یعنی گوشی آن‌ها را دور می‌اندازد و هرگز نمی‌رسند.</item>
     </plurals>
     <string name="block_on_phone_unavailable">این گوشی نمی‌تواند شماره مسدود کند.</string>
+    <!-- Spam and blocking sheet: one sheet for a sender's filter and Android block -->
+    <string name="sender_filter_heading">پیام‌هایشان کجا برود</string>
+    <string name="sender_filter_automatic">خودکار</string>
+    <string name="sender_filter_automatic_text">فیلتر هرزنامه برای هر پیام تصمیم می‌گیرد</string>
+    <string name="sender_filter_always">همیشه هرزنامه</string>
+    <string name="sender_filter_always_text">بی‌اعلان مستقیم به هرزنامه. باز هم می‌توانید پاسخ دهید.</string>
+    <string name="sender_filter_never">هرگز هرزنامه</string>
+    <string name="sender_filter_never_text">همیشه در صندوق. هرزنامه‌هایشان هم برمی‌گردند.</string>
+    <string name="sender_filter_mixed">فرستنده‌های انتخاب‌شده فرق دارند. یکی را برای همه انتخاب کنید.</string>
+    <string name="block_on_phone_switch">مسدود کردن روی این گوشی</string>
+    <string name="block_on_phone_switch_text">اندروید پیامک‌ها و تماس‌هایشان را دور می‌اندازد. نمی‌توانید به آن‌ها پیام دهید.</string>
+    <string name="spam_rules_link">همهٔ قوانین هرزنامه</string>
+    <string name="spam_rules">قوانین هرزنامه</string>
+    <plurals name="sender_count">
+        <item quantity="one">%d فرستنده</item>
+        <item quantity="other">%d فرستنده</item>
+    </plurals>
+    <string name="sender_filter_set_automatic">فیلتر دوباره خودکار شد</string>
+    <string name="sender_filter_set_always">پیام‌های تازه به هرزنامه می‌روند</string>
+    <string name="sender_filter_set_never">پیام‌ها در صندوق می‌مانند</string>
+    <string name="sender_blocked_on_phone">روی این گوشی مسدود شد</string>
+    <string name="sender_unblocked_on_phone">رفع مسدودی شد</string>
+    <string name="you_blocked_sender">این شماره را مسدود کرده‌اید</string>
+    <string name="always_spam_notice">پیام‌های تازه به هرزنامه می‌روند</string>
+    <string name="always_spam_notice_text">بی‌اعلان. باز هم می‌توانید پاسخ دهید.</string>
+    <string name="change">تغییر</string>
     <string name="clear_spam_title">همهٔ هرزنامه‌ها حذف شوند؟</string>
     <string name="filter_rules">هرزنامه و مسدودسازی</string>
     <plurals name="blocked_senders">
@@ -605,7 +602,6 @@
     <string name="retry">تلاش دوباره</string>
 
     <!-- Conversation blocked (67) -->
-    <string name="unblock_to_reply">برای پاسخ، این فرستنده را از مسدودی دربیاورید.</string>
 
     <!-- Media viewer (45) -->
     <string name="media_viewer">رسانه</string>

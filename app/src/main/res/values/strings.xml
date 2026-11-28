@@ -5,27 +5,13 @@
     <string name="no_blocked_messages">No blocked messages</string>
     <string name="clear_spam">Clear all</string>
     <string name="clear_spam_confirmation">Permanently delete all blocked messages?</string>
-    <string name="not_spam">Not spam (restore to inbox)</string>
-    <plurals name="never_spam">
-        <item quantity="one">Never spam this sender</item>
-        <item quantity="other">Never spam these senders</item>
-    </plurals>
-    <plurals name="never_spam_title">
-        <item quantity="one">Never spam %s?</item>
-        <item quantity="other">Never spam these %d senders?</item>
-    </plurals>
-    <plurals name="never_spam_text">
-        <item quantity="one">Their messages stay in the inbox, even if they match a phrase or the marketing filter. You can change this under Filter rules.</item>
-        <item quantity="other">Their messages stay in the inbox, even if they match a phrase or the marketing filter. You can change this under Filter rules.</item>
-    </plurals>
-    <string name="sender_allowed">Sender allowed and message restored</string>
     <plurals name="message_restored">
         <item quantity="one">Message restored to inbox</item>
         <item quantity="other">Messages restored to inbox</item>
     </plurals>
     <string name="block_reason_ai">Legacy filter</string>
     <string name="block_reason_keyword">Keyword</string>
-    <string name="block_reason_number">Blocked number</string>
+    <string name="block_reason_number">Sender rule</string>
     <string name="block_reason_rule">Rule</string>
     <string name="message_not_sent_short">Message not sent</string>
     <string name="message_sending_error">Your message to \'%s\' has not been sent</string>
@@ -291,21 +277,6 @@
     <!-- Spam and filter rules (design 20, 21, 38, 50, 51) -->
     <string name="spam_empty_text">Blocked and suspicious messages stay here without an inbox alert.</string>
     <string name="not_spam_short">Not spam</string>
-    <string name="not_spam_sheet_title">Move these out of Spam?</string>
-    <string name="not_spam_only">Only these messages</string>
-    <string name="not_spam_only_text">They go back to the conversation. Future messages can still be filtered.</string>
-    <plurals name="always_spam">
-        <item quantity="one">Always spam this sender</item>
-        <item quantity="other">Always spam these senders</item>
-    </plurals>
-    <plurals name="always_spam_title">
-        <item quantity="one">Always treat %s as spam?</item>
-        <item quantity="other">Always treat these %d senders as spam?</item>
-    </plurals>
-    <plurals name="always_spam_text">
-        <item quantity="one">New messages from them will go to Spam with no alert, from now on. Existing messages stay where they are. Review future ones in Library → Spam.</item>
-        <item quantity="other">New messages from them will go to Spam with no alert, from now on. Existing messages stay where they are. Review future ones in Library → Spam.</item>
-    </plurals>
     <plurals name="block_on_phone">
         <item quantity="one">Block on this phone</item>
         <item quantity="other">Block these senders on this phone</item>
@@ -319,6 +290,32 @@
         <item quantity="other">Spam still saves their messages in the Spam folder. Block on this phone means the phone drops them and they never arrive.</item>
     </plurals>
     <string name="block_on_phone_unavailable">This phone cannot block numbers.</string>
+    <!-- Spam and blocking sheet: one sheet for a sender's filter and Android block -->
+    <string name="sender_filter_heading">Where their messages go</string>
+    <string name="sender_filter_automatic">Automatic</string>
+    <string name="sender_filter_automatic_text">The spam filter decides, message by message</string>
+    <string name="sender_filter_always">Always spam</string>
+    <string name="sender_filter_always_text">Straight to Spam with no alert. You can still reply.</string>
+    <string name="sender_filter_never">Never spam</string>
+    <string name="sender_filter_never_text">Always the inbox. Their spam comes back too.</string>
+    <string name="sender_filter_mixed">The selected senders differ. Pick one for all of them.</string>
+    <string name="block_on_phone_switch">Block on this phone</string>
+    <string name="block_on_phone_switch_text">Android drops their texts and calls. You can\'t text them.</string>
+    <string name="spam_rules_link">All spam rules</string>
+    <string name="spam_rules">Spam rules</string>
+    <plurals name="sender_count">
+        <item quantity="one">%d sender</item>
+        <item quantity="other">%d senders</item>
+    </plurals>
+    <string name="sender_filter_set_automatic">Back to automatic filtering</string>
+    <string name="sender_filter_set_always">New messages will go to Spam</string>
+    <string name="sender_filter_set_never">Messages will stay in the inbox</string>
+    <string name="sender_blocked_on_phone">Blocked on this phone</string>
+    <string name="sender_unblocked_on_phone">Unblocked</string>
+    <string name="you_blocked_sender">You blocked this number</string>
+    <string name="always_spam_notice">New messages go to Spam</string>
+    <string name="always_spam_notice_text">No alerts. You can still reply.</string>
+    <string name="change">Change</string>
     <string name="clear_spam_title">Delete all spam?</string>
     <string name="filter_rules">Spam and blocking</string>
     <plurals name="blocked_senders">
@@ -635,7 +632,6 @@
     <string name="retry">Retry</string>
 
     <!-- Conversation blocked (67) -->
-    <string name="unblock_to_reply">Unblock this sender to reply.</string>
 
     <!-- Media viewer (45) -->
     <string name="media_viewer">Media</string>

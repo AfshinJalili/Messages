@@ -14,16 +14,6 @@ import org.junit.Test
  */
 class ActionLabelQuantityTest {
     @Test
-    fun `always and never spam labels are quantity-aware`() {
-        assertTrue(InboxAction.ALWAYS_SPAM.labelIsQuantity)
-        assertTrue(InboxAction.NEVER_SPAM.labelIsQuantity)
-        assertTrue(InboxAction.BLOCK_ON_PHONE.labelIsQuantity)
-        assertTrue(ThreadMenuAction.ALWAYS_SPAM.labelIsQuantity)
-        assertTrue(ThreadMenuAction.NEVER_SPAM.labelIsQuantity)
-        assertTrue(ThreadMenuAction.BLOCK_ON_PHONE.labelIsQuantity)
-    }
-
-    @Test
     fun `verb-only inbox actions stay plain strings`() {
         assertFalse(InboxAction.MUTE.labelIsQuantity)
         assertFalse(InboxAction.ARCHIVE.labelIsQuantity)
@@ -33,39 +23,24 @@ class ActionLabelQuantityTest {
     }
 
     @Test
-    fun `never spam is offered on a normal one-to-one thread`() {
-        val actions = threadMenuActions(
-            ThreadFacts(participantCount = 1, hasConversation = true, hasItems = true, firstNumber = "0912"),
-        )
-        assertTrue(ThreadMenuAction.NEVER_SPAM in actions)
-        assertTrue(ThreadMenuAction.ALWAYS_SPAM in actions)
-        assertTrue(ThreadMenuAction.BLOCK_ON_PHONE in actions)
+    fun `spam and blocking is one plain label in both menus`() {
+        assertFalse(InboxAction.SPAM_AND_BLOCKING.labelIsQuantity)
+        assertFalse(ThreadMenuAction.SPAM_AND_BLOCKING.labelIsQuantity)
     }
 
     @Test
-    fun `never spam and block on phone stay off a group thread`() {
-        val actions = threadMenuActions(
-            ThreadFacts(participantCount = 3, hasConversation = true, hasItems = true),
-        )
-        assertFalse(ThreadMenuAction.NEVER_SPAM in actions)
-        assertFalse(ThreadMenuAction.BLOCK_ON_PHONE in actions)
+    fun `spam and blocking is offered on one-to-one and group threads alike`() {
+        val single = threadMenuActions(ThreadFacts(participantCount = 1, hasConversation = true, hasItems = true, firstNumber = "0912"))
+        val group = threadMenuActions(ThreadFacts(participantCount = 3, hasConversation = true, hasItems = true))
+        assertTrue(ThreadMenuAction.SPAM_AND_BLOCKING in single)
+        assertTrue(ThreadMenuAction.SPAM_AND_BLOCKING in group)
     }
 
     @Test
-    fun `always spam is hidden when the sender is already on the list`() {
-        val actions = threadMenuActions(
-            ThreadFacts(participantCount = 1, hasConversation = true, hasItems = true, senderBlocked = true),
-        )
-        assertFalse(ThreadMenuAction.ALWAYS_SPAM in actions)
-        assertTrue(ThreadMenuAction.NEVER_SPAM in actions)
-    }
-
-    @Test
-    fun `never spam is hidden when the sender is already allowlisted`() {
-        val actions = threadMenuActions(
-            ThreadFacts(participantCount = 1, hasConversation = true, hasItems = true, senderAllowed = true),
-        )
-        assertFalse(ThreadMenuAction.NEVER_SPAM in actions)
-        assertTrue(ThreadMenuAction.ALWAYS_SPAM in actions)
+    fun `the sender's current rule does not change the menu`() {
+        val facts = ThreadFacts(participantCount = 1, hasConversation = true, hasItems = true)
+        val plain = threadMenuActions(facts)
+        assertTrue(plain == threadMenuActions(facts.copy(alwaysSpam = true)))
+        assertTrue(plain == threadMenuActions(facts.copy(blockedOnPhone = true)))
     }
 }

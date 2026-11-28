@@ -14,6 +14,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -25,6 +26,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.afsh.messages.R
+import com.afsh.messages.helpers.SenderStanding
+import com.afsh.messages.ui.spam.label
 import com.afsh.messages.ui.Avatar
 import com.afsh.messages.ui.Afsh
 import com.afsh.messages.ui.components.ActionTile
@@ -61,6 +64,8 @@ data class ConversationDetailsUiState(
     val customNotifications: Boolean = false,
     val sims: List<SimChoice> = emptyList(),
     val sim: Int = 0,
+    /** Where the sender's messages go and whether Android blocks them; null until read. */
+    val spam: SenderStanding? = null,
     val loading: Boolean = true,
 )
 
@@ -74,6 +79,7 @@ sealed interface DetailsEvent {
     data class SetCustomNotifications(val enabled: Boolean) : DetailsEvent
     data object OpenNotificationSettings : DetailsEvent
     data class SetSim(val subscriptionId: Int) : DetailsEvent
+    data object SpamAndBlocking : DetailsEvent
 }
 
 /**
@@ -81,10 +87,16 @@ sealed interface DetailsEvent {
  * (pinned scroll), then who it is, quick actions, and the settings that belong to this conversation.
  */
 @Composable
-fun ConversationDetailsScreen(state: ConversationDetailsUiState, onEvent: (DetailsEvent) -> Unit, modifier: Modifier = Modifier) {
+fun ConversationDetailsScreen(
+    state: ConversationDetailsUiState,
+    onEvent: (DetailsEvent) -> Unit,
+    modifier: Modifier = Modifier,
+    snackbarHostState: SnackbarHostState? = null,
+) {
     var choosingSim by rememberSaveable { mutableStateOf(false) }
     PageScaffold(
         title = state.title,
+        snackbarHostState = snackbarHostState,
         subtitle = stringResource(R.string.conversation_details),
         onBack = { onEvent(DetailsEvent.Back) },
         actions = {
@@ -158,6 +170,16 @@ fun ConversationDetailsScreen(state: ConversationDetailsUiState, onEvent: (Detai
                         onClick = { onEvent(DetailsEvent.OpenNotificationSettings) },
                         value = stringResource(R.string.sound_and_vibration_value),
                         icon = AfshIcon.Volume,
+                    )
+                }
+                state.spam?.let { spam ->
+                    val filter = spam.filter?.let { stringResource(it.label) }
+                    val blocked = stringResource(R.string.sender_blocked_on_phone).takeIf { spam.blockedOnPhone }
+                    NavigationSetting(
+                        stringResource(R.string.filter_rules),
+                        onClick = { onEvent(DetailsEvent.SpamAndBlocking) },
+                        value = listOfNotNull(filter, blocked).joinToString(" · ").ifEmpty { null },
+                        icon = AfshIcon.SpamShield,
                     )
                 }
                 if (state.sims.size > 1) {

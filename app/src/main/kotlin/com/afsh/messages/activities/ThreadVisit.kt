@@ -13,6 +13,7 @@ import com.afsh.messages.helpers.THREAD_ID
 import com.afsh.messages.helpers.ThreadRepository
 import com.afsh.messages.helpers.UndoDeletion
 import com.afsh.messages.helpers.containsNumber
+import com.afsh.messages.helpers.isBlockedOnPhone
 import com.afsh.messages.models.Conversation
 import com.afsh.messages.models.Message
 import com.afsh.messages.models.ThreadItem
@@ -53,6 +54,16 @@ internal class ThreadVisit(val activity: ThreadActivity) {
     @Volatile
     var isVisible = false
 
+    /** Android blocks the single participant; read off the main thread by [readBlockedOnPhone]. */
+    @Volatile
+    var blockedOnPhone = false
+
+    /** Blocking. Reads Android's block list for the single participant; [showFacts] shows it. */
+    fun readBlockedOnPhone() {
+        val addresses = people.participants.getAddresses()
+        blockedOnPhone = addresses.size == 1 && activity.isBlockedOnPhone(addresses)
+    }
+
     /** The timeline as last built. */
     @Volatile
     var threadItems = ArrayList<ThreadItem>()
@@ -80,8 +91,8 @@ internal class ThreadVisit(val activity: ThreadActivity) {
                 archiveAvailable = config.isArchiveAvailable,
                 hasItems = threadItems.isNotEmpty(),
                 isRecycleBin = isRecycleBin,
-                senderBlocked = single && config.spamNumbers.containsNumber(participants.getAddresses().first()),
-                senderAllowed = single && config.allowedNumbers.containsNumber(participants.getAddresses().first()),
+                alwaysSpam = single && config.spamNumbers.containsNumber(participants.getAddresses().first()),
+                blockedOnPhone = single && blockedOnPhone,
                 muted = config.isConversationMuted(threadId),
                 specialNumber = people.isSpecialNumber,
                 hasSpam = data.list.any { data.isSpam(it) },

@@ -90,11 +90,17 @@ class BlockedMessagesActivity : ComposePageActivity() {
             SpamEvent.Back -> finish()
             SpamEvent.OpenRules -> startActivity(Intent(this, BlockRulesActivity::class.java))
             is SpamEvent.Open -> openThread(event.message)
-            is SpamEvent.NotSpam -> restore(event.messages, neverSpamSender = event.neverSpamSender)
-            is SpamEvent.BlockSender -> {
-                val addresses = event.messages.map { it.address }.filter { it.isNotEmpty() }.distinct()
-                ensureBackgroundThread { addresses.forEach { config.addSpamNumber(it) } }
-            }
+            is SpamEvent.NotSpam -> restore(event.messages)
+            is SpamEvent.SpamAndBlocking -> openSpamAndBlocking(
+                SpamSenders(
+                    numbers = event.messages.map { it.address },
+                    threadIds = event.messages.map { it.threadId },
+                    name = event.messages.map { it.sender }.distinct().singleOrNull(),
+                    canBlock = true,
+                ),
+                offerUndo = { message, undo -> offerUndo(message, onUndo = undo, onTimeout = {}) },
+                onChanged = ::reload,
+            )
             is SpamEvent.Delete -> deleteWithUndo(event.messages)
             SpamEvent.DeleteAll -> deleteWithUndo(state.messages)
             is SpamEvent.Seen -> markSeen(event.ids)
@@ -111,11 +117,10 @@ class BlockedMessagesActivity : ComposePageActivity() {
     }
 
     /**
-     * Not spam moves each chosen sender's spam back to their conversation, with one Undo.
-     * [neverSpamSender] allowlists them; otherwise they only leave the always-spam list if they
-     * were on it, without being allowlisted.
+     * Not spam moves each chosen sender's spam back to their conversation, with one Undo. A sender on the
+     * always-spam list leaves it, without being allowlisted: Never spam is the sheet's choice.
      */
-    private fun restore(messages: List<SpamReviewMessage>, neverSpamSender: Boolean) {
+    private fun restore(messages: List<SpamReviewMessage>) {
         val threadIds = messages.mapTo(HashSet()) { it.threadId }
         if (threadIds.isEmpty()) return
         val moved = state.messages.filter { it.threadId in threadIds }
@@ -131,12 +136,8 @@ class BlockedMessagesActivity : ComposePageActivity() {
                 ensureBackgroundThread {
                     threadIds.forEach { messagesDB.deleteThreadSpamMarkers(it) }
                     val addresses = moved.map { it.address }.filter { it.isNotEmpty() }.distinct()
-                    if (neverSpamSender) {
-                        addresses.forEach { config.addAllowedNumber(it) }
-                    } else {
-                        addresses.filter { config.spamNumbers.containsNumber(it) }
-                            .forEach { config.removeSpamNumber(it) }
-                    }
+                    addresses.filter { config.spamNumbers.containsNumber(it) }
+                        .forEach { config.removeSpamNumber(it) }
                     InboxRepository.refreshUnreadCounts(this, threadIds.toList())
                     runOnUiThread {
                         restoring -= threadIds

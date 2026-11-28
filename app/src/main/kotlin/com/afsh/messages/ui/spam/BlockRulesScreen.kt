@@ -59,7 +59,7 @@ fun BlockRulesScreen(
     embedded: Boolean = false,
 ) {
     PageScaffold(
-        title = stringResource(R.string.filter_rules),
+        title = stringResource(R.string.spam_rules),
         modifier = modifier,
         onBack = { onEvent(BlockRulesEvent.Back) },
         navigation = navigation.takeUnless { embedded },

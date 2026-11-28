@@ -71,6 +71,8 @@ internal class ThreadEvents(private val visit: ThreadVisit) : ThreadStateHolder.
                     activity.launchViewIntent(it.uri, it.mimetype, it.filename)
                 }
             }
+            ComposerEvent.Unblock -> visit.spam.unblock()
+            ComposerEvent.SpamAndBlocking -> visit.spam.openSheet()
             ComposerEvent.ReplyInfo ->
                 activity.inform(activity.getString(R.string.cannot_reply_title), activity.getString(R.string.invalid_short_code_desc))
             // The rest is the holder's own.
@@ -112,9 +114,7 @@ internal class ThreadEvents(private val visit: ThreadVisit) : ThreadStateHolder.
         val spam = visit.spam
         when (action) {
             ThreadMenuAction.SEARCH -> holder.openSearch()
-            ThreadMenuAction.ALWAYS_SPAM -> spam.alwaysSpamSender()
-            ThreadMenuAction.NEVER_SPAM -> spam.neverSpamSender()
-            ThreadMenuAction.BLOCK_ON_PHONE -> spam.blockOnThisPhone()
+            ThreadMenuAction.SPAM_AND_BLOCKING -> spam.openSheet()
             ThreadMenuAction.DELETE -> visit.deletion.askDeleteConversation()
             ThreadMenuAction.RESTORE -> visit.deletion.askRestoreConversation()
             ThreadMenuAction.ARCHIVE -> actions.setArchived(true)
@@ -154,7 +154,7 @@ internal class ThreadEvents(private val visit: ThreadVisit) : ThreadStateHolder.
             MessageAction.SAVE_AS -> visit.composer.saveAttachments(selected.flatMap { it.attachment?.attachments.orEmpty() })
             MessageAction.NOT_SPAM -> {
                 holder.clearSelection()
-                visit.spam.askNotSpam(selected)
+                visit.spam.notSpam(selected)
             }
             MessageAction.RESTORE -> activity.confirmRestoreMessages(selected) {
                 visit.deletion.deleteMessages(it, toRecycleBin = false, fromRecycleBin = true)

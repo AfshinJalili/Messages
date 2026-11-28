@@ -4,6 +4,8 @@ import android.content.Context
 import android.provider.BlockedNumberContract
 import com.afsh.messages.R
 import com.afsh.commons.extensions.addBlockedNumber
+import com.afsh.commons.extensions.getBlockedNumbers
+import com.afsh.commons.extensions.isNumberBlocked
 import com.afsh.commons.extensions.toast
 
 /**
@@ -22,4 +24,32 @@ fun Context.blockNumbersOnPhone(numbers: Collection<String>): Boolean {
         return false
     }
     return toBlock.map(::addBlockedNumber).all { it }
+}
+
+/** Takes [numbers] off Android's block list, whichever stored form matches. False when the phone refuses. */
+fun Context.unblockNumbersOnPhone(numbers: Collection<String>): Boolean {
+    val toUnblock = numbers.map { it.trim() }.filter { it.isNotEmpty() }.distinct()
+    if (toUnblock.isEmpty()) return true
+    if (!BlockedNumberContract.canCurrentUserBlockNumbers(this)) {
+        toast(R.string.block_on_phone_unavailable)
+        return false
+    }
+    return try {
+        toUnblock.forEach { BlockedNumberContract.unblock(this, it) }
+        true
+    } catch (e: SecurityException) {
+        toast(R.string.block_on_phone_unavailable)
+        false
+    }
+}
+
+/** Blocking. True when Android blocks every one of [numbers]; false for none, or when the list cannot be read. */
+fun Context.isBlockedOnPhone(numbers: Collection<String>): Boolean {
+    if (numbers.isEmpty()) return false
+    val blocked = try {
+        getBlockedNumbers()
+    } catch (e: SecurityException) {
+        return false
+    }
+    return numbers.all { isNumberBlocked(it, blocked) }
 }

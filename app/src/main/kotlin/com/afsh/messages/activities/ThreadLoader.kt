@@ -56,10 +56,10 @@ internal class ThreadLoader(private val visit: ThreadVisit) {
         activity.root.post(readCheck)
         ensureBackgroundThread {
             val conversation = activity.conversationsDB.getConversationWithThreadId(visit.threadId)
-            if (conversation != null) {
-                visit.conversation = conversation
-                activity.runOnUiThread { visit.showFacts() }
-            }
+            if (conversation != null) visit.conversation = conversation
+            // The block list can change in the phone's settings while the thread is away.
+            visit.readBlockedOnPhone()
+            activity.runOnUiThread { visit.showFacts() }
         }
     }
 
@@ -94,6 +94,7 @@ internal class ThreadLoader(private val visit: ThreadVisit) {
         ensureBackgroundThread {
             repository.loadCached()
             resolveParticipants()
+            visit.readBlockedOnPhone()
             showLoaded()
 
             activity.runOnUiThread {

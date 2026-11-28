@@ -118,7 +118,7 @@ private fun ColumnScope.Overview(onEvent: (SettingsEvent) -> Unit) {
     )
     SectionHeading(stringResource(R.string.settings_control))
     NavigationSetting(
-        stringResource(R.string.filter_rules),
+        stringResource(R.string.spam_rules),
         onClick = { open(SettingsPage.FILTER_RULES) },
         icon = AfshIcon.SpamShield,
         value = stringResource(R.string.settings_filter_rules_summary),
