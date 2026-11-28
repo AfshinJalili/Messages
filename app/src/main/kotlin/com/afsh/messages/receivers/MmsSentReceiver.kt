@@ -46,7 +46,7 @@ class MmsSentReceiver : SendStatusReceiver() {
         }
 
         val filePath = intent.getStringExtra(EXTRA_FILE_PATH)
-        if (filePath != null) {
+        if (filePath != null && isSentPduFile(filePath, context.cacheDir)) {
             File(filePath).delete()
         }
     }
@@ -85,6 +85,13 @@ class MmsSentReceiver : SendStatusReceiver() {
     }
 
     companion object {
+        /**
+         * android-smsmms writes the PDU it sends to `cacheDir/send.<n>.dat` and names it in the sent
+         * intent. Only such a file is deleted, whatever path an intent names.
+         */
+        internal fun isSentPduFile(path: String, cacheDir: File): Boolean =
+            File(path).canonicalFile.parentFile == cacheDir.canonicalFile
+
         private const val EXTRA_CONTENT_URI = "content_uri"
         private const val EXTRA_FILE_PATH = "file_path"
         const val EXTRA_ORIGINAL_RESENT_MESSAGE_ID = "original_message_id"
