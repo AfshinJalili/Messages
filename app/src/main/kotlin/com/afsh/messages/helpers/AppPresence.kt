@@ -33,7 +33,18 @@ class AppPresenceTracker(
     private val activeLockScreens = LinkedHashSet<Any>()
     private var lastNotifiedConversationThreadId: Long? = null
 
-    fun current(): AppPresence = synchronized(lock) { resolveLocked() }
+    /**
+     * Also forgets the last conversation entered unless presence still views it: a publish may be the
+     * first to see the user leave (the keyguard or App Lock covers the thread without a pause), and the
+     * next [update] that views the thread again must clear its notification again.
+     */
+    fun current(): AppPresence = synchronized(lock) {
+        resolveLocked().also { resolved ->
+            if ((resolved as? AppPresence.ViewingConversation)?.threadId != lastNotifiedConversationThreadId) {
+                lastNotifiedConversationThreadId = null
+            }
+        }
+    }
 
     fun onScreenResumed(token: Any) {
         update { resumedScreens.add(token) }

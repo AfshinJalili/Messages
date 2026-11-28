@@ -193,6 +193,22 @@ class MessagingEventsCoordinatorTest {
     }
 
     @Test
+    fun `a lock that only a publish saw still lets the return to the thread clear its notification`() {
+        val threadScreen = Any()
+        presence.onConversationActive(threadScreen, threadId = 10L, isRecycleBin = false)
+        assertEquals(listOf(10L), host.cancelledNotifications)
+
+        // The keyguard covers the open thread without a lifecycle callback, and a message arrives.
+        deviceLockedOrOff = true
+        val event = incoming(threadId = 10L)
+        assertEquals(AttentionDecision.ShowIncomingAlert(event), coordinator.publish(event))
+
+        deviceLockedOrOff = false
+        presence.onDeviceUnlocked()
+        assertEquals(listOf(10L, 10L), host.cancelledNotifications)
+    }
+
+    @Test
     fun `tablet split view treats open conversation pane as active beside resumed Inbox`() {
         val inbox = Any()
         val threadA = Any()
