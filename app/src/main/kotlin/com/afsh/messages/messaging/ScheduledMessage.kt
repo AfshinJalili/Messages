@@ -15,7 +15,6 @@ import com.afsh.messages.helpers.ConversationRepository
 import com.afsh.messages.helpers.MessagingEvent
 import com.afsh.messages.helpers.MessagingEvents
 import com.afsh.messages.helpers.SCHEDULED_MESSAGE_ID
-import com.afsh.messages.helpers.THREAD_ID
 import com.afsh.messages.models.Message
 import com.afsh.messages.receivers.ScheduledMessageReceiver
 
@@ -23,9 +22,9 @@ import com.afsh.messages.receivers.ScheduledMessageReceiver
  * All things related to scheduled messages are here.
  */
 
+/** The alarm names the message only: reconcile and deletion can move a scheduled message to another thread. */
 fun Context.getScheduleSendPendingIntent(message: Message): PendingIntent {
     val intent = Intent(this, ScheduledMessageReceiver::class.java)
-    intent.putExtra(THREAD_ID, message.threadId)
     intent.putExtra(SCHEDULED_MESSAGE_ID, message.id)
 
     val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
@@ -54,25 +53,30 @@ class ScheduledMessageSender(private val platform: Platform) {
 
     /** Room, the transport and the app's events, as sending a due message needs them. Blocking. */
     interface Platform {
-        /** The scheduled message [messageId] of [threadId]; null when it is gone. */
-        fun scheduledMessage(threadId: Long, messageId: Long): Message?
+        /** The scheduled message [messageId], in whatever thread it is now; null when it is gone. */
+        fun scheduledMessage(messageId: Long): Message?
         /** Hands [message] to the SMS or MMS transport. */
         fun send(message: Message)
         fun dropScheduled(messageId: Long)
-        fun removeConversation(threadId: Long)
+        /** Drops temporary scheduled thread [threadId] once no scheduled message is left in it; a real thread stays. */
+        fun dropEmptyTemporaryThread(threadId: Long)
         /** The scheduled message went; the app reconciles so the real Telephony thread shows up. */
         fun publishSent(threadId: Long, messageId: Long)
         fun failed(error: Throwable)
     }
 
-    fun sendDue(threadId: Long, messageId: Long) {
-        val message = platform.scheduledMessage(threadId, messageId) ?: return
+    /**
+     * Sends scheduled message [messageId] to the thread it is in now. The alarm was set with the message
+     * alone because reconcile and deletion move scheduled messages between threads without re-arming it.
+     */
+    fun sendDue(messageId: Long) {
+        val message = platform.scheduledMessage(messageId) ?: return
         try {
             platform.send(message)
-            // The temporary conversation and message go: the message is in Telephony now.
+            // The scheduled message, and a temporary thread it leaves empty, go: it is in Telephony now.
             platform.dropScheduled(messageId)
-            platform.removeConversation(messageId)
-            platform.publishSent(threadId, messageId)
+            platform.dropEmptyTemporaryThread(message.threadId)
+            platform.publishSent(message.threadId, messageId)
         } catch (e: Exception) {
             platform.failed(e)
         } catch (e: Error) {
@@ -85,8 +89,8 @@ class ScheduledMessageSender(private val platform: Platform) {
     }
 
     private class AndroidPlatform(private val app: Context) : Platform {
-        override fun scheduledMessage(threadId: Long, messageId: Long): Message? = try {
-            app.messagesDB.getScheduledMessageWithId(threadId, messageId)
+        override fun scheduledMessage(messageId: Long): Message? = try {
+            app.messagesDB.getScheduledMessage(messageId)
         } catch (e: Exception) {
             e.printStackTrace()
             null
@@ -102,7 +106,13 @@ class ScheduledMessageSender(private val platform: Platform) {
 
         override fun dropScheduled(messageId: Long) = app.deleteScheduledMessage(messageId)
 
-        override fun removeConversation(threadId: Long) = ConversationRepository.from(app).removeFromCache(threadId)
+        override fun dropEmptyTemporaryThread(threadId: Long) {
+            val conversations = ConversationRepository.from(app)
+            val isTemporary = conversations.cachedConversation(threadId)?.isScheduled == true
+            if (isTemporary && app.messagesDB.getScheduledThreadMessages(threadId).isEmpty()) {
+                conversations.removeFromCache(threadId)
+            }
+        }
 
         override fun publishSent(threadId: Long, messageId: Long) {
             MessagingEvents.publish(MessagingEvent.ScheduledMessageSent(threadId = threadId, messageId = messageId))

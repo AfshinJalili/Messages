@@ -6,7 +6,6 @@ import android.content.Intent
 import android.os.PowerManager
 import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.messages.helpers.SCHEDULED_MESSAGE_ID
-import com.afsh.messages.helpers.THREAD_ID
 import com.afsh.messages.messaging.ScheduledMessageSender
 import kotlin.time.Duration.Companion.minutes
 
@@ -23,9 +22,7 @@ class ScheduledMessageReceiver : BroadcastReceiver() {
         val pendingResult = goAsync()
         ensureBackgroundThread {
             try {
-                val threadId = intent.getLongExtra(THREAD_ID, 0L)
-                val messageId = intent.getLongExtra(SCHEDULED_MESSAGE_ID, 0L)
-                ScheduledMessageSender.from(context).sendDue(threadId, messageId)
+                ScheduledMessageSender.from(context).sendDue(intent.getLongExtra(SCHEDULED_MESSAGE_ID, 0L))
             } finally {
                 try {
                     if (wakelock.isHeld) wakelock.release()

@@ -244,6 +244,19 @@ db.execute("DELETE FROM messages WHERE id = ?", (shared,))
 db.execute("DELETE FROM recycle_bin_messages WHERE id = ?", (shared,))
 print("PASS: SMS and MMS sharing an id stay apart in the cache and the recycle bin")
 
+# A due scheduled message is found by id alone: reconcile and deletion move scheduled messages to
+# another thread without re-arming their alarm (ScheduledMessageSender).
+due = 990077
+cache(db, due, 990201, 1, "scheduled", scheduled=1)
+cache(db, due, 990202, 1, "scheduled", scheduled=1)  # moved to the real thread
+cache(db, due, 990202, 0, "telephony sms")
+found = run("getScheduledMessage", id=due).fetchall()
+assert [(row[1], row[7]) for row in found] == [("scheduled", 990202)], found
+run("deleteScheduledMessage", id=due)
+assert not run("getScheduledMessage", id=due).fetchall(), "a Telephony row looked scheduled"
+db.execute("DELETE FROM messages WHERE id = ?", (due,))
+print("PASS: a due scheduled message is found by id in the thread it moved to")
+
 # Migration 15→16 rebuilds both tables on (id, is_mms), keeps every row, and gives each bin entry
 # its message's transport. Built from the shipped v15 schema and the migration SQL in source.
 def build(version):

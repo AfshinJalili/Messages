@@ -78,8 +78,9 @@ interface MessagesDao {
     @Query("SELECT messages.* FROM messages $JOIN_RECYCLE_BIN WHERE recycle_bin_messages.id IS NULL AND thread_id = :threadId AND is_scheduled = 1")
     fun getScheduledThreadMessages(threadId: Long): List<Message>
 
-    @Query("SELECT * FROM messages WHERE thread_id = :threadId AND id = :messageId AND is_scheduled = 1")
-    fun getScheduledMessageWithId(threadId: Long, messageId: Long): Message
+    /** Scheduled message [id], whatever thread it is in now; null when it was sent or deleted. */
+    @Query("SELECT * FROM messages WHERE id = :id AND is_scheduled = 1 LIMIT 1")
+    fun getScheduledMessage(id: Long): Message?
 
     /** One row per conversation in the recycle bin: how many of its messages it holds and the latest deletion. */
     @Query("SELECT messages.thread_id AS thread_id, COUNT(*) AS message_count, MAX(recycle_bin_messages.deleted_ts) AS deleted_ts FROM messages $JOIN_RECYCLE_BIN WHERE recycle_bin_messages.id IS NOT NULL GROUP BY messages.thread_id")
