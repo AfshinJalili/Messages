@@ -10,9 +10,10 @@ internal class MemoryPreferences : SharedPreferences {
 
     override fun getAll(): MutableMap<String, *> = values
     override fun getString(key: String, defValue: String?) = values[key] as String? ?: defValue
+    // Like SharedPreferencesImpl, sets go in and come out as copies.
     @Suppress("UNCHECKED_CAST")
     override fun getStringSet(key: String, defValues: MutableSet<String>?) =
-        values[key] as MutableSet<String>? ?: defValues
+        (values[key] as Set<String>?)?.toMutableSet() ?: defValues
     override fun getInt(key: String, defValue: Int) = values[key] as Int? ?: defValue
     override fun getLong(key: String, defValue: Long) = values[key] as Long? ?: defValue
     override fun getFloat(key: String, defValue: Float) = values[key] as Float? ?: defValue
@@ -23,7 +24,7 @@ internal class MemoryPreferences : SharedPreferences {
 
     override fun edit(): SharedPreferences.Editor = object : SharedPreferences.Editor {
         override fun putString(key: String, value: String?) = apply { values[key] = value }
-        override fun putStringSet(key: String, value: MutableSet<String>?) = apply { values[key] = value }
+        override fun putStringSet(key: String, value: MutableSet<String>?) = apply { values[key] = value?.toSet() }
         override fun putInt(key: String, value: Int) = apply { values[key] = value }
         override fun putLong(key: String, value: Long) = apply { values[key] = value }
         override fun putFloat(key: String, value: Float) = apply { values[key] = value }
