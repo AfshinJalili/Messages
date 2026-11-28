@@ -113,10 +113,10 @@ object RuleBasedFilter {
             }
 
         /**
-         * One match per pattern that hits, so each distinct pattern is one signal. A match inside
-         * one already counted is the same words again («تخفیف» inside «کد تخفیف»), so it isn't
-         * counted; longer matches count first. Empty matches are skipped, so `حراج|` still fires
-         * on «حراج».
+         * One match per pattern that hits, so each distinct pattern is one signal. A match that
+         * shares words with one already counted is the same phrase again («تخفیف» inside «کد
+         * تخفیف», or «بسته ویژه» across «خرید بسته ویژه»), so it isn't counted; longer matches
+         * count first. Empty matches are skipped, so `حراج|` still fires on «حراج».
          */
         fun signalMatches(groups: List<SpamPatternGroup>, body: String): List<FilterMatch> {
             val patterns = groups.flatMap { group -> regexes[group].orEmpty().map { group to it } }
@@ -128,7 +128,7 @@ object RuleBasedFilter {
             val countedPatterns = HashSet<Int>()
             for ((pattern, group, range) in candidates) {
                 if (pattern in countedPatterns) continue
-                if (counted.any { range.first >= it.range.first && range.last <= it.range.last }) continue
+                if (counted.any { range.first <= it.range.last && range.last >= it.range.first }) continue
                 countedPatterns += pattern
                 counted += FilterMatch(group, range)
             }

@@ -315,6 +315,13 @@ class RuleBasedFilterTest {
     }
 
     @Test
+    fun `two patterns sharing a word are one phrase`() {
+        // «خرید\s*بسته» and «بسته\s*ویژه» overlap on «بسته»: a carrier's receipt, not two signals.
+        assertEquals(FilterVerdict.NO_VERDICT, explain("مشترک گرامی، خرید بسته ویژه شما با موفقیت انجام شد").verdict)
+        assertEquals(FilterVerdict.BLOCK, explain("خرید بسته ویژه$LINK").verdict)
+    }
+
+    @Test
     fun `a shorter pattern still counts where it stands alone`() {
         val result = explain("کد تخفیف برای شما\nتخفیف تا ۵۰ درصد")
         assertEquals(FilterVerdict.BLOCK, result.verdict)

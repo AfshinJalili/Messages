@@ -168,14 +168,14 @@ class SpamFilterAccuracyTest {
     companion object {
         /**
          * Measured 2026-11-28 on the body alone, with PSSC's `&link` written back (PSSC v0.3
-         * n=4324): P=95.1% R=43.6% F1=59.8% FPR=2.2% (tp=929 fp=48 tn=2145 fn=1202).
+         * n=4324): P=95.1% R=43.5% F1=59.7% FPR=2.2% (tp=928 fp=48 tn=2145 fn=1203).
          * UCI v.1 n=5574: P=100.0% R=0.0% FPR=0.0% (tp=0 fp=0 tn=4827 fn=747; English recall is
          * not a gate — the filter is Persian-keyword-first).
          * Floors = measured − 2pp (precision/recall); FPR ceiling = measured + 2pp.
          * UCI soft precision floor = 95%.
          */
         const val PSSC_PRECISION_FLOOR = 0.931
-        const val PSSC_RECALL_FLOOR = 0.416
+        const val PSSC_RECALL_FLOOR = 0.415
         const val PSSC_FPR_CEILING = 0.042
         const val UCI_PRECISION_SOFT_FLOOR = 0.95
 
