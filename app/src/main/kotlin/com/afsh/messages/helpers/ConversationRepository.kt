@@ -203,9 +203,11 @@ class ConversationRepository(
 
     /**
      * Stores a Telephony snapshot of a conversation, merged with Room's row of its thread (see
-     * [mergeConversationWithCache]), and refreshes its preview.
+     * [mergeConversationWithCache]), and refreshes its preview in the same transaction: a new row is
+     * written with all_spam unset, and the inbox must not see a spam-only thread before its preview
+     * hides it.
      */
-    fun insertOrUpdate(conversation: Conversation) {
+    fun insertOrUpdate(conversation: Conversation) = effects.runInTransaction {
         val updated = mergeConversationWithCache(conversation, conversations.getConversationWithThreadId(conversation.threadId))
         conversations.insertOrUpdate(updated)
         effects.refreshPreview(listOf(updated.threadId))

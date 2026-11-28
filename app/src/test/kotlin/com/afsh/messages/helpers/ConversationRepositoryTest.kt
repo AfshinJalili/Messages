@@ -19,11 +19,13 @@ import java.lang.reflect.Proxy
 
 class ConversationRepositoryTest {
 
-    private class FakeConversationsDao : ConversationsDao by unsupported() {
+    /** [onWrite] runs after every write, as Room's invalidation does. */
+    private class FakeConversationsDao(private val onWrite: () -> Unit = {}) : ConversationsDao by unsupported() {
         val rows = LinkedHashMap<Long, Conversation>()
 
         override fun insertOrUpdate(conversation: Conversation): Long {
             rows[conversation.threadId] = conversation
+            onWrite()
             return conversation.threadId
         }
         override fun getAll(): List<Conversation> = rows.values.toList()
@@ -39,12 +41,14 @@ class ConversationRepositoryTest {
         override fun unarchive(threadId: Long) = update(threadId) { it.copy(isArchived = false) }
         override fun deleteThreadId(threadId: Long) {
             rows.remove(threadId)
+            onWrite()
         }
         override fun updatePreview(threadId: Long, snippet: String?, date: Int?, allSpam: Boolean) =
             update(threadId) { it.copy(previewSnippet = snippet, previewDate = date, allSpam = allSpam) }
 
         private fun update(threadId: Long, change: (Conversation) -> Conversation) {
             rows[threadId]?.let { rows[threadId] = change(it) }
+            onWrite()
         }
     }
 
@@ -189,7 +193,9 @@ class ConversationRepositoryTest {
         }
     }
 
-    private class FakeEffects : ConversationEffects {
+    /** [onCommit] runs when the outermost transaction ends. */
+    private class FakeEffects(private val onCommit: () -> Unit = {}) : ConversationEffects {
+        var depth = 0
         val refreshed = ArrayList<Long>()
         val events = ArrayList<MessagingEvent>()
         val manuallyUnread = HashMap<Long, Pair<Long, Boolean>>()
@@ -200,8 +206,12 @@ class ConversationRepositoryTest {
         val photos = HashMap<String, String>()
         var transactions = 0
 
+        /** Computes a refreshed preview, as the Android effects do; off by default. */
+        var computePreview: (Long) -> Unit = {}
+
         override fun refreshPreview(threadIds: Collection<Long>) {
             refreshed += threadIds
+            threadIds.forEach(computePreview)
         }
         override fun publish(event: MessagingEvent) {
             events += event
@@ -225,15 +235,23 @@ class ConversationRepositoryTest {
         }
         override fun runInTransaction(block: () -> Unit) {
             transactions++
-            block()
+            depth++
+            try {
+                block()
+            } finally {
+                depth--
+            }
+            if (depth == 0) onCommit()
         }
     }
 
-    private val conversations = FakeConversationsDao()
+    /** Room's rows as the inbox saw them: after each commit, a write outside a transaction being one. */
+    private val seen = ArrayList<Map<Long, Conversation>>()
+    private val conversations: FakeConversationsDao = FakeConversationsDao { if (effects.depth == 0) seen += HashMap(conversations.rows) }
     private val messages = FakeMessagesDao()
     private val drafts = FakeDraftsDao()
     private val telephony = FakeTelephony()
-    private val effects = FakeEffects()
+    private val effects: FakeEffects = FakeEffects { seen += HashMap(conversations.rows) }
     private var now = 1_000_000_000L
     private val repository = ConversationRepository(
         conversations = conversations,
@@ -727,6 +745,18 @@ class ConversationRepositoryTest {
 
         assertEquals("Mum", conversations.rows.getValue(10).title)
         assertEquals(listOf(10L), effects.refreshed)
+    }
+
+    @Test
+    fun `a new thread of only spam never shows in the inbox, even for a moment`() {
+        message(1, threadId = 10, date = 100)
+        spam(1, threadId = 10)
+        effects.computePreview = repository::refreshPreview
+
+        repository.insertOrUpdate(conversation(10, date = 100).copy(messageCount = 1))
+
+        assertTrue(conversations.rows.getValue(10).allSpam)
+        assertTrue("the inbox hides an all-spam row", seen.all { it[10L]?.allSpam != false })
     }
 
     @Test
