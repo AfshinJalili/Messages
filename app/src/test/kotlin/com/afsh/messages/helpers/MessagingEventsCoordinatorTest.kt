@@ -372,12 +372,22 @@ class MessagingEventsCoordinatorTest {
     }
 
     @Test
-    fun `a message sent in a conversation clears its send failure notification but not its message notification`() {
+    fun `the failed message going through clears its send failure notification but not the message notification`() {
+        coordinator.publish(sendFailed(threadId = 10L, messageId = 300L))
         val sent = MessagingEvent.MessageSent(threadId = 10L, messageId = 300L, isMms = false)
-        assertEquals(AttentionDecision.ClearSendFailureAlert(10L), coordinator.publish(sent))
+        assertEquals(AttentionDecision.ClearSendFailureAlert(sent), coordinator.publish(sent))
 
         assertEquals(listOf(10L), host.cancelledSendFailures)
         assertTrue(host.cancelledNotifications.isEmpty())
+    }
+
+    @Test
+    fun `another message going through leaves the send failure notification`() {
+        coordinator.publish(sendFailed(threadId = 10L, messageId = 300L))
+        coordinator.publish(MessagingEvent.MessageSent(threadId = 10L, messageId = 301L, isMms = false))
+        coordinator.publish(MessagingEvent.MessageSent(threadId = 10L, messageId = 300L, isMms = true))
+
+        assertTrue(host.cancelledSendFailures.isEmpty())
     }
 
     @Test
@@ -399,7 +409,7 @@ class MessagingEventsCoordinatorTest {
         coordinator.publish(second)
         coordinator.publish(mmsWithSameId)
 
-        coordinator.publish(MessagingEvent.MessageSent(threadId = 10L, messageId = 300L, isMms = false))
+        coordinator.publish(MessagingEvent.MessageSent(threadId = 10L, messageId = 201L, isMms = true))
         coordinator.publish(mmsWithSameId)
 
         assertEquals(listOf(first, second, mmsWithSameId, mmsWithSameId), host.sendFailureAlerts)

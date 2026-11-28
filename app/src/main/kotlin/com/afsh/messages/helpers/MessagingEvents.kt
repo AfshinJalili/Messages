@@ -178,7 +178,7 @@ class MessagingEventCoordinator(
             is AttentionDecision.ShowSendFailureAlert -> host.showSendFailureAlert(decision.event)
             is AttentionDecision.ShowInThreadFailureReason -> inThreadFailuresFlow.tryEmit(decision.event)
             is AttentionDecision.ClearIncomingAlert -> host.cancelConversationNotification(decision.threadId)
-            is AttentionDecision.ClearSendFailureAlert -> clearSendFailureAlert(decision.threadId)
+            is AttentionDecision.ClearSendFailureAlert -> clearSendFailureAlertFor(decision.event)
             AttentionDecision.Suppress -> Unit
         }
 
@@ -226,6 +226,13 @@ class MessagingEventCoordinator(
     private fun recordSendFailureAlert(event: MessagingEvent.SendFailed): Boolean {
         val key = MessageKey(event.messageId, event.isMms)
         return sendFailureAlerts.put(event.threadId, key) != key
+    }
+
+    /** Only the message the alert is for: another message going through leaves that one unsent. */
+    private fun clearSendFailureAlertFor(sent: MessagingEvent.MessageSent) {
+        if (sendFailureAlerts.remove(sent.threadId, MessageKey(sent.messageId, sent.isMms))) {
+            host.cancelSendFailureNotification(sent.threadId)
+        }
     }
 
     private fun clearSendFailureAlert(threadId: Long) {
