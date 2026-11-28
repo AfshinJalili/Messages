@@ -20,6 +20,11 @@ import java.sql.DriverManager
  * sender never tells the filter the label. Thresholds are in the companion object. Precision is
  * gated tightly; recall is a floor so the filter cannot silently go inert. UCI English recall is
  * reported but not gated.
+ *
+ * PSSC masks links as `&link`, emojis as `&emoji` and digits as `&number`. A link is written back
+ * ([PSSC_LINK]) on spam and ham alike, so the link companion is measured. Emojis and digits can't
+ * be: the promo-emoji signal and the one-time-code exemption are covered by the unit tests and the
+ * synthetic rows of must-not-flag.json instead.
  */
 class SpamFilterAccuracyTest {
 
@@ -168,18 +173,21 @@ class SpamFilterAccuracyTest {
 
     companion object {
         /**
-         * Measured 2026-11-28 with one sender on spam and ham alike (PSSC v0.3 n=4324):
-         * - number: P=97.3% R=26.9% F1=42.1% FPR=0.7% (tp=573 fp=16 tn=2177 fn=1558); with one
-         *   phrase counted once (not «کد تخفیف» as two signals): P=97.4% R=24.7% FPR=0.6%
+         * Measured 2026-11-28 with one sender on spam and ham alike and PSSC's `&link` written back
+         * (PSSC v0.3 n=4324):
+         * - number: P=95.1% R=43.6% F1=59.8% FPR=2.2% (tp=929 fp=48 tn=2145 fn=1202)
          * - name: P=92.7% R=54.4% F1=68.6% FPR=4.1% (tp=1159 fp=91 tn=2102 fn=972)
          * UCI v.1 n=5574, either sender: P=100.0% R=0.0% FPR=0.0% (tp=0 fp=0 tn=4827 fn=747;
          * English recall is not a gate — the filter is Persian-keyword-first).
          * Floors = measured − 2pp (precision/recall); FPR ceiling = measured + 2pp.
          * UCI soft precision floor = 95%.
          */
-        val PSSC_NUMBER = Gate(precision = 0.953, recall = 0.227, fpr = 0.027)
+        val PSSC_NUMBER = Gate(precision = 0.931, recall = 0.416, fpr = 0.042)
         val PSSC_NAME = Gate(precision = 0.907, recall = 0.524, fpr = 0.061)
         const val UCI_PRECISION_SOFT_FLOOR = 0.95
+
+        /** What PSSC's `&link` mask is read as. */
+        const val PSSC_LINK = "https://example.ir/x"
 
         lateinit var mustNotFlag: List<Fixture>
         lateinit var psscSamples: List<Sample>
@@ -222,7 +230,7 @@ class SpamFilterAccuracyTest {
                                 "ham" -> false
                                 else -> continue
                             }
-                            out += Sample(body = body, spam = spam, source = "pssc")
+                            out += Sample(body = body.replace("&link", PSSC_LINK), spam = spam, source = "pssc")
                         }
                         check(out.size >= 4000) { "PSSC too small: ${out.size}" }
                         return out
