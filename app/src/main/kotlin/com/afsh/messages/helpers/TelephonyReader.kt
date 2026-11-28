@@ -254,17 +254,6 @@ private fun Context.getMMS(
     sortOrder: String? = null,
     dateFrom: Int = -1,
 ): ArrayList<Message> {
-    val uri = Mms.CONTENT_URI
-    val projection = arrayOf(
-        Mms._ID,
-        Mms.DATE,
-        Mms.READ,
-        Mms.MESSAGE_BOX,
-        Mms.THREAD_ID,
-        Mms.SUBSCRIPTION_ID,
-        Mms.STATUS
-    )
-
     var selection: String? = null
     var selectionArgs: Array<String>? = null
 
@@ -278,6 +267,22 @@ private fun Context.getMMS(
         selection = "${Sms.THREAD_ID} = ? AND ${Sms.DATE} < ${dateFrom.toLong()}"
         selectionArgs = arrayOf(threadId.toString())
     }
+
+    return queryMms(selection, selectionArgs, sortOrder)
+}
+
+/** Each MMS row matching [selection], with its parts, sender and thread participants. */
+private fun Context.queryMms(selection: String?, selectionArgs: Array<String>?, sortOrder: String?): ArrayList<Message> {
+    val uri = Mms.CONTENT_URI
+    val projection = arrayOf(
+        Mms._ID,
+        Mms.DATE,
+        Mms.READ,
+        Mms.MESSAGE_BOX,
+        Mms.THREAD_ID,
+        Mms.SUBSCRIPTION_ID,
+        Mms.STATUS
+    )
 
     val messages = ArrayList<Message>()
     val contactsMap = HashMap<Int, SimpleContact>()
