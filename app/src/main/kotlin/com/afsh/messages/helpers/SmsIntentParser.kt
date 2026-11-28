@@ -46,7 +46,8 @@ object SmsIntentParser {
             .joinToString(";")
     }
 
-    private fun parseRecipientsFromUri(uri: Uri?): Array<String>? {
+    /** The recipients of an sms:, smsto:, mms: or mmsto: [uri], or null for any other scheme. */
+    fun parseRecipientsFromUri(uri: Uri?): Array<String>? {
         if (uri == null || uri.scheme !in SMS_MMS_SCHEMES) return null
         val schemeSpecificPart = uri.schemeSpecificPart.split("?").firstOrNull() ?: return null
         return schemeSpecificPart.replace(';', ',').split(",").toTypedArray()
