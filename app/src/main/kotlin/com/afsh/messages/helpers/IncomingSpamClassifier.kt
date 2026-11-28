@@ -37,7 +37,7 @@ object IncomingSpamClassifier {
         }
         // A one-time code is never caught by a blocked phrase, an unknown sender or the rules:
         // missing a code costs more than letting one through. Only a blocked sender stops it.
-        if (isOneTimeCode(context, address, body)) {
+        if (isOneTimeCode(context, body)) {
             return null
         }
         if (keywordMatches(context.config.blockedKeywords, body).isNotEmpty()) {
@@ -55,7 +55,7 @@ object IncomingSpamClassifier {
             return BLOCK_REASON_NUMBER
         }
 
-        return when (RuleBasedFilter.evaluate(context, address, body)) {
+        return when (RuleBasedFilter.evaluate(context, body)) {
             FilterVerdict.ALLOW -> null
             FilterVerdict.BLOCK -> BLOCK_REASON_RULE
             FilterVerdict.NO_VERDICT -> null
@@ -63,6 +63,6 @@ object IncomingSpamClassifier {
     }
 
     /** Uses the patterns even when the rule filter is off: that switch only turns blocking on. */
-    fun isOneTimeCode(context: Context, address: String, body: String): Boolean =
-        RuleBasedFilter.explain(context.config.spamPatterns, address, body).rule == FilterRule.ONE_TIME_CODE
+    fun isOneTimeCode(context: Context, body: String): Boolean =
+        RuleBasedFilter.explain(context.config.spamPatterns, body).rule == FilterRule.ONE_TIME_CODE
 }

@@ -11,7 +11,8 @@ checksum-verified — they are not committed to this repository.
 link. Every row must not score `BLOCK` (OTP/bank stay `ALLOW`; the invite may
 be `NO_VERDICT`). The last rows are synthetic one-time codes that also carry
 promo words, emojis and links: PSSC masks every digit as `&number`, so only
-these rows show the code exemption working. No invented emoji-ham fixtures —
+these rows show the code exemption working. A row's `sender` only names it in
+a failure: the filter reads the body alone. No invented emoji-ham fixtures —
 real ham protection is `must-not-flag.json` plus PSSC/UCI ham. No private
 inbox text.
 

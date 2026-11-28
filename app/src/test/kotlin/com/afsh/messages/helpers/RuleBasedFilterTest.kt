@@ -11,8 +11,7 @@ import org.junit.Test
  */
 class RuleBasedFilterTest {
 
-    private fun explain(sender: String, body: String) =
-        RuleBasedFilter.explain(SpamPatterns.DEFAULT, sender, body)
+    private fun explain(body: String) = RuleBasedFilter.explain(SpamPatterns.DEFAULT, body)
 
     /** A link: the companion that lets one marketing word or emoji go to Spam. */
     private val LINK = "\nexample.ir/x"
@@ -20,7 +19,7 @@ class RuleBasedFilterTest {
     @Test
     fun `OTP with لغو11 is allowed as a one-time code`() {
         val body = "کد تایید شما: 482913\nبانک ملت\nلغو11"
-        val result = explain("BANKMELLAT", body)
+        val result = explain(body)
         assertEquals(FilterVerdict.ALLOW, result.verdict)
         assertEquals(FilterRule.ONE_TIME_CODE, result.rule)
     }
@@ -28,7 +27,7 @@ class RuleBasedFilterTest {
     @Test
     fun `OTP with spaced لغو ۱۱ is allowed`() {
         val body = "رمز یک‌بار مصرف: ۴۵۶۷۸۹\nلغو ۱۱"
-        val result = explain("BANK", body)
+        val result = explain(body)
         assertEquals(FilterVerdict.ALLOW, result.verdict)
         assertEquals(FilterRule.ONE_TIME_CODE, result.rule)
     }
@@ -36,7 +35,7 @@ class RuleBasedFilterTest {
     @Test
     fun `bank withdrawal with لغو11 is allowed as transactional`() {
         val body = "برداشت از کارت *1234 به مبلغ 250,000 ریال\nموجودی: 1,200,000\nلغو11"
-        val result = explain("1800", body)
+        val result = explain(body)
         assertEquals(FilterVerdict.ALLOW, result.verdict)
         assertEquals(FilterRule.TRANSACTIONAL, result.rule)
     }
@@ -44,7 +43,7 @@ class RuleBasedFilterTest {
     @Test
     fun `bank deposit with لغو ۱۱ is allowed as transactional`() {
         val body = "واریز 500000 ریال به حساب شما انجام شد. موجودی 3200000 ریال\nلغو ۱۱"
-        val result = explain("9035", body)
+        val result = explain(body)
         assertEquals(FilterVerdict.ALLOW, result.verdict)
         assertEquals(FilterRule.TRANSACTIONAL, result.rule)
     }
@@ -52,21 +51,21 @@ class RuleBasedFilterTest {
     @Test
     fun `payment receipt with لغو11 is allowed as transactional`() {
         val body = "رسید پرداخت موفق\nتراکنش 998877\nمبلغ 45000 ریال\nلغو11"
-        val result = explain("PAYAPP", body)
+        val result = explain(body)
         assertEquals(FilterVerdict.ALLOW, result.verdict)
         assertEquals(FilterRule.TRANSACTIONAL, result.rule)
     }
 
     @Test
     fun `لغو alone is not a spam signal`() {
-        val result = explain("SHOP", "برای لغو11 همین پیام را بفرستید")
+        val result = explain("برای لغو11 همین پیام را بفرستید")
         assertNotEquals(FilterVerdict.BLOCK, result.verdict)
     }
 
     @Test
-    fun `two marketing words block from a numeric sender`() {
+    fun `two marketing words block`() {
         val body = "جشنواره تخفیف ویژه آغاز شد"
-        val result = explain("09121234567", body)
+        val result = explain(body)
         assertEquals(FilterVerdict.BLOCK, result.verdict)
         assertEquals(FilterRule.MARKETING, result.rule)
     }
@@ -74,58 +73,58 @@ class RuleBasedFilterTest {
     @Test
     fun `one marketing word plus link blocks`() {
         val body = "رایگان ثبت کنید https://promo.ir/deal"
-        val result = explain("09120000000", body)
+        val result = explain(body)
         assertEquals(FilterVerdict.BLOCK, result.verdict)
         assertEquals(FilterRule.MARKETING, result.rule)
     }
 
     @Test
-    fun `one marketing word from a named sender stays in inbox`() {
+    fun `one marketing word without a link stays in inbox, whoever sends it`() {
         // Carriers, banks and government notices come from names and mention gifts or festivals.
-        assertEquals(FilterVerdict.NO_VERDICT, explain("HAMRAH_AVAL", "جشنواره تابستانی ما شروع شد").verdict)
-        assertEquals(FilterVerdict.NO_VERDICT, explain("BANKMELLAT", "دستور پرداخت شما با موفقیت اجرا شد").verdict)
-        assertEquals(FilterVerdict.NO_VERDICT, explain("IRANCELL", "مشترک گرامی، ۱۰۰ پیامک هدیه به شما تعلق گرفت").verdict)
+        assertEquals(FilterVerdict.NO_VERDICT, explain("جشنواره تابستانی ما شروع شد").verdict)
+        assertEquals(FilterVerdict.NO_VERDICT, explain("دستور پرداخت شما با موفقیت اجرا شد").verdict)
+        assertEquals(FilterVerdict.NO_VERDICT, explain("مشترک گرامی، ۱۰۰ پیامک هدیه به شما تعلق گرفت").verdict)
     }
 
     @Test
     fun `one marketing word plus strong promo emoji blocks`() {
         val body = "جایزه ویژه برای شما 🎉"
-        val result = explain("09123334444", body)
+        val result = explain(body)
         assertEquals(FilterVerdict.BLOCK, result.verdict)
         assertEquals(FilterRule.MARKETING, result.rule)
     }
 
     @Test
-    fun `lone marketing word from numeric sender stays in inbox`() {
+    fun `lone marketing word stays in inbox`() {
         val body = "تخفیف روی سفارش شما اعمال شد"
-        val result = explain("09125556666", body)
+        val result = explain(body)
         assertEquals(FilterVerdict.NO_VERDICT, result.verdict)
     }
 
     @Test
-    fun `lone strong emoji from numeric sender stays in inbox`() {
-        val result = explain("09125556666", "پیتزای امروز 🍕")
+    fun `lone strong emoji stays in inbox`() {
+        val result = explain("پیتزای امروز 🍕")
         assertEquals(FilterVerdict.NO_VERDICT, result.verdict)
     }
 
     @Test
     fun `checkmark or pin with bare link is blocked`() {
-        val check = explain("09120000003", "✅8آذر\nIu4.ir/e")
+        val check = explain("✅8آذر\nIu4.ir/e")
         assertEquals(FilterVerdict.BLOCK, check.verdict)
-        val pin = explain("09120000004", "📍اسپیناس\nIu4.ir/e")
+        val pin = explain("📍اسپیناس\nIu4.ir/e")
         assertEquals(FilterVerdict.BLOCK, pin.verdict)
     }
 
     @Test
     fun `checkmark and pin together are blocked`() {
-        val result = explain("09120000005", "✅8آذر\n📍اسپیناس پالاس")
+        val result = explain("✅8آذر\n📍اسپیناس پالاس")
         assertEquals(FilterVerdict.BLOCK, result.verdict)
         assertEquals(FilterRule.MARKETING, result.rule)
     }
 
     @Test
     fun `friend concert invite without link stays in inbox`() {
-        val result = explain("09121234567", "بریم کنسرت؟ ساعت ۸")
+        val result = explain("بریم کنسرت؟ ساعت ۸")
         assertEquals(FilterVerdict.NO_VERDICT, result.verdict)
     }
 
@@ -143,7 +142,7 @@ class RuleBasedFilterTest {
 
             لغو 11
         """.trimIndent()
-        val result = explain("30005", body)
+        val result = explain(body)
         assertEquals(FilterVerdict.BLOCK, result.verdict)
         assertEquals(FilterRule.MARKETING, result.rule)
         assertTrue(result.matches.any { it.group == SpamPatternGroup.MARKETING })
@@ -154,7 +153,7 @@ class RuleBasedFilterTest {
     @Test
     fun `event word plus bare short link is blocked`() {
         val body = "کنسرت جدید\nIu4.ir/e"
-        val result = explain("09120000001", body)
+        val result = explain(body)
         assertEquals(FilterVerdict.BLOCK, result.verdict)
         assertEquals(FilterRule.MARKETING, result.rule)
     }
@@ -162,7 +161,7 @@ class RuleBasedFilterTest {
     @Test
     fun `خرید pointer with link is blocked`() {
         val body = "بلیت موجود\nخرید👇\nbit.ly/x"
-        val result = explain("09120000002", body)
+        val result = explain(body)
         assertEquals(FilterVerdict.BLOCK, result.verdict)
     }
 
@@ -170,30 +169,30 @@ class RuleBasedFilterTest {
     fun `Arabic Yeh and Persian digits normalize before matching`() {
         // ي = Arabic Yeh; ۴۵۶۷۸۹ Persian digits in an OTP that must still allow.
         val body = "رمز يك‌بار مصرف: ۴۵۶۷۸۹\nلغو ۱۱"
-        val result = explain("BANK", body)
+        val result = explain(body)
         assertEquals(FilterVerdict.ALLOW, result.verdict)
         assertEquals(FilterRule.ONE_TIME_CODE, result.rule)
     }
 
     @Test
-    fun `weak smileys never block even with a marketing word from numeric sender`() {
+    fun `weak smileys never block even with a marketing word`() {
         val body = "تخفیف 😊❤"
-        val result = explain("09125556666", body)
+        val result = explain(body)
         assertEquals(FilterVerdict.NO_VERDICT, result.verdict)
     }
 
     @Test
     fun `urgency and CTA promo pack is blocked`() {
         val body = "فرصت محدود · بسته ویژه · همین حالا بخر"
-        val result = explain("09127778888", body)
+        val result = explain(body)
         assertEquals(FilterVerdict.BLOCK, result.verdict)
         assertEquals(FilterRule.MARKETING, result.rule)
     }
 
     @Test
-    fun `winner phrase with named sender is blocked`() {
+    fun `winner phrase is blocked`() {
         val body = "شما برنده جایزه شدید"
-        val result = explain("*8000", body)
+        val result = explain(body)
         assertEquals(FilterVerdict.BLOCK, result.verdict)
         assertEquals(FilterRule.MARKETING, result.rule)
     }
@@ -201,14 +200,14 @@ class RuleBasedFilterTest {
     @Test
     fun `bare بسته alone is not a marketing signal`() {
         val body = "بسته اینترنت شما فعال شد\nلغو11"
-        val result = explain("900", body)
+        val result = explain(body)
         assertNotEquals(FilterVerdict.BLOCK, result.verdict)
     }
 
     @Test
     fun `مجانی with link is blocked`() {
         val body = "گوشی مجانی برای شما www.gift.ir/win"
-        val result = explain("09121112222", body)
+        val result = explain(body)
         assertEquals(FilterVerdict.BLOCK, result.verdict)
         assertEquals(FilterRule.MARKETING, result.rule)
     }
@@ -216,7 +215,7 @@ class RuleBasedFilterTest {
     @Test
     fun `قرعه کشی with party emoji is blocked`() {
         val body = "در قرعه‌کشی بزرگ شرکت کنید 🎊"
-        val result = explain("09123334444", body)
+        val result = explain(body)
         assertEquals(FilterVerdict.BLOCK, result.verdict)
         assertEquals(FilterRule.MARKETING, result.rule)
     }
@@ -245,7 +244,7 @@ class RuleBasedFilterTest {
     @Test
     fun `tatweel stretching a word still matches it, and the highlight covers the stretched word`() {
         val body = "تـخـفـیـف ویـژه$LINK"
-        val result = explain("SHOP", body)
+        val result = explain(body)
         assertEquals(FilterVerdict.BLOCK, result.verdict)
         val words = result.matches.filter { it.group == SpamPatternGroup.MARKETING }.map { body.substring(it.range) }
         assertTrue(words.toString(), "تـخـفـیـف ویـژه" in words)
@@ -254,7 +253,7 @@ class RuleBasedFilterTest {
     @Test
     fun `diacritics and direction marks inside a word still match it`() {
         // Fatha on the first letter, an RLM and a ZWJ inside the word.
-        val result = explain("SHOP", "جَشن\u200Fوا\u200Dره تابستانی$LINK")
+        val result = explain("جَشن\u200Fوا\u200Dره تابستانی$LINK")
         assertEquals(FilterVerdict.BLOCK, result.verdict)
         assertEquals(FilterRule.MARKETING, result.rule)
     }
@@ -270,7 +269,7 @@ class RuleBasedFilterTest {
             "هديه" to "یک هدیه برای شما",
         )
         cases.forEach { (pattern, body) ->
-            val result = RuleBasedFilter.explain(withMarketing(pattern), "SHOP", body + LINK)
+            val result = RuleBasedFilter.explain(withMarketing(pattern), body + LINK)
             assertEquals("$pattern in $body", FilterVerdict.BLOCK, result.verdict)
         }
     }
@@ -286,7 +285,7 @@ class RuleBasedFilterTest {
     fun `a pattern that can also match empty text still fires on its words`() {
         // An empty first branch wins at every position, so `(?:ویژه)?|حراج` can only ever find «ویژه».
         listOf("حراج|" to "فروش حراج", "(?:ویژه)?|حراج" to "فروش ویژه").forEach { (pattern, body) ->
-            val result = RuleBasedFilter.explain(withMarketing(pattern), "SHOP", body + LINK)
+            val result = RuleBasedFilter.explain(withMarketing(pattern), body + LINK)
             assertEquals(pattern, FilterVerdict.BLOCK, result.verdict)
         }
     }
@@ -301,13 +300,13 @@ class RuleBasedFilterTest {
     @Test
     fun `one phrase is one signal even when a shorter pattern matches inside it`() {
         // «کد تخفیف» matches both `کد\s*تخفیف` and `تخفیف`: one marketing phrase, not two.
-        val result = explain("09121234567", "سلام، کد تخفیف اسنپ رو برات فرستادم")
+        val result = explain("سلام، کد تخفیف اسنپ رو برات فرستادم")
         assertEquals(FilterVerdict.NO_VERDICT, result.verdict)
     }
 
     @Test
     fun `a shorter pattern still counts where it stands alone`() {
-        val result = explain("09121234567", "کد تخفیف برای شما\nتخفیف تا ۵۰ درصد")
+        val result = explain("کد تخفیف برای شما\nتخفیف تا ۵۰ درصد")
         assertEquals(FilterVerdict.BLOCK, result.verdict)
     }
 
@@ -323,39 +322,39 @@ class RuleBasedFilterTest {
             "123456 کد ورود شما به دیجی\u200cکالا است",
             "کد ورود: 123456\n\n@digikala.com #123456",
         ).forEach { body ->
-            assertEquals(body, FilterRule.ONE_TIME_CODE, explain("SHOP", body).rule)
+            assertEquals(body, FilterRule.ONE_TIME_CODE, explain(body).rule)
         }
     }
 
     @Test
     fun `a code word inside another word is not a code word`() {
-        assertNotEquals(FilterRule.ONE_TIME_CODE, explain("SHOP", "Someone timed it: 1500 tickets").rule)
-        assertNotEquals(FilterRule.ONE_TIME_CODE, explain("SHOP", "Barcode is ready, order 12345").rule)
+        assertNotEquals(FilterRule.ONE_TIME_CODE, explain("Someone timed it: 1500 tickets").rule)
+        assertNotEquals(FilterRule.ONE_TIME_CODE, explain("Barcode is ready, order 12345").rule)
     }
 
     @Test
     fun `a number in another sentence is not the code`() {
-        assertNotEquals(FilterRule.ONE_TIME_CODE, explain("SHOP", "Your code is LUCKY… 2025").rule)
-        assertNotEquals(FilterRule.ONE_TIME_CODE, explain("SHOP", "Your code is LUCKY. Win the lottery 2025!").rule)
+        assertNotEquals(FilterRule.ONE_TIME_CODE, explain("Your code is LUCKY… 2025").rule)
+        assertNotEquals(FilterRule.ONE_TIME_CODE, explain("Your code is LUCKY. Win the lottery 2025!").rule)
     }
 
     @Test
     fun `a number far from the code word is not the code`() {
         val body = "Your code is ready to use at any of our stores across the country from 2025"
-        assertNotEquals(FilterRule.ONE_TIME_CODE, explain("SHOP", body).rule)
+        assertNotEquals(FilterRule.ONE_TIME_CODE, explain(body).rule)
     }
 
     @Test
     fun `a date is not a code, so a discount code doesn't pass as a one-time code`() {
-        val result = explain("SHOP", "تخفیف ویژه ۵۰ درصد! کد شما: OFF50 تا ۱۴۰۳/۱۲/۲۹$LINK")
+        val result = explain("تخفیف ویژه ۵۰ درصد! کد شما: OFF50 تا ۱۴۰۳/۱۲/۲۹$LINK")
         assertEquals(FilterVerdict.BLOCK, result.verdict)
         assertEquals(FilterRule.MARKETING, result.rule)
     }
 
-    /** The links the filter finds next to one marketing word from a number, where a link decides. */
+    /** The links the filter finds next to one marketing word, where a link decides. */
     private fun links(text: String): List<String> {
         val body = "حراج $text"
-        return explain("09120000000", body).matches.filter { it.group == SpamPatternGroup.LINKS }.map { body.substring(it.range) }
+        return explain(body).matches.filter { it.group == SpamPatternGroup.LINKS }.map { body.substring(it.range) }
     }
 
     @Test

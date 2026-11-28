@@ -68,7 +68,7 @@ class SpamClassifierChecks {
             "Your verification code is 482913. https://example.com/help",
             "کد فعال‌سازی 5521\n@snapp.ir #5521",
         ).forEach { body ->
-            val result = RuleBasedFilter.explain(context, "SERVICE", body)
+            val result = RuleBasedFilter.explain(context, body)
             check(result.rule == FilterRule.ONE_TIME_CODE) { "Not a code: $body -> $result" }
             check(reason("SERVICE", body) == null) { "A code went to Spam: $body" }
         }
@@ -101,11 +101,11 @@ class SpamClassifierChecks {
         context.config.ruleFilterEnabled = true
         // One edited word plus a link goes to Spam; neither alone does.
         val body = "پیشنهاد ویژه امروز example.ir/x"
-        check(RuleBasedFilter.explain(context, "SHOP", body).verdict == FilterVerdict.NO_VERDICT)
+        check(RuleBasedFilter.explain(context, body).verdict == FilterVerdict.NO_VERDICT)
         context.config.spamPatterns = context.config.spamPatterns.with(SpamPatternGroup.MARKETING, listOf("پیشنهاد ویژه"))
         check(context.config.spamPatterns[SpamPatternGroup.MARKETING] == listOf("پیشنهاد ویژه"))
         check(context.config.spamPatterns[SpamPatternGroup.LINKS] == SpamPatterns.DEFAULT[SpamPatternGroup.LINKS])
-        check(RuleBasedFilter.explain(context, "SHOP", body).verdict == FilterVerdict.BLOCK)
+        check(RuleBasedFilter.explain(context, body).verdict == FilterVerdict.BLOCK)
         check(context.spamWhy(BLOCK_REASON_RULE, "SHOP", "hello").stale) { "No match now must read as stale" }
         context.config.spamPatterns = SpamPatterns.DEFAULT
         check(context.config.spamPatterns == SpamPatterns.DEFAULT)

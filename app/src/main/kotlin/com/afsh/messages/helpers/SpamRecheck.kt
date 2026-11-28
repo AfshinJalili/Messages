@@ -14,8 +14,8 @@ object SpamRecheck {
         val patterns = context.config.spamPatterns
         val released = ConversationRepository.from(context).spamMessages().filter { message ->
             when (message.reason) {
-                BLOCK_REASON_KEYWORD -> isCode(patterns, message.address, message.body)
-                BLOCK_REASON_RULE -> RuleBasedFilter.explain(patterns, message.address, message.body).verdict != FilterVerdict.BLOCK
+                BLOCK_REASON_KEYWORD -> isCode(patterns, message.body)
+                BLOCK_REASON_RULE -> RuleBasedFilter.explain(patterns, message.body).verdict != FilterVerdict.BLOCK
                 else -> false
             }
         }
@@ -28,6 +28,6 @@ object SpamRecheck {
         return released.size
     }
 
-    private fun isCode(patterns: SpamPatterns, address: String, body: String) =
-        RuleBasedFilter.explain(patterns, address, body).rule == FilterRule.ONE_TIME_CODE
+    private fun isCode(patterns: SpamPatterns, body: String) =
+        RuleBasedFilter.explain(patterns, body).rule == FilterRule.ONE_TIME_CODE
 }

@@ -626,7 +626,6 @@
     <string name="spam_patterns_filter_off_text">تا روشن نشود، قوانین چیزی را مسدود نمی‌کنند. رمزهای یک‌بار مصرف همچنان از عبارت‌های مسدود رد می‌شوند.</string>
     <string name="spam_patterns_try">آزمودن یک پیام</string>
     <string name="spam_patterns_try_message">پیامی را جای‌گذاری کنید</string>
-    <string name="spam_patterns_try_sender">فرستنده (اختیاری)</string>
     <string name="spam_patterns_result_code">مجاز · رمز یک‌بار مصرف</string>
     <string name="spam_patterns_result_transactional">مجاز · بانک یا رسید</string>
     <string name="spam_patterns_result_marketing">هرزنامه · واژه‌ها یا اموجی‌های تبلیغاتی</string>

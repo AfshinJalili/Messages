@@ -656,7 +656,6 @@
     <string name="spam_patterns_filter_off_text">The rules block nothing until it is on. One-time codes are still let past blocked phrases.</string>
     <string name="spam_patterns_try">Try a message</string>
     <string name="spam_patterns_try_message">Paste a message</string>
-    <string name="spam_patterns_try_sender">Sender (optional)</string>
     <string name="spam_patterns_result_code">Allowed · one-time code</string>
     <string name="spam_patterns_result_transactional">Allowed · bank or receipt</string>
     <string name="spam_patterns_result_marketing">Spam · marketing words or promo emojis</string>

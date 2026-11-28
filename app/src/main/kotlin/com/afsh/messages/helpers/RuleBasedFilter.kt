@@ -43,20 +43,20 @@ object RuleBasedFilter {
     const val CODE_WINDOW = 30
     private val SENTENCE_END = Regex("[.!?؟…](?:\\s|$)")
 
-    fun evaluate(context: Context, sender: String, body: String): FilterVerdict = explain(context, sender, body).verdict
+    fun evaluate(context: Context, body: String): FilterVerdict = explain(context, body).verdict
 
-    fun explain(context: Context, sender: String, body: String): FilterResult {
+    fun explain(context: Context, body: String): FilterResult {
         if (!context.config.ruleFilterEnabled) return FilterResult.NONE
-        return explain(context.config.spamPatterns, sender, body)
+        return explain(context.config.spamPatterns, body)
     }
 
     /**
      * Ordered, high-precision first. A one-time code (a code word and a code) and transactional
      * bank/receipt language are always allowed: service SMS carry links and the mandatory "لغو11"
      * line, which must not send them to Spam. Marketing scores word and strong-emoji weights
-     * equally, with a link as a companion — never an unsubscribe shortcut. [sender] is not read.
+     * equally, with a link as a companion — never an unsubscribe shortcut.
      */
-    fun explain(patterns: SpamPatterns, sender: String, body: String): FilterResult {
+    fun explain(patterns: SpamPatterns, body: String): FilterResult {
         if (body.isBlank()) return FilterResult.NONE
         val text = foldSpamText(body)
         val compiled = CompiledPatterns.of(patterns)
