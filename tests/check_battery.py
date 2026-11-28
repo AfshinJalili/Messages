@@ -7,6 +7,8 @@ Fails on:
   scheduleProviderReconcile / refreshInbox
 - Message-path receivers that use reconcile=false without a targeted Room write
   (inbox / thread would go stale without the full reconcile)
+- MessagingEvent.ScheduledMessageSent (a full reconcile) published anywhere but the
+  due-scheduled-message sender in messaging/ScheduledMessage.kt
 - InboxImport aborting the whole message import on one thread failure, or finishing only
   when every thread succeeded (a permanently bad thread must be abandonable)
 - InboxReconciler clearing expired scheduled messages for every conversation instead of only
@@ -34,6 +36,8 @@ IMPORT_FILE = APP_KT / "helpers/InboxImport.kt"
 RECONCILER_FILE = APP_KT / "helpers/InboxReconciler.kt"
 EVENTS_FILE = APP_KT / "helpers/MessagingEvents.kt"
 SYNC_FILE = APP_KT / "helpers/ConversationSync.kt"
+# The one sender of a due scheduled message; its ScheduledMessageSent triggers a full reconcile.
+SCHEDULED_SENDER_FILE = APP_KT / "messaging/ScheduledMessage.kt"
 
 violations: list[str] = []
 
@@ -100,10 +104,6 @@ for path in kotlin_files(RECEIVERS):
     text = path.read_text()
     if path.name in ALLOW_RECONCILE:
         continue
-    if "ScheduledMessageSent" in text:
-        violations.append(
-            f"{rel(path)}: only ScheduledMessageReceiver may publish ScheduledMessageSent (triggers full reconcile)"
-        )
     for match in CONVERSATIONS_CHANGED.finditer(text):
         args = match.group(1)
         if "reconcile = false" not in args:
@@ -124,6 +124,13 @@ for path in kotlin_files(RECEIVERS):
                 f"{rel(path)}: message-path receiver requires a targeted Room write "
                 f"({' + '.join(missing)}); otherwise inbox/thread stay stale"
             )
+
+# ScheduledMessageSent triggers a full reconcile, so only the due-scheduled-message sender may publish it.
+for path in kotlin_files(APP_KT):
+    if path != SCHEDULED_SENDER_FILE and "MessagingEvent.ScheduledMessageSent(" in path.read_text():
+        violations.append(
+            f"{rel(path)}: only {rel(SCHEDULED_SENDER_FILE)} may publish ScheduledMessageSent (triggers full reconcile)"
+        )
 
 # --- InboxImport: bounded per-thread failures ---------------------------------
 import_text = IMPORT_FILE.read_text()

@@ -3,20 +3,11 @@ package com.afsh.messages.receivers
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.os.Handler
-import android.os.Looper
 import android.os.PowerManager
-import com.afsh.commons.extensions.showErrorToast
 import com.afsh.commons.helpers.ensureBackgroundThread
-import com.afsh.messages.extensions.deleteScheduledMessage
-import com.afsh.messages.extensions.getAddresses
-import com.afsh.messages.extensions.messagesDB
-import com.afsh.messages.helpers.ConversationRepository
-import com.afsh.messages.helpers.MessagingEvent
-import com.afsh.messages.helpers.MessagingEvents
 import com.afsh.messages.helpers.SCHEDULED_MESSAGE_ID
 import com.afsh.messages.helpers.THREAD_ID
-import com.afsh.messages.messaging.sendMessageCompat
+import com.afsh.messages.messaging.ScheduledMessageSender
 import kotlin.time.Duration.Companion.minutes
 
 class ScheduledMessageReceiver : BroadcastReceiver() {
@@ -32,7 +23,9 @@ class ScheduledMessageReceiver : BroadcastReceiver() {
         val pendingResult = goAsync()
         ensureBackgroundThread {
             try {
-                handleIntent(context, intent)
+                val threadId = intent.getLongExtra(THREAD_ID, 0L)
+                val messageId = intent.getLongExtra(SCHEDULED_MESSAGE_ID, 0L)
+                ScheduledMessageSender.from(context).sendDue(threadId, messageId)
             } finally {
                 try {
                     if (wakelock.isHeld) wakelock.release()
@@ -41,38 +34,6 @@ class ScheduledMessageReceiver : BroadcastReceiver() {
 
                 pendingResult.finish()
             }
-        }
-    }
-
-    private fun handleIntent(context: Context, intent: Intent) {
-        val threadId = intent.getLongExtra(THREAD_ID, 0L)
-        val messageId = intent.getLongExtra(SCHEDULED_MESSAGE_ID, 0L)
-        val message = try {
-            context.messagesDB.getScheduledMessageWithId(threadId, messageId)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            return
-        }
-
-        val addresses = message.participants.getAddresses()
-        val attachments = message.attachment?.attachments ?: emptyList()
-
-        try {
-            Handler(Looper.getMainLooper()).post {
-                context.sendMessageCompat(message.body, addresses, message.subscriptionId, attachments)
-            }
-
-            // delete temporary conversation and message as it's already persisted to the telephony db now
-            context.deleteScheduledMessage(messageId)
-            ConversationRepository.from(context).removeFromCache(messageId)
-            // Temporary scheduled thread was deleted; ScheduledMessageSent triggers a reconcile so the real Telephony thread appears.
-            MessagingEvents.publish(MessagingEvent.ScheduledMessageSent(threadId = threadId, messageId = messageId))
-        } catch (e: Exception) {
-            context.showErrorToast(e)
-        } catch (e: Error) {
-            context.showErrorToast(
-                e.localizedMessage ?: context.getString(com.afsh.commons.R.string.unknown_error_occurred)
-            )
         }
     }
 }
