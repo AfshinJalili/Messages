@@ -426,7 +426,8 @@ fun Context.rescheduleAllScheduledMessages() {
         return
     }
 
-    scheduledMessages.forEach { message ->
+    // A failed one waits for the person; setting its alarm again would retry it on every app start.
+    scheduledMessages.filterNot { it.isFailedSchedule() }.forEach { message ->
         runCatching { scheduleMessage(message) }
     }
 }

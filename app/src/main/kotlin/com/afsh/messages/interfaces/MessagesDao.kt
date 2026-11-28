@@ -171,6 +171,10 @@ interface MessagesDao {
     @Query("DELETE FROM recycle_bin_messages WHERE id = :id AND is_mms = :isMms")
     fun deleteFromRecycleBin(id: Long, isMms: Boolean)
 
+    /** Sets the Telephony message type of scheduled message [id], such as failed (see Message.isFailedSchedule). */
+    @Query("UPDATE messages SET type = :type WHERE id = :id AND is_scheduled = 1")
+    fun setScheduledType(id: Long, type: Int)
+
     /** A scheduled message lives only in Room, under an id of its own (see generateRandomId), and is never binned. */
     @Query("DELETE FROM messages WHERE id = :id AND is_scheduled = 1")
     fun deleteScheduledMessage(id: Long)

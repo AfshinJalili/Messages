@@ -82,7 +82,10 @@ class MessagingUtils(val context: Context) {
         return response ?: throw SmsException(ERROR_PERSISTING_MESSAGE)
     }
 
-    /** Send an SMS message given [text] and [addresses]. A [SmsException] is thrown in case any errors occur. */
+    /**
+     * Send an SMS message given [text] and [addresses]. A [SmsException] is thrown in case any errors occur,
+     * wrapped in a [StoredSendException] when every recipient's copy is in Telephony.
+     */
     fun sendSmsMessage(
         text: String,
         addresses: Set<String>,
@@ -104,7 +107,7 @@ class MessagingUtils(val context: Context) {
             )
         }
 
-        for (address in addresses) {
+        addresses.forEachIndexed { index, address ->
             val threadId = context.getThreadId(address)
             val messageUri = insertSmsMessage(
                 subId = subId, dest = address, text = text,
@@ -118,7 +121,8 @@ class MessagingUtils(val context: Context) {
                 )
             } catch (e: Exception) {
                 updateSmsMessageSendingStatus(messageUri, Sms.Outbox.MESSAGE_TYPE_FAILED)
-                throw e // propagate error to caller
+                // The recipients after this one get no copy, so only the last one leaves the whole message in Telephony.
+                throw if (index == addresses.size - 1) StoredSendException(e) else e
             }
         }
     }

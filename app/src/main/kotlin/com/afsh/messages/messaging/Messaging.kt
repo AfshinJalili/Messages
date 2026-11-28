@@ -65,8 +65,9 @@ fun Context.reportSendMessageUsage(addresses: List<String>) {
 
 /**
  * Hands the message to the SMS transport, or to android-smsmms for MMS. Throws when it could not be
- * stored or sent: a [SmsException] for the SMS transport's own failures, the library's exception for MMS.
- * An MMS with several attachments goes as one MMS each; every part is tried, and the first failure is thrown.
+ * stored or sent: a [SmsException] for the SMS transport's own failures, the library's exception for MMS,
+ * wrapped in a [StoredSendException] when Telephony holds the whole message all the same. An MMS with
+ * several attachments goes as one MMS each; every part is tried, and the first failure is thrown.
  */
 fun Context.sendMessage(
     text: String,
@@ -90,7 +91,8 @@ fun Context.sendMessage(
             || addresses.size > 1 && settings.group
     if (isMms) {
         // we send all MMS attachments separately to reduces the chances of hitting provider MMS limit.
-        // The text goes with the last one. A part that fails does not stop the others.
+        // The text goes with the last one. A part that fails does not stop the others. android-smsmms does
+        // not say whether it stored a part before throwing, so an MMS failure is never a StoredSendException.
         val parts = attachments.ifEmpty { listOf(null) }
         var failure: Exception? = null
         parts.forEachIndexed { index, attachment ->
@@ -112,13 +114,23 @@ fun Context.sendMessage(
     }
 }
 
+/**
+ * A send that failed after Telephony stored the whole message: an SMS whose last recipient's copy the
+ * transport refused, marked failed. Telephony shows those rows and owns their retry, so a caller holding
+ * its own copy of the message lets it go. [cause] is why.
+ */
+class StoredSendException(cause: Exception) : Exception(cause)
+
 /** What to tell the person when a send threw [error]; null when there is nothing to tell. */
-fun Context.sendErrorText(error: Exception): String? = when {
-    error !is SmsException -> String.format(getString(com.afsh.commons.R.string.error), error.toString())
-    error.errorCode == EMPTY_DESTINATION_ADDRESS -> getString(R.string.empty_destination_address)
-    error.errorCode == ERROR_PERSISTING_MESSAGE -> getString(R.string.unable_to_save_message)
-    error.errorCode == ERROR_SENDING_MESSAGE -> getString(R.string.unknown_error_occurred_sending_message, error.errorCode)
-    else -> null
+fun Context.sendErrorText(error: Exception): String? {
+    val cause = if (error is StoredSendException) error.cause as Exception else error
+    return when {
+        cause !is SmsException -> String.format(getString(com.afsh.commons.R.string.error), cause.toString())
+        cause.errorCode == EMPTY_DESTINATION_ADDRESS -> getString(R.string.empty_destination_address)
+        cause.errorCode == ERROR_PERSISTING_MESSAGE -> getString(R.string.unable_to_save_message)
+        cause.errorCode == ERROR_SENDING_MESSAGE -> getString(R.string.unknown_error_occurred_sending_message, cause.errorCode)
+        else -> null
+    }
 }
 
 /**

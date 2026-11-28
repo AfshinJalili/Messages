@@ -96,6 +96,8 @@ class ConversationRepositoryTest {
     private companion object {
         /** What the DAO query strips before comparing: providers may turn a newline into a space. */
         const val WHITESPACE = " \n\r\t"
+        /** Telephony.Sms.MESSAGE_TYPE_FAILED. */
+        const val FAILED_TYPE = 5
     }
 
     private class FakeDraftsDao : DraftsDao by unsupported() {
@@ -780,6 +782,18 @@ class ConversationRepositoryTest {
 
         assertTrue(messages.messages.isEmpty())
         assertTrue(conversations.rows.isEmpty())
+    }
+
+    @Test
+    fun `a scheduled message whose send failed stays past its time, and so does its temporary thread`() {
+        conversations.insertOrUpdate(conversation(77).copy(isScheduled = true))
+        val past = ((now - 120_000) / 1000).toInt()
+        messages.messages[5L to false] = message(5, threadId = 77, scheduled = true, date = past).copy(type = FAILED_TYPE)
+
+        repository.clearExpiredScheduledMessages(77)
+
+        assertEquals(setOf(5L to false), messages.messages.keys)
+        assertEquals(setOf(77L), conversations.rows.keys)
     }
 
     @Test

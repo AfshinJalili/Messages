@@ -22,7 +22,7 @@ class ScheduledMessageReceiver : BroadcastReceiver() {
         val pendingResult = goAsync()
         ensureBackgroundThread {
             try {
-                ScheduledMessageSender.from(context).sendDue(intent.getLongExtra(SCHEDULED_MESSAGE_ID, 0L))
+                ScheduledMessageSender.from(context).send(intent.getLongExtra(SCHEDULED_MESSAGE_ID, 0L))
             } finally {
                 try {
                     if (wakelock.isHeld) wakelock.release()

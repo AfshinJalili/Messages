@@ -252,10 +252,13 @@ cache(db, due, 990202, 1, "scheduled", scheduled=1)  # moved to the real thread
 cache(db, due, 990202, 0, "telephony sms")
 found = run("getScheduledMessage", id=due).fetchall()
 assert [(row[1], row[7]) for row in found] == [("scheduled", 990202)], found
+# A send that never reached the device marks the scheduled row failed and leaves Telephony's row alone.
+run("setScheduledType", id=due, type=5)
+assert db.execute("SELECT is_scheduled, type FROM messages WHERE id = ? ORDER BY is_scheduled", (due,)).fetchall() == [(0, 2), (1, 5)]
 run("deleteScheduledMessage", id=due)
 assert not run("getScheduledMessage", id=due).fetchall(), "a Telephony row looked scheduled"
 db.execute("DELETE FROM messages WHERE id = ?", (due,))
-print("PASS: a due scheduled message is found by id in the thread it moved to")
+print("PASS: a due scheduled message is found by id in the thread it moved to, and only it is marked failed")
 
 # Migration 15→16 rebuilds both tables on (id, is_mms), keeps every row, and gives each bin entry
 # its message's transport. Built from the shipped v15 schema and the migration SQL in source.

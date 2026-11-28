@@ -43,9 +43,15 @@ data class Message(
 
     /**
      * A scheduled message due before [millis]. Its alarm has fired by then, so a thread no longer shows
-     * it, and once it is overdue it is dropped.
+     * it, and once it is overdue it is dropped. A failed one is not due: it waits for the person.
      */
-    fun isDueBefore(millis: Long) = isScheduled && millis() < millis
+    fun isDueBefore(millis: Long) = isScheduled && !isFailedSchedule() && millis() < millis
+
+    /**
+     * A scheduled message that never reached the device when its alarm fired. It stays in its thread,
+     * past its time, for the person to send now, edit or delete, and its alarm is not set again.
+     */
+    fun isFailedSchedule() = isScheduled && type == Telephony.Sms.MESSAGE_TYPE_FAILED
 
     fun getSender(): SimpleContact? =
         participants.firstOrNull { it.doesHavePhoneNumber(senderPhoneNumber) }

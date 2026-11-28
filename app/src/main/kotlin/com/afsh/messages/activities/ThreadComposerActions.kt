@@ -302,12 +302,8 @@ internal class ThreadComposerActions(private val visit: ThreadVisit) {
         }
     }
 
-    /** 84 · Send now: the scheduled message goes as a normal one, and its schedule is dropped. */
-    fun sendScheduledNow(message: Message) {
-        visit.data.list.removeAll { message.id == it.id }
-        message.attachment?.attachments?.forEach { addAttachment(it.getUri()) }
-        sender.sendScheduledNow(message, holder.attachments)
-    }
+    /** 84 · Send now: the scheduled message goes as it is, on its own SIM; the composer is left alone. */
+    fun sendScheduledNow(message: Message) = sender.sendScheduledNow(message)
 
     /** "To Mina Farahani", with "· SIM 1" when the phone has two SIMs. */
     private fun scheduleRecipient(subscriptionId: Int): String {

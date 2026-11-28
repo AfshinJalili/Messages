@@ -15,6 +15,7 @@ import org.junit.Test
 
 private const val NOW = 1_000_000_000L
 private const val QUEUED = 6
+private const val FAILED = 5
 private const val SENT = 2
 
 private class FakeSendPlatform : MessageSendCoordinator.Platform {
@@ -30,7 +31,9 @@ private class FakeSendPlatform : MessageSendCoordinator.Platform {
     val transmits = ArrayList<Transmit>()
     var provider = listOf<Message>()
     val alarms = ArrayList<Message>()
-    val dropped = ArrayList<Long>()
+    /** Scheduled messages sent now, with the SIM asked for; the platform answers [scheduledSendWorks]. */
+    val scheduledSends = ArrayList<Pair<Long, Int?>>()
+    var scheduledSendWorks = true
     val temporaryThreads = ArrayList<Long>()
     val snippetBumps = ArrayList<Pair<Long, String>>()
     val snippetReplacements = ArrayList<Triple<Long, String, String>>()
@@ -49,7 +52,10 @@ private class FakeSendPlatform : MessageSendCoordinator.Platform {
         alarmError?.let { throw it }
         alarms += message
     }
-    override fun dropScheduled(messageId: Long) { dropped += messageId }
+    override fun sendScheduled(messageId: Long, subscriptionId: Int?): Boolean {
+        scheduledSends += messageId to subscriptionId
+        return scheduledSendWorks
+    }
     override fun createScheduledConversation(message: Message, threadId: Long, cached: Conversation?) { temporaryThreads += threadId }
     override fun bumpAfterScheduling(threadId: Long, snippet: String) { snippetBumps += threadId to snippet }
     override fun replaceSnippet(threadId: Long, old: String, new: String) { snippetReplacements += Triple(threadId, old, new) }
@@ -212,6 +218,17 @@ class MessageSendCoordinatorTest {
     }
 
     @Test
+    fun `editing a scheduled message whose send failed schedules it again`() {
+        val failed = provider(4, threadId = 5).copy(body = "old", type = FAILED, isScheduled = true)
+        host.threadId = 5
+
+        sender.updateScheduled(failed, "new", NOW + 120_000)
+
+        assertEquals(QUEUED, platform.alarms.single().type)
+        assertEquals(QUEUED, platform.persisted.single().type)
+    }
+
+    @Test
     fun `an edited schedule refuses the past`() {
         val old = provider(4, threadId = 5).copy(body = "old", isScheduled = true)
         host.threadId = 5
@@ -224,15 +241,34 @@ class MessageSendCoordinatorTest {
     }
 
     @Test
-    fun `send now sends the scheduled text on its SIM and drops the schedule`() {
+    fun `send now sends the scheduled message as it is, stores what went and leaves the composer alone`() {
         val scheduled = provider(4).copy(body = "later", subscriptionId = 2, isScheduled = true)
+        host.loaded = listOf(provider(1), scheduled)
+        platform.provider = listOf(provider(9), provider(1))
 
-        sender.sendScheduledNow(scheduled, attachments = emptyList())
+        sender.sendScheduledNow(scheduled)
 
-        assertEquals("later", platform.transmits.single().text)
-        assertEquals(2, platform.transmits.single().subscriptionId)
-        assertEquals(listOf(4L), platform.dropped)
-        assertEquals(listOf("sent", "reload"), host.events)
+        assertEquals(listOf(4L to null), platform.scheduledSends)
+        assertTrue(platform.transmits.isEmpty())
+        // As a message sent from the composer: shown at once, and stored with its outgoing bump and unarchive.
+        assertEquals(listOf(9L), host.shown.map { it.id })
+        assertEquals(listOf(9L), platform.persisted.map { it.id })
+        assertEquals(listOf("reload"), host.events)
+        assertTrue(host.retryFailures.isEmpty())
+    }
+
+    @Test
+    fun `a retried scheduled message goes on the SIM shown, and gets its Retry back when it fails again`() {
+        val failed = provider(4).copy(type = FAILED, subscriptionId = 2, isScheduled = true)
+        platform.scheduledSendWorks = false
+        platform.provider = listOf(provider(9))
+
+        sender.sendScheduledNow(failed, subscriptionId = 3)
+
+        assertEquals(listOf(4L to 3), platform.scheduledSends)
+        assertEquals(listOf(failed), host.retryFailures)
+        assertTrue(platform.persisted.isEmpty())
+        assertEquals(listOf("reload"), host.events)
     }
 
     @Test

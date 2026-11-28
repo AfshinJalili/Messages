@@ -13,6 +13,7 @@ import org.junit.Test
 
 private const val INBOX = 1
 private const val SENT = 2
+private const val FAILED = 5
 private const val NOW = 1_000_000_000L
 
 /** Room and Telephony in memory, for one or more threads. */
@@ -436,6 +437,21 @@ class ThreadRepositoryTest {
         assertFalse(repository.messages.allFetched)
         assertTrue(3L in platform.room)
         assertFalse(4L in platform.room)
+    }
+
+    @Test
+    fun `a failed scheduled message stays in the thread after its time, cached or reloaded`() {
+        val failed = msg(50, date = (NOW / 1000).toInt() - 3600, scheduled = true).copy(type = FAILED)
+        platform.room[50] = failed
+        platform.threadIdForAddresses = 1
+        platform.provider = arrayListOf(msg(1))
+        val repository = repository()
+
+        repository.loadCached()
+        assertEquals(listOf(50L), repository.ids())
+
+        repository.reload(listOf("+1"))
+        assertEquals(listOf(1L, 50L), repository.ids().sorted())
     }
 
     @Test

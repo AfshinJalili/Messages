@@ -44,7 +44,7 @@ internal class ThreadSendHost(private val visit: ThreadVisit) : MessageSendCoord
         visit.holder.clearSchedule()
     }
 
-    override fun retryFailed(message: Message) = visit.holder.retryFailed(message)
+    override fun retryFailed(message: Message) = activity.runOnUiThread { visit.holder.retryFailed(message) }
 
     override fun timeInPast(retryMillis: Long?) {
         activity.toast(R.string.must_pick_time_in_the_future)
