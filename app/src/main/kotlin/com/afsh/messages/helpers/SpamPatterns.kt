@@ -52,6 +52,8 @@ data class SpamPatterns(val groups: Map<SpamPatternGroup, List<String>>) {
 
     companion object {
         private const val DIGIT = "[0-9۰-۹٠-٩]"
+        /** Start of a Persian word. `\b` sees Persian letters on Android but not on JDK 19+, where tests run. */
+        private const val WORD_START = "(?<![\\p{L}\\p{N}_])"
         private const val ZWNJ = "[\\u200c ]?"
         private const val VS16 = "\\uFE0F?"
         /** Common short-link and web TLDs; bare host with optional path, no scheme required. */
@@ -60,23 +62,24 @@ data class SpamPatterns(val groups: Map<SpamPatternGroup, List<String>>) {
         val DEFAULT = SpamPatterns(
             mapOf(
                 SpamPatternGroup.CODE_WORDS to listOf(
-                    "(کد|رمز)$ZWNJ\\s*(تای?ید|تأیید|ورود|فعال|امنیتی|احراز|بازیابی|شناسایی|عبور|یک\\s*$ZWNJ\\s*بار|پویا|دوم)",
-                    "کد\\s*شما",
-                    "verification code",
-                    "security code",
-                    "confirmation code",
-                    "login code",
-                    "your code",
-                    "code is",
-                    "passcode",
-                    "one[- ]?time",
+                    "$WORD_START(کد|رمز)$ZWNJ\\s*(تای?ید|تأیید|ورود|فعال|امنیتی|احراز|بازیابی|شناسایی|عبور|یک\\s*$ZWNJ\\s*بار|پویا|دوم)",
+                    "${WORD_START}کد\\s*شما",
+                    "\\bverification code\\b",
+                    "\\bsecurity code\\b",
+                    "\\bconfirmation code\\b",
+                    "\\blogin code\\b",
+                    "\\byour code\\b",
+                    "\\bcode is\\b",
+                    "\\bpasscode\\b",
+                    "\\bone[- ]?time\\b",
                     "\\bOTP\\b",
                     "\\b2FA\\b",
                     // Web OTP: the last line is "@site #code".
                     "@[\\w.-]+\\s+#$DIGIT{4,8}",
                 ),
                 SpamPatternGroup.CODE to listOf(
-                    "(?<!$DIGIT)$DIGIT{4,8}(?!$DIGIT)",
+                    // Not part of a longer number, a date (1403/12/29), a time or an amount (1,500,000).
+                    "(?<!$DIGIT[/.,:]?)$DIGIT{4,8}(?![/.,:]?$DIGIT)",
                 ),
                 SpamPatternGroup.TRANSACTIONAL to listOf(
                     "برداشت",

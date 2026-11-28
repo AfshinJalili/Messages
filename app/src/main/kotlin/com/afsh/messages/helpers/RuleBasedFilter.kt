@@ -35,6 +35,13 @@ object RuleBasedFilter {
     /** With a link or named sender, this weight is enough (one marketing word or one strong emoji). */
     const val BLOCK_WEIGHT_WITH_COMPANION = 2
 
+    /**
+     * A code is a one-time code only this many characters or fewer from a code word, in the same
+     * sentence: «کد تایید شما: 482913», but not a year at the end of "Your code is LUCKY. Win… 2025".
+     */
+    const val CODE_WINDOW = 30
+    private val SENTENCE_END = Regex("[.!?؟…](?:\\s|$)")
+
     fun evaluate(context: Context, sender: String, body: String): FilterVerdict = explain(context, sender, body).verdict
 
     fun explain(context: Context, sender: String, body: String): FilterResult {
@@ -57,10 +64,9 @@ object RuleBasedFilter {
         fun result(verdict: FilterVerdict, rule: FilterRule, matches: List<FilterMatch>) =
             FilterResult(verdict, rule, matches.map { FilterMatch(it.group, text.originalRange(it.range)) })
 
-        val codeWords = find(SpamPatternGroup.CODE_WORDS)
-        val codes = find(SpamPatternGroup.CODE)
-        if (codeWords.isNotEmpty() && codes.isNotEmpty()) {
-            return result(FilterVerdict.ALLOW, FilterRule.ONE_TIME_CODE, codeWords + codes)
+        val oneTimeCode = codeNearWord(text.folded, find(SpamPatternGroup.CODE_WORDS), find(SpamPatternGroup.CODE))
+        if (oneTimeCode != null) {
+            return result(FilterVerdict.ALLOW, FilterRule.ONE_TIME_CODE, oneTimeCode)
         }
 
         val transactional = find(SpamPatternGroup.TRANSACTIONAL)
@@ -82,6 +88,20 @@ object RuleBasedFilter {
             return result(FilterVerdict.BLOCK, FilterRule.MARKETING, marketing + strongEmoji + links)
         }
         return FilterResult.NONE
+    }
+
+    /** The first code word and code within [CODE_WINDOW] of each other in one sentence, or null. */
+    private fun codeNearWord(text: String, words: List<FilterMatch>, codes: List<FilterMatch>): List<FilterMatch>? {
+        for (word in words) {
+            for (code in codes) {
+                val gap = minOf(word.range.last, code.range.last) + 1 until maxOf(word.range.first, code.range.first)
+                if (gap.isEmpty()) return listOf(word, code)
+                if (gap.last - gap.first + 1 > CODE_WINDOW) continue
+                if (SENTENCE_END.containsMatchIn(text.substring(gap))) continue
+                return listOf(word, code)
+            }
+        }
+        return null
     }
 
     private fun isAlphaSender(sender: String) =

@@ -307,4 +307,45 @@ class RuleBasedFilterTest {
         val result = explain("09121234567", "کد تخفیف برای شما\nتخفیف تا ۵۰ درصد")
         assertEquals(FilterVerdict.BLOCK, result.verdict)
     }
+
+    @Test
+    fun `real one-time codes stay codes`() {
+        listOf(
+            "کد تایید شما:\n482913",
+            "Your verification code is 554433",
+            "G-482913 is your Google verification code.",
+            "Your verification code for Google account is 123456",
+            "Your one-time password: 7781",
+            "Your OTP is 4821. Do not share it.",
+            "123456 کد ورود شما به دیجی\u200cکالا است",
+            "کد ورود: 123456\n\n@digikala.com #123456",
+        ).forEach { body ->
+            assertEquals(body, FilterRule.ONE_TIME_CODE, explain("SHOP", body).rule)
+        }
+    }
+
+    @Test
+    fun `a code word inside another word is not a code word`() {
+        assertNotEquals(FilterRule.ONE_TIME_CODE, explain("SHOP", "Someone timed it: 1500 tickets").rule)
+        assertNotEquals(FilterRule.ONE_TIME_CODE, explain("SHOP", "Barcode is ready, order 12345").rule)
+    }
+
+    @Test
+    fun `a number in another sentence is not the code`() {
+        assertNotEquals(FilterRule.ONE_TIME_CODE, explain("SHOP", "Your code is LUCKY… 2025").rule)
+        assertNotEquals(FilterRule.ONE_TIME_CODE, explain("SHOP", "Your code is LUCKY. Win the lottery 2025!").rule)
+    }
+
+    @Test
+    fun `a number far from the code word is not the code`() {
+        val body = "Your code is ready to use at any of our stores across the country from 2025"
+        assertNotEquals(FilterRule.ONE_TIME_CODE, explain("SHOP", body).rule)
+    }
+
+    @Test
+    fun `a date is not a code, so a discount code doesn't pass as a one-time code`() {
+        val result = explain("SHOP", "تخفیف ویژه ۵۰ درصد! کد شما: OFF50 تا ۱۴۰۳/۱۲/۲۹")
+        assertEquals(FilterVerdict.BLOCK, result.verdict)
+        assertEquals(FilterRule.MARKETING, result.rule)
+    }
 }
