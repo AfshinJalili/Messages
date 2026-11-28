@@ -9,12 +9,10 @@ import android.provider.Telephony.Sms
 import android.provider.Telephony.Threads
 import android.telephony.SubscriptionManager
 import androidx.core.net.toUri
-import com.afsh.commons.extensions.getBlockedNumbers
 import com.afsh.commons.extensions.getIntValue
 import com.afsh.commons.extensions.getIntValueOr
 import com.afsh.commons.extensions.getLongValue
 import com.afsh.commons.extensions.getStringValue
-import com.afsh.commons.extensions.isNumberBlocked
 import com.afsh.commons.extensions.queryCursor
 import com.afsh.commons.helpers.isQPlus
 import com.afsh.commons.models.PhoneNumber
@@ -154,16 +152,10 @@ private fun Context.getMessages(
     val selectionArgs = arrayOf(threadId.toString())
     val sortOrder = "${Sms.DATE} DESC LIMIT $displayLimit"
 
-    val blockStatus = HashMap<String, Boolean>()
-    val blockedNumbers = getBlockedNumbers()
+    // A blocked sender's history stays readable: blocking stops new messages, it does not hide old ones.
     var messages = ArrayList<Message>()
     queryCursor(uri, SMS_PROJECTION, selection, selectionArgs, sortOrder, showErrors = true) { cursor ->
         val senderNumber = cursor.getStringValue(Sms.ADDRESS) ?: return@queryCursor
-        val isNumberBlocked = blockStatus.getOrPut(senderNumber) { isNumberBlocked(senderNumber, blockedNumbers) }
-        if (isNumberBlocked) {
-            return@queryCursor
-        }
-
         messages.add(smsMessage(cursor, senderNumber))
     }
 

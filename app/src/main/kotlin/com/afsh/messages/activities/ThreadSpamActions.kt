@@ -1,126 +1,82 @@
 package com.afsh.messages.activities
 
-import android.text.TextUtils
-import com.afsh.commons.extensions.toast
 import com.afsh.commons.helpers.ensureBackgroundThread
 import com.afsh.messages.R
 import com.afsh.messages.extensions.config
-import com.afsh.messages.helpers.blockNumbersOnPhone
+import com.afsh.messages.extensions.getThreadTitle
+import com.afsh.messages.helpers.SWIPE_UNDO_DURATION_MS
 import com.afsh.messages.helpers.containsNumber
 import com.afsh.messages.models.Message
-import com.afsh.messages.ui.components.AfshIcon
-import com.afsh.messages.ui.components.AfshSheet
-import com.afsh.messages.ui.components.AfshSheetItem
-import com.afsh.messages.ui.components.confirm
-import com.afsh.messages.ui.components.showAfshDialog
-import com.afsh.messages.ui.isolate
 
-/** Spam in the conversation: not spam, always or never spam for the sender, and blocking on the phone. */
+/**
+ * Spam in the conversation. Messages: Not spam, at once with Undo. The sender: the Spam and blocking sheet, and
+ * Unblock on the blocked composer.
+ */
 internal class ThreadSpamActions(private val visit: ThreadVisit) {
     private val activity get() = visit.activity
-    private val resources get() = activity.resources
     private val people get() = visit.people
 
-    /** The names the confirmations show. */
-    private fun names(numbers: List<String>) = isolate(visit.conversation?.title ?: TextUtils.join(", ", numbers))
-
-    fun askNotSpam(selected: List<Message>) {
-        activity.showAfshDialog { dismiss ->
-            AfshSheet(title = activity.getString(R.string.not_spam_sheet_title), onDismiss = dismiss) {
-                AfshSheetItem(
-                    label = activity.getString(R.string.not_spam_only),
-                    icon = AfshIcon.Inbox,
-                    supporting = activity.getString(R.string.not_spam_only_text),
-                    onClick = {
-                        dismissThen {
-                            dismiss()
-                            unmarkSpam(selected, allowSender = false)
-                        }
-                    },
-                )
-                AfshSheetItem(
-                    label = resources.getQuantityString(R.plurals.never_spam, 1),
-                    icon = AfshIcon.Verified,
-                    supporting = resources.getQuantityString(R.plurals.never_spam_text, 1),
-                    onClick = {
-                        dismissThen {
-                            dismiss()
-                            unmarkSpam(selected, allowSender = true)
-                        }
-                    },
-                )
-            }
-        }
+    fun openSheet() {
+        val participants = people.participants
+        activity.openSpamAndBlocking(
+            SpamSenders(
+                numbers = people.addresses,
+                threadIds = listOf(visit.threadId),
+                name = visit.conversation?.title?.takeIf { it.isNotEmpty() } ?: participants.getThreadTitle(),
+                canBlock = participants.size == 1,
+            ),
+            offerUndo = ::offerUndo,
+            onChanged = ::senderChanged,
+        )
     }
 
-    private fun unmarkSpam(selected: List<Message>, allowSender: Boolean) {
+    fun unblock() = activity.unblockOnPhone(people.addresses, ::offerUndo, ::senderChanged)
+
+    /**
+     * [selected] go back to the conversation. A sender on the always-spam list leaves it, or their next message
+     * would land in Spam again. Undo puts back both.
+     */
+    fun notSpam(selected: List<Message>) {
         ensureBackgroundThread {
             val config = activity.config
-            if (allowSender) {
-                (selected.map { it.senderPhoneNumber } + people.addresses)
-                    .filter { it.isNotEmpty() }.distinct().forEach { config.addAllowedNumber(it) }
-            } else {
-                selected.map { it.senderPhoneNumber }.filter { it.isNotEmpty() && config.spamNumbers.containsNumber(it) }
-                    .distinct().forEach { config.removeSpamNumber(it) }
-            }
-            visit.repository.forgetSpam(selected)
-            val items = visit.repository.items()
-            visit.threadItems = items
+            val unlisted = selected.map { it.senderPhoneNumber }
+                .filter { it.isNotEmpty() && config.spamNumbers.containsNumber(it) }
+                .distinct()
+            unlisted.forEach(config::removeSpamNumber)
+            val forgotten = visit.repository.forgetSpam(selected)
+            refreshTimeline()
             activity.runOnUiThread {
-                visit.showFacts()
-                visit.publish(items)
-                if (allowSender) {
-                    activity.toast(R.string.sender_allowed)
-                } else {
-                    activity.toast(resources.getQuantityString(R.plurals.message_restored, selected.size))
+                offerUndo(activity.resources.getQuantityString(R.plurals.message_restored, selected.size, selected.size)) {
+                    ensureBackgroundThread {
+                        unlisted.forEach(config::addSpamNumber)
+                        visit.repository.restoreSpam(forgotten)
+                        refreshTimeline()
+                    }
                 }
             }
         }
     }
 
-    fun alwaysSpamSender() {
-        val numbers = people.addresses
-        activity.confirm(
-            title = resources.getQuantityString(R.plurals.always_spam_title, 1, names(numbers)),
-            explanation = resources.getQuantityString(R.plurals.always_spam_text, 1),
-            confirmLabel = resources.getQuantityString(R.plurals.always_spam, 1),
-        ) {
-            ensureBackgroundThread {
-                numbers.forEach { activity.config.addSpamNumber(it) }
-                activity.runOnUiThread { visit.showFacts() }
-            }
+    /** Background. The spam markers changed: the timeline and the header follow. */
+    private fun refreshTimeline() {
+        val items = visit.repository.items()
+        visit.threadItems = items
+        activity.runOnUiThread {
+            visit.showFacts()
+            visit.publish(items)
         }
     }
 
-    fun neverSpamSender() {
-        val numbers = people.addresses
-        activity.confirm(
-            title = resources.getQuantityString(R.plurals.never_spam_title, 1, names(numbers)),
-            explanation = resources.getQuantityString(R.plurals.never_spam_text, 1),
-            confirmLabel = resources.getQuantityString(R.plurals.never_spam, 1),
-        ) {
-            val data = visit.data
-            val spam = data.list.filter { data.isSpam(it) }
-            if (spam.isNotEmpty()) {
-                unmarkSpam(spam, allowSender = true)
-            } else {
-                ensureBackgroundThread {
-                    numbers.forEach { activity.config.addAllowedNumber(it) }
-                    activity.runOnUiThread { visit.showFacts() }
-                }
-            }
+    /** The filter or the block changed: the menu, the composer and Never spam's restored messages follow. */
+    private fun senderChanged() {
+        ensureBackgroundThread {
+            visit.readBlockedOnPhone()
+            visit.repository.loadSpamReasons()
+            refreshTimeline()
         }
     }
 
-    fun blockOnThisPhone() {
-        val numbers = people.addresses
-        activity.confirm(
-            title = resources.getQuantityString(R.plurals.block_on_phone_title, 1, names(numbers)),
-            explanation = resources.getQuantityString(R.plurals.block_on_phone_text, 1),
-            confirmLabel = resources.getQuantityString(R.plurals.block_on_phone, 1),
-            destructive = true,
-        ) {
-            if (activity.blockNumbersOnPhone(numbers)) visit.showFacts()
-        }
+    private fun offerUndo(message: String, undo: () -> Unit) {
+        visit.deletion.showUndo(message, SWIPE_UNDO_DURATION_MS, undo)
     }
 }

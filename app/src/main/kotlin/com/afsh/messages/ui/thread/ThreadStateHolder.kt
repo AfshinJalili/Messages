@@ -55,8 +55,10 @@ data class ThreadFacts(
     val archiveAvailable: Boolean = true,
     val hasItems: Boolean = false,
     val isRecycleBin: Boolean = false,
-    val senderBlocked: Boolean = false,
-    val senderAllowed: Boolean = false,
+    /** The single sender is on the always-spam list. */
+    val alwaysSpam: Boolean = false,
+    /** Android blocks the single sender. */
+    val blockedOnPhone: Boolean = false,
     val muted: Boolean = false,
     /** A letter short code, which cannot receive replies. */
     val specialNumber: Boolean = false,
@@ -85,9 +87,7 @@ fun threadMenuActions(facts: ThreadFacts): List<ThreadMenuAction> = with(facts) 
             ThreadMenuAction.COPY_NUMBER -> single && !firstNumber.isNullOrEmpty() && !isRecycleBin
             ThreadMenuAction.ARCHIVE -> hasItems && archived == false && !isRecycleBin && archiveAvailable
             ThreadMenuAction.UNARCHIVE -> hasItems && archived == true && !isRecycleBin && archiveAvailable
-            ThreadMenuAction.NEVER_SPAM -> !isRecycleBin && single && !senderAllowed
-            ThreadMenuAction.ALWAYS_SPAM -> !isRecycleBin && !senderBlocked
-            ThreadMenuAction.BLOCK_ON_PHONE -> !isRecycleBin && single
+            ThreadMenuAction.SPAM_AND_BLOCKING -> !isRecycleBin
             ThreadMenuAction.RESTORE -> hasItems && isRecycleBin
             ThreadMenuAction.DELETE -> hasItems
         }
@@ -326,7 +326,8 @@ class ThreadStateHolder(private val host: Host) : ThreadScreenModel {
         composerValue = composer.copy(
             visible = !facts.isRecycleBin && !facts.deletePending,
             canReply = !facts.specialNumber,
-            blocked = facts.senderBlocked,
+            blocked = facts.blockedOnPhone,
+            alwaysSpam = facts.alwaysSpam && !facts.blockedOnPhone,
         )
     }
 

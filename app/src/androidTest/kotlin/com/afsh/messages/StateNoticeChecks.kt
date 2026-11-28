@@ -6,12 +6,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.isEnabled
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.afsh.messages.ui.inbox.InboxUiState
+import com.afsh.messages.ui.thread.ComposerEvent
 import com.afsh.messages.ui.thread.ComposerState
 import com.afsh.messages.ui.thread.ThreadComposer
 import org.junit.Rule
@@ -42,16 +44,33 @@ class StateNoticeChecks {
     }
 
     @Test
-    fun blockedSenderGetsNoComposer() {
+    fun blockedSenderGetsASwitchedOffComposerWithUnblock() {
+        val events = mutableListOf<ComposerEvent>()
         compose.setContent {
             DesignVariantContent(DesignVariant.LIGHT) {
-                ThreadComposer(ComposerState(blocked = true), "", TextFieldValue(""), false, {}, {})
+                ThreadComposer(ComposerState(blocked = true), "", TextFieldValue(""), false, {}, { events += it })
             }
         }
-        compose.onNodeWithText(text(R.string.unblock_to_reply)).assertExists()
-        // Neither a field nor a send button, found as TalkBack finds them.
-        compose.onNode(hasSetTextAction()).assertDoesNotExist()
+        compose.onNodeWithText(text(R.string.you_blocked_sender)).assertExists()
+        // No field to type in and no send button, found as TalkBack finds them.
+        compose.onNode(hasSetTextAction() and isEnabled()).assertDoesNotExist()
         compose.onNodeWithContentDescription(text(R.string.send_message)).assertDoesNotExist()
+        compose.onNodeWithText(text(com.afsh.commons.R.string.unblock)).performClick()
+        check(events == listOf<ComposerEvent>(ComposerEvent.Unblock)) { "Events $events" }
+    }
+
+    @Test
+    fun alwaysSpamKeepsTheComposerAndOffersChange() {
+        val events = mutableListOf<ComposerEvent>()
+        compose.setContent {
+            DesignVariantContent(DesignVariant.LIGHT) {
+                ThreadComposer(ComposerState(alwaysSpam = true), "", TextFieldValue(""), false, {}, { events += it })
+            }
+        }
+        compose.onNodeWithText(text(R.string.always_spam_notice)).assertExists()
+        compose.onNode(hasSetTextAction() and isEnabled()).assertExists()
+        compose.onNodeWithText(text(R.string.change)).performClick()
+        check(events == listOf<ComposerEvent>(ComposerEvent.SpamAndBlocking)) { "Events $events" }
     }
 
     @Test

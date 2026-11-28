@@ -13,7 +13,7 @@ enum class SettingsPage(@StringRes val title: Int, @StringRes val subtitle: Int?
     NOTIFICATIONS(com.afsh.commons.R.string.notifications, null),
     INTERACTIONS(R.string.settings_interactions, null),
     // Hosted by SettingsController through BlockRulesController, not by SettingsScreen.
-    FILTER_RULES(R.string.filter_rules, null),
+    FILTER_RULES(R.string.spam_rules, null),
     BLOCK_PHRASES(R.string.blocked_phrases, null),
     PRIVACY(R.string.settings_privacy, null),
     BACKUP(R.string.settings_backup, null),

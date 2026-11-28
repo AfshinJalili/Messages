@@ -29,11 +29,15 @@ internal class ThreadDeletion(private val visit: ThreadVisit) {
      * Deletion Undo from [UndoDeletion], shown in the timeline's snackbar host above the composer.
      * UndoDeletion's own timer commits; this only offers the Undo.
      */
-    fun showUndo(message: Int, durationMs: Int, onUndo: () -> Unit): () -> Unit {
+    fun showUndo(message: Int, durationMs: Int, onUndo: () -> Unit): () -> Unit =
+        showUndo(activity.getString(message), durationMs, onUndo)
+
+    /** Undo for any action in the thread, in the same snackbar host; [onUndo] runs only when tapped. */
+    fun showUndo(message: String, durationMs: Int, onUndo: () -> Unit): () -> Unit {
         val job = activity.lifecycleScope.launch {
             val result = withTimeoutOrNull(durationMs.toLong()) {
                 activity.snackbarHost.showSnackbar(
-                    message = activity.getString(message),
+                    message = message,
                     actionLabel = activity.getString(com.afsh.commons.R.string.undo),
                     duration = SnackbarDuration.Indefinite,
                 )

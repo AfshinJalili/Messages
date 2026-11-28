@@ -18,6 +18,7 @@ import com.afsh.commons.extensions.notificationManager
 import com.afsh.messages.extensions.subscriptionManagerCompat
 import com.afsh.commons.helpers.KEY_PHONE
 import com.afsh.commons.helpers.ensureBackgroundThread
+import com.afsh.messages.helpers.senderStanding
 import com.afsh.messages.R
 import com.afsh.messages.extensions.config
 import com.afsh.messages.extensions.conversationsDB
@@ -51,7 +52,7 @@ class ConversationDetailsActivity : ComposePageActivity() {
     }
 
     @Composable
-    override fun Page() = ConversationDetailsScreen(state, ::onEvent)
+    override fun Page() = ConversationDetailsScreen(state, ::onEvent, snackbarHostState = snackbarHost)
 
     @SuppressLint("MissingPermission")
     private fun load() = ensureBackgroundThread {
@@ -66,6 +67,7 @@ class ConversationDetailsActivity : ComposePageActivity() {
             Member(contact.name, number, contact.photoUri)
         }
         val single = members.singleOrNull()?.takeIf { conversation?.isGroupConversation != true }
+        val spam = senderStanding(members.map { it.number })
         val sims = subscriptionManagerCompat().activeSubscriptionInfoList.orEmpty()
             .map { info ->
                 val slot = getString(R.string.message_sim_label, "%d".format(info.simSlotIndex + 1))
@@ -83,6 +85,7 @@ class ConversationDetailsActivity : ComposePageActivity() {
                 customNotifications = config.customNotifications.contains(threadId.toString()),
                 sims = sims,
                 sim = members.firstOrNull()?.let { config.getUseSIMIdAtNumber(it.number) } ?: 0,
+                spam = spam.takeIf { members.isNotEmpty() },
                 loading = false,
             )
         }
@@ -93,6 +96,16 @@ class ConversationDetailsActivity : ComposePageActivity() {
             DetailsEvent.Back -> finish()
             DetailsEvent.Call -> state.members.singleOrNull()?.let { dialNumber(it.number) }
             DetailsEvent.Search -> openThreadSearch()
+            DetailsEvent.SpamAndBlocking -> openSpamAndBlocking(
+                SpamSenders(
+                    numbers = state.members.map { it.number },
+                    threadIds = listOf(threadId),
+                    name = state.title,
+                    canBlock = !state.isGroup,
+                ),
+                offerUndo = { message, undo -> offerUndo(message, onUndo = undo, onTimeout = {}) },
+                onChanged = ::reloadSpam,
+            )
             DetailsEvent.ToggleMute -> {
                 val muted = !state.muted
                 config.setConversationMuted(threadId, muted)
@@ -112,6 +125,12 @@ class ConversationDetailsActivity : ComposePageActivity() {
                 state = state.copy(sim = event.subscriptionId)
             }
         }
+    }
+
+    /** The Spam and blocking row follows the sheet. */
+    private fun reloadSpam() = ensureBackgroundThread {
+        val spam = senderStanding(state.members.map { it.number })
+        runOnUiThread { state = state.copy(spam = spam) }
     }
 
     private fun openContact(number: String) {

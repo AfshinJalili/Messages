@@ -76,6 +76,11 @@ private class FakeThreadPlatform : ThreadRepository.Platform {
         inboxRefreshes += threadId
     }
 
+    override fun restoreSpam(reasons: Map<Long, Int>, threadId: Long) {
+        spamReasons.putAll(reasons)
+        inboxRefreshes += threadId
+    }
+
     override fun dropScheduled(messageId: Long) {
         droppedScheduled += messageId
     }
@@ -498,6 +503,22 @@ class ThreadRepositoryTest {
 
         assertEquals(setOf(2L), repository.messages.spamReasons.keys)
         assertEquals(listOf(1L), platform.inboxRefreshes)
+    }
+
+    @Test
+    fun `undoing not spam marks the messages again with their own reasons`() {
+        platform.spamReasons[1] = 4
+        platform.spamReasons[2] = 3
+        val repository = repository()
+        repository.loadSpamReasons()
+
+        val forgotten = repository.forgetSpam(listOf(msg(1), msg(2), msg(3)))
+        assertEquals(mapOf(1L to 4, 2L to 3), forgotten)
+        assertEquals(emptySet<Long>(), repository.messages.spamReasons.keys)
+
+        repository.restoreSpam(forgotten)
+
+        assertEquals(mapOf(1L to 4, 2L to 3), repository.messages.spamReasons)
     }
 
     @Test

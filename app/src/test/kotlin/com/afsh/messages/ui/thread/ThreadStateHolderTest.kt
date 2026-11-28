@@ -306,13 +306,23 @@ class ThreadStateHolderTest {
 
     @Test
     fun `facts set the header, the greeting and the composer`() {
-        holder.showFacts(ThreadFacts(title = "Mina Farahani", participantCount = 1, firstNumber = "+98912", firstName = "Mina Farahani", senderBlocked = true))
+        holder.showFacts(ThreadFacts(title = "Mina Farahani", participantCount = 1, firstNumber = "+98912", firstName = "Mina Farahani", blockedOnPhone = true))
         assertEquals("Mina Farahani", holder.ui.header.title)
         assertEquals("+98912", holder.ui.header.subtitle)
         assertEquals("Mina", holder.ui.firstName)
         assertTrue(holder.ui.header.canDial)
         assertTrue(holder.composer.blocked)
         assertTrue(holder.composer.visible)
+    }
+
+    @Test
+    fun `always spam keeps the composer on and only shows the notice`() {
+        holder.showFacts(ThreadFacts(title = "Mina", participantCount = 1, firstNumber = "+98912", alwaysSpam = true))
+        assertFalse(holder.composer.blocked)
+        assertTrue(holder.composer.alwaysSpam)
+        holder.showFacts(ThreadFacts(title = "Mina", participantCount = 1, firstNumber = "+98912", alwaysSpam = true, blockedOnPhone = true))
+        assertTrue(holder.composer.blocked)
+        assertFalse(holder.composer.alwaysSpam)
     }
 
     @Test
@@ -345,21 +355,13 @@ class ThreadHeaderRulesTest {
     private val single = ThreadFacts(title = "+1555", participantCount = 1, firstNumber = "+1555", firstName = "+1555", hasConversation = true, archived = false, hasItems = true)
 
     @Test
-    fun `an unsaved number offers adding to contacts and always or never spam`() {
+    fun `an unsaved number offers adding to contacts and spam and blocking`() {
         val actions = threadMenuActions(single)
         assertTrue(ThreadMenuAction.ADD_TO_CONTACT in actions)
-        assertTrue(ThreadMenuAction.ALWAYS_SPAM in actions)
-        assertTrue(ThreadMenuAction.NEVER_SPAM in actions)
+        assertTrue(ThreadMenuAction.SPAM_AND_BLOCKING in actions)
         assertTrue(ThreadMenuAction.ARCHIVE in actions)
         assertFalse(ThreadMenuAction.RENAME in actions)
         assertEquals(ThreadMenuAction.entries.filter { it in actions }, actions)
-    }
-
-    @Test
-    fun `an always-spam sender is not offered always spam again`() {
-        val actions = threadMenuActions(single.copy(senderBlocked = true))
-        assertTrue(ThreadMenuAction.NEVER_SPAM in actions)
-        assertFalse(ThreadMenuAction.ALWAYS_SPAM in actions)
     }
 
     @Test
@@ -372,8 +374,7 @@ class ThreadHeaderRulesTest {
         val group = ThreadFacts(title = "Family", participantCount = 3, hasConversation = true, groupSubtitle = "3 people")
         val actions = threadMenuActions(group)
         assertTrue(ThreadMenuAction.RENAME in actions)
-        assertFalse(ThreadMenuAction.NEVER_SPAM in actions)
-        assertFalse(ThreadMenuAction.BLOCK_ON_PHONE in actions)
+        assertTrue(ThreadMenuAction.SPAM_AND_BLOCKING in actions)
         assertEquals("3 people", threadHeader(group, "").subtitle)
         assertTrue(threadHeader(group, "").isGroup)
         assertEquals("", greetingName(group, "Family"))

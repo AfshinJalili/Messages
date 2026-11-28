@@ -13,6 +13,7 @@ import com.afsh.messages.extensions.updateScheduledMessagesThreadId
 import com.afsh.messages.messaging.cancelScheduleSendPendingIntent
 import com.afsh.messages.models.Conversation
 import com.afsh.messages.models.Message
+import com.afsh.messages.models.SpamMessage
 import com.afsh.messages.models.ThreadItem
 import com.afsh.messages.ui.thread.ThreadMessages
 import kotlinx.coroutines.CompletableDeferred
@@ -80,6 +81,8 @@ class ThreadRepository(
         fun markMessageRead(id: Long)
         /** Drops the spam markers of [ids] and refreshes [threadId]'s preview and unread count. */
         fun forgetSpam(ids: List<Long>, threadId: Long)
+        /** Marks [reasons]' message ids as spam again, each with its reason, and refreshes the preview and counts. */
+        fun restoreSpam(reasons: Map<Long, Int>, threadId: Long)
 
         /** Deletes a scheduled message and cancels its alarm. */
         fun dropScheduled(messageId: Long)
@@ -307,9 +310,22 @@ class ThreadRepository(
         return true
     }
 
-    /** Blocking. [selected] is not spam: its markers go and the thread's preview and counts follow. */
-    fun forgetSpam(selected: List<Message>) {
+    /**
+     * Blocking. [selected] is not spam: its markers go and the thread's preview and counts follow. Returns the
+     * reasons it took away, for [restoreSpam].
+     */
+    fun forgetSpam(selected: List<Message>): Map<Long, Int> {
+        val reasons = messages.spamReasons
+        val forgotten = selected.mapNotNull { message -> reasons[message.id]?.let { message.id to it } }.toMap()
         platform.forgetSpam(selected.map { it.id }, threadId)
+        loadSpamReasons()
+        return forgotten
+    }
+
+    /** Blocking. Undoes [forgetSpam]: [reasons] are spam again, for the same reasons. */
+    fun restoreSpam(reasons: Map<Long, Int>) {
+        if (reasons.isEmpty()) return
+        platform.restoreSpam(reasons, threadId)
         loadSpamReasons()
     }
 
@@ -441,6 +457,12 @@ class ThreadRepository(
 
         override fun forgetSpam(ids: List<Long>, threadId: Long) {
             ids.forEach(room::deleteSpamMarker)
+            conversations.refreshPreview(threadId)
+            InboxRepository.refreshUnreadCounts(app, listOf(threadId))
+        }
+
+        override fun restoreSpam(reasons: Map<Long, Int>, threadId: Long) {
+            reasons.forEach { (id, reason) -> room.insertSpamMarker(SpamMessage(id, threadId, reason)) }
             conversations.refreshPreview(threadId)
             InboxRepository.refreshUnreadCounts(app, listOf(threadId))
         }

@@ -57,8 +57,10 @@ data class ComposerState(
     val visible: Boolean = true,
     /** False for letter short codes, which cannot receive replies (design 78). */
     val canReply: Boolean = true,
-    /** The sender is blocked: the composer stays, switched off, until they are unblocked (67). */
+    /** Android blocks the sender: the composer stays, switched off, with Unblock above it (67). */
     val blocked: Boolean = false,
+    /** The sender is always spam: replies still work, and a notice says where their messages go. */
+    val alwaysSpam: Boolean = false,
     val attachments: List<AttachmentSelection> = emptyList(),
     /** Empty unless the phone has two or more SIMs. */
     val sims: List<SimOption> = emptyList(),
@@ -91,6 +93,10 @@ sealed interface ComposerEvent {
     data class RemoveAttachment(val attachment: AttachmentSelection) : ComposerEvent
     data class OpenAttachment(val attachment: AttachmentSelection) : ComposerEvent
     data object ReplyInfo : ComposerEvent
+    /** Unblock on the blocked composer. */
+    data object Unblock : ComposerEvent
+    /** Change on the always-spam notice: the Spam and blocking sheet. */
+    data object SpamAndBlocking : ComposerEvent
 }
 
 /**
@@ -168,20 +174,21 @@ enum class ThreadMenuAction(@AnyRes val label: Int, val icon: AfshIcon, val labe
     COPY_NUMBER(com.afsh.commons.R.string.copy_number_to_clipboard, AfshIcon.Copy),
     ARCHIVE(R.string.archive, AfshIcon.Archive),
     UNARCHIVE(R.string.unarchive, AfshIcon.Inbox),
-    NEVER_SPAM(R.plurals.never_spam, AfshIcon.Verified, labelIsQuantity = true),
-    ALWAYS_SPAM(R.plurals.always_spam, AfshIcon.SpamShield, labelIsQuantity = true),
-    BLOCK_ON_PHONE(R.plurals.block_on_phone, AfshIcon.Block, labelIsQuantity = true),
+    /** Opens the Spam and blocking sheet: the sender's filter and Android block live there, not in this menu. */
+    SPAM_AND_BLOCKING(R.string.filter_rules, AfshIcon.SpamShield),
     RESTORE(R.string.restore_all_messages, AfshIcon.Restore),
     DELETE(com.afsh.commons.R.string.delete, AfshIcon.Delete),
 
     ;
 
-    /** Shown in the error color: these remove or shut out the conversation. */
-    val destructive: Boolean get() = this == DELETE || this == BLOCK_ON_PHONE
+    /** Shown in the error color: it removes the conversation. */
+    val destructive: Boolean get() = this == DELETE
 }
 
 /** Declaration order is the display order; the bar takes the first few (design view 10), the rest overflow. */
 enum class MessageAction(@StringRes val label: Int, val icon: AfshIcon) {
+    // Leads the bar whenever it shows: only an all-spam selection offers it, and it is why the reader selected.
+    NOT_SPAM(R.string.not_spam_short, AfshIcon.Inbox),
     COPY(com.afsh.commons.R.string.copy, AfshIcon.Copy),
     FORWARD(R.string.forward_message, AfshIcon.Forward),
     STAR(R.string.star_message, AfshIcon.Star),
@@ -191,7 +198,6 @@ enum class MessageAction(@StringRes val label: Int, val icon: AfshIcon) {
     SELECT_TEXT(com.afsh.commons.R.string.select_text, AfshIcon.TextCursor),
     DETAILS(R.string.message_details, AfshIcon.Info),
     SAVE_AS(com.afsh.commons.R.string.save_as, AfshIcon.Download),
-    NOT_SPAM(R.string.not_spam, AfshIcon.Verified),
     RESTORE(R.string.restore, AfshIcon.Restore),
     SELECT_ALL(com.afsh.commons.R.string.select_all, AfshIcon.Checklist),
 
@@ -247,6 +253,6 @@ fun tapActions(message: Message, state: ThreadUiState): List<MessageAction> {
     }
 }
 
-private val BAR_ACTIONS = setOf(MessageAction.COPY, MessageAction.FORWARD, MessageAction.STAR, MessageAction.UNSTAR, MessageAction.DELETE)
+private val BAR_ACTIONS = setOf(MessageAction.NOT_SPAM, MessageAction.COPY, MessageAction.FORWARD, MessageAction.STAR, MessageAction.UNSTAR, MessageAction.DELETE)
 
 fun List<MessageAction>.splitForBar(): Pair<List<MessageAction>, List<MessageAction>> = partition { it in BAR_ACTIONS }

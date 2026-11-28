@@ -41,9 +41,9 @@ class ThreadTopBarTest {
     }
 
     @Test
-    fun `only delete and block are drawn as destructive`() {
+    fun `only delete is drawn as destructive`() {
         assertEquals(
-            setOf(ThreadMenuAction.DELETE, ThreadMenuAction.BLOCK_ON_PHONE),
+            setOf(ThreadMenuAction.DELETE),
             ThreadMenuAction.entries.filter { it.destructive }.toSet(),
         )
     }
