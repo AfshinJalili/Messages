@@ -215,6 +215,29 @@ class ConversationRepository(
         effects.refreshPreview(listOf(updated.threadId))
     }
 
+    /**
+     * A provider pass's write: stores Telephony [snapshot] (see [reconciledRow]) only when Room's row of its
+     * thread is still [readBefore], the row the pass read before it read Telephony. A row deleted since stays
+     * deleted, and a row written since (an incoming message, a read, a send) keeps that write: Telephony's
+     * snapshot may predate it. The next pass reads both again. Call it inside the pass's transaction. True
+     * when it wrote.
+     */
+    fun storeIfUnchanged(snapshot: Conversation, readBefore: Conversation?, trustTelephony: Boolean = false): Boolean {
+        if (conversations.getConversationWithThreadId(snapshot.threadId) != readBefore) return false
+        val row = reconciledRow(snapshot, readBefore, trustTelephony) ?: return false
+        conversations.insertOrUpdate(row)
+        effects.refreshPreview(listOf(row.threadId))
+        return true
+    }
+
+    /**
+     * A provider pass's removal of [readBefore], a row whose thread Telephony no longer has: dropped only
+     * when Room's row is still the one the pass read before it read Telephony (see [storeIfUnchanged]).
+     */
+    fun removeIfUnchanged(readBefore: Conversation) {
+        if (conversations.getConversationWithThreadId(readBefore.threadId) == readBefore) removeFromCache(readBefore.threadId)
+    }
+
     /** Runs [block]'s writes in one transaction, so the inbox re-queries once for all of them. */
     fun runInTransaction(block: () -> Unit) = effects.runInTransaction(block)
 
@@ -554,6 +577,17 @@ internal fun mergeConversationWithCache(
         previewDate = cached.previewDate,
         allSpam = cached.allSpam,
     )
+}
+
+/**
+ * The row a provider pass stores for Telephony [snapshot] over Room's [cached] row (see
+ * [mergeConversationWithCache]), or null when it would change nothing, since every write re-runs the
+ * inbox query. Archived rows are left alone.
+ */
+internal fun reconciledRow(snapshot: Conversation, cached: Conversation?, trustTelephony: Boolean = false): Conversation? {
+    if (cached?.isArchived == true) return null
+    val merged = mergeConversationWithCache(snapshot, cached, trustTelephony)
+    return merged.takeUnless { cached != null && Conversation.areContentsTheSame(old = cached, new = it) }
 }
 
 private class AndroidConversationEffects(private val app: Context) : ConversationEffects {

@@ -126,6 +126,8 @@ class ConversationRepositoryTest {
         var unreadableThreads = false
         /** Reading these threads fails: an error with failOnError, otherwise no rows, as the provider does. */
         val unreadable = HashSet<Long>()
+        /** Runs once the threads are read: what other writers do while a pass is running. */
+        var afterRead: () -> Unit = {}
 
         override fun unreadSms() = rows.filter { !it.isMms && !it.read && it.incoming }.map { it.id to it.threadId }
         override fun unreadMmsThreadIds() = rows.filter { it.isMms && !it.read && it.incoming }.map { it.threadId }
@@ -146,7 +148,9 @@ class ConversationRepositoryTest {
                 if (failOnError) throw IllegalStateException("provider") else return ArrayList()
             }
             val newestFirst = threads.values.filter { threadId == null || it.threadId == threadId }.sortedByDescending { it.date }
-            return ArrayList(if (limit == null) newestFirst else newestFirst.take(limit))
+            val result = ArrayList(if (limit == null) newestFirst else newestFirst.take(limit))
+            afterRead().also { afterRead = {} }
+            return result
         }
         override fun threadDigest() = digest
         /** Telephony's thread per recipient set; asking for a new set creates an empty thread, as Android does. */
@@ -490,6 +494,90 @@ class ConversationRepositoryTest {
         assertTrue(real.usesCustomTitle)
     }
 
+    // A pass reads Room, then Telephony, then writes. Whatever lands in Room meanwhile is newer than its read.
+
+    @Test
+    fun `a full pass leaves a row written while it ran to that write`() {
+        conversations.insertOrUpdate(conversation(10, date = 100).copy(snippet = "old", messageCount = 5))
+        telephony.threads[10] = conversation(10, date = 150).copy(snippet = "mid", messageCount = 6)
+        val incoming = conversation(10, read = false, unread = 1, date = 200).copy(snippet = "new", messageCount = 7)
+        telephony.afterRead = { conversations.insertOrUpdate(incoming) }
+
+        fullPass()
+
+        assertEquals(incoming, conversations.rows.getValue(10))
+    }
+
+    @Test
+    fun `a full pass does not undo a mark-read made while it ran`() {
+        conversations.insertOrUpdate(conversation(10, read = false, unread = 2))
+        // A renamed contact: the pass has something to write.
+        telephony.threads[10] = conversation(10, read = false, unread = 2, title = "Ali")
+        telephony.afterRead = { repository.markThreadRead(10) }
+
+        fullPass()
+
+        assertTrue(conversations.rows.getValue(10).read)
+        assertEquals(0, conversations.rows.getValue(10).unreadCount)
+    }
+
+    @Test
+    fun `a full pass does not bring back a thread deleted while it ran`() {
+        conversations.insertOrUpdate(conversation(10))
+        telephony.threads[10] = conversation(10, date = 200)
+        telephony.afterRead = { repository.delete(10) }
+
+        fullPass()
+
+        assertFalse(10L in conversations.rows)
+    }
+
+    @Test
+    fun `a forced pass leaves a row written while it ran to that write`() {
+        conversations.insertOrUpdate(conversation(10, date = 100))
+        telephony.threads[10] = conversation(10, date = 150).copy(snippet = "mid")
+        val incoming = conversation(10, read = false, unread = 1, date = 200).copy(snippet = "new")
+        telephony.afterRead = { conversations.insertOrUpdate(incoming) }
+
+        fullPass(forced = true)
+
+        assertEquals(incoming, conversations.rows.getValue(10))
+    }
+
+    @Test
+    fun `a full pass leaves a thread a receiver created while it ran to the receiver`() {
+        telephony.threads[10] = conversation(10, date = 150).copy(snippet = "mid")
+        val incoming = conversation(10, read = false, unread = 1, date = 200).copy(snippet = "new")
+        telephony.afterRead = { conversations.insertOrUpdate(incoming) }
+
+        fullPass()
+
+        assertEquals(incoming, conversations.rows.getValue(10))
+    }
+
+    @Test
+    fun `a full pass keeps a row a receiver wrote while it ran, though Telephony's read lacked the thread`() {
+        // Thread 10 had no messages left when the pass read Telephony; a new one landed in it meanwhile.
+        conversations.insertOrUpdate(conversation(10, date = 100))
+        val incoming = conversation(10, read = false, unread = 1, date = 200).copy(snippet = "new")
+        telephony.afterRead = { conversations.insertOrUpdate(incoming) }
+
+        fullPass()
+
+        assertEquals(incoming, conversations.rows[10L])
+    }
+
+    @Test
+    fun `a full pass writes no row whose merge with Room changes nothing`() {
+        // Room's preview columns and a custom title are app-owned and absent from Telephony's row.
+        conversations.insertOrUpdate(conversation(10, title = "Mom").copy(usesCustomTitle = true, previewSnippet = "visible", previewDate = 90))
+        telephony.threads[10] = conversation(10)
+
+        fullPass()
+
+        assertTrue(effects.refreshed.isEmpty())
+    }
+
     @Test
     fun `a full pass keeps a temporary scheduled thread that has no real thread yet`() {
         conversations.insertOrUpdate(conversation(77).copy(isScheduled = true))
@@ -576,6 +664,28 @@ class ConversationRepositoryTest {
 
         assertEquals(0, InboxReconciler.syncRecentWindow(repository, limit = 20))
         assertEquals("old", conversations.rows.getValue(10).snippet)
+    }
+
+    @Test
+    fun `the recent window leaves a row written while it ran to that write`() {
+        conversations.insertOrUpdate(conversation(10, date = 100).copy(snippet = "old", messageCount = 5))
+        telephony.threads[10] = conversation(10, date = 150).copy(snippet = "mid", messageCount = 6)
+        val incoming = conversation(10, read = false, unread = 1, date = 200).copy(snippet = "new", messageCount = 7)
+        telephony.afterRead = { conversations.insertOrUpdate(incoming) }
+
+        assertEquals(0, InboxReconciler.syncRecentWindow(repository, limit = 20))
+        assertEquals(incoming, conversations.rows.getValue(10))
+    }
+
+    @Test
+    fun `the recent window does not bring back a thread deleted while it ran`() {
+        conversations.insertOrUpdate(conversation(10))
+        telephony.threads[10] = conversation(10, date = 200)
+        telephony.afterRead = { repository.delete(10) }
+
+        InboxReconciler.syncRecentWindow(repository, limit = 20)
+
+        assertFalse(10L in conversations.rows)
     }
 
     @Test(expected = IllegalStateException::class)
