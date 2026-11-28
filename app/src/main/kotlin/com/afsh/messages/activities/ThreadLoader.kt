@@ -20,6 +20,11 @@ import com.afsh.messages.models.Message
 import com.afsh.messages.ui.thread.InitialScroll
 import com.afsh.messages.ui.thread.landing
 import kotlinx.coroutines.launch
+import java.util.concurrent.Executor
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Brings the visit's messages to the screen: the cached thread first, then the provider's, reloads when
@@ -35,6 +40,9 @@ internal class ThreadLoader(private val visit: ThreadVisit) {
 
     private var refreshPendingWhileStopped = false
 
+    /** Every load that replaces the messages: the cached ones, the provider's, and reloads. */
+    private val loads = ThreadLoads.serial()
+
     private val readCheck = Runnable {
         if (visit.isVisible && !activity.isDestroyed) markReadIfSeen()
     }
@@ -44,7 +52,7 @@ internal class ThreadLoader(private val visit: ThreadVisit) {
     fun started() {
         if (refreshPendingWhileStopped) {
             refreshPendingWhileStopped = false
-            ensureBackgroundThread { reload() }
+            reload()
         }
     }
 
@@ -91,7 +99,7 @@ internal class ThreadLoader(private val visit: ThreadVisit) {
     }
 
     fun loadCached(callback: () -> Unit) {
-        ensureBackgroundThread {
+        loads.load {
             repository.loadCached()
             resolveParticipants()
             showLoaded()
@@ -117,13 +125,13 @@ internal class ThreadLoader(private val visit: ThreadVisit) {
             activity.finish()
             return
         }
-        ensureBackgroundThread {
+        loads.load {
             people.loadPrivateContacts()
             val messagesUnchanged = repository.loadFromProvider()
             val hadParticipants = people.participants.isNotEmpty()
             if (hadParticipants && messagesUnchanged && !people.hasUnnamed) {
                 landUnchanged(callback)
-                return@ensureBackgroundThread
+                return@load
             }
 
             resolveParticipants()
@@ -131,14 +139,14 @@ internal class ThreadLoader(private val visit: ThreadVisit) {
             val replacedPrivateNames = people.applyPrivateNames(data.list)
             if (hadParticipants && messagesUnchanged && !replacedPrivateNames) {
                 landUnchanged(callback)
-                return@ensureBackgroundThread
+                return@load
             }
 
             val intent = activity.intent
             if (!people.fallBackTo(intent.getStringExtra(THREAD_TITLE) ?: "", intent.getStringExtra(THREAD_NUMBER))) {
                 activity.toast(com.afsh.commons.R.string.unknown_error_occurred)
                 activity.finish()
-                return@ensureBackgroundThread
+                return@load
             }
 
             repository.cacheLoaded()
@@ -165,8 +173,13 @@ internal class ThreadLoader(private val visit: ThreadVisit) {
         }
     }
 
-    /** Blocking. Reloads the thread from the provider, as a messaging event or a send asks. */
-    fun reload() {
+    /**
+     * Reloads the thread from the provider, as a messaging event or a send asks: after the loads already
+     * asked for, and once for any number of requests that come while it waits (see [ThreadLoads]).
+     */
+    fun reload() = loads.reload(::reloadNow)
+
+    private fun reloadNow() {
         if (visit.isRecycleBin) return
         visit.sender.reloaded()
         if (repository.reload(people.addresses)) syncActiveThread()
@@ -236,7 +249,7 @@ internal class ThreadLoader(private val visit: ThreadVisit) {
                     return@collect
                 }
                 if (activity.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
-                    ensureBackgroundThread { reload() }
+                    reload()
                 } else {
                     refreshPendingWhileStopped = true
                 }
@@ -317,4 +330,35 @@ internal class ThreadLoader(private val visit: ThreadVisit) {
     }
 
     // endregion
+}
+
+/**
+ * Runs a visit's loads one at a time, in the order asked: each replaces the loaded messages, so two at once
+ * could show an older provider read over a newer one. A reload asked for while another waits to start is
+ * dropped, since the waiting one reads the provider after both requests; a load is never dropped.
+ */
+internal class ThreadLoads(private val executor: Executor) {
+    private val reloadWaiting = AtomicBoolean(false)
+
+    fun load(job: () -> Unit) = executor.execute(job)
+
+    fun reload(job: () -> Unit) {
+        if (!reloadWaiting.compareAndSet(false, true)) return
+        executor.execute {
+            // Cleared first: a request made while this one reads the provider needs a read of its own.
+            reloadWaiting.set(false)
+            job()
+        }
+    }
+
+    companion object {
+        /** On one background thread, which ends once the visit's loads go quiet. */
+        fun serial() = ThreadLoads(
+            ThreadPoolExecutor(0, 1, IDLE_SECONDS, TimeUnit.SECONDS, LinkedBlockingQueue()) { runnable ->
+                Thread(runnable, "afsh-thread-loads").apply { isDaemon = true }
+            },
+        )
+
+        private const val IDLE_SECONDS = 10L
+    }
 }
